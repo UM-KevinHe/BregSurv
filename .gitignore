@@ -1,3 +1,9 @@
+# AI assistant files
+CLAUDE.md
+.cursor/
+.cursorrules
+.github/copilot-instructions.md
+
 .Rproj.user
 .Rhistory
 .RData

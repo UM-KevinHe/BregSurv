@@ -47,32 +47,71 @@ articles:
       - coxkl_ties
       - ncc
 reference:
-  - title: "Individual-level Internal–External Integration"
+  - title: "Low-Dimensional Individual-Level Internal–External Integration"
+    desc: >
+      Models that integrate individual-level external data via composite likelihood
+      weighting, for both full-cohort Cox and nested case-control (NCC) designs.
     contents:
       - cox_indi
       - cv.cox_indi
-      - cox_indi_enet
-      - cv.cox_indi_enet
-  - title: "Low-Dimensional Bregman Divergence based Integrated Cox Model"
+      - ncc_indi
+      - cv.ncc_indi
+  - title: "Low-Dimensional KL Divergence-Based Integration"
+    desc: >
+      Models that integrate external coefficient summaries via Kullback–Leibler
+      divergence penalization, for both full-cohort Cox and nested case-control (NCC) designs.
     contents:
       - coxkl
       - cv.coxkl
       - bopt.coxkl
       - coxkl_ties
       - cv.coxkl_ties
+      - ncckl
+      - cv.ncckl
+  - title: "Low-Dimensional Mahalanobis Distance-Based Integration"
+    desc: >
+      Models that integrate external coefficient and curvature summaries via
+      Mahalanobis distance penalization, for both full-cohort Cox and matched
+      case-control (NCC) designs.
+    contents:
       - cox_MDTL
       - cv.cox_MDTL
-  - title: "High-Dimensional Bregman Divergence based Integrated Cox Model"
+      - ncc_MDTL
+      - cv.ncc_MDTL
+  - title: "High-Dimensional Individual-Level Internal–External Integration"
+    desc: >
+      Penalized models with Elastic Net regularization that integrate individual-level
+      external data, for both full-cohort Cox and nested case-control (NCC) designs.
+    contents:
+      - cox_indi_enet
+      - cv.cox_indi_enet
+      - ncc_indi_enet
+      - cv.ncc_indi_enet
+  - title: "High-Dimensional KL Divergence-Based Integration"
+    desc: >
+      Penalized models with Ridge, Lasso, or Elastic Net regularization that integrate
+      external coefficient summaries via KL divergence, for both full-cohort Cox and
+      nested case-control (NCC) designs.
     contents:
       - coxkl_ridge
       - coxkl_enet
       - cv.coxkl_ridge
       - cv.coxkl_enet
+      - ncckl_enet
+      - cv.ncckl_enet
+  - title: "High-Dimensional Mahalanobis Distance-Based Integration"
+    desc: >
+      Penalized models with Ridge, Lasso, or Elastic Net regularization that integrate
+      external coefficient and curvature summaries via Mahalanobis distance, for both
+      full-cohort Cox and nested case-control (NCC) designs.
+    contents:
       - cox_MDTL_ridge
       - cox_MDTL_enet
       - cv.cox_MDTL_ridge
       - cv.cox_MDTL_enet
-  - title: "Variable Importance/Stability Selection for High-Dimensional Models"
+      - ncc_MDTL_enet
+      - cv.ncc_MDTL_enet
+  - title: "Variable Selection and Stability for High-Dimensional Models"
     contents:
       - variable_importance
       - coxkl_enet.StabSelect
@@ -81,14 +120,6 @@ reference:
     contents:
       - coxkl_enet_bagging
       - cox_MDTL_enet_bagging
-  - title: "Low-Dimensional KL Divergence based Integrated Conditional Logistic Model"
-    contents:
-      - clogitkl
-      - cv.clogitkl
-  - title: "High-Dimensional KL Divergence based Integrated Conditional Logistic Model"
-    contents:
-      - clogitkl_enet
-      - cv.clogitkl_enet
   - title: "Multi-Source Integration"
     contents:
       - coxkl_enet.multi

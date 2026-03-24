@@ -7,11 +7,6 @@ learning framework for survival analysis, enabling principled borrowing
 of external information while explicitly accommodating population
 heterogeneity between the internal study and external sources.
 
-The package supports two primary study designs: [full-cohort Cox
-proportional hazards models](#sec_cox) and [nested case–control (NCC)
-designs](#sec_cc) based on conditional logistic regression on sampled
-risk sets.
-
 ### Key Features
 
 **Three external data integration modes**  
@@ -42,6 +37,17 @@ Depending on the type of external data available, the package supports:
   $`\mathbf{A} = \mathbf{I}`$ reduces the Mahalanobis distance to the
   squared Euclidean distance, making the Mahalanobis framework
   applicable in this setting as well.*
+
+**Two study design frameworks**  
+The package supports two primary study designs for time-to-event
+analysis: - **Full-cohort Cox models**: standard Cox proportional
+hazards regression using the complete cohort, suitable when all
+subjects’ follow-up and covariate data are available. See the [Cox model
+vignette](#sec_cox) for details. - **Nested case–control (NCC)
+designs**: conditional logistic regression on sampled risk sets,
+appropriate when covariate collection is resource-intensive and only a
+subset of controls are sampled per case. See the [NCC vignette](#sec_cc)
+for details.
 
 **Robustness to clustered data**  
 Real-world survival data often exhibit between-cluster heterogeneity due
@@ -97,12 +103,12 @@ optimization to directly explore the integration weight space, which is
 particularly efficient when evaluating each candidate is computationally
 expensive.
 
-### Package Workflow Overview
+### Package Workflow
 
 The following flowchart illustrates the overall workflow of the
-`SurvBregDiv` package. Users first select a study design (full-cohort
-Cox model or nested case–control), then choose an integration strategy
-based on the type of external information available. The package
+`SurvBregDiv` package. Users first choose an integration strategy based
+on the type of external information available, then select a study
+design (full-cohort Cox model or nested case–control). The package
 supports both low-dimensional estimation and high-dimensional penalized
 regression, with a suite of cross-cutting features applicable across
 methods. ![Plot generated in SurvBregDiv
@@ -145,15 +151,15 @@ Depending on the type of external data available, the framework supports
 three broad methodological settings, each implemented through a
 corresponding set of functions:
 
-1.  [Individual-Level External Data (via weighted
-    pseudo-likelihood)](#sec_indi) When individual-level external data
-    are accessible (e.g., for time-to-event outcomes, the user has
+1.  [Individual-Level External Data (via composite
+    likelihood)](#sec_indi) When individual-level external data are
+    accessible (e.g., for time-to-event outcomes, the user has
     covariates, survival outcomes, and follow-up times from an external
     cohort), the software provides the function such as
     [`cox_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi.md)
     and related downstream utilities. These functions implement data
-    integration through a weighted pseudo-likelihood framework (Wang and
-    Zidek 2005; Gao and Carroll 2017).
+    integration through a composite likelihood framework (Wang and Zidek
+    2005; Gao and Carroll 2017).
 
 2.  [Summary-level External Coefficients / risk scores (via KL
     divergence)](#sec_coxkl) When only summary-level regression
@@ -185,7 +191,7 @@ implementation. The conventional non-stratified model, which assumes a
 shared baseline hazard for all observations, is treated as a special
 case obtained by assigning all subjects to a single stratum.
 
-### 2.1 Individual-Level External Data Integration
+### 2.1 Individual-Level External Data Integration (via composite likelihood)
 
 When individual-level data are available for both the internal and
 external cohorts, the function
@@ -1212,7 +1218,7 @@ set.cc    <- train.cc$stratum
 beta_ext.cc <- ExampleData_cc$beta_external
 ```
 
-The main fitting function for this setting is `clogitkl`. Users must
+The main fitting function for this setting is `ncckl`. Users must
 specify the tie-handling method via the `method` argument. For 1:M
 matched case–control studies, `"breslow"` and `"exact"` yield identical
 results, although `"exact"` is theoretically preferable. For n:m matched
@@ -1222,7 +1228,7 @@ To use the KL divergence–based integrated model, the user must at least
 provide the estimated external regression coefficients
 $`\widetilde{\boldsymbol{\beta}}`$ via the argument `beta` in the
 function
-[`clogitkl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/clogitkl.md).
+[`ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl.md).
 The integration weights $`\eta`$ can be generated using the function
 [`generate_eta()`](https://um-kevinhe.github.io/SurvBregDiv/reference/generate_eta.md).
 The user should rely on prior knowledge or problem-specific
@@ -1231,7 +1237,7 @@ considerations to determine an appropriate range of $`\eta`$ values.
 ``` r
 eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 5)
 
-clogitkl.fit_breslow <- clogitkl(y = y.cc, z = z.cc, stratum = set.cc, 
+ncckl.fit_breslow <- ncckl(y = y.cc, z = z.cc, stratum = set.cc, 
                                  eta = eta_list, beta = beta_ext.cc,
                                  method = "breslow")
 ```
@@ -1244,7 +1250,7 @@ metrics are computed using the test set instead:
 
 ``` r
 plot(
-  clogitkl.fit_breslow,
+  ncckl.fit_breslow,
   test_z       = test.cc$z,
   test_delta   = test.cc$y,
   test_stratum = test.cc$stratum,
@@ -1256,7 +1262,7 @@ plot(
 vignette](SurvBregDiv_files/figure-html/unnamed-chunk-40-1.png)
 
 Cross-validation for tuning $`\eta`$ can be performed via
-[`cv.clogitkl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.clogitkl.md),
+[`cv.ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl.md),
 which performs K-fold cross-validation to tune the integration parameter
 $`\eta`$.
 
@@ -1275,7 +1281,7 @@ considerations to determine an appropriate range. (For ridge, use
 analogously.)
 
 ``` r
-cv.clogitkl.fit_breslow <- cv.clogitkl(
+cv.ncckl.fit_breslow <- cv.ncckl(
   y        = y.cc,
   z        = z.cc,
   stratum  = set.cc,
@@ -1291,7 +1297,7 @@ The cross-validated performance curve can be visualized using
 [`cv.plot()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.plot.md):
 
 ``` r
-cv.plot(cv.clogitkl.fit_breslow)
+cv.plot(cv.ncckl.fit_breslow)
 ```
 
 ![Plot generated in SurvBregDiv
@@ -1325,12 +1331,12 @@ beta_ext.cc_hd <- ExampleData_cc_highdim$beta_external
 ```
 
 For high-dimensional NCC data, we demonstrate usage with
-[`clogitkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/clogitkl_enet.md),
+[`ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl_enet.md),
 which fits KL-integrated conditional logistic regression models with
 elastic-net penalties.
 
 ``` r
-clogitkl_enet_fit <- clogitkl_enet(
+ncckl_enet_fit <- ncckl_enet(
   y       = y.cc_hd,
   z       = z.cc_hd,
   stratum = set.cc_hd,
@@ -1344,7 +1350,7 @@ The fitted object can be visualized using the S3
 
 ``` r
 plot(
-  clogitkl_enet_fit,
+  ncckl_enet_fit,
   test_z       = test.cc_hd$z,
   test_delta   = test.cc_hd$y,
   test_stratum = test.cc_hd$stratum,
@@ -1356,11 +1362,11 @@ plot(
 vignette](SurvBregDiv_files/figure-html/unnamed-chunk-45-1.png)
 
 Cross-validation for tuning $`\eta`$ can be performed via
-[`cv.clogitkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.clogitkl_enet.md):
+[`cv.ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl_enet.md):
 
 ``` r
 eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 5)
-cv.clogitkl_enet_fit <- cv.clogitkl_enet(
+cv.ncckl_enet_fit <- cv.ncckl_enet(
   y        = y.cc_hd,
   z        = z.cc_hd,
   stratum  = set.cc_hd,
@@ -1376,7 +1382,7 @@ The cross-validated performance curve can be visualized using
 [`cv.plot()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.plot.md):
 
 ``` r
-cv.plot(cv.clogitkl_enet_fit)
+cv.plot(cv.ncckl_enet_fit)
 ```
 
 ![Plot generated in SurvBregDiv

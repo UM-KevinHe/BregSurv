@@ -41,7 +41,7 @@ normal distribution.
 \eqn{\theta_i \sim N(0, 0.5^2)} is added to the linear predictor; it is eliminated by CLR conditioning.
 \item \strong{Outcome generation:} Within each stratum \eqn{i}, the single case (\code{y=1}) is selected
 with probability proportional to \eqn{\exp(\theta_i + Z^\top \beta)}.
-\item \strong{External beta estimation:} \code{beta_external} is obtained by fitting \code{clogit} on a
+\item \strong{External beta estimation:} \code{beta_external} is obtained by fitting \code{ncc} on a
 separate simulated dataset with a slightly different true coefficient vector
 \eqn{\beta_{\mathrm{ext}} = (0.8, -0.8, \dots)} and correlation \eqn{\rho = 0.3},
 using the \code{"breslow"} tie approximation.

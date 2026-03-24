@@ -108,21 +108,28 @@ If you encounter problems or bugs, please contact us:
 
 # Package index
 
-## Individual-level Internal–External Integration
+## Low-Dimensional Individual-Level Internal–External Integration
+
+Models that integrate individual-level external data via composite
+likelihood weighting, for both full-cohort Cox and nested case-control
+(NCC) designs.
 
 - [`cox_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi.md)
   : Cox Proportional Hazards Model Integrated with External
   Individual-level Information
 - [`cv.cox_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_indi.md)
   : Cross-Validated cox_indi to Tune etas
-- [`cox_indi_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi_enet.md)
-  : Cox Proportional Hazards Model Integrated with External
-  Individual-level Data and Elastic Net Penalty
-- [`cv.cox_indi_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_indi_enet.md)
-  : Cross-Validation for Cox Model Integrated with External
-  Individual-level Data and Elastic Net Penalty
+- [`ncc_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md)
+  : Conditional Logistic Regression with Individual-level External Data
+  (CLR-Indi)
+- [`cv.ncc_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncc_indi.md)
+  : Cross-Validated CLR with Individual-Level External Data
 
-## Low-Dimensional Bregman Divergence based Integrated Cox Model
+## Low-Dimensional KL Divergence-Based Integration
+
+Models that integrate external coefficient summaries via
+Kullback–Leibler divergence penalization, for both full-cohort Cox and
+nested case-control (NCC) designs.
 
 - [`coxkl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl.md)
   : Cox Proportional Hazards Model with KL Divergence for Data
@@ -137,13 +144,52 @@ If you encounter problems or bugs, please contact us:
 - [`cv.coxkl_ties()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl_ties.md)
   : Cross-Validated Cox–KL with Ties Handling to Tune the Integration
   Parameter (eta)
+- [`ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl.md)
+  : Conditional Logistic Regression with KL Divergence (CLR-KL)
+- [`cv.ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl.md)
+  : Cross-Validated Conditional Logistic Regression with KL Integration
+
+## Low-Dimensional Mahalanobis Distance-Based Integration
+
+Models that integrate external coefficient and curvature summaries via
+Mahalanobis distance penalization, for both full-cohort Cox and matched
+case-control (NCC) designs.
+
 - [`cox_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL.md)
   : Cox Proportional Hazards Model with Mahalanobis Distance Transfer
   Learning
 - [`cv.cox_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_MDTL.md)
   : Cross-Validation for Cox MDTL Model
+- [`ncc_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_MDTL.md)
+  : Conditional Logistic Regression with Mahalanobis Distance Transfer
+  Learning (CLR-MDTL)
+- [`cv.ncc_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncc_MDTL.md)
+  : Cross-Validated CLR with Mahalanobis Distance Transfer Learning
 
-## High-Dimensional Bregman Divergence based Integrated Cox Model
+## High-Dimensional Individual-Level Internal–External Integration
+
+Penalized models with Elastic Net regularization that integrate
+individual-level external data, for both full-cohort Cox and nested
+case-control (NCC) designs.
+
+- [`cox_indi_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi_enet.md)
+  : Cox Proportional Hazards Model Integrated with External
+  Individual-level Data and Elastic Net Penalty
+- [`cv.cox_indi_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_indi_enet.md)
+  : Cross-Validation for Cox Model Integrated with External
+  Individual-level Data and Elastic Net Penalty
+- [`ncc_indi_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi_enet.md)
+  : Conditional Logistic Regression with Individual-level External Data
+  and Elastic Net Penalty (CLR-Indi-ENet)
+- [`cv.ncc_indi_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncc_indi_enet.md)
+  : Cross-Validated CLR with Individual-Level External Data and Elastic
+  Net Penalty
+
+## High-Dimensional KL Divergence-Based Integration
+
+Penalized models with Ridge, Lasso, or Elastic Net regularization that
+integrate external coefficient summaries via KL divergence, for both
+full-cohort Cox and nested case-control (NCC) designs.
 
 - [`coxkl_ridge()`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_ridge.md)
   : Cox Proportional Hazards Model with Ridge Penalty and External
@@ -155,6 +201,19 @@ If you encounter problems or bugs, please contact us:
   : Cross-Validation for CoxKL Ridge Model (Tuning Eta and Lambda)
 - [`cv.coxkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl_enet.md)
   : Cross-Validation for CoxKL Model with Elastic Net & Lasso Penalty
+- [`ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl_enet.md)
+  : Conditional Logistic Regression with KL Divergence and Elastic Net
+  Penalty (CLR-KL-ENet)
+- [`cv.ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl_enet.md)
+  : Cross-Validated CLR-KL with Elastic Net Penalty
+
+## High-Dimensional Mahalanobis Distance-Based Integration
+
+Penalized models with Ridge, Lasso, or Elastic Net regularization that
+integrate external coefficient and curvature summaries via Mahalanobis
+distance, for both full-cohort Cox and nested case-control (NCC)
+designs.
+
 - [`cox_MDTL_ridge()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_ridge.md)
   : Cox MDTL with Ridge Regularization
 - [`cox_MDTL_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_enet.md)
@@ -164,8 +223,14 @@ If you encounter problems or bugs, please contact us:
   : Cross-Validation for Cox MDTL with Ridge Regularization
 - [`cv.cox_MDTL_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_MDTL_enet.md)
   : Cross-Validation for Cox MDTL with Elastic Net Regularization
+- [`ncc_MDTL_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_MDTL_enet.md)
+  : Conditional Logistic Regression with Mahalanobis Distance Transfer
+  Learning and Elastic Net (CLR-MDTL-ENet)
+- [`cv.ncc_MDTL_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncc_MDTL_enet.md)
+  : Cross-Validated CLR with Mahalanobis Distance Transfer Learning and
+  Elastic Net Penalty
 
-## Variable Importance/Stability Selection for High-Dimensional Models
+## Variable Selection and Stability for High-Dimensional Models
 
 - [`variable_importance()`](https://um-kevinhe.github.io/SurvBregDiv/reference/variable_importance.md)
   : Bootstrap Variable Importance via Selection Frequency
@@ -180,21 +245,6 @@ If you encounter problems or bugs, please contact us:
   : Bagging for KL-Integrated Cox Elastic-Net Models
 - [`cox_MDTL_enet_bagging()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_enet_bagging.md)
   : Bagging for MDTL-Integrated Cox Elastic-Net Models
-
-## Low-Dimensional KL Divergence based Integrated Conditional Logistic Model
-
-- [`clogitkl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/clogitkl.md)
-  : Conditional Logistic Regression with KL Divergence (CLR-KL)
-- [`cv.clogitkl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.clogitkl.md)
-  : Cross-Validated Conditional Logistic Regression with KL Integration
-
-## High-Dimensional KL Divergence based Integrated Conditional Logistic Model
-
-- [`clogitkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/clogitkl_enet.md)
-  : Conditional Logistic Regression with KL Divergence and Elastic Net
-  Penalty (CLR-KL-ENet)
-- [`cv.clogitkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.clogitkl_enet.md)
-  : Cross-Validated CLR-KL with Elastic Net Penalty
 
 ## Multi-Source Integration
 

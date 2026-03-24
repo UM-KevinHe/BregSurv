@@ -2,10 +2,10 @@
 
 Plots cross-validation performance across eta values for `cv.coxkl`,
 `cv.coxkl_ridge`, `cv.coxkl_enet`, `cv.cox_MDTL`, `cv.cox_MDTL_ridge`,
-`cv.cox_MDTL_enet`, `cv.clogitkl`, `cv.clogitkl_enet`, or
-`cv.cox_indi_enet` objects in a Biometrics-style figure. It displays the
-cross-validated performance curve (each eta at its best lambda), a
-baseline reference at `eta = 0`, and marks the optimal `eta`.
+`cv.cox_MDTL_enet`, `cv.ncckl`, `cv.ncckl_enet`, or `cv.cox_indi_enet`
+objects in a Biometrics-style figure. It displays the cross-validated
+performance curve (each eta at its best lambda), a baseline reference at
+`eta = 0`, and marks the optimal `eta`.
 
 ## Usage
 

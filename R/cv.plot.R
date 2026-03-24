@@ -4,7 +4,7 @@
 #' Plots cross-validation performance across eta values for
 #' \code{cv.coxkl}, \code{cv.coxkl_ridge}, \code{cv.coxkl_enet},
 #' \code{cv.cox_MDTL}, \code{cv.cox_MDTL_ridge}, \code{cv.cox_MDTL_enet},
-#' \code{cv.clogitkl}, \code{cv.clogitkl_enet}, or \code{cv.cox_indi_enet}
+#' \code{cv.ncckl}, \code{cv.ncckl_enet}, or \code{cv.cox_indi_enet}
 #' objects in a Biometrics-style figure. It displays the cross-validated
 #' performance curve (each eta at its best lambda), a baseline reference at
 #' \code{eta = 0}, and marks the optimal \code{eta}.
@@ -28,7 +28,7 @@ cv.plot <- function(object,
 
   if (inherits(object, "cv.coxkl") ||
       inherits(object, "cv.cox_MDTL") ||
-      inherits(object, "cv.clogitkl") ||
+      inherits(object, "cv.ncckl") ||
       inherits(object, "cv.cox_indi")) {
 
     df <- object$internal_stat
@@ -38,7 +38,7 @@ cv.plot <- function(object,
              inherits(object, "cv.cox_MDTL_ridge") ||
              inherits(object, "cv.coxkl_enet")     ||
              inherits(object, "cv.cox_MDTL_enet")  ||
-             inherits(object, "cv.clogitkl_enet")  ||
+             inherits(object, "cv.ncckl_enet")  ||
              inherits(object, "cv.cox_indi_enet")) {
 
     df <- object$integrated_stat.best_per_eta

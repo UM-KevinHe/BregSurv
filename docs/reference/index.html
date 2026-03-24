@@ -44,9 +44,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="individual-level-internal-external-integration">Individual-level Internal–External Integration<a class="anchor" aria-label="anchor" href="#individual-level-internal-external-integration"></a></h2>
+      <h2 id="low-dimensional-individual-level-internal-external-integration">Low-Dimensional Individual-Level Internal–External Integration<a class="anchor" aria-label="anchor" href="#low-dimensional-individual-level-internal-external-integration"></a></h2>
 
-
+      <div class="section-desc"><p>Models that integrate individual-level external data via composite likelihood weighting, for both full-cohort Cox and nested case-control (NCC) designs.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -69,21 +69,21 @@
 
         <dt>
 
-          <code><a href="cox_indi_enet.html">cox_indi_enet()</a></code>
+          <code><a href="ncc_indi.html">ncc_indi()</a></code>
 
         </dt>
-        <dd>Cox Proportional Hazards Model Integrated with External Individual-level Data and Elastic Net Penalty</dd>
+        <dd>Conditional Logistic Regression with Individual-level External Data (CLR-Indi)</dd>
 
         <dt>
 
-          <code><a href="cv.cox_indi_enet.html">cv.cox_indi_enet()</a></code>
+          <code><a href="cv.ncc_indi.html">cv.ncc_indi()</a></code>
 
         </dt>
-        <dd>Cross-Validation for Cox Model Integrated with External Individual-level Data and Elastic Net Penalty</dd>
+        <dd>Cross-Validated CLR with Individual-Level External Data</dd>
       </dl></div><div class="section level2">
-      <h2 id="low-dimensional-bregman-divergence-based-integrated-cox-model">Low-Dimensional Bregman Divergence based Integrated Cox Model<a class="anchor" aria-label="anchor" href="#low-dimensional-bregman-divergence-based-integrated-cox-model"></a></h2>
+      <h2 id="low-dimensional-kl-divergence-based-integration">Low-Dimensional KL Divergence-Based Integration<a class="anchor" aria-label="anchor" href="#low-dimensional-kl-divergence-based-integration"></a></h2>
 
-
+      <div class="section-desc"><p>Models that integrate external coefficient summaries via Kullback–Leibler divergence penalization, for both full-cohort Cox and nested case-control (NCC) designs.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -127,6 +127,29 @@
 
         <dt>
 
+          <code><a href="ncckl.html">ncckl()</a></code>
+
+        </dt>
+        <dd>Conditional Logistic Regression with KL Divergence (CLR-KL)</dd>
+
+        <dt>
+
+          <code><a href="cv.ncckl.html">cv.ncckl()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Conditional Logistic Regression with KL Integration</dd>
+      </dl></div><div class="section level2">
+      <h2 id="low-dimensional-mahalanobis-distance-based-integration">Low-Dimensional Mahalanobis Distance-Based Integration<a class="anchor" aria-label="anchor" href="#low-dimensional-mahalanobis-distance-based-integration"></a></h2>
+
+      <div class="section-desc"><p>Models that integrate external coefficient and curvature summaries via Mahalanobis distance penalization, for both full-cohort Cox and matched case-control (NCC) designs.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
           <code><a href="cox_MDTL.html">cox_MDTL()</a></code>
 
         </dt>
@@ -138,10 +161,61 @@
 
         </dt>
         <dd>Cross-Validation for Cox MDTL Model</dd>
+
+        <dt>
+
+          <code><a href="ncc_MDTL.html">ncc_MDTL()</a></code>
+
+        </dt>
+        <dd>Conditional Logistic Regression with Mahalanobis Distance Transfer Learning (CLR-MDTL)</dd>
+
+        <dt>
+
+          <code><a href="cv.ncc_MDTL.html">cv.ncc_MDTL()</a></code>
+
+        </dt>
+        <dd>Cross-Validated CLR with Mahalanobis Distance Transfer Learning</dd>
       </dl></div><div class="section level2">
-      <h2 id="high-dimensional-bregman-divergence-based-integrated-cox-model">High-Dimensional Bregman Divergence based Integrated Cox Model<a class="anchor" aria-label="anchor" href="#high-dimensional-bregman-divergence-based-integrated-cox-model"></a></h2>
+      <h2 id="high-dimensional-individual-level-internal-external-integration">High-Dimensional Individual-Level Internal–External Integration<a class="anchor" aria-label="anchor" href="#high-dimensional-individual-level-internal-external-integration"></a></h2>
+
+      <div class="section-desc"><p>Penalized models with Elastic Net regularization that integrate individual-level external data, for both full-cohort Cox and nested case-control (NCC) designs.</p></div>
+
+      <dl></dl></div><div class="section level2">
 
 
+
+
+      <dl><dt>
+
+          <code><a href="cox_indi_enet.html">cox_indi_enet()</a></code>
+
+        </dt>
+        <dd>Cox Proportional Hazards Model Integrated with External Individual-level Data and Elastic Net Penalty</dd>
+
+        <dt>
+
+          <code><a href="cv.cox_indi_enet.html">cv.cox_indi_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validation for Cox Model Integrated with External Individual-level Data and Elastic Net Penalty</dd>
+
+        <dt>
+
+          <code><a href="ncc_indi_enet.html">ncc_indi_enet()</a></code>
+
+        </dt>
+        <dd>Conditional Logistic Regression with Individual-level External Data and Elastic Net Penalty (CLR-Indi-ENet)</dd>
+
+        <dt>
+
+          <code><a href="cv.ncc_indi_enet.html">cv.ncc_indi_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validated CLR with Individual-Level External Data and Elastic Net Penalty</dd>
+      </dl></div><div class="section level2">
+      <h2 id="high-dimensional-kl-divergence-based-integration">High-Dimensional KL Divergence-Based Integration<a class="anchor" aria-label="anchor" href="#high-dimensional-kl-divergence-based-integration"></a></h2>
+
+      <div class="section-desc"><p>Penalized models with Ridge, Lasso, or Elastic Net regularization that integrate external coefficient summaries via KL divergence, for both full-cohort Cox and nested case-control (NCC) designs.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -178,6 +252,29 @@
 
         <dt>
 
+          <code><a href="ncckl_enet.html">ncckl_enet()</a></code>
+
+        </dt>
+        <dd>Conditional Logistic Regression with KL Divergence and Elastic Net Penalty (CLR-KL-ENet)</dd>
+
+        <dt>
+
+          <code><a href="cv.ncckl_enet.html">cv.ncckl_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validated CLR-KL with Elastic Net Penalty</dd>
+      </dl></div><div class="section level2">
+      <h2 id="high-dimensional-mahalanobis-distance-based-integration">High-Dimensional Mahalanobis Distance-Based Integration<a class="anchor" aria-label="anchor" href="#high-dimensional-mahalanobis-distance-based-integration"></a></h2>
+
+      <div class="section-desc"><p>Penalized models with Ridge, Lasso, or Elastic Net regularization that integrate external coefficient and curvature summaries via Mahalanobis distance, for both full-cohort Cox and nested case-control (NCC) designs.</p></div>
+
+      <dl></dl></div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
           <code><a href="cox_MDTL_ridge.html">cox_MDTL_ridge()</a></code>
 
         </dt>
@@ -203,8 +300,22 @@
 
         </dt>
         <dd>Cross-Validation for Cox MDTL with Elastic Net Regularization</dd>
+
+        <dt>
+
+          <code><a href="ncc_MDTL_enet.html">ncc_MDTL_enet()</a></code>
+
+        </dt>
+        <dd>Conditional Logistic Regression with Mahalanobis Distance Transfer Learning and Elastic Net (CLR-MDTL-ENet)</dd>
+
+        <dt>
+
+          <code><a href="cv.ncc_MDTL_enet.html">cv.ncc_MDTL_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validated CLR with Mahalanobis Distance Transfer Learning and Elastic Net Penalty</dd>
       </dl></div><div class="section level2">
-      <h2 id="variable-importance-stability-selection-for-high-dimensional-models">Variable Importance/Stability Selection for High-Dimensional Models<a class="anchor" aria-label="anchor" href="#variable-importance-stability-selection-for-high-dimensional-models"></a></h2>
+      <h2 id="variable-selection-and-stability-for-high-dimensional-models">Variable Selection and Stability for High-Dimensional Models<a class="anchor" aria-label="anchor" href="#variable-selection-and-stability-for-high-dimensional-models"></a></h2>
 
 
 
@@ -256,52 +367,6 @@
 
         </dt>
         <dd>Bagging for MDTL-Integrated Cox Elastic-Net Models</dd>
-      </dl></div><div class="section level2">
-      <h2 id="low-dimensional-kl-divergence-based-integrated-conditional-logistic-model">Low-Dimensional KL Divergence based Integrated Conditional Logistic Model<a class="anchor" aria-label="anchor" href="#low-dimensional-kl-divergence-based-integrated-conditional-logistic-model"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="clogitkl.html">clogitkl()</a></code>
-
-        </dt>
-        <dd>Conditional Logistic Regression with KL Divergence (CLR-KL)</dd>
-
-        <dt>
-
-          <code><a href="cv.clogitkl.html">cv.clogitkl()</a></code>
-
-        </dt>
-        <dd>Cross-Validated Conditional Logistic Regression with KL Integration</dd>
-      </dl></div><div class="section level2">
-      <h2 id="high-dimensional-kl-divergence-based-integrated-conditional-logistic-model">High-Dimensional KL Divergence based Integrated Conditional Logistic Model<a class="anchor" aria-label="anchor" href="#high-dimensional-kl-divergence-based-integrated-conditional-logistic-model"></a></h2>
-
-
-
-      <dl></dl></div><div class="section level2">
-
-
-
-
-      <dl><dt>
-
-          <code><a href="clogitkl_enet.html">clogitkl_enet()</a></code>
-
-        </dt>
-        <dd>Conditional Logistic Regression with KL Divergence and Elastic Net Penalty (CLR-KL-ENet)</dd>
-
-        <dt>
-
-          <code><a href="cv.clogitkl_enet.html">cv.clogitkl_enet()</a></code>
-
-        </dt>
-        <dd>Cross-Validated CLR-KL with Elastic Net Penalty</dd>
       </dl></div><div class="section level2">
       <h2 id="multi-source-integration">Multi-Source Integration<a class="anchor" aria-label="anchor" href="#multi-source-integration"></a></h2>
 

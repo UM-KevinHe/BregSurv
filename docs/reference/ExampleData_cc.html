@@ -97,7 +97,7 @@ normal distribution.</p></li>
 \(\theta_i \sim N(0, 0.5^2)\) is added to the linear predictor; it is eliminated by CLR conditioning.</p></li>
 <li><p><strong>Outcome generation:</strong> Within each stratum \(i\), the single case (<code>y=1</code>) is selected
 with probability proportional to \(\exp(\theta_i + Z^\top \beta)\).</p></li>
-<li><p><strong>External beta estimation:</strong> <code>beta_external</code> is obtained by fitting <code>clogit</code> on a
+<li><p><strong>External beta estimation:</strong> <code>beta_external</code> is obtained by fitting <code>ncc</code> on a
 separate simulated dataset with a slightly different true coefficient vector
 \(\beta_{\mathrm{ext}} = (0.8, -0.8, \dots)\) and correlation \(\rho = 0.3\),
 using the <code>"breslow"</code> tie approximation.</p></li>

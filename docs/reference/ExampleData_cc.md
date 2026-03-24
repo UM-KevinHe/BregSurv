@@ -64,10 +64,9 @@ Data-generating mechanism:
   Z^\top \beta)\\.
 
 - **External beta estimation:** `beta_external` is obtained by fitting
-  `clogit` on a separate simulated dataset with a slightly different
-  true coefficient vector \\\beta\_{\mathrm{ext}} = (0.8, -0.8, \dots)\\
-  and correlation \\\rho = 0.3\\, using the `"breslow"` tie
-  approximation.
+  `ncc` on a separate simulated dataset with a slightly different true
+  coefficient vector \\\beta\_{\mathrm{ext}} = (0.8, -0.8, \dots)\\ and
+  correlation \\\rho = 0.3\\, using the `"breslow"` tie approximation.
 
 ## Examples
 
