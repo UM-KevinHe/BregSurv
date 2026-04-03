@@ -166,12 +166,14 @@ coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, 
     pb <- txtProgressBar(min = 0, max = nlambda, style = 3, width = 30)
   }
   
+  delta_eta <- (eta * delta_tilde + delta) / (1 + eta)
+
   ## ---- Estimation Loop ----
   for (i in seq_along(lambda.seq)) {
     lambda <- lambda.seq[i]
     # Assumes KL_Cox_Estimate_cpp is available in the package namespace
     beta_est <- KL_Cox_Estimate_cpp(
-      N = n_obs, z_mat, delta, delta_tilde, n.each_stratum, eta, beta_initial,
+      N = n_obs, z_mat, delta, delta_eta, n.each_stratum, eta, beta_initial,
       tol, Mstop, lambda = lambda, backtrack = backtrack, message = FALSE
     )
     

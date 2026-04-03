@@ -12,7 +12,7 @@ using namespace Rcpp;
  *   N              - Number of observations
  *   lp              - Linear predictor (n × 1), i.e. Z * beta
  *   delta           - Event indicator vector (length n)
- *   delta_tilde     - Augmented failure indicator for KL divergence penalty
+ *   delta_eta       - Pre-computed combined event weight: (eta * delta_tilde + delta) / (1 + eta)
  *   eta             - Tuning parameter controlling KL divergence strength
  *   ind_start       - Starting indices of each stratum
  *   n_each_stratum  - Number of observations in each stratum
@@ -22,7 +22,7 @@ using namespace Rcpp;
  * Returns:
  *   Scalar double: value of the stratified Cox-KL (potentially with ridge) log-partial likelihood.
  */
-double coxkl_loglik(const double N, 
+double coxkl_loglik(const double N,
                     const arma::vec& lp,
                     const arma::vec& delta,
                     const arma::vec& delta_eta,
@@ -43,7 +43,7 @@ double coxkl_loglik(const double N,
 
     arma::vec lp_s    = lp.subvec(start, end);
     arma::vec delta_s = delta.subvec(start, end);
-    
+
     arma::vec delta_eta_s = delta_eta.subvec(start, end);
 
     const double m = lp_s.max();
@@ -76,7 +76,7 @@ double coxkl_loglik(const double N,
  *   N              - Number of observations
  *   Z              - Covariate matrix (n × p)
  *   delta          - Event indicator vector (length n, 1 = event, 0 = censored)
- *   delta_tilde    - Augmented failure indicator used in KL weighting
+ *   delta_eta      - Pre-computed combined event weight: (eta * delta_tilde + delta) / (1 + eta)
  *   beta           - Current coefficient vector (p × 1)
  *   eta            - KL tuning parameter (η ≥ 0); η = 0 reduces to standard Cox
  *   ind_start      - Start indices of each stratum (length = #strata)
@@ -98,10 +98,10 @@ arma::vec BetaUpdate(const double N,
                      const double lambda = 0.0,
                      bool backtrack = false) {
 
-  const arma::uword p = Z.n_cols;       
+  const arma::uword p = Z.n_cols;
   const arma::uword S = n_each_stratum.n_elem;
 
-  
+
   // arma::vec exp_theta = arma::exp(theta);
   arma::vec L1(p, arma::fill::zeros);
   arma::mat L2(p, p, arma::fill::zeros);
@@ -208,49 +208,49 @@ arma::vec BetaUpdate(const double N,
  *   N              - Number of observations
  *   z              - Internal covariate matrix (n × p)
  *   delta          - Event indicator vector (length n), 1 = event, 0 = censored
- *   delta_tilde    - The predicted event indicator vector, defined using external risk scores (length n)
+ *   delta_eta      - Pre-computed combined event weight: (eta * delta_tilde + delta) / (1 + eta)
  *   n_each_stratum - Number of observations in each stratum (length S)
  *   eta            - Integration weight for KL penalty
  *   tol            - Convergence tolerance for Newton-Raphson updates (default: 1e-7)
  *   Mstop          - Maximum number of iterations (default: 50)
  *   lambda         - Regularization parameter (default: 0.0)
  *   backtrack      - Whether to use backtracking line search (default: false)
- * 
+ *
  * Returns:
  *   Estimated coefficient vector (β̂) for the Cox-KL model
  */
 // [[Rcpp::export]]
 arma::vec KL_Cox_Estimate_cpp(const double N,
-                              const arma::mat& Z, 
-                              const arma::vec& delta, 
+                              const arma::mat& Z,
+                              const arma::vec& delta,
                               const arma::vec& delta_eta,
                               const arma::vec& n_each_stratum,
                               const double eta,
-                              arma::vec beta_initial, 
+                              arma::vec beta_initial,
                               const double tol = 1.0e-7,
                               const int maxit = 50,
                               const double lambda = 0.0,
-                              bool backtrack = false, 
+                              bool backtrack = false,
                               bool message = false){
   arma::vec beta = beta_initial;
-  
+
   const arma::uword S = n_each_stratum.n_elem;
-  arma::uvec ind_start(S); 
+  arma::uvec ind_start(S);
   ind_start(0) = 0;
   for (arma::uword i = 1; i < S; ++i) {
     ind_start(i) = ind_start(i - 1) + n_each_stratum(i - 1);
   }
-  
+
   for (int iter = 0; iter < maxit; ++iter) {
     arma::vec d_beta = BetaUpdate(N, Z, delta, delta_eta, beta, eta, ind_start, n_each_stratum, lambda, backtrack);
-    
+
     double step_size = 1.0;
     if (!backtrack && arma::abs(d_beta).max() > 1.0) {
       step_size = 1.0 / arma::abs(d_beta).max();
     }
     beta += step_size * d_beta;
-    
-    
+
+
     if (arma::max(arma::abs(d_beta)) < tol) {
       if (message){
         if (lambda == 0.0) {
@@ -310,7 +310,7 @@ double pl_cal_exact(const arma::vec& lp,
       int e = i - 1;
 
       int d_k = 0;
-      double num_sum = 0.0;  
+      double num_sum = 0.0;
       for (int r = b; r <= e; ++r) {
         if (delta_s(r) == 1.0) {
           ++d_k;
@@ -641,7 +641,7 @@ arma::mat calculateWTilde_breslow(const arma::mat& Z,
       double S0 = S0_s(b);
       arma::rowvec S1 = S1_s.row(b);
 
-      arma::rowvec wtilde_k = d_k * (S1 / S0); 
+      arma::rowvec wtilde_k = d_k * (S1 / S0);
       wtilde_list.push_back(wtilde_k);
     }
   }
@@ -687,7 +687,7 @@ double pl_cal_breslow(const arma::vec& lp,
     arma::vec time_s  = time.subvec(start, end);
 
     arma::vec exp_lp  = arma::exp(lp_s);
-    arma::vec S0_s    = rev_cumsum(exp_lp); 
+    arma::vec S0_s    = rev_cumsum(exp_lp);
 
     int i = 0;
     while (i < len) {
@@ -697,7 +697,7 @@ double pl_cal_breslow(const arma::vec& lp,
       int e = i - 1;
 
       int d_k = 0;
-      double num_sum = 0.0; 
+      double num_sum = 0.0;
       for (int r = b; r <= e; ++r) {
         if (delta_s(r) == 1.0) {
           ++d_k;
@@ -706,7 +706,7 @@ double pl_cal_breslow(const arma::vec& lp,
       }
       if (d_k == 0) continue;
 
-      double denom = S0_s(b); 
+      double denom = S0_s(b);
       loglik += num_sum - d_k * std::log(denom);
     }
   }
