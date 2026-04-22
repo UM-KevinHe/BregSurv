@@ -1,6 +1,7 @@
 # AI assistant files (kept fully private — must NEVER be pushed to GitHub)
 CLAUDE.md
 docs/CLAUDE.*
+.claude/
 .cursor/
 .cursorrules
 .github/copilot-instructions.md
