@@ -18,8 +18,8 @@ bibliography: references.bib
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
-  # eval = FALSE,
-  eval = TRUE,
+  eval = FALSE,
+  # eval = TRUE,
   warning = FALSE,
   message = FALSE
   )

@@ -65,60 +65,122 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="survbregdiv-transfer-learning-for-time-to-event-modelling-via-bregman-divergence">SurvBregDiv: Transfer Learning for Time-to-Event Modelling via Bregman Divergence<a class="anchor" aria-label="anchor" href="#survbregdiv-transfer-learning-for-time-to-event-modelling-via-bregman-divergence"></a>
+<div class="page-header"><h1 id="survbregdiv">SurvBregDiv<a class="anchor" aria-label="anchor" href="#survbregdiv"></a>
 </h1></div>
-<p>The <strong>SurvBregDiv</strong> package implements a Bregman-divergence-based transfer learning framework for survival analysis, enabling principled borrowing of external information while explicitly accommodating population heterogeneity between the internal study and external sources.</p>
-<p>The package supports two primary study designs: full-cohort Cox proportional hazards models and nested case–control (NCC) designs based on conditional logistic regression on sampled risk sets.</p>
-<div class="section level3">
-<h3 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
-</h3>
-<p><strong>Three external data integration modes</strong><br>
-Depending on the type of external data available, the package supports:</p>
-<ul>
-<li>
-<strong>Individual-level data</strong>: when full covariate and outcome data from an external cohort are accessible, integration is performed via a weighted pseudo-likelihood framework.</li>
-<li>
-<strong>Coefficient-level summaries</strong>: when only external regression coefficients <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><annotation encoding="application/x-tex">\widetilde{\boldsymbol{\beta}}</annotation></semantics></math> are available, integration proceeds via Kullback–Leibler divergence penalization.</li>
-<li>
-<strong>Coefficient + curvature summaries</strong>: when an additional positive semidefinite matrix <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>𝐀</mi><annotation encoding="application/x-tex">\mathbf{A}</annotation></semantics></math> (e.g., information matrix or variance–covariance matrix) is provided, integration proceeds via Mahalanobis distance penalization.</li>
-</ul>
-<p><strong>Robustness to clustered and tied event times data</strong><br>
-The package accounts for two structural features common in real-world survival data. Between-cluster heterogeneity arising from multi-site enrollment, matched designs, or hierarchical sampling is accommodated via stratified partial likelihoods, which allow the baseline hazard to vary freely across strata rather than imposing a common baseline. Tied event times frequently occur when follow-up is recorded on a coarse time scale such as daily records, scheduled clinical visits, or discretized follow-up intervals, and are handled through tie-correction methods.</p>
-<p><strong>High-dimensional variable selection</strong> Penalized estimation with ridge, lasso, and elastic net penalties is supported for variable selection and shrinkage, with tuning parameters selected via cross-validation as default. However, cross-validation optimizes predictive performance rather than variable selection stability, and the selected predictor set can vary considerably across repeated runs or minor perturbations of the data. For settings where a reproducible and trustworthy shortlist of predictors is needed, stability selection is also available, which aggregates variable inclusion frequencies across subsamples to identify predictors that are consistently selected regardless of which subjects happen to be in the training set.</p>
-<p><strong>Ensemble integration via bagged estimation</strong><br>
-Besides cross-validated LASSO and stability selection, the package supports an ensemble strategy that combines bootstrapping, external-data integration, and model aggregation—conceptually similar to bootstrap aggregation (bagging). This bagged integration approach reduces variance and improves predictive robustness compared to relying solely on a single cross-validated integrated LASSO model.</p>
-<p><strong>Flexible cross-validation criteria</strong><br>
-Model tuning supports a broad range of cross-validation criteria. Discrimination- based measures include Harrell’s concordance index (C-index) [@harrell1982evaluating], and partial likelihood–based criteria include the Verweij &amp; Van Houwelingen (V&amp;VH) loss and the cross-validated linear predictor loss. For full details on each criterion, see <strong>Appendix: CV Criteria</strong>.</p>
-<p><strong>Pathwise solution for integration weights</strong><br>
-To select the integration weight <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>η</mi><annotation encoding="application/x-tex">\eta</annotation></semantics></math> that governs the strength of external borrowing, the package provides two complementary tuning strategies: (i) a grid search approach based on a pre-specified sequence of candidate values, and (ii) an adaptive tuning strategy using Bayesian optimization to directly explore the integration weight space, which is particularly efficient when evaluating each candidate is computationally expensive.</p>
+<p><strong>Transfer learning for time-to-event modelling via Bregman divergence.</strong></p>
+<p><code>SurvBregDiv</code> enables principled borrowing of external information when fitting Cox proportional hazards or nested case–control (NCC) models, through a unified Bregman-divergence framework that accommodates population heterogeneity between internal and external cohorts.</p>
+<blockquote>
+<h4 id="using-survbregdiv-with-an-ai-assistant">Using SurvBregDiv with an AI assistant?</h4>
+<p>An AI-optimized reference is published at <strong><a href="https://um-kevinhe.github.io/SurvBregDiv/llms.txt" class="uri">https://um-kevinhe.github.io/SurvBregDiv/llms.txt</a></strong> (following the <a href="https://llmstxt.org/" class="external-link">llms.txt</a> convention). Point your AI at that URL, or paste its contents into the chat, to give the assistant a compact map of the package — decision tree, parameter reference, worked examples, and common pitfalls — without ingesting the full website.</p>
+</blockquote>
+<div class="section level2">
+<h2 id="scope">Scope<a class="anchor" aria-label="anchor" href="#scope"></a>
+</h2>
+<p>Pick a function by the <strong>external data available</strong> and the <strong>internal study design</strong>:</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr>
+<th>External data</th>
+<th>Integration</th>
+<th>Cox PH (full cohort)</th>
+<th>Nested case–control</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Individual-level covariates + outcomes</td>
+<td>Composite likelihood</td>
+<td><code>cox_indi</code></td>
+<td><code>ncc_indi</code></td>
+</tr>
+<tr>
+<td>External coefficients β̃ only</td>
+<td>KL divergence</td>
+<td>
+<code>coxkl</code>, <code>coxkl_ties</code>
+</td>
+<td><code>ncckl</code></td>
+</tr>
+<tr>
+<td>β̃ + information / covariance matrix</td>
+<td>Mahalanobis distance</td>
+<td><code>cox_MDTL</code></td>
+<td><code>ncc_MDTL</code></td>
+</tr>
+</tbody>
+</table>
+<p>Each function has <strong>low-dimensional</strong>, <strong>ridge</strong>, and <strong>elastic-net / LASSO</strong> variants, plus cross-validation, stability selection, bagging, and Bayesian- optimization helpers for tuning the integration weight η.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<blockquote>
-<p><strong>Note:</strong> This package is currently under active development. Please report any issues or unexpected behavior.<br>
-Requires <strong>R ≥ 4.0.0</strong>.</p>
-</blockquote>
-<p>Install from CRAN:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"SurvBregDiv"</span>)</span></code></pre></div>
-<p>Or install the development version from GitHub:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">require</span>(<span class="st">"devtools"</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">require</span>(<span class="st">"remotes"</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"UM-KevinHe/SurvBregDiv"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># CRAN</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"SurvBregDiv"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Development version from GitHub</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"UM-KevinHe/SurvBregDiv"</span><span class="op">)</span></span></code></pre></div>
+<p>Requires R ≥ 4.0.</p>
 </div>
 <div class="section level2">
-<h2 id="detailed-tutorial">Detailed Tutorial<a class="anchor" aria-label="anchor" href="#detailed-tutorial"></a>
+<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p>Full package documentation and parameter explanations: <a href="https://um-kevinhe.github.io/SurvBregDiv/">here</a></p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/SurvBregDiv/">SurvBregDiv</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">train</span>    <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span>
+<span><span class="va">beta_ext</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span></span>
+<span><span class="va">etas</span>     <span class="op">&lt;-</span> <span class="fu"><a href="reference/generate_eta.html">generate_eta</a></span><span class="op">(</span><span class="st">"exponential"</span>, n <span class="op">=</span> <span class="fl">50</span>, max_eta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Fit KL-integrated Cox model over a grid of integration weights</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/coxkl.html">coxkl</a></span><span class="op">(</span></span>
+<span>  z       <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">z</span>,</span>
+<span>  delta   <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">status</span>,</span>
+<span>  time    <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>  stratum <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">stratum</span>,</span>
+<span>  beta    <span class="op">=</span> <span class="va">beta_ext</span>,</span>
+<span>  etas    <span class="op">=</span> <span class="va">etas</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Tune η via 5-fold cross-validation</span></span>
+<span><span class="va">cvfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.coxkl.html">cv.coxkl</a></span><span class="op">(</span></span>
+<span>  z <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">z</span>, delta <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">status</span>, time <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">time</span>,</span>
+<span>  stratum <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">stratum</span>, beta <span class="op">=</span> <span class="va">beta_ext</span>,</span>
+<span>  etas <span class="op">=</span> <span class="va">etas</span>, nfolds <span class="op">=</span> <span class="fl">5</span>, criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/cv.plot.html">cv.plot</a></span><span class="op">(</span><span class="va">cvfit</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
+<h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>If you encounter problems or bugs, please contact us:</p>
 <ul>
-<li><a href="mailto:ybshao@umich.edu" class="email">ybshao@umich.edu</a></li>
-<li><a href="mailto:junyiqiu@umich.edu" class="email">junyiqiu@umich.edu</a></li>
-<li><a href="mailto:kevinhe@umich.edu" class="email">kevinhe@umich.edu</a></li>
+<li>
+<strong>Tutorials and methodology</strong>: <a href="https://um-kevinhe.github.io/SurvBregDiv/" class="uri">https://um-kevinhe.github.io/SurvBregDiv/</a>
+</li>
+<li>
+<strong>Function reference</strong>: <a href="https://um-kevinhe.github.io/SurvBregDiv/reference/" class="uri">https://um-kevinhe.github.io/SurvBregDiv/reference/</a>
+</li>
+<li>
+<strong>Vignettes</strong>: <code>SurvBregDiv</code>, <code>coxkl</code>, <code>coxkl_ties</code>, <code>ncc</code>, <code>CV_Criteria</code>
+</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="getting-help">Getting help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
+</h2>
+<p>The package is under active development; please report issues or unexpected behavior to any of the maintainers:</p>
+<ul>
+<li>Yubo Shao — <a href="mailto:ybshao@umich.edu" class="email">ybshao@umich.edu</a>
+</li>
+<li>Junyi Qiu — <a href="mailto:junyiqiu@umich.edu" class="email">junyiqiu@umich.edu</a>
+</li>
+<li>Kevin He — <a href="mailto:kevinhe@umich.edu" class="email">kevinhe@umich.edu</a>
+</li>
 </ul>
 </div>
 </div>

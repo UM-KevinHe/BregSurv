@@ -111,8 +111,7 @@ on the type of external information available, then select a study
 design (full-cohort Cox model or nested case–control). The package
 supports both low-dimensional estimation and high-dimensional penalized
 regression, with a suite of cross-cutting features applicable across
-methods. ![Plot generated in SurvBregDiv
-vignette](../reference/figures/SurvBregDiv_flowchart.svg)
+methods. ![](../reference/figures/SurvBregDiv_flowchart.svg)
 
 ------------------------------------------------------------------------
 
@@ -404,9 +403,6 @@ can be visualized directly using
 cv.plot(cvfit.coxkl)
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-14-1.png)
-
 - The solid purple curve displays the cross-validated loss across
   different values of $`\eta`$.
 - The green dotted horizontal line marks the internal baseline at
@@ -585,9 +581,6 @@ plot(
 )
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-19-1.png)
-
 For penalized KL-integrated models, the functions
 [`cv.coxkl_ridge()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl_ridge.md)
 and
@@ -641,14 +634,6 @@ criterion) is provided by:
 head(cvfit.coxkl_LASSO$integrated_stat.best_per_eta)
 ```
 
-    ##          eta     lambda     Loss
-    ## 1 0.00000000 0.10193604 2.842157
-    ## 2 0.04976825 0.09973335 2.841094
-    ## 3 0.10444073 0.09754243 2.840066
-    ## 4 0.16450069 0.09537274 2.839077
-    ## 5 0.23047903 0.03052973 2.837524
-    ## 6 0.30295895 0.02783069 2.831473
-
 The helper function
 [`cv.plot()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.plot.md)
 can be used to visualize performance versus $`\eta`$:
@@ -656,9 +641,6 @@ can be used to visualize performance versus $`\eta`$:
 ``` r
 cv.plot(cvfit.coxkl_LASSO)
 ```
-
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-22-1.png)
 
 The resulting plot displays:
 
@@ -714,9 +696,6 @@ focus the visualization on the most stable predictors.
 plot(imp.coxkl, threshold = 0.6, top = 20)
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-24-1.png)
-
 Classical LASSO tuned via cross-validation performs well for prediction,
 but it is often unstable for variable selection: small perturbations of
 the data or changes in cross-val idation splits may lead to different
@@ -766,9 +745,6 @@ rest.
 ``` r
 plot(coxkl.StabSelect, threshold = 0.7)
 ```
-
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-26-1.png)
 
 #### Bagging for High-Dimensional Models
 
@@ -886,9 +862,6 @@ plot(multi.out,
      criteria     = "CIndex")
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-29-1.png)
-
 Each curve traces the performance of one external source across the
 $`\eta`$ grid, from $`\eta = 0`$ to $`\eta = \eta_{\max}`$. The shape of
 each curve provides a natural diagnostic for the quality of the
@@ -970,9 +943,6 @@ plot(
 ) 
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-31-1.png)
-
 The function
 [`cv.cox_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_MDTL.md)
 performs $`K`$-fold cross-validation (default $`K = 5`$) to select the
@@ -1006,9 +976,6 @@ can be visualized directly using
 ``` r
 cv.plot(cvfit.cox_MDTL)
 ```
-
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-33-1.png)
 
 #### High-Dimensional Integration
 
@@ -1112,9 +1079,6 @@ plot(
   criteria     = "loss"
 )
 ```
-
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-36-1.png)
 
 For penalized KL-integrated models, the functions
 [`cv.cox_MDTL_ridge()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.cox_MDTL_ridge.md)
@@ -1258,9 +1222,6 @@ plot(
 )
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-40-1.png)
-
 Cross-validation for tuning $`\eta`$ can be performed via
 [`cv.ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl.md),
 which performs K-fold cross-validation to tune the integration parameter
@@ -1299,9 +1260,6 @@ The cross-validated performance curve can be visualized using
 ``` r
 cv.plot(cv.ncckl.fit_breslow)
 ```
-
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-42-1.png)
 
 The plot displays a purple curve tracing the cross-validated performance
 across the $`\eta`$ grid, a green dotted horizontal line representing
@@ -1358,9 +1316,6 @@ plot(
 )
 ```
 
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-45-1.png)
-
 Cross-validation for tuning $`\eta`$ can be performed via
 [`cv.ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl_enet.md):
 
@@ -1384,9 +1339,6 @@ The cross-validated performance curve can be visualized using
 ``` r
 cv.plot(cv.ncckl_enet_fit)
 ```
-
-![Plot generated in SurvBregDiv
-vignette](SurvBregDiv_files/figure-html/unnamed-chunk-47-1.png)
 
 The plot displays a purple curve tracing the cross-validated performance
 across the $`\eta`$ grid, a green dotted horizontal line representing

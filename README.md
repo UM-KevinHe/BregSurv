@@ -1,93 +1,87 @@
-# SurvBregDiv: Transfer Learning for Time-to-Event Modelling via Bregman Divergence
+# SurvBregDiv
 
-> #### Using SurvBregDiv with an AI assistant (ChatGPT, Claude, etc.)?
+**Transfer learning for time-to-event modelling via Bregman divergence.**
+
+`SurvBregDiv` enables principled borrowing of external information when fitting
+Cox proportional hazards or nested case–control (NCC) models, through a unified
+Bregman-divergence framework that accommodates population heterogeneity between
+internal and external cohorts.
+
+> #### Using SurvBregDiv with an AI assistant?
 >
-> We provide an AI-optimized reference at
+> An AI-optimized reference is published at
 > **<https://um-kevinhe.github.io/SurvBregDiv/llms.txt>**
 > (following the [llms.txt](https://llmstxt.org/) convention).
->
-> Point your AI assistant at that URL — or paste the file contents into the
-> chat — and it will have a compact map of the package: decision tree for
-> choosing the right function, parameter reference, worked examples, and a
-> list of common pitfalls. No need to upload the whole documentation site.
+> Point your AI at that URL, or paste its contents into the chat, to give the
+> assistant a compact map of the package — decision tree, parameter reference,
+> worked examples, and common pitfalls — without ingesting the full website.
 
-The **SurvBregDiv** package implements a Bregman-divergence-based transfer learning
-framework for survival analysis, enabling principled borrowing of external
-information while explicitly accommodating population heterogeneity between the
-internal study and external sources.
+## Scope
 
-The package supports two primary study designs: full-cohort Cox proportional hazards models 
-and nested case–control (NCC) designs based on conditional logistic regression on sampled risk sets.
+Pick a function by the **external data available** and the **internal study design**:
 
-### Key Features
+| External data | Integration | Cox PH (full cohort) | Nested case–control |
+|---|---|---|---|
+| Individual-level covariates + outcomes | Composite likelihood | `cox_indi` | `ncc_indi` |
+| External coefficients β̃ only | KL divergence | `coxkl`, `coxkl_ties` | `ncckl` |
+| β̃ + information / covariance matrix | Mahalanobis distance | `cox_MDTL` | `ncc_MDTL` |
 
-**Three external data integration modes**  
-Depending on the type of external data available, the package supports:
-
-- **Individual-level data**: when full covariate and outcome data from an external
-  cohort are accessible, integration is performed via a weighted pseudo-likelihood
-  framework.
-- **Coefficient-level summaries**: when only external regression coefficients
-  $\widetilde{\boldsymbol{\beta}}$ are available, integration proceeds via
-  Kullback–Leibler divergence penalization.
-- **Coefficient + curvature summaries**: when an additional positive semidefinite
-  matrix $\mathbf{A}$ (e.g., information matrix or variance–covariance matrix)
-  is provided, integration proceeds via Mahalanobis distance penalization.
-
-**Robustness to clustered and tied event times data**  
-The package accounts for two structural features common in real-world survival data. Between-cluster heterogeneity arising from multi-site enrollment, matched designs, or hierarchical sampling is accommodated via stratified partial likelihoods, which allow the baseline hazard to vary freely across strata rather than imposing a common baseline. Tied event times frequently occur when follow-up is recorded on a coarse time scale such as daily records, scheduled clinical visits, or discretized follow-up intervals, and are handled through tie-correction methods. 
-
-**High-dimensional variable selection**
-Penalized estimation with ridge, lasso, and elastic net penalties is supported for variable selection and shrinkage, with tuning parameters selected via cross-validation as default. However, cross-validation optimizes predictive performance rather than variable selection stability, and the selected predictor set can vary considerably across repeated runs or minor perturbations of the data. For settings where a reproducible and trustworthy shortlist of predictors is needed, stability selection is also available, which aggregates variable inclusion frequencies across subsamples to identify predictors that are consistently selected regardless of which subjects happen to be in the training set.
-
-**Ensemble integration via bagged estimation**  
-Besides cross-validated LASSO and stability selection, the package supports an
-ensemble strategy that combines bootstrapping, external-data integration, and
-model aggregation—conceptually similar to bootstrap aggregation (bagging).
-This bagged integration approach reduces variance and improves predictive
-robustness compared to relying solely on a single cross-validated integrated
-LASSO model.
-
-**Flexible cross-validation criteria**  
-Model tuning supports a broad range of cross-validation criteria. Discrimination-
-based measures include Harrell's concordance index (C-index)
-[@harrell1982evaluating], and partial likelihood–based criteria include the 
-Verweij & Van Houwelingen (V&VH) loss and the cross-validated linear predictor 
-loss. For full details on each criterion, see **Appendix: CV Criteria**.
-
-**Pathwise solution for integration weights**  
-To select the integration weight $\eta$ that governs the strength of external
-borrowing, the package provides two complementary tuning strategies: (i) a grid
-search approach based on a pre-specified sequence of candidate values, and (ii)
-an adaptive tuning strategy using Bayesian optimization to directly explore the
-integration weight space, which is particularly efficient when evaluating each
-candidate is computationally expensive.
+Each function has **low-dimensional**, **ridge**, and **elastic-net / LASSO**
+variants, plus cross-validation, stability selection, bagging, and Bayesian-
+optimization helpers for tuning the integration weight η.
 
 ## Installation
 
-> **Note:** This package is currently under active development. Please report any issues or unexpected behavior.  
-> Requires **R ≥ 4.0.0**.
+```r
+# CRAN
+install.packages("SurvBregDiv")
 
-Install from CRAN:
+# Development version from GitHub
+remotes::install_github("UM-KevinHe/SurvBregDiv")
+```
 
-    install.packages("SurvBregDiv")
+Requires R ≥ 4.0.
 
-Or install the development version from GitHub:
+## Quick start
 
-    require("devtools")
-    require("remotes")
-    remotes::install_github("UM-KevinHe/SurvBregDiv")
+```r
+library(SurvBregDiv)
+data(ExampleData_lowdim)
 
-## Detailed Tutorial
+train    <- ExampleData_lowdim$train
+beta_ext <- ExampleData_lowdim$beta_external_fair
+etas     <- generate_eta("exponential", n = 50, max_eta = 10)
 
-Full package documentation and parameter explanations: [here](https://um-kevinhe.github.io/SurvBregDiv/)
+# Fit KL-integrated Cox model over a grid of integration weights
+fit <- coxkl(
+  z       = train$z,
+  delta   = train$status,
+  time    = train$time,
+  stratum = train$stratum,
+  beta    = beta_ext,
+  etas    = etas
+)
 
-## Getting Help
+# Tune η via 5-fold cross-validation
+cvfit <- cv.coxkl(
+  z = train$z, delta = train$status, time = train$time,
+  stratum = train$stratum, beta = beta_ext,
+  etas = etas, nfolds = 5, criteria = "V&VH"
+)
+cv.plot(cvfit)
+```
 
-If you encounter problems or bugs, please contact us:
+## Documentation
 
-- ybshao@umich.edu
-- junyiqiu@umich.edu
-- kevinhe@umich.edu
+- **Tutorials and methodology**: <https://um-kevinhe.github.io/SurvBregDiv/>
+- **Function reference**: <https://um-kevinhe.github.io/SurvBregDiv/reference/>
+- **Vignettes**: `SurvBregDiv`, `coxkl`, `coxkl_ties`, `ncc`, `CV_Criteria`
 
+## Getting help
 
+The package is under active development; please report issues or unexpected
+behavior to any of the maintainers:
+
+- Yubo Shao — <ybshao@umich.edu>
+- Junyi Qiu — <junyiqiu@umich.edu>
+- Kevin He — <kevinhe@umich.edu>
