@@ -1,5 +1,16 @@
 # SurvBregDiv: Transfer Learning for Time-to-Event Modelling via Bregman Divergence
 
+> #### Using SurvBregDiv with an AI assistant (ChatGPT, Claude, etc.)?
+>
+> We provide an AI-optimized reference at
+> **<https://um-kevinhe.github.io/SurvBregDiv/llms.txt>**
+> (following the [llms.txt](https://llmstxt.org/) convention).
+>
+> Point your AI assistant at that URL — or paste the file contents into the
+> chat — and it will have a compact map of the package: decision tree for
+> choosing the right function, parameter reference, worked examples, and a
+> list of common pitfalls. No need to upload the whole documentation site.
+
 The **SurvBregDiv** package implements a Bregman-divergence-based transfer learning
 framework for survival analysis, enabling principled borrowing of external
 information while explicitly accommodating population heterogeneity between the

@@ -1,0 +1,328 @@
+# SurvBregDiv
+
+> R package for **transfer learning in survival analysis** via Bregman-divergence-based integration of external information. It lets an internal study borrow strength from an external cohort or study when fitting Cox proportional hazards models or nested case–control (NCC) models, in both low-dimensional (coefficient estimation) and high-dimensional (variable selection) settings.
+
+- **Homepage**: https://um-kevinhe.github.io/SurvBregDiv/
+- **Install (CRAN)**: `install.packages("SurvBregDiv")`
+- **Install (dev)**: `remotes::install_github("UM-KevinHe/SurvBregDiv")`
+- **Language**: R (user API) + C++ via RcppArmadillo (internal optimizer)
+- **Maintainer**: Yubo Shao (ybshao@umich.edu)
+
+---
+
+## How to choose the right function (decision tree)
+
+Three questions, asked in order:
+
+### Q1. What external information does the user have?
+
+This is the **primary** axis of the package. Pick the integration method first:
+
+| User's external information | Integration method | Function family |
+|---|---|---|
+| **Individual-level data** (external subjects' covariates + survival outcomes) | **Composite likelihood** — stack internal + external data, weight external by `eta` | `cox_indi`, `ncc_indi` |
+| **Summary-level: external coefficients only** (just `beta_ext`, or a risk score `RS = Z %*% beta_ext`) | **KL divergence** penalty | `coxkl`, `coxkl_ties`, `ncckl` |
+| **Summary-level: external coefficients + second-order info** (`beta_ext` **and** a p×p information / covariance matrix `A`) | **Mahalanobis distance** penalty | `cox_MDTL`, `ncc_MDTL` |
+
+Notes that avoid common AI mistakes:
+- **The three modes are not mutually exclusive.** If the user has individual-level external data but wants to use KL / Mahalanobis, they can fit an external model first to get `beta_ext` (and optionally `A`) and then switch modes.
+- **Mahalanobis with `vcov = NULL` ≠ KL.** When no `A` is supplied, Mahalanobis defaults to the identity matrix (i.e., squared Euclidean distance / ridge-style shrinkage toward `beta_ext`). It is still *not* the same as KL divergence.
+- **`coxkl` accepts either `beta` OR `RS`, not both required.** If `beta` is supplied, the function internally computes `RS = Z %*% beta`.
+
+### Q2. What is the internal study design?
+
+This selects between two parallel function families that share the same external-integration modes:
+
+| Internal design | Function prefix | Notes |
+|---|---|---|
+| **Full-cohort Cox PH** (every subject has a time-to-event outcome) | `cox_*` | All three external modes available |
+| **Nested case–control (NCC) / matched case–control** | `ncc_*` | Conditional logistic regression on matched sets. Also a special case: standard matched case–control studies. |
+
+Non-obvious implementation detail (relevant if an AI tries to read the source): **NCC functions internally map the problem to a stratified Cox model with `time = 1, delta = y`** and call the corresponding Cox engine. This is an implementation detail; the NCC API accepts `y` (case/control) and `stratum` (matched-set ID), not `time` and `delta`.
+
+### Q3. Low-dimensional (coefficient estimation) or high-dimensional (variable selection)?
+
+| Goal | Suffix | Penalty |
+|---|---|---|
+| Estimate coefficients, `p` much smaller than `n` | (no suffix) | none |
+| Shrink coefficients, dense solution | `_ridge` | ridge (L2) |
+| Variable selection, sparse solution | `_enet` with `alpha = 1` → LASSO (L1); `alpha ∈ (0,1)` → elastic net | L1 + L2 mix |
+
+---
+
+## Full function map
+
+### Cox proportional hazards (full cohort)
+
+| External mode | Low-dim fit | Ridge | Elastic net / LASSO | CV tuning |
+|---|---|---|---|---|
+| Individual-level | `cox_indi` | — | `cox_indi_enet` | `cv.cox_indi`, `cv.cox_indi_enet` |
+| KL divergence | `coxkl` | `coxkl_ridge` | `coxkl_enet` | `cv.coxkl`, `cv.coxkl_ridge`, `cv.coxkl_enet` |
+| KL divergence, tied event times | `coxkl_ties` | — | — | `cv.coxkl_ties` |
+| Mahalanobis | `cox_MDTL` | `cox_MDTL_ridge` | `cox_MDTL_enet` | `cv.cox_MDTL`, `cv.cox_MDTL_ridge`, `cv.cox_MDTL_enet` |
+
+### Nested case–control
+
+| External mode | Low-dim fit | Ridge | Elastic net / LASSO | CV tuning |
+|---|---|---|---|---|
+| Individual-level | `ncc_indi` | — | `ncc_indi_enet` | `cv.ncc_indi`, `cv.ncc_indi_enet` |
+| KL divergence | `ncckl` | — | `ncckl_enet` | `cv.ncckl`, `cv.ncckl_enet` |
+| Mahalanobis | `ncc_MDTL` | — | `ncc_MDTL_enet` | `cv.ncc_MDTL`, `cv.ncc_MDTL_enet` |
+
+NCC does **not** need tied-event-time handling (`coxkl_ties`-style) because in a standard NCC each matched set has exactly one event by construction. `ncckl` takes a `method = c("breslow", "exact")` argument for 1:m vs n:m matching semantics, but this is a likelihood form, not tie handling.
+
+### Tuning, aggregation, and diagnostics (apply across families)
+
+- `generate_eta(method = "exponential", n = 50, max_eta = ...)` — build an `eta` grid
+- `bopt.coxkl(...)` — **Bayesian optimization** of `eta` for `coxkl` (faster than grid search when each evaluation is expensive)
+- `cv.plot(cvfit)` — plot cross-validated performance curve vs `eta`
+- `variable_importance(...)` — bootstrap selection frequency for high-dim KL/elastic-net fits
+- `coxkl_enet.StabSelect(...)` / `cox_MDTL_enet.StabSelect(...)` — **stability selection** across subsamples (use when variable selection needs to be reproducible, not just predictive)
+- `coxkl_enet_bagging(...)` / `cox_MDTL_enet_bagging(...)` — **bagged** integrated elastic net for variance reduction
+- `coxkl_enet.multi(...)` — integrate **multiple external sources** (list of `beta_ext`) in one fit
+- `test_eval`, `test_eval_ncc` — evaluate a fitted model on held-out test data
+- `predict_surv_prob`, `get_baseline_hazard` — standard post-fit utilities
+
+### S3 methods
+
+Most fit objects have `plot()` methods; CV objects have companion `cv.plot()` calls. Stability selection objects plot selection-frequency paths. Variable importance objects plot top-k variable bar charts.
+
+---
+
+## Key parameters, uniform across functions
+
+| Argument | Meaning |
+|---|---|
+| `z` | Covariate matrix for **internal** data (n × p) |
+| `delta` | Event indicator for internal data (1 = event, 0 = censored). **NCC functions use `y` instead.** |
+| `time` | Observed times for internal data. **Not used in NCC functions.** |
+| `stratum` | Stratum / matched-set ID. For Cox: optional (default = single stratum). For NCC: required — defines the matched sets. |
+| `beta` | External coefficient vector (length p). Drives KL, Mahalanobis, and `*_indi` (via the risk-score path). |
+| `RS` | Pre-computed external risk score `= Z %*% beta_ext`. Alternative to `beta` in `coxkl` / `coxkl_ties`. |
+| `vcov` | External p×p curvature matrix (typically the inverse covariance / observed information) for Mahalanobis mode. `NULL` → identity. |
+| `etas` | Vector of integration weights (grid). `eta = 0` recovers internal-only fit. |
+| `eta` | Single integration weight (for penalized variants where `eta` is fixed while `lambda` is tuned). |
+| `lambda` | Regularization strength for `_ridge` / `_enet`. Auto-generated path if omitted. |
+| `alpha` | Elastic-net mix for `_enet`: `0` = ridge, `1` = LASSO, `(0,1)` = elastic net. |
+| `nfolds` | CV folds (default 5). |
+| `criteria` / `cv.criteria` | See **CV criteria** section below. |
+
+### `eta` intuition
+
+- `eta = 0` → pure internal Cox / NCC, no borrowing.
+- Moderate `eta` → strongest borrowing in the relevant region.
+- Very large `eta` → estimates approach the external solution.
+- There is **no universal "correct" range**. Depends on data and compatibility between internal and external populations. Start with `generate_eta(method = "exponential", n = 50, max_eta = 10)` and inspect the CV curve; extend `max_eta` if the optimum sits near the upper boundary.
+
+### CV criteria
+
+Not all criteria apply to all functions.
+
+- **Full-cohort Cox CV** (`cv.coxkl*`, `cv.cox_MDTL*`, `cv.cox_indi*`): `"V&VH"` (Verweij & Van Houwelingen, default), `"LinPred"` (linear-predictor loss), `"CIndex_pooled"`, `"CIndex_foldaverage"`.
+- **NCC CV** (`cv.ncckl*`, `cv.ncc_indi*`, `cv.ncc_MDTL*`): `"loss"` (predicted deviance), `"AUC"`, `"CIndex"`, `"Brier"`.
+- For high-dim CV, the argument is named `cv.criteria` (not `criteria`) in some functions — check the signature.
+
+---
+
+## Worked examples (copy-ready)
+
+### Example 1 — Low-dim Cox + external coefficients (KL divergence)
+
+```r
+library(SurvBregDiv)
+data(ExampleData_lowdim)
+
+train <- ExampleData_lowdim$train
+beta_ext <- ExampleData_lowdim$beta_external_fair
+
+eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 10)
+
+# Fit over eta grid
+fit <- coxkl(
+  z       = train$z,
+  delta   = train$status,
+  time    = train$time,
+  stratum = train$stratum,
+  beta    = beta_ext,
+  etas    = eta_list
+)
+
+# Tune eta via 5-fold CV with V&VH loss
+cvfit <- cv.coxkl(
+  z = train$z, delta = train$status, time = train$time,
+  stratum = train$stratum, beta = beta_ext,
+  etas = eta_list, nfolds = 5, criteria = "V&VH", seed = 1
+)
+cv.plot(cvfit)
+```
+
+### Example 2 — Low-dim Cox + external coefficients + curvature (Mahalanobis)
+
+```r
+# Minimum input: beta; optionally supply A = vcov (precision / information matrix).
+# vcov = NULL is valid and reduces the penalty to squared Euclidean.
+fit <- cox_MDTL(
+  z = train$z, delta = train$status, time = train$time,
+  stratum = train$stratum,
+  beta = beta_ext, vcov = NULL,
+  etas = eta_list
+)
+```
+
+### Example 3 — Individual-level external data (composite likelihood)
+
+```r
+data(ExampleData_indi)
+
+fit <- cox_indi(
+  z_int = ExampleData_indi$internal$z,
+  delta_int = ExampleData_indi$internal$status,
+  time_int = ExampleData_indi$internal$time,
+  stratum_int = ExampleData_indi$internal$stratum,
+  z_ext = ExampleData_indi$external$z,
+  delta_ext = ExampleData_indi$external$status,
+  time_ext = ExampleData_indi$external$time,
+  stratum_ext = ExampleData_indi$external$stratum,
+  etas = generate_eta("exponential", n = 50, max_eta = 100)
+)
+```
+
+### Example 4 — High-dim Cox + KL + LASSO, with CV
+
+```r
+data(ExampleData_highdim)
+tr <- ExampleData_highdim$train
+
+# Fixed eta, automatic lambda path
+fit_lasso <- coxkl_enet(
+  z = tr$z, delta = tr$status, time = tr$time, stratum = tr$stratum,
+  beta = ExampleData_highdim$beta_external,
+  eta = 1, alpha = 1    # alpha=1 ⇒ LASSO
+)
+
+# Tune eta by CV, internal lambda scan per eta
+cvfit <- cv.coxkl_enet(
+  z = tr$z, delta = tr$status, time = tr$time, stratum = tr$stratum,
+  beta = ExampleData_highdim$beta_external,
+  etas = generate_eta("exponential", n = 50, max_eta = 50),
+  alpha = 1, nfolds = 5, cv.criteria = "V&VH", seed = 1
+)
+cv.plot(cvfit)
+```
+
+### Example 5 — NCC (matched case–control) + KL
+
+```r
+data(ExampleData_cc)
+tr <- ExampleData_cc$train
+
+fit <- ncckl(
+  y       = tr$y,              # 0 = control, 1 = case
+  z       = tr$z,
+  stratum = tr$stratum,        # matched-set ID; REQUIRED
+  etas    = generate_eta("exponential", n = 50, max_eta = 5),
+  beta    = ExampleData_cc$beta_external,
+  method  = "breslow"          # or "exact"; identical for 1:M matching
+)
+
+cvfit <- cv.ncckl(
+  y = tr$y, z = tr$z, stratum = tr$stratum,
+  beta = ExampleData_cc$beta_external,
+  etas = generate_eta("exponential", n = 50, max_eta = 5),
+  method = "exact", nfolds = 5, criteria = "loss"
+)
+```
+
+### Example 6 — Stability selection for reproducible variable selection
+
+```r
+# Use when you need a stable shortlist of important variables, not just prediction.
+stab <- coxkl_enet.StabSelect(
+  z = tr_hd$z, delta = tr_hd$status, time = tr_hd$time, stratum = tr_hd$stratum,
+  beta = beta_ext_hd, etas = eta_grid,
+  cv.criteria = "CIndex_pooled", B = 100, ncores = 10
+)
+plot(stab, threshold = 0.7)
+```
+
+### Example 7 — Bayesian optimization for `eta`
+
+```r
+opt <- bopt.coxkl(
+  z = train$z, delta = train$status, time = train$time, stratum = train$stratum,
+  beta = beta_ext,
+  criteria = "V&VH",
+  bounds_list = list(eta = c(0, 10)),
+  n_iter = 20, seed = 1
+)
+opt$best_eta
+```
+
+---
+
+## Returned-object conventions
+
+Fit objects (e.g., `coxkl`, `cox_MDTL`, `ncckl`, and their `_ridge` / `_enet` variants) typically contain:
+
+- `$eta` — sorted eta values used
+- `$beta` — estimated coefficient **matrix** (p × n_eta, or p × n_lambda for penalized single-eta fits)
+- `$linear.predictors` — n × (n_eta or n_lambda)
+- `$likelihood` — log-partial-likelihood path
+- `$data` — the (possibly reordered) input data used for fitting
+- For `_enet` / `_ridge`: also `$lambda` (decreasing sequence)
+
+CV objects contain fold-level performance tables plus an optimum summary (e.g., `$integrated_stat.best_per_eta` for `_enet` CVs).
+
+Stability-selection objects return selection-frequency matrices along the penalty path.
+
+Bagging objects return `$best_beta` (the aggregated coefficient vector, usable directly for prediction) and `$all_betas` (the bootstrap ensemble).
+
+---
+
+## Things an AI is likely to get wrong (read these)
+
+1. **Do not use `coxkl` for matched case–control data.** Use `ncckl`. The sample-per-stratum structure is different.
+2. **`ncckl` requires `stratum`.** Without it, the function assumes everyone is in one matched set — this is almost certainly not what the user wants.
+3. **Do not pass `time` and `delta` to NCC functions.** NCC API uses `y` (binary case/control) and `stratum` (matched-set ID). The `time = 1, delta = y` mapping happens inside.
+4. **`coxkl_ties` is only for full-cohort Cox with tied event times.** Do not suggest it for NCC; NCC does not need ties handling.
+5. **`eta` and `lambda` are different things.** `eta` controls **external borrowing**. `lambda` controls **regularization** (only present in `_ridge` / `_enet`). Both can be tuned, but they play different roles.
+6. **`alpha = 0` in `_enet` is ridge**, but the package provides a dedicated `_ridge` function that is preferred for pure-ridge use cases.
+7. **For Mahalanobis without a curvature matrix**, pass `vcov = NULL` (not `vcov = diag(p)` — both work, but `NULL` is canonical).
+8. **`cv.coxkl_enet` uses argument name `cv.criteria`, not `criteria`.** Several functions have this inconsistency — always check the signature.
+9. **`generate_eta` does not auto-pick a sensible `max_eta`.** The user must choose based on the problem. If the CV optimum sits at the boundary, extend the grid and re-run.
+10. **Stratified analysis is the default.** If `stratum` is omitted, the package silently assigns everyone to one stratum and fits a non-stratified model. This is fine for many problems but should be made explicit in output to users.
+
+---
+
+## Built-in example datasets
+
+- `ExampleData_lowdim` — low-dim Cox: train (n=100), test (n=2000), 6 predictors, plus `beta_external_fair`
+- `ExampleData_highdim` — high-dim Cox: train (n=200), test (n=2000), 50 predictors (6 signal + 44 AR(1) noise), plus `beta_external` and multi-source `beta_external.multi*`
+- `ExampleData_indi` — paired internal/external individual-level Cox data
+- `ExampleData_cc` — NCC: 200 matched sets (1:4) in train, 500 in test, 6 predictors, `beta_external`
+- `ExampleData_cc_highdim` — NCC high-dim: 50 matched sets (1:5) in train, 500 in test, 20 predictors, `beta_external`
+- Simulation helpers: `sim.cox.highdim`, `sim.binary`, `sim_integration`, `sim.matched_cc`
+
+---
+
+## Methodology references
+
+The integrated objective functions have closed-form interpretations as **weighted pseudo-likelihoods**:
+
+- **KL (Cox)**: `Q_eta(beta) = -loglik_internal(beta) + eta * D_KL(P_ext || P_int)` reduces to a weighted internal log-likelihood with a pseudo-event weight `(delta + eta * delta_tilde) / (1 + eta)` per subject, where `delta_tilde` is an externally-induced weight derived from `beta_ext`.
+- **KL (NCC)**: analogous construction on matched sets; the pseudo-event weight is `(xi + eta * p_tilde) / (1 + eta)`.
+- **Mahalanobis**: `Q_eta(beta) = -loglik_internal(beta) + (eta/2) (beta - beta_ext)' Q (beta - beta_ext)`. With `Q = vcov` (or identity if `NULL`).
+- **Composite likelihood (individual-level)**: `loglik_int(beta) + eta * loglik_ext(beta)` — equivalent to stacking cohorts with observation weights `1` (internal) and `eta` (external), with strata kept separate so risk sets do not mix.
+
+Full derivations are in the package vignettes (`vignette("coxkl")`, `vignette("ncc")`, `vignette("CV_Criteria")`, `vignette("SurvBregDiv")`).
+
+---
+
+## Documentation pointers (for deeper reading by the AI)
+
+- Main vignette: https://um-kevinhe.github.io/SurvBregDiv/articles/SurvBregDiv.html
+- Cox KL methodology: https://um-kevinhe.github.io/SurvBregDiv/articles/coxkl.html
+- Cox KL with tied event times: https://um-kevinhe.github.io/SurvBregDiv/articles/coxkl_ties.html
+- NCC methodology: https://um-kevinhe.github.io/SurvBregDiv/articles/ncc.html
+- CV criteria reference: https://um-kevinhe.github.io/SurvBregDiv/articles/CV_Criteria.html
+- Function reference (all exported functions): https://um-kevinhe.github.io/SurvBregDiv/reference/index.html
