@@ -74,48 +74,6 @@
 <p>An AI-optimized reference is published at <strong><a href="https://um-kevinhe.github.io/SurvBregDiv/llms.txt" class="uri">https://um-kevinhe.github.io/SurvBregDiv/llms.txt</a></strong> (following the <a href="https://llmstxt.org/" class="external-link">llms.txt</a> convention). Point your AI at that URL, or paste its contents into the chat, to give the assistant a compact map of the package — decision tree, parameter reference, worked examples, and common pitfalls — without ingesting the full website.</p>
 </blockquote>
 <div class="section level2">
-<h2 id="scope">Scope<a class="anchor" aria-label="anchor" href="#scope"></a>
-</h2>
-<p>Pick a function by the <strong>external data available</strong> and the <strong>internal study design</strong>:</p>
-<table class="table">
-<colgroup>
-<col width="25%">
-<col width="25%">
-<col width="25%">
-<col width="25%">
-</colgroup>
-<thead><tr>
-<th>External data</th>
-<th>Integration</th>
-<th>Cox PH (full cohort)</th>
-<th>Nested case–control</th>
-</tr></thead>
-<tbody>
-<tr>
-<td>Individual-level covariates + outcomes</td>
-<td>Composite likelihood</td>
-<td><code>cox_indi</code></td>
-<td><code>ncc_indi</code></td>
-</tr>
-<tr>
-<td>External coefficients β̃ only</td>
-<td>KL divergence</td>
-<td>
-<code>coxkl</code>, <code>coxkl_ties</code>
-</td>
-<td><code>ncckl</code></td>
-</tr>
-<tr>
-<td>β̃ + information / covariance matrix</td>
-<td>Mahalanobis distance</td>
-<td><code>cox_MDTL</code></td>
-<td><code>ncc_MDTL</code></td>
-</tr>
-</tbody>
-</table>
-<p>Each function has <strong>low-dimensional</strong>, <strong>ridge</strong>, and <strong>elastic-net / LASSO</strong> variants, plus cross-validation, stability selection, bagging, and Bayesian- optimization helpers for tuning the integration weight η.</p>
-</div>
-<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -127,35 +85,6 @@
 <p>Requires R ≥ 4.0.</p>
 </div>
 <div class="section level2">
-<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
-</h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/SurvBregDiv/">SurvBregDiv</a></span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">train</span>    <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">beta_ext</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span></span>
-<span><span class="va">etas</span>     <span class="op">&lt;-</span> <span class="fu"><a href="reference/generate_eta.html">generate_eta</a></span><span class="op">(</span><span class="st">"exponential"</span>, n <span class="op">=</span> <span class="fl">50</span>, max_eta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Fit KL-integrated Cox model over a grid of integration weights</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/coxkl.html">coxkl</a></span><span class="op">(</span></span>
-<span>  z       <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">z</span>,</span>
-<span>  delta   <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">status</span>,</span>
-<span>  time    <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>  stratum <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">stratum</span>,</span>
-<span>  beta    <span class="op">=</span> <span class="va">beta_ext</span>,</span>
-<span>  etas    <span class="op">=</span> <span class="va">etas</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Tune η via 5-fold cross-validation</span></span>
-<span><span class="va">cvfit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.coxkl.html">cv.coxkl</a></span><span class="op">(</span></span>
-<span>  z <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">z</span>, delta <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">status</span>, time <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">time</span>,</span>
-<span>  stratum <span class="op">=</span> <span class="va">train</span><span class="op">$</span><span class="va">stratum</span>, beta <span class="op">=</span> <span class="va">beta_ext</span>,</span>
-<span>  etas <span class="op">=</span> <span class="va">etas</span>, nfolds <span class="op">=</span> <span class="fl">5</span>, criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/cv.plot.html">cv.plot</a></span><span class="op">(</span><span class="va">cvfit</span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
 <ul>
@@ -164,9 +93,6 @@
 </li>
 <li>
 <strong>Function reference</strong>: <a href="https://um-kevinhe.github.io/SurvBregDiv/reference/" class="uri">https://um-kevinhe.github.io/SurvBregDiv/reference/</a>
-</li>
-<li>
-<strong>Vignettes</strong>: <code>SurvBregDiv</code>, <code>coxkl</code>, <code>coxkl_ties</code>, <code>ncc</code>, <code>CV_Criteria</code>
 </li>
 </ul>
 </div>
