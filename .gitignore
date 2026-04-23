@@ -6,6 +6,9 @@ docs/CLAUDE.*
 .cursorrules
 .github/copilot-instructions.md
 
+# MCP server prototype — kept local only for now (Phase 4, not yet publishable)
+mcp/
+
 .Rproj.user
 .Rhistory
 .RData
