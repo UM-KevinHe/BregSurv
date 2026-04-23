@@ -22,7 +22,7 @@
 #' @param tol Convergence tolerance for the optimizer used inside `coxkl_ties`. Default \code{1e-4}.
 #' @param Mstop Maximum number of Newton iterations used inside `coxkl_ties`. Default \code{100}.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
-#' @param criteria Character string specifying the performance criterion.
+#' @param cv.criteria Character string specifying the performance criterion.
 #'   Choices are `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
 #'   Default `"CIndex_pooled"`.
 #' @param c_index_stratum Optional stratum vector. Used for C-index calculation on test sets.
@@ -56,7 +56,7 @@
 #'     etas = eta_list,
 #'     ties = "breslow",
 #'     nfolds = 5,
-#'     criteria = "V&VH",
+#'     cv.criteria = "V&VH",
 #'     seed = 42
 #' )
 #' }
@@ -67,13 +67,13 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
                           ties = c("breslow","exact"),
                           tol = 1.0e-4, Mstop = 100,
                           nfolds = 5,
-                          criteria = c("CIndex_pooled", "V&VH", "LinPred", "CIndex_foldaverage"),
+                          cv.criteria = c("CIndex_pooled", "V&VH", "LinPred", "CIndex_foldaverage"),
                           c_index_stratum = NULL,
                           message = FALSE,
                           seed = NULL,
                           comb_max = 1e7, ...) {
   
-  criteria <- match.arg(criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
   ties <- match.arg(tolower(ties), c("exact","breslow"))
   
   ## --- Internal wrapper function to handle comb_max argument ---
@@ -141,9 +141,9 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   
   ## Storage for internal CV results
   result_mat <- matrix(NA_real_, nrow = nfolds, ncol = n_eta)
-  if (criteria == "LinPred") {
+  if (cv.criteria == "LinPred") {
     cv_all_linpred <- matrix(NA, nrow = n, ncol = n_eta)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2))
   }
   
@@ -219,7 +219,7 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
       LP_test <- as.numeric(z_test %*% beta_hat)
       
       # --- Criteria Evaluation ---
-      if (criteria == "V&VH") {
+      if (cv.criteria == "V&VH") {
         LP_train <- as.numeric(z_train %*% beta_hat)
         LP_internal <- as.numeric(z %*% beta_hat)
         
@@ -231,11 +231,11 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
           pl_cal_wrapper(lp = LP_train, delta = delta_train, time = time_train, 
                          n_each_stratum = n.each_stratum_train, ties = ties, comb_max = comb_max)
         
-      } else if (criteria == "LinPred") {
+      } else if (cv.criteria == "LinPred") {
         cv_all_linpred[test_idx, i] <- LP_test
         
       } else {
-        # C-Index criteria
+        # C-Index cv.criteria
         if (is.null(c_index_stratum)) {
           stratum_test <- stratum[test_idx]
         } else {
@@ -244,11 +244,11 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
           stratum_test <- stratum_test_orig[test_idx]
         }
         
-        if (criteria == "CIndex_pooled") {
+        if (cv.criteria == "CIndex_pooled") {
           cstat <- c_stat_stratcox(time_test, LP_test, stratum_test, delta_test)
           cv_pooled_cindex_array[f, i, ] <- c(cstat$numer, cstat$denom)
           
-        } else if (criteria == "CIndex_foldaverage") {
+        } else if (cv.criteria == "CIndex_foldaverage") {
           cstat <- c_stat_stratcox(time_test, LP_test, stratum_test, delta_test)$c_statistic
           result_mat[f, i] <- cstat
         }
@@ -259,17 +259,17 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   } # End fold loop
   
   ## Combine CV results across folds (internal model)
-  if (criteria == "V&VH") {
+  if (cv.criteria == "V&VH") {
     result_vec <- colSums(result_mat, na.rm = TRUE)
-  } else if (criteria == "LinPred") {
+  } else if (cv.criteria == "LinPred") {
     # Use pl_cal_wrapper for LinPred aggregation
     result_vec <- apply(cv_all_linpred, 2,
                         function(lp) pl_cal_wrapper(lp = lp, delta = delta, time = time, 
                                                     n_each_stratum = n.each_stratum_full, 
                                                     ties = ties, comb_max = comb_max))
-  } else if (criteria == "CIndex_foldaverage") {
+  } else if (cv.criteria == "CIndex_foldaverage") {
     result_vec <- colMeans(result_mat, na.rm = TRUE)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     numer <- apply(cv_pooled_cindex_array[,,1], 2, sum, na.rm = TRUE)
     denom <- apply(cv_pooled_cindex_array[,,2], 2, sum, na.rm = TRUE)
     result_vec <- numer / denom
@@ -277,23 +277,23 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   
   ## Assemble internal results by eta
   results <- data.frame(eta = etas)
-  if (criteria == "V&VH") {
+  if (cv.criteria == "V&VH") {
     results$VVH_Loss <- -2 * result_vec / n
     best_eta.idx <- which.min(results$VVH_Loss)
-  } else if (criteria == "LinPred") {
+  } else if (cv.criteria == "LinPred") {
     results$LinPred_Loss <- -2 * result_vec / n
     best_eta.idx <- which.min(results$LinPred_Loss)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     results$CIndex_pooled <- result_vec
     best_eta.idx <- which.max(results$CIndex_pooled)
-  } else if (criteria == "CIndex_foldaverage") {
+  } else if (cv.criteria == "CIndex_foldaverage") {
     results$CIndex_foldaverage <- result_vec
     best_eta.idx <- which.max(results$CIndex_foldaverage)
   }
   
   best_res <- list(best_eta = etas[best_eta.idx],
                    best_beta = beta_full[, best_eta.idx],
-                   criteria = criteria)
+                   criteria = cv.criteria)
   
   # Final structure matches cv.coxkl
   structure(
@@ -301,7 +301,7 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
       internal_stat = results,
       beta_full = beta_full,
       best = best_res,
-      criteria = criteria,
+      criteria = cv.criteria,
       nfolds = nfolds
     ),
     class = "cv.coxkl"

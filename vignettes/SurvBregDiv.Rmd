@@ -200,7 +200,7 @@ cvfit.cox_indi <- cv.cox_indi(
   stratum_ext = stratum_ext,
   etas = eta_list,
   nfolds = 5,
-  criteria = "V&VH"
+  cv.criteria = "V&VH"
 )
 ```
 
@@ -274,7 +274,7 @@ cvfit.coxkl <- cv.coxkl(
   beta = beta_ext,
   etas = eta_list,
   nfolds = 5,
-  criteria = "V&VH",
+  cv.criteria = "V&VH",
   seed = 1)
 ```
 
@@ -634,7 +634,7 @@ cvfit.cox_MDTL <- cv.cox_MDTL(
   etas = eta_list,
   vcov = NULL,
   nfolds = 5,
-  criteria = "V&VH",
+  cv.criteria = "V&VH",
   seed = 1)
 ```
 
@@ -789,8 +789,8 @@ To use the KL divergence--based integrated model, the user must at least provide
 eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 5)
 
 ncckl.fit_breslow <- ncckl(y = y.cc, z = z.cc, stratum = set.cc, 
-                                 eta = eta_list, beta = beta_ext.cc,
-                                 method = "breslow")
+                           eta = eta_list, beta = beta_ext.cc,
+                           method = "breslow")
 ```
 
 Users may directly call the `plot()` method to visualize the model's fitted performance on the training data without providing additional test data. If a test set is supplied, performance metrics are computed using the test set instead:
@@ -823,7 +823,7 @@ cv.ncckl.fit_breslow <- cv.ncckl(
   etas     = eta_list,
   method   = "exact",
   nfolds   = 5,
-  criteria = "loss"
+  cv.criteria = "loss"
 )
 ```
 
@@ -891,7 +891,7 @@ cv.ncckl_enet_fit <- cv.ncckl_enet(
   etas     = eta_list,
   alpha    = 1,
   nfolds   = 5,
-  criteria = "loss"
+  cv.criteria = "loss"
 )
 ```
 The cross-validated performance curve can be visualized using `cv.plot()`:

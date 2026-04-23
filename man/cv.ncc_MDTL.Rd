@@ -14,7 +14,7 @@ cv.ncc_MDTL(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   ...
@@ -42,7 +42,7 @@ Default \code{100}.}
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the CV performance criterion.
+\item{cv.criteria}{Character string specifying the CV performance criterion.
 One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.}
 
 \item{message}{Logical. If \code{TRUE}, prints progress messages. Default \code{FALSE}.}
@@ -55,7 +55,7 @@ One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}
 A list of class \code{"cv.ncc_MDTL"} containing:
 \describe{
 \item{\code{internal_stat}}{A \code{data.frame} with one row per \code{eta} and
-the CV metric for the chosen \code{criteria}.}
+the CV metric for the chosen \code{cv.criteria}.}
 \item{\code{beta_full}}{Matrix of coefficients from the full-data fit
 (columns correspond to \code{etas}).}
 \item{\code{best}}{A list with \code{best_eta}, \code{best_beta}, and \code{criteria}.}
@@ -77,7 +77,7 @@ treated as an indivisible unit and assigned to a single fold using
 \code{\link{get_fold_cc}}. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
-The \code{criteria} argument controls the CV performance metric:
+The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood on held-out
 strata (lower is better).
@@ -108,7 +108,7 @@ cv_fit <- cv.ncc_MDTL(
   vcov     = NULL,
   etas     = eta_list,
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 cv_fit$best$best_eta

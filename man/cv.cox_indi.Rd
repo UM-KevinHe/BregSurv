@@ -15,7 +15,7 @@ cv.cox_indi(
   stratum_ext = NULL,
   etas,
   nfolds = 5,
-  criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+  cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
   max_iter = 100,
   tol = 1e-07,
@@ -32,7 +32,7 @@ cv.cox_indi(
 
 \item{nfolds}{Number of folds (default 5).}
 
-\item{criteria}{Performance criterion.}
+\item{cv.criteria}{Performance criterion.}
 
 \item{c_index_stratum}{Optional stratum vector used for C-index evaluation on internal data.}
 
@@ -85,7 +85,7 @@ cv_fit <- cv.cox_indi(
   stratum_ext = stratum_ext,
   etas = eta_list,
   nfolds = 5,
-  criteria = "CIndex_pooled"
+  cv.criteria = "CIndex_pooled"
 )
 }
 }

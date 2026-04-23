@@ -25,7 +25,7 @@ cv.ncc_indi_enet(
   nlambda = 100,
   lambda.min.ratio = NULL,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   ...
@@ -88,7 +88,7 @@ cv.ncc_indi_enet(
 
   Number of cross-validation folds. Default `5`.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the CV performance criterion. One of
   `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
@@ -114,7 +114,7 @@ A list of class `"cv.ncc_indi_enet"` containing:
 - `best`:
 
   A list with the global best \\(\eta, \lambda)\\: `best_eta`,
-  `best_lambda`, `best_beta`, `criteria`.
+  `best_lambda`, `best_beta`, `cv.criteria`.
 
 - `integrated_stat.full_results`:
 
@@ -153,7 +153,7 @@ internal + external data, and then K-fold CV is used to evaluate each
 `lambda` along this path. The function performs a 2D search over
 \\(\eta, \lambda)\\.
 
-The `criteria` argument controls the CV performance metric:
+The `cv.criteria` argument controls the CV performance metric:
 
 - `"loss"`: Average negative conditional log-likelihood on held-out
   strata (lower is better).

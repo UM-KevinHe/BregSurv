@@ -277,7 +277,7 @@ cvfit.cox_indi <- cv.cox_indi(
   stratum_ext = stratum_ext,
   etas = eta_list,
   nfolds = 5,
-  criteria = "V&VH"
+  cv.criteria = "V&VH"
 )
 ```
 
@@ -389,7 +389,7 @@ cvfit.coxkl <- cv.coxkl(
   beta = beta_ext,
   etas = eta_list,
   nfolds = 5,
-  criteria = "V&VH",
+  cv.criteria = "V&VH",
   seed = 1)
 ```
 
@@ -963,7 +963,7 @@ cvfit.cox_MDTL <- cv.cox_MDTL(
   etas = eta_list,
   vcov = NULL,
   nfolds = 5,
-  criteria = "V&VH",
+  cv.criteria = "V&VH",
   seed = 1)
 ```
 
@@ -1202,8 +1202,8 @@ considerations to determine an appropriate range of $`\eta`$ values.
 eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 5)
 
 ncckl.fit_breslow <- ncckl(y = y.cc, z = z.cc, stratum = set.cc, 
-                                 eta = eta_list, beta = beta_ext.cc,
-                                 method = "breslow")
+                           eta = eta_list, beta = beta_ext.cc,
+                           method = "breslow")
 ```
 
 Users may directly call the
@@ -1250,7 +1250,7 @@ cv.ncckl.fit_breslow <- cv.ncckl(
   etas     = eta_list,
   method   = "exact",
   nfolds   = 5,
-  criteria = "loss"
+  cv.criteria = "loss"
 )
 ```
 
@@ -1329,7 +1329,7 @@ cv.ncckl_enet_fit <- cv.ncckl_enet(
   etas     = eta_list,
   alpha    = 1,
   nfolds   = 5,
-  criteria = "loss"
+  cv.criteria = "loss"
 )
 ```
 

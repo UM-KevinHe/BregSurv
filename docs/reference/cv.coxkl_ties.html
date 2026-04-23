@@ -68,7 +68,7 @@ integration, using the Breslow or Exact partial likelihood for tied event times.
 <span>  tol <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  Mstop <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CIndex_pooled"</span>, <span class="st">"V&amp;VH"</span>, <span class="st">"LinPred"</span>, <span class="st">"CIndex_foldaverage"</span><span class="op">)</span>,</span>
+<span>  cv.criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"CIndex_pooled"</span>, <span class="st">"V&amp;VH"</span>, <span class="st">"LinPred"</span>, <span class="st">"CIndex_foldaverage"</span><span class="op">)</span>,</span>
 <span>  c_index_stratum <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -122,7 +122,7 @@ integration, using the Breslow or Exact partial likelihood for tied event times.
 <dd><p>Number of cross-validation folds. Default <code>5</code>.</p></dd>
 
 
-<dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
+<dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
 <dd><p>Character string specifying the performance criterion.
 Choices are <code>"V&amp;VH"</code>, <code>"LinPred"</code>, <code>"CIndex_pooled"</code>, or <code>"CIndex_foldaverage"</code>.
 Default <code>"CIndex_pooled"</code>.</p></dd>
@@ -190,7 +190,7 @@ for both model fitting and CV criterion calculation.</p>
 <span class="r-in"><span>    etas <span class="op">=</span> <span class="va">eta_list</span>,</span></span>
 <span class="r-in"><span>    ties <span class="op">=</span> <span class="st">"breslow"</span>,</span></span>
 <span class="r-in"><span>    nfolds <span class="op">=</span> <span class="fl">5</span>,</span></span>
-<span class="r-in"><span>    criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span>,</span></span>
+<span class="r-in"><span>    cv.criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span>,</span></span>
 <span class="r-in"><span>    seed <span class="op">=</span> <span class="fl">42</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>

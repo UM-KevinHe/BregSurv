@@ -16,7 +16,7 @@ cv.ncc_MDTL_enet(
   nlambda = 100,
   lambda.min.ratio = ifelse(nrow(z) < ncol(z), 0.05, 0.001),
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   ...
@@ -49,7 +49,7 @@ depends on sample size relative to number of covariates.}
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the CV performance criterion.
+\item{cv.criteria}{Character string specifying the CV performance criterion.
 One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.}
 
 \item{message}{Logical. If \code{TRUE}, prints progress messages. Default \code{FALSE}.}
@@ -62,7 +62,7 @@ One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}
 A list of class \code{"cv.ncc_MDTL_enet"} containing:
 \describe{
 \item{\code{best}}{A list with the global best \eqn{(\eta, \lambda)}:
-\code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{criteria}.}
+\code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{cv.criteria}.}
 \item{\code{integrated_stat.full_results}}{A \code{data.frame} with the CV score
 for every \eqn{(\eta, \lambda)} combination.}
 \item{\code{integrated_stat.best_per_eta}}{A \code{data.frame} with the best
@@ -92,7 +92,7 @@ For each candidate \code{eta}, a full \code{lambda} path is fit on the complete
 data, and then K-fold CV is used to evaluate each \code{lambda} along this path.
 The function performs a 2D search over \eqn{(\eta, \lambda)}.
 
-The \code{criteria} argument controls the CV performance metric:
+The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood on held-out
 strata (lower is better).
@@ -124,7 +124,7 @@ cv_fit <- cv.ncc_MDTL_enet(
   etas     = eta_list,
   alpha    = 1,
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 cv_fit$best$best_eta

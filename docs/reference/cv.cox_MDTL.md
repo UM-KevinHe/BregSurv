@@ -5,8 +5,9 @@ the Cox Proportional Hazards Model with Mahalanobis Distance Transfer
 Learning.
 
 The function evaluates the model performance across a range of `eta`
-values using specified criteria (e.g., Verweij & Van Houwelingen loss,
-C-index) to select the optimal weight for the external information.
+values using specified cv.criteria (e.g., Verweij & Van Houwelingen
+loss, C-index) to select the optimal weight for the external
+information.
 
 ## Usage
 
@@ -22,7 +23,7 @@ cv.cox_MDTL(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+  cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
   message = FALSE,
   seed = NULL,
@@ -75,7 +76,7 @@ cv.cox_MDTL(
 
   Integer. Number of cross-validation folds. Default is 5.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the cross-validation criterion. Choices
   are:
@@ -94,7 +95,7 @@ cv.cox_MDTL(
 
 - c_index_stratum:
 
-  Optional stratum vector. Required only when `criteria` involves
+  Optional stratum vector. Required only when `cv.criteria` involves
   stratified C-index calculation but the model itself is unstratified.
 
 - message:
@@ -155,7 +156,7 @@ cv.cox_MDTL_est <- cv.cox_MDTL(
   beta = beta_external_lowdim,
   vcov = NULL,
   etas = eta_list,
-  criteria = "V&VH"
+  cv.criteria = "V&VH"
 )
 } # }
 ```

@@ -14,7 +14,7 @@
 #' using \code{\link{get_fold_cc}}. The external dataset is used in full during every
 #' training fold.
 #'
-#' The \code{criteria} argument controls the CV performance metric:
+#' The \code{cv.criteria} argument controls the CV performance metric:
 #' \itemize{
 #'   \item \code{"loss"}: Average negative conditional log-likelihood on held-out strata.
 #'   \item \code{"AUC"}: Matched-set AUC based on within-stratum comparisons.
@@ -30,7 +30,7 @@
 #' @param stratum_ext Numeric or factor vector defining the external matched sets. \strong{Required}.
 #' @param etas Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
-#' @param criteria Character string specifying the CV performance criterion.
+#' @param cv.criteria Character string specifying the CV performance criterion.
 #'   One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.
 #' @param max_iter Maximum number of Newton-Raphson iterations passed to \code{\link{ncc_indi}}.
 #'   Default \code{100}.
@@ -41,7 +41,7 @@
 #' @return A list of class \code{"cv.ncc_indi"} containing:
 #' \describe{
 #'   \item{\code{internal_stat}}{A \code{data.frame} with one row per \code{eta} and the
-#'     CV metric for the chosen \code{criteria}.}
+#'     CV metric for the chosen \code{cv.criteria}.}
 #'   \item{\code{beta_full}}{Matrix of coefficients from the full-data fit
 #'     (columns correspond to \code{etas}).}
 #'   \item{\code{best}}{A list with \code{best_eta}, \code{best_beta}, and \code{criteria}.}
@@ -55,12 +55,12 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
                            y_ext, z_ext, stratum_ext,
                            etas = NULL,
                            nfolds = 5,
-                           criteria = c("loss", "AUC", "CIndex", "Brier"),
+                           cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
                            max_iter = 100, tol = 1.0e-7,
                            message = FALSE,
                            seed = NULL) {
 
-  criteria <- match.arg(criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 
   y_int <- as.numeric(y_int)
   z_int <- as.matrix(z_int)
@@ -111,7 +111,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   }
 
   result_mat <- matrix(NA_real_, nrow = nfolds, ncol = n_eta)
-  if (criteria %in% c("AUC", "CIndex", "Brier")) {
+  if (cv.criteria %in% c("AUC", "CIndex", "Brier")) {
     cv_all_lp <- matrix(NA_real_, nrow = n, ncol = n_eta)
   }
 
@@ -158,7 +158,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
       beta_hat <- as.numeric(beta_mat_fold[, i])
       lp_test  <- as.numeric(z_test %*% beta_hat)
 
-      if (criteria == "loss") {
+      if (cv.criteria == "loss") {
         loglik_test <- cc_loglik(y = y_test, lp = lp_test, stratum = stratum_test)
         result_mat[f, i] <- -loglik_test / length(y_test)
       } else {
@@ -167,14 +167,14 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
     }
   }
 
-  if (criteria == "loss") {
+  if (cv.criteria == "loss") {
     result_vec <- colMeans(result_mat, na.rm = TRUE)
-  } else if (criteria %in% c("AUC", "CIndex")) {
+  } else if (cv.criteria %in% c("AUC", "CIndex")) {
     result_vec <- apply(
       cv_all_lp, 2,
       function(lp) cc_auc(y = y_int, lp = lp, stratum = stratum_int)
     )
-  } else if (criteria == "Brier") {
+  } else if (cv.criteria == "Brier") {
     result_vec <- apply(
       cv_all_lp, 2,
       function(lp) cc_brier(y = y_int, lp = lp, stratum = stratum_int)
@@ -183,16 +183,16 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
 
   results <- data.frame(eta = etas)
 
-  if (criteria == "loss") {
+  if (cv.criteria == "loss") {
     results$loss <- result_vec
     best_eta_idx <- which.min(results$loss)
-  } else if (criteria == "AUC") {
+  } else if (cv.criteria == "AUC") {
     results$AUC <- result_vec
     best_eta_idx <- which.max(results$AUC)
-  } else if (criteria == "CIndex") {
+  } else if (cv.criteria == "CIndex") {
     results$CIndex <- result_vec
     best_eta_idx <- which.max(results$CIndex)
-  } else if (criteria == "Brier") {
+  } else if (cv.criteria == "Brier") {
     results$Brier <- result_vec
     best_eta_idx <- which.min(results$Brier)
   }
@@ -200,7 +200,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   best_res <- list(
     best_eta  = etas[best_eta_idx],
     best_beta = beta_full[, best_eta_idx],
-    criteria  = criteria
+    criteria  = cv.criteria
   )
 
   structure(
@@ -208,7 +208,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
       internal_stat = results,
       beta_full     = beta_full,
       best          = best_res,
-      criteria      = criteria,
+      criteria      = cv.criteria,
       nfolds        = nfolds
     ),
     class = "cv.ncc_indi"

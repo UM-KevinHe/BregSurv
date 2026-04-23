@@ -20,7 +20,7 @@ cv.ncc_indi(
   stratum_ext,
   etas = NULL,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   max_iter = 100,
   tol = 1e-07,
   message = FALSE,
@@ -66,7 +66,7 @@ cv.ncc_indi(
 
   Number of cross-validation folds. Default `5`.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the CV performance criterion. One of
   `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
@@ -99,7 +99,7 @@ A list of class `"cv.ncc_indi"` containing:
 - `internal_stat`:
 
   A `data.frame` with one row per `eta` and the CV metric for the chosen
-  `criteria`.
+  `cv.criteria`.
 
 - `beta_full`:
 
@@ -125,7 +125,7 @@ dataset: each matched set is treated as an indivisible unit and assigned
 to a single fold using `get_fold_cc`. The external dataset is used in
 full during every training fold.
 
-The `criteria` argument controls the CV performance metric:
+The `cv.criteria` argument controls the CV performance metric:
 
 - `"loss"`: Average negative conditional log-likelihood on held-out
   strata.

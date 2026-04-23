@@ -78,7 +78,7 @@ stratum (matched set) contains exactly one case and \(m\) controls.</p>
 <span>  nlambda <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  lambda.min.ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, <span class="fl">0.05</span>, <span class="fl">0.001</span><span class="op">)</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"loss"</span>, <span class="st">"AUC"</span>, <span class="st">"CIndex"</span>, <span class="st">"Brier"</span><span class="op">)</span>,</span>
+<span>  cv.criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"loss"</span>, <span class="st">"AUC"</span>, <span class="st">"CIndex"</span>, <span class="st">"Brier"</span><span class="op">)</span>,</span>
 <span>  message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -137,7 +137,7 @@ depends on sample size relative to number of covariates.</p></dd>
 <dd><p>Number of cross-validation folds. Default <code>5</code>.</p></dd>
 
 
-<dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
+<dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
 <dd><p>Character string specifying the CV performance criterion.
 One of <code>"loss"</code> (default), <code>"AUC"</code>, <code>"CIndex"</code>, or <code>"Brier"</code>.</p></dd>
 
@@ -158,7 +158,7 @@ One of <code>"loss"</code> (default), <code>"AUC"</code>, <code>"CIndex"</code>,
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>"cv.ncc_MDTL_enet"</code> containing:</p><dl><dt><code>best</code></dt>
 <dd><p>A list with the global best \((\eta, \lambda)\):
-<code>best_eta</code>, <code>best_lambda</code>, <code>best_beta</code>, <code>criteria</code>.</p></dd>
+<code>best_eta</code>, <code>best_lambda</code>, <code>best_beta</code>, <code>cv.criteria</code>.</p></dd>
 
 <dt><code>integrated_stat.full_results</code></dt>
 <dd><p>A <code>data.frame</code> with the CV score
@@ -191,7 +191,7 @@ treated as an indivisible unit and assigned to a single fold using
 <p>For each candidate <code>eta</code>, a full <code>lambda</code> path is fit on the complete
 data, and then K-fold CV is used to evaluate each <code>lambda</code> along this path.
 The function performs a 2D search over \((\eta, \lambda)\).</p>
-<p>The <code>criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on held-out
+<p>The <code>cv.criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on held-out
 strata (lower is better).</p></li>
 <li><p><code>"AUC"</code>: Matched-set AUC based on within-stratum comparisons
 (higher is better).</p></li>
@@ -226,7 +226,7 @@ probabilities (lower is better).</p></li>
 <span class="r-in"><span>  etas     <span class="op">=</span> <span class="va">eta_list</span>,</span></span>
 <span class="r-in"><span>  alpha    <span class="op">=</span> <span class="fl">1</span>,</span></span>
 <span class="r-in"><span>  nfolds   <span class="op">=</span> <span class="fl">5</span>,</span></span>
-<span class="r-in"><span>  criteria <span class="op">=</span> <span class="st">"loss"</span>,</span></span>
+<span class="r-in"><span>  cv.criteria <span class="op">=</span> <span class="st">"loss"</span>,</span></span>
 <span class="r-in"><span>  seed     <span class="op">=</span> <span class="fl">42</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cv_fit</span><span class="op">$</span><span class="va">best</span><span class="op">$</span><span class="va">best_eta</span></span></span>

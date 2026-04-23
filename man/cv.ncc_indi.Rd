@@ -13,7 +13,7 @@ cv.ncc_indi(
   stratum_ext,
   etas = NULL,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   max_iter = 100,
   tol = 1e-07,
   message = FALSE,
@@ -37,7 +37,7 @@ cv.ncc_indi(
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the CV performance criterion.
+\item{cv.criteria}{Character string specifying the CV performance criterion.
 One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.}
 
 \item{max_iter}{Maximum number of Newton-Raphson iterations passed to \code{\link{ncc_indi}}.
@@ -53,7 +53,7 @@ Default \code{100}.}
 A list of class \code{"cv.ncc_indi"} containing:
 \describe{
 \item{\code{internal_stat}}{A \code{data.frame} with one row per \code{eta} and the
-CV metric for the chosen \code{criteria}.}
+CV metric for the chosen \code{cv.criteria}.}
 \item{\code{beta_full}}{Matrix of coefficients from the full-data fit
 (columns correspond to \code{etas}).}
 \item{\code{best}}{A list with \code{best_eta}, \code{best_beta}, and \code{criteria}.}
@@ -75,7 +75,7 @@ each matched set is treated as an indivisible unit and assigned to a single fold
 using \code{\link{get_fold_cc}}. The external dataset is used in full during every
 training fold.
 
-The \code{criteria} argument controls the CV performance metric:
+The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood on held-out strata.
 \item \code{"AUC"}: Matched-set AUC based on within-stratum comparisons.

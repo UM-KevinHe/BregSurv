@@ -21,7 +21,7 @@ cv.ncckl(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   comb_max = 1e+07,
@@ -89,7 +89,7 @@ cv.ncckl(
 
   Number of cross-validation folds. Default `5`.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the CV performance criterion. Choices are:
 
@@ -138,7 +138,7 @@ A `list` of class `"cv.ncckl"` containing:
 - `internal_stat`:
 
   A `data.frame` with one row per `eta` and the CV metric results for
-  the chosen `criteria`.
+  the chosen `cv.criteria`.
 
 - `beta_full`:
 
@@ -148,7 +148,7 @@ A `list` of class `"cv.ncckl"` containing:
 - `best`:
 
   A list containing the `best_eta`, the corresponding `best_beta` from
-  the full-data fit, and the `criteria` used.
+  the full-data fit, and the `cv.criteria` used.
 
 - `criteria`:
 
@@ -172,7 +172,7 @@ treated as an indivisible unit and assigned to a single fold using
 `get_fold_cc`. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
-The `criteria` argument controls the CV performance metric:
+The `cv.criteria` argument controls the CV performance metric:
 
 - `"loss"`: Average negative conditional log-likelihood on held-out
   strata. For each fold, the conditional log-likelihood is computed over
@@ -221,7 +221,7 @@ cv_clr_kl <- cv.ncckl(
   etas     = eta_list,
   method   = "exact",
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 

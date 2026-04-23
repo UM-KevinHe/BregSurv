@@ -14,7 +14,7 @@ cv.ncckl(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   comb_max = 1e+07,
@@ -53,7 +53,7 @@ estimates, but \code{"exact"} is theoretically preferable.}
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the CV performance criterion.
+\item{cv.criteria}{Character string specifying the CV performance criterion.
 Choices are:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood
@@ -84,11 +84,11 @@ evaluation progress bars. Default \code{FALSE}.}
 A \code{list} of class \code{"cv.ncckl"} containing:
 \describe{
 \item{\code{internal_stat}}{A \code{data.frame} with one row per \code{eta}
-and the CV metric results for the chosen \code{criteria}.}
+and the CV metric results for the chosen \code{cv.criteria}.}
 \item{\code{beta_full}}{The matrix of coefficients from the full-data fit
 (columns correspond to \code{etas}).}
 \item{\code{best}}{A list containing the \code{best_eta}, the corresponding
-\code{best_beta} from the full-data fit, and the \code{criteria} used.}
+\code{best_beta} from the full-data fit, and the \code{cv.criteria} used.}
 \item{\code{criteria}}{The criterion used for selection.}
 \item{\code{nfolds}}{The number of folds used.}
 }
@@ -111,7 +111,7 @@ treated as an indivisible unit and assigned to a single fold using
 \code{\link{get_fold_cc}}. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
-The \code{criteria} argument controls the CV performance metric:
+The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood on held-out
 strata. For each fold, the conditional log-likelihood is computed over
@@ -157,7 +157,7 @@ cv_clr_kl <- cv.ncckl(
   etas     = eta_list,
   method   = "exact",
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 

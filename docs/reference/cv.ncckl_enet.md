@@ -24,7 +24,7 @@ cv.ncckl_enet(
   nlambda = 100,
   lambda.min.ratio = NULL,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   ...
@@ -90,7 +90,7 @@ cv.ncckl_enet(
 
   Number of cross-validation folds. Default `5`.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the CV performance criterion. Choices are:
 
@@ -186,10 +186,10 @@ For each candidate `eta`, a full `lambda` path is fit on the complete
 data (via
 [`ncckl_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl_enet.md)),
 and then K-fold CV is used to evaluate each `lambda` along this path
-according to the chosen `criteria`. The function therefore performs a 2D
-search over \\(\eta, \lambda)\\.
+according to the chosen `cv.criteria`. The function therefore performs a
+2D search over \\(\eta, \lambda)\\.
 
-The `criteria` argument controls the CV performance metric:
+The `cv.criteria` argument controls the CV performance metric:
 
 - `"loss"`: Average negative conditional log-likelihood on held-out
   strata (lower is better).
@@ -225,7 +225,7 @@ cv_fit <- cv.ncckl_enet(
   etas     = eta_list,
   alpha    = 1,
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 

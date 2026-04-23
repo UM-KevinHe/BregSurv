@@ -73,7 +73,7 @@ stratum (matched set) contains exactly one case and \(m\) controls.</p>
 <span>  tol <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  Mstop <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"loss"</span>, <span class="st">"AUC"</span>, <span class="st">"CIndex"</span>, <span class="st">"Brier"</span><span class="op">)</span>,</span>
+<span>  cv.criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"loss"</span>, <span class="st">"AUC"</span>, <span class="st">"CIndex"</span>, <span class="st">"Brier"</span><span class="op">)</span>,</span>
 <span>  message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
@@ -123,7 +123,7 @@ Default <code>100</code>.</p></dd>
 <dd><p>Number of cross-validation folds. Default <code>5</code>.</p></dd>
 
 
-<dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
+<dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
 <dd><p>Character string specifying the CV performance criterion.
 One of <code>"loss"</code> (default), <code>"AUC"</code>, <code>"CIndex"</code>, or <code>"Brier"</code>.</p></dd>
 
@@ -144,7 +144,7 @@ One of <code>"loss"</code> (default), <code>"AUC"</code>, <code>"CIndex"</code>,
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>"cv.ncc_MDTL"</code> containing:</p><dl><dt><code>internal_stat</code></dt>
 <dd><p>A <code>data.frame</code> with one row per <code>eta</code> and
-the CV metric for the chosen <code>criteria</code>.</p></dd>
+the CV metric for the chosen <code>cv.criteria</code>.</p></dd>
 
 <dt><code>beta_full</code></dt>
 <dd><p>Matrix of coefficients from the full-data fit
@@ -167,7 +167,7 @@ the CV metric for the chosen <code>criteria</code>.</p></dd>
 treated as an indivisible unit and assigned to a single fold using
 <code>get_fold_cc</code>. This ensures that the conditional likelihood is
 well-defined within each training and test split.</p>
-<p>The <code>criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on held-out
+<p>The <code>cv.criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on held-out
 strata (lower is better).</p></li>
 <li><p><code>"AUC"</code>: Matched-set AUC based on within-stratum comparisons
 (higher is better).</p></li>
@@ -201,7 +201,7 @@ probabilities (lower is better).</p></li>
 <span class="r-in"><span>  vcov     <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
 <span class="r-in"><span>  etas     <span class="op">=</span> <span class="va">eta_list</span>,</span></span>
 <span class="r-in"><span>  nfolds   <span class="op">=</span> <span class="fl">5</span>,</span></span>
-<span class="r-in"><span>  criteria <span class="op">=</span> <span class="st">"loss"</span>,</span></span>
+<span class="r-in"><span>  cv.criteria <span class="op">=</span> <span class="st">"loss"</span>,</span></span>
 <span class="r-in"><span>  seed     <span class="op">=</span> <span class="fl">42</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cv_fit</span><span class="op">$</span><span class="va">best</span><span class="op">$</span><span class="va">best_eta</span></span></span>

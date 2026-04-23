@@ -16,7 +16,7 @@ cv.ncckl_enet(
   nlambda = 100,
   lambda.min.ratio = NULL,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   ...
@@ -57,7 +57,7 @@ internally to \code{0.05} when \code{n < p}, and \code{1e-3} otherwise.}
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the CV performance criterion.
+\item{cv.criteria}{Character string specifying the CV performance criterion.
 Choices are:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood
@@ -126,10 +126,10 @@ well-defined within each training and test split.
 For each candidate \code{eta}, a full \code{lambda} path is fit on the
 complete data (via \code{\link{ncckl_enet}}), and then K-fold CV is used
 to evaluate each \code{lambda} along this path according to the chosen
-\code{criteria}. The function therefore performs a 2D search over
+\code{cv.criteria}. The function therefore performs a 2D search over
 \eqn{(\eta, \lambda)}.
 
-The \code{criteria} argument controls the CV performance metric:
+The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
 \item \code{"loss"}: Average negative conditional log-likelihood on held-out
 strata (lower is better).
@@ -161,7 +161,7 @@ cv_fit <- cv.ncckl_enet(
   etas     = eta_list,
   alpha    = 1,
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 

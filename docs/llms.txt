@@ -105,7 +105,8 @@ Most fit objects have `plot()` methods; CV objects have companion `cv.plot()` ca
 | `lambda` | Regularization strength for `_ridge` / `_enet`. Auto-generated path if omitted. |
 | `alpha` | Elastic-net mix for `_enet`: `0` = ridge, `1` = LASSO, `(0,1)` = elastic net. |
 | `nfolds` | CV folds (default 5). |
-| `criteria` / `cv.criteria` | See **CV criteria** section below. |
+| `cv.criteria` | Performance criterion used by every `cv.*` function. See **CV criteria** section below. |
+| `criteria` | Performance criterion used by non-CV helpers (`test_eval`, `test_eval_ncc`, `plot.*`, `bopt.coxkl`). Same spelling; different parameter from `cv.criteria`. |
 
 ### `eta` intuition
 
@@ -120,7 +121,7 @@ Not all criteria apply to all functions.
 
 - **Full-cohort Cox CV** (`cv.coxkl*`, `cv.cox_MDTL*`, `cv.cox_indi*`): `"V&VH"` (Verweij & Van Houwelingen, default), `"LinPred"` (linear-predictor loss), `"CIndex_pooled"`, `"CIndex_foldaverage"`.
 - **NCC CV** (`cv.ncckl*`, `cv.ncc_indi*`, `cv.ncc_MDTL*`): `"loss"` (predicted deviance), `"AUC"`, `"CIndex"`, `"Brier"`.
-- For high-dim CV, the argument is named `cv.criteria` (not `criteria`) in some functions — check the signature.
+- **Naming rule (consistent across the package).** Every function whose name starts with `cv.` uses the argument `cv.criteria`. Non-CV helpers (`test_eval`, `test_eval_ncc`, the `plot.*` S3 methods, and `bopt.coxkl`) use the shorter `criteria`. There are no exceptions.
 
 ---
 
@@ -151,7 +152,7 @@ fit <- coxkl(
 cvfit <- cv.coxkl(
   z = train$z, delta = train$status, time = train$time,
   stratum = train$stratum, beta = beta_ext,
-  etas = eta_list, nfolds = 5, criteria = "V&VH", seed = 1
+  etas = eta_list, nfolds = 5, cv.criteria = "V&VH", seed = 1
 )
 cv.plot(cvfit)
 ```
@@ -229,7 +230,7 @@ cvfit <- cv.ncckl(
   y = tr$y, z = tr$z, stratum = tr$stratum,
   beta = ExampleData_cc$beta_external,
   etas = generate_eta("exponential", n = 50, max_eta = 5),
-  method = "exact", nfolds = 5, criteria = "loss"
+  method = "exact", nfolds = 5, cv.criteria = "loss"
 )
 ```
 
@@ -288,7 +289,7 @@ Bagging objects return `$best_beta` (the aggregated coefficient vector, usable d
 5. **`eta` and `lambda` are different things.** `eta` controls **external borrowing**. `lambda` controls **regularization** (only present in `_ridge` / `_enet`). Both can be tuned, but they play different roles.
 6. **`alpha = 0` in `_enet` is ridge**, but the package provides a dedicated `_ridge` function that is preferred for pure-ridge use cases.
 7. **For Mahalanobis without a curvature matrix**, pass `vcov = NULL` (not `vcov = diag(p)` — both work, but `NULL` is canonical).
-8. **`cv.coxkl_enet` uses argument name `cv.criteria`, not `criteria`.** Several functions have this inconsistency — always check the signature.
+8. **`cv.*` functions use `cv.criteria`; non-CV helpers use `criteria`.** This mirrors the function-name prefix: any `cv.*` function takes `cv.criteria = ...`. `test_eval`, `test_eval_ncc`, `plot.*`, and `bopt.coxkl` take `criteria = ...`. Do not mix them — passing the wrong name triggers `unused argument`.
 9. **`generate_eta` does not auto-pick a sensible `max_eta`.** The user must choose based on the problem. If the CV optimum sits at the boundary, extend the grid and re-run.
 10. **Stratified analysis is the default.** If `stratum` is omitted, the package silently assigns everyone to one stratum and fits a non-stratified model. This is fine for many problems but should be made explicit in output to users.
 

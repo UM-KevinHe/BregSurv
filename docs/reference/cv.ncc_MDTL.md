@@ -21,7 +21,7 @@ cv.ncc_MDTL(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("loss", "AUC", "CIndex", "Brier"),
+  cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
   message = FALSE,
   seed = NULL,
   ...
@@ -73,7 +73,7 @@ cv.ncc_MDTL(
 
   Number of cross-validation folds. Default `5`.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the CV performance criterion. One of
   `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
@@ -99,7 +99,7 @@ A list of class `"cv.ncc_MDTL"` containing:
 - `internal_stat`:
 
   A `data.frame` with one row per `eta` and the CV metric for the chosen
-  `criteria`.
+  `cv.criteria`.
 
 - `beta_full`:
 
@@ -125,7 +125,7 @@ treated as an indivisible unit and assigned to a single fold using
 `get_fold_cc`. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
-The `criteria` argument controls the CV performance metric:
+The `cv.criteria` argument controls the CV performance metric:
 
 - `"loss"`: Average negative conditional log-likelihood on held-out
   strata (lower is better).
@@ -165,7 +165,7 @@ cv_fit <- cv.ncc_MDTL(
   vcov     = NULL,
   etas     = eta_list,
   nfolds   = 5,
-  criteria = "loss",
+  cv.criteria = "loss",
   seed     = 42
 )
 cv_fit$best$best_eta

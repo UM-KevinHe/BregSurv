@@ -69,7 +69,7 @@ evaluates on the held-out split using the specified performance criterion.</p>
 <span>  Mstop <span class="op">=</span> <span class="fl">100</span>,</span>
 <span>  backtrack <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"V&amp;VH"</span>, <span class="st">"LinPred"</span>, <span class="st">"CIndex_pooled"</span>, <span class="st">"CIndex_foldaverage"</span><span class="op">)</span>,</span>
+<span>  cv.criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"V&amp;VH"</span>, <span class="st">"LinPred"</span>, <span class="st">"CIndex_pooled"</span>, <span class="st">"CIndex_foldaverage"</span><span class="op">)</span>,</span>
 <span>  c_index_stratum <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -129,7 +129,7 @@ optimization. Default is <code>FALSE</code>.</p></dd>
 <dd><p>Number of cross-validation folds. Default <code>5</code>.</p></dd>
 
 
-<dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
+<dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
 <dd><p>Character string specifying the performance criterion.
 Choices are <code>"V&amp;VH"</code>, <code>"LinPred"</code>, <code>"CIndex_pooled"</code>, or <code>"CIndex_foldaverage"</code>.
 Default <code>"V&amp;VH"</code>.</p></dd>
@@ -137,7 +137,7 @@ Default <code>"V&amp;VH"</code>.</p></dd>
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
 <dd><p>Optional stratum vector. Only required when
-<code>criteria</code> is set to <code>"CIndex_pooled"</code> or <code>"CIndex_foldaverage"</code>,
+<code>cv.criteria</code> is set to <code>"CIndex_pooled"</code> or <code>"CIndex_foldaverage"</code>,
 and a stratified C-index is desired while the fitted model is non-stratified.
 Default <code>NULL</code>.</p></dd>
 
@@ -160,16 +160,16 @@ Default <code>NULL</code>.</p></dd>
 <dd><p>The candidate <code>eta</code> values.</p></dd>
 
 <dt><code>VVH_Loss</code></dt>
-<dd><p>If <code>criteria = "V&amp;VH"</code>, the cross-validated V&amp;VH loss.</p></dd>
+<dd><p>If <code>cv.criteria = "V&amp;VH"</code>, the cross-validated V&amp;VH loss.</p></dd>
 
 <dt><code>LinPred_Loss</code></dt>
-<dd><p>If <code>criteria = "LinPred"</code>, the loss based on linear predictors.</p></dd>
+<dd><p>If <code>cv.criteria = "LinPred"</code>, the loss based on linear predictors.</p></dd>
 
 <dt><code>CIndex_pooled</code></dt>
-<dd><p>If <code>criteria = "CIndex_pooled"</code>, the pooled cross-validated C-index.</p></dd>
+<dd><p>If <code>cv.criteria = "CIndex_pooled"</code>, the pooled cross-validated C-index.</p></dd>
 
 <dt><code>CIndex_foldaverage</code></dt>
-<dd><p>If <code>criteria = "CIndex_foldaverage"</code>, the average fold-wise C-index.</p></dd>
+<dd><p>If <code>cv.criteria = "CIndex_foldaverage"</code>, the average fold-wise C-index.</p></dd>
 
 
 </dl></div>
@@ -189,7 +189,7 @@ Default <code>NULL</code>.</p></dd>
 <span class="r-in"><span>  beta <span class="op">=</span> <span class="va">beta_external_lowdim</span>,</span></span>
 <span class="r-in"><span>  etas <span class="op">=</span> <span class="va">etas</span>,</span></span>
 <span class="r-in"><span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span></span>
-<span class="r-in"><span>  criteria <span class="op">=</span> <span class="st">"CIndex_pooled"</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  cv.criteria <span class="op">=</span> <span class="st">"CIndex_pooled"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

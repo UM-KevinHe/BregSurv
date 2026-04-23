@@ -5,7 +5,7 @@
 #' Cox Proportional Hazards Model with Mahalanobis Distance Transfer Learning.
 #'
 #' The function evaluates the model performance across a range of \code{eta} values
-#' using specified criteria (e.g., Verweij & Van Houwelingen loss, C-index) to select
+#' using specified cv.criteria (e.g., Verweij & Van Houwelingen loss, C-index) to select
 #' the optimal weight for the external information.
 #'
 #' @param z A numeric matrix or data frame of covariates (n x p).
@@ -21,14 +21,14 @@
 #' @param tol Convergence tolerance for the optimization algorithm. Default is 1e-4.
 #' @param Mstop Maximum number of iterations for the optimization. Default is 100.
 #' @param nfolds Integer. Number of cross-validation folds. Default is 5.
-#' @param criteria Character string specifying the cross-validation criterion. Choices are:
+#' @param cv.criteria Character string specifying the cross-validation criterion. Choices are:
 #'   \itemize{
 #'     \item \code{"V&VH"} (default): Verweij & Van Houwelingen partial likelihood loss.
 #'     \item \code{"LinPred"}: Loss based on the prognostic performance of the linear predictor.
 #'     \item \code{"CIndex_pooled"}: Harrell's C-index computed by pooling predictions across folds.
 #'     \item \code{"CIndex_foldaverage"}: Harrell's C-index computed within each fold and averaged.
 #'   }
-#' @param c_index_stratum Optional stratum vector. Required only when \code{criteria} involves
+#' @param c_index_stratum Optional stratum vector. Required only when \code{cv.criteria} involves
 #'   stratified C-index calculation but the model itself is unstratified.
 #' @param message Logical. If \code{TRUE}, progress messages are printed.
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
@@ -64,7 +64,7 @@
 #'   beta = beta_external_lowdim,
 #'   vcov = NULL,
 #'   etas = eta_list,
-#'   criteria = "V&VH"
+#'   cv.criteria = "V&VH"
 #' )
 #' }
 #'
@@ -74,12 +74,12 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
                         etas = NULL,
                         tol = 1.0e-4, Mstop = 100,
                         nfolds = 5,
-                        criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+                        cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                         c_index_stratum = NULL,
                         message = FALSE,
                         seed = NULL, ...) {
 
-  criteria <- match.arg(criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas <- sort(etas)
@@ -143,9 +143,9 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
   folds <- get_fold(nfolds = nfolds, delta = delta, stratum = stratum)
 
   result_mat <- matrix(NA_real_, nrow = nfolds, ncol = n_eta)
-  if (criteria == "LinPred") {
+  if (cv.criteria == "LinPred") {
     cv_all_linpred <- matrix(NA, nrow = n, ncol = n_eta)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2))
   }
 
@@ -192,7 +192,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
       time_test <- time[test_idx]
       LP_test <- as.matrix(z_test) %*% as.matrix(beta_train)
 
-      if (criteria == "V&VH") {
+      if (cv.criteria == "V&VH") {
         LP_train <- as.matrix(z_train) %*% as.matrix(beta_train)
         LP_internal <- as.matrix(z) %*% as.matrix(beta_train)
         n.each_stratum_train <- as.numeric(table(stratum_train))
@@ -200,7 +200,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
         result_mat[f, i] <- pl_cal_theta(LP_internal, delta, n.each_stratum_full) -
           pl_cal_theta(LP_train, delta_train, n.each_stratum_train)
 
-      } else if (criteria == "LinPred") {
+      } else if (cv.criteria == "LinPred") {
         cv_all_linpred[test_idx, i] <- LP_test
       } else {
         if (is.null(c_index_stratum)) {
@@ -208,10 +208,10 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
         } else {
           stratum_test <- c_index_stratum[test_idx]
         }
-        if (criteria == "CIndex_pooled") {
+        if (cv.criteria == "CIndex_pooled") {
           cstat <- c_stat_stratcox(time_test, LP_test, stratum_test, delta_test)
           cv_pooled_cindex_array[f, i, ] <- c(cstat$numer, cstat$denom)
-        } else if (criteria == "CIndex_foldaverage") {
+        } else if (cv.criteria == "CIndex_foldaverage") {
           cstat <- c_stat_stratcox(time_test, LP_test, stratum_test, delta_test)$c_statistic
           result_mat[f, i] <- cstat
         }
@@ -221,14 +221,14 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
     if (message) close(pb)
   }
 
-  if (criteria == "V&VH") {
+  if (cv.criteria == "V&VH") {
     result_vec <- colSums(result_mat, na.rm = TRUE)
-  } else if (criteria == "LinPred") {
+  } else if (cv.criteria == "LinPred") {
     result_vec <- apply(cv_all_linpred, 2,
                         function(lp) pl_cal_theta(lp, delta, as.numeric(table(stratum))))
-  } else if (criteria == "CIndex_foldaverage") {
+  } else if (cv.criteria == "CIndex_foldaverage") {
     result_vec <- colMeans(result_mat, na.rm = TRUE)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     numer <- apply(cv_pooled_cindex_array[, , 1], 2, sum, na.rm = TRUE)
     denom <- apply(cv_pooled_cindex_array[, , 2], 2, sum, na.rm = TRUE)
     result_vec <- numer / denom
@@ -236,30 +236,30 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
 
   ## Assemble internal results by eta
   results <- data.frame(eta = etas)
-  if (criteria == "V&VH") {
+  if (cv.criteria == "V&VH") {
     results$VVH_Loss <- -2 * result_vec  / n
     best_eta.idx <- which.min(results$VVH_Loss)
-  } else if (criteria == "LinPred") {
+  } else if (cv.criteria == "LinPred") {
     results$LinPred_Loss <- -2 * result_vec  / n
     best_eta.idx <- which.min(results$LinPred_Loss)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     results$CIndex_pooled <- result_vec
     best_eta.idx <- which.max(results$CIndex_pooled)
-  } else if (criteria == "CIndex_foldaverage") {
+  } else if (cv.criteria == "CIndex_foldaverage") {
     results$CIndex_foldaverage <- result_vec
     best_eta.idx <- which.max(results$CIndex_foldaverage)
   }
 
   best_res <- list(best_eta = etas[best_eta.idx],
                    best_beta = beta_full[, best_eta.idx],
-                   criteria = criteria)
+                   criteria = cv.criteria)
 
   structure(
     list(
       internal_stat = results,
       beta_full = beta_full,
       best = best_res,
-      criteria = criteria,
+      criteria = cv.criteria,
       nfolds = nfolds
     ),
     class = "cv.cox_MDTL"

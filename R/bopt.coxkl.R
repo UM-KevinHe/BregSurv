@@ -82,7 +82,7 @@ bopt.coxkl <- function(z, delta, time, stratum = NULL,
       z = z, delta = delta, time = time, stratum = stratum,
       RS = RS, beta = beta,
       etas = eta,
-      criteria = target_criteria,
+      cv.criteria = target_criteria,
       seed = seed,
       message = FALSE,
       ...

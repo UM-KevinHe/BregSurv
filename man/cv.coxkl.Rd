@@ -16,7 +16,7 @@ cv.coxkl(
   Mstop = 100,
   backtrack = FALSE,
   nfolds = 5,
-  criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+  cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
   message = FALSE,
   seed = NULL,
@@ -50,12 +50,12 @@ optimization. Default is \code{FALSE}.}
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the performance criterion.
+\item{cv.criteria}{Character string specifying the performance criterion.
 Choices are \code{"V&VH"}, \code{"LinPred"}, \code{"CIndex_pooled"}, or \code{"CIndex_foldaverage"}.
 Default \code{"V&VH"}.}
 
 \item{c_index_stratum}{Optional stratum vector. Only required when
-\code{criteria} is set to \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"},
+\code{cv.criteria} is set to \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"},
 and a stratified C-index is desired while the fitted model is non-stratified.
 Default \code{NULL}.}
 
@@ -69,10 +69,10 @@ Default \code{NULL}.}
 A \code{data.frame} with one row per candidate \code{eta} and columns:
 \describe{
 \item{\code{eta}}{The candidate \code{eta} values.}
-\item{\code{VVH_Loss}}{If \code{criteria = "V&VH"}, the cross-validated V&VH loss.}
-\item{\code{LinPred_Loss}}{If \code{criteria = "LinPred"}, the loss based on linear predictors.}
-\item{\code{CIndex_pooled}}{If \code{criteria = "CIndex_pooled"}, the pooled cross-validated C-index.}
-\item{\code{CIndex_foldaverage}}{If \code{criteria = "CIndex_foldaverage"}, the average fold-wise C-index.}
+\item{\code{VVH_Loss}}{If \code{cv.criteria = "V&VH"}, the cross-validated V&VH loss.}
+\item{\code{LinPred_Loss}}{If \code{cv.criteria = "LinPred"}, the loss based on linear predictors.}
+\item{\code{CIndex_pooled}}{If \code{cv.criteria = "CIndex_pooled"}, the pooled cross-validated C-index.}
+\item{\code{CIndex_foldaverage}}{If \code{cv.criteria = "CIndex_foldaverage"}, the average fold-wise C-index.}
 }
 }
 \description{
@@ -94,6 +94,6 @@ cv.result <- cv.coxkl(
   beta = beta_external_lowdim,
   etas = etas,
   nfolds = 5,
-  criteria = "CIndex_pooled")
+  cv.criteria = "CIndex_pooled")
 }
 }

@@ -15,7 +15,7 @@ cv.coxkl_ties(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("CIndex_pooled", "V&VH", "LinPred", "CIndex_foldaverage"),
+  cv.criteria = c("CIndex_pooled", "V&VH", "LinPred", "CIndex_foldaverage"),
   c_index_stratum = NULL,
   message = FALSE,
   seed = NULL,
@@ -45,7 +45,7 @@ cv.coxkl_ties(
 
 \item{nfolds}{Number of cross-validation folds. Default \code{5}.}
 
-\item{criteria}{Character string specifying the performance criterion.
+\item{cv.criteria}{Character string specifying the performance criterion.
 Choices are \code{"V&VH"}, \code{"LinPred"}, \code{"CIndex_pooled"}, or \code{"CIndex_foldaverage"}.
 Default \code{"CIndex_pooled"}.}
 
@@ -96,7 +96,7 @@ coxkl_ties.fit_breslow <- cv.coxkl_ties(
     etas = eta_list,
     ties = "breslow",
     nfolds = 5,
-    criteria = "V&VH",
+    cv.criteria = "V&VH",
     seed = 42
 )
 }

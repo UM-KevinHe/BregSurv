@@ -15,7 +15,7 @@ cv.cox_MDTL(
   tol = 1e-04,
   Mstop = 100,
   nfolds = 5,
-  criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+  cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
   message = FALSE,
   seed = NULL,
@@ -46,7 +46,7 @@ defaults to the identity matrix.}
 
 \item{nfolds}{Integer. Number of cross-validation folds. Default is 5.}
 
-\item{criteria}{Character string specifying the cross-validation criterion. Choices are:
+\item{cv.criteria}{Character string specifying the cross-validation criterion. Choices are:
 \itemize{
 \item \code{"V&VH"} (default): Verweij & Van Houwelingen partial likelihood loss.
 \item \code{"LinPred"}: Loss based on the prognostic performance of the linear predictor.
@@ -54,7 +54,7 @@ defaults to the identity matrix.}
 \item \code{"CIndex_foldaverage"}: Harrell's C-index computed within each fold and averaged.
 }}
 
-\item{c_index_stratum}{Optional stratum vector. Required only when \code{criteria} involves
+\item{c_index_stratum}{Optional stratum vector. Required only when \code{cv.criteria} involves
 stratified C-index calculation but the model itself is unstratified.}
 
 \item{message}{Logical. If \code{TRUE}, progress messages are printed.}
@@ -84,7 +84,7 @@ Performs k-fold cross-validation to tune the hyperparameter \code{eta} for the
 Cox Proportional Hazards Model with Mahalanobis Distance Transfer Learning.
 
 The function evaluates the model performance across a range of \code{eta} values
-using specified criteria (e.g., Verweij & Van Houwelingen loss, C-index) to select
+using specified cv.criteria (e.g., Verweij & Van Houwelingen loss, C-index) to select
 the optimal weight for the external information.
 }
 \examples{
@@ -102,7 +102,7 @@ cv.cox_MDTL_est <- cv.cox_MDTL(
   beta = beta_external_lowdim,
   vcov = NULL,
   etas = eta_list,
-  criteria = "V&VH"
+  cv.criteria = "V&VH"
 )
 }
 

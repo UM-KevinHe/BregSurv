@@ -22,10 +22,10 @@
 #' For each candidate \code{eta}, a full \code{lambda} path is fit on the
 #' complete data (via \code{\link{ncckl_enet}}), and then K-fold CV is used
 #' to evaluate each \code{lambda} along this path according to the chosen
-#' \code{criteria}. The function therefore performs a 2D search over
+#' \code{cv.criteria}. The function therefore performs a 2D search over
 #' \eqn{(\eta, \lambda)}.
 #'
-#' The \code{criteria} argument controls the CV performance metric:
+#' The \code{cv.criteria} argument controls the CV performance metric:
 #' \itemize{
 #'   \item \code{"loss"}: Average negative conditional log-likelihood on held-out
 #'     strata (lower is better).
@@ -60,7 +60,7 @@
 #'   lambda when \code{lambda} is \code{NULL}. If \code{NULL}, it is set
 #'   internally to \code{0.05} when \code{n < p}, and \code{1e-3} otherwise.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
-#' @param criteria Character string specifying the CV performance criterion.
+#' @param cv.criteria Character string specifying the CV performance criterion.
 #'   Choices are:
 #'   \itemize{
 #'     \item \code{"loss"}: Average negative conditional log-likelihood
@@ -123,7 +123,7 @@
 #'   etas     = eta_list,
 #'   alpha    = 1,
 #'   nfolds   = 5,
-#'   criteria = "loss",
+#'   cv.criteria = "loss",
 #'   seed     = 42
 #' )
 #'
@@ -141,12 +141,12 @@ cv.ncckl_enet <- function(y, z, stratum,
                              nlambda = 100,
                              lambda.min.ratio = NULL,
                              nfolds = 5,
-                             criteria = c("loss", "AUC", "CIndex", "Brier"),
+                             cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
                              message = FALSE,
                              seed = NULL,
                              ...) {
 
-  criteria <- match.arg(criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 
   y <- as.numeric(y)
   z <- as.matrix(z)
@@ -237,7 +237,7 @@ cv.ncckl_enet <- function(y, z, stratum,
   results_list <- vector("list", n_eta)
 
   ## For criteria that need all CV linear predictors
-  store_lp_all <- criteria %in% c("AUC", "CIndex", "Brier")
+  store_lp_all <- cv.criteria %in% c("AUC", "CIndex", "Brier")
   if (store_lp_all) {
     ## We will create these per eta below because lambda_seq may vary by eta
   }
@@ -253,7 +253,7 @@ cv.ncckl_enet <- function(y, z, stratum,
     beta_full  <- beta_full_list[[i]]
     L          <- length(lambda_seq)
 
-    if (criteria == "loss") {
+    if (cv.criteria == "loss") {
       loss_sum <- numeric(L)
       loss_n   <- numeric(L)
     } else {
@@ -309,7 +309,7 @@ cv.ncckl_enet <- function(y, z, stratum,
       ## For each lambda, compute test linear predictors
       lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold  # n_test x L
 
-      if (criteria == "loss") {
+      if (cv.criteria == "loss") {
         for (j in seq_len(L)) {
           lp_test_j <- lp_test_mat[, j]
           loglik_test <- cc_loglik(y = y_test, lp = lp_test_j, stratum = stratum_test)
@@ -322,15 +322,15 @@ cv.ncckl_enet <- function(y, z, stratum,
     } # end folds
 
     ## Aggregate across folds for this eta
-    if (criteria == "loss") {
+    if (cv.criteria == "loss") {
       score_eta <- loss_sum / pmax(loss_n, 1)
-    } else if (criteria %in% c("AUC", "CIndex")) {
+    } else if (cv.criteria %in% c("AUC", "CIndex")) {
       score_eta <- apply(
         cv_all_lp,
         2,
         function(lp) cc_auc(y = y, lp = lp, stratum = stratum)
       )
-    } else if (criteria == "Brier") {
+    } else if (cv.criteria == "Brier") {
       score_eta <- apply(
         cv_all_lp,
         2,
@@ -353,7 +353,7 @@ cv.ncckl_enet <- function(y, z, stratum,
   results_df <- do.call(rbind, results_list)
 
   ## Select best lambda per eta, and global best
-  if (criteria %in% c("loss", "Brier")) {
+  if (cv.criteria %in% c("loss", "Brier")) {
     # lower is better
     best_per_eta <- do.call(
       rbind,
@@ -390,7 +390,7 @@ cv.ncckl_enet <- function(y, z, stratum,
     best_eta    = best_per_eta$eta[best.idx],
     best_lambda = best_per_eta$lambda[best.idx],
     best_beta   = beta_best_mat[, best.idx],
-    criteria    = criteria
+    criteria    = cv.criteria
   )
 
   structure(
@@ -399,7 +399,7 @@ cv.ncckl_enet <- function(y, z, stratum,
       integrated_stat.full_results = results_df,
       integrated_stat.best_per_eta = best_per_eta,
       integrated_stat.betahat_best = beta_best_mat,
-      criteria                    = criteria,
+      criteria                    = cv.criteria,
       alpha                       = alpha,
       nfolds                      = nfolds
     ),

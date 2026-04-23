@@ -360,7 +360,7 @@ criterion.</p>
 <span>  stratum_ext <span class="op">=</span> <span class="va">stratum_ext</span>,</span>
 <span>  etas <span class="op">=</span> <span class="va">eta_list</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span></span>
+<span>  cv.criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -463,7 +463,7 @@ an example using the default <code>"V&amp;VH"</code> criterion:</p>
 <span>  beta <span class="op">=</span> <span class="va">beta_ext</span>,</span>
 <span>  etas <span class="op">=</span> <span class="va">eta_list</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span>,</span>
+<span>  cv.criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>The cross-validated performance curve from hyperparameter tuning
 functions <code><a href="../reference/cv.coxkl.html">cv.coxkl()</a></code> can be visualized directly using
@@ -1048,7 +1048,7 @@ an example using the default <code>"V&amp;VH"</code> criterion:</p>
 <span>  etas <span class="op">=</span> <span class="va">eta_list</span>,</span>
 <span>  vcov <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span>,</span>
+<span>  cv.criteria <span class="op">=</span> <span class="st">"V&amp;VH"</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <p>The cross-validated performance curve from hyperparameter tuning
 functions <code><a href="../reference/cv.cox_MDTL.html">cv.cox_MDTL()</a></code> can be visualized directly using
@@ -1291,8 +1291,8 @@ values.</p>
 <code class="sourceCode R"><span><span class="va">eta_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/generate_eta.html">generate_eta</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"exponential"</span>, n <span class="op">=</span> <span class="fl">50</span>, max_eta <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ncckl.fit_breslow</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ncckl.html">ncckl</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">y.cc</span>, z <span class="op">=</span> <span class="va">z.cc</span>, stratum <span class="op">=</span> <span class="va">set.cc</span>, </span>
-<span>                                 eta <span class="op">=</span> <span class="va">eta_list</span>, beta <span class="op">=</span> <span class="va">beta_ext.cc</span>,</span>
-<span>                                 method <span class="op">=</span> <span class="st">"breslow"</span><span class="op">)</span></span></code></pre></div>
+<span>                           eta <span class="op">=</span> <span class="va">eta_list</span>, beta <span class="op">=</span> <span class="va">beta_ext.cc</span>,</span>
+<span>                           method <span class="op">=</span> <span class="st">"breslow"</span><span class="op">)</span></span></code></pre></div>
 <p>Users may directly call the <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> method to visualize
 the model’s fitted performance on the training data without providing
 additional test data. If a test set is supplied, performance metrics are
@@ -1333,7 +1333,7 @@ to determine an appropriate range. (For ridge, use
 <span>  etas     <span class="op">=</span> <span class="va">eta_list</span>,</span>
 <span>  method   <span class="op">=</span> <span class="st">"exact"</span>,</span>
 <span>  nfolds   <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="st">"loss"</span></span>
+<span>  cv.criteria <span class="op">=</span> <span class="st">"loss"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The cross-validated performance curve can be visualized using
 <code><a href="../reference/cv.plot.html">cv.plot()</a></code>:</p>
@@ -1404,7 +1404,7 @@ can be performed via <code><a href="../reference/cv.ncckl_enet.html">cv.ncckl_en
 <span>  etas     <span class="op">=</span> <span class="va">eta_list</span>,</span>
 <span>  alpha    <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  nfolds   <span class="op">=</span> <span class="fl">5</span>,</span>
-<span>  criteria <span class="op">=</span> <span class="st">"loss"</span></span>
+<span>  cv.criteria <span class="op">=</span> <span class="st">"loss"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>The cross-validated performance curve can be visualized using
 <code><a href="../reference/cv.plot.html">cv.plot()</a></code>:</p>

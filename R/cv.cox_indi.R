@@ -8,7 +8,7 @@
 #' @param z_ext,delta_ext,time_ext,stratum_ext External data (always fully included in training).
 #' @param etas Numeric vector of candidate eta values (must be provided).
 #' @param nfolds Number of folds (default 5).
-#' @param criteria Performance criterion.
+#' @param cv.criteria Performance criterion.
 #' @param c_index_stratum Optional stratum vector used for C-index evaluation on internal data.
 #' @param max_iter,tol Passed to \code{cox_indi}.
 #' @param message Logical; print progress (default FALSE).
@@ -50,7 +50,7 @@
 #'   stratum_ext = stratum_ext,
 #'   etas = eta_list,
 #'   nfolds = 5,
-#'   criteria = "CIndex_pooled"
+#'   cv.criteria = "CIndex_pooled"
 #' )
 #' }
 #' @export
@@ -61,13 +61,13 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
                         z_ext, delta_ext, time_ext, stratum_ext = NULL,
                         etas,
                         nfolds = 5,
-                        criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+                        cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                         c_index_stratum = NULL,
                         max_iter = 100, tol = 1.0e-7,
                         message = FALSE,
                         seed = NULL) {
 
-  criteria <- match.arg(criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas <- sort(as.numeric(etas))
@@ -112,9 +112,9 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
   folds <- get_fold(nfolds = nfolds, delta = delta_int, stratum = stratum_enc_full)
 
   result_mat <- matrix(NA_real_, nrow = nfolds, ncol = n_eta)
-  if (criteria == "LinPred") {
+  if (cv.criteria == "LinPred") {
     cv_all_linpred <- matrix(NA_real_, nrow = n_int, ncol = n_eta)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2))
   }
 
@@ -160,21 +160,21 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
       beta_hat <- as.numeric(beta_path[, i])
       LP_test <- as.vector(z_test %*% beta_hat)
 
-      if (criteria == "V&VH") {
+      if (cv.criteria == "V&VH") {
         LP_train <- as.vector(z_train %*% beta_hat)
         LP_full_internal <- as.vector(z_int %*% beta_hat)
         result_mat[f, i] <-
           pl_cal_theta(LP_full_internal, delta_int, n_each_stratum_full) -
           pl_cal_theta(LP_train,         delta_train, n_each_stratum_train)
 
-      } else if (criteria == "LinPred") {
+      } else if (cv.criteria == "LinPred") {
         cv_all_linpred[test_idx, i] <- LP_test
 
-      } else if (criteria == "CIndex_pooled") {
+      } else if (cv.criteria == "CIndex_pooled") {
         cstat <- c_stat_stratcox(time_test, LP_test, stratum_test_for_c, delta_test)
         cv_pooled_cindex_array[f, i, ] <- c(cstat$numer, cstat$denom)
 
-      } else if (criteria == "CIndex_foldaverage") {
+      } else if (cv.criteria == "CIndex_foldaverage") {
         result_mat[f, i] <- c_stat_stratcox(time_test, LP_test, stratum_test_for_c, delta_test)$c_statistic
       }
 
@@ -184,13 +184,13 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
     if (message) close(pb)
   }
 
-  if (criteria == "V&VH") {
+  if (cv.criteria == "V&VH") {
     result_vec <- colSums(result_mat, na.rm = TRUE)
-  } else if (criteria == "LinPred") {
+  } else if (cv.criteria == "LinPred") {
     result_vec <- apply(cv_all_linpred, 2, function(lp) {
       pl_cal_theta(lp, delta_int, as.numeric(table(stratum_enc_full)))
     })
-  } else if (criteria == "CIndex_foldaverage") {
+  } else if (cv.criteria == "CIndex_foldaverage") {
     result_vec <- colMeans(result_mat, na.rm = TRUE)
   } else {
     numer <- apply(cv_pooled_cindex_array[, , 1], 2, sum, na.rm = TRUE)
@@ -201,13 +201,13 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
   results <- data.frame(eta = etas)
   n <- n_int
 
-  if (criteria == "V&VH") {
+  if (cv.criteria == "V&VH") {
     results$VVH_Loss <- -2 * result_vec / n
     best_eta.idx <- which.min(results$VVH_Loss)
-  } else if (criteria == "LinPred") {
+  } else if (cv.criteria == "LinPred") {
     results$LinPred_Loss <- -2 * result_vec / n
     best_eta.idx <- which.min(results$LinPred_Loss)
-  } else if (criteria == "CIndex_pooled") {
+  } else if (cv.criteria == "CIndex_pooled") {
     results$CIndex_pooled <- result_vec
     best_eta.idx <- which.max(results$CIndex_pooled)
   } else {
@@ -218,7 +218,7 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
   best_res <- list(
     best_eta = etas[best_eta.idx],
     best_beta = beta_full[, best_eta.idx],
-    criteria = criteria
+    criteria = cv.criteria
   )
 
   structure(
@@ -226,7 +226,7 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
       internal_stat = results,
       beta_full = beta_full,
       best = best_res,
-      criteria = criteria,
+      criteria = cv.criteria,
       nfolds = nfolds
     ),
     class = "cv.cox_indi"

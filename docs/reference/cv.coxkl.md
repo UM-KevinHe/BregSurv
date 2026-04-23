@@ -20,7 +20,7 @@ cv.coxkl(
   Mstop = 100,
   backtrack = FALSE,
   nfolds = 5,
-  criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
+  cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
   message = FALSE,
   seed = NULL,
@@ -81,7 +81,7 @@ cv.coxkl(
 
   Number of cross-validation folds. Default `5`.
 
-- criteria:
+- cv.criteria:
 
   Character string specifying the performance criterion. Choices are
   `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
@@ -89,7 +89,7 @@ cv.coxkl(
 
 - c_index_stratum:
 
-  Optional stratum vector. Only required when `criteria` is set to
+  Optional stratum vector. Only required when `cv.criteria` is set to
   `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified C-index
   is desired while the fitted model is non-stratified. Default `NULL`.
 
@@ -117,19 +117,21 @@ A `data.frame` with one row per candidate `eta` and columns:
 
 - `VVH_Loss`:
 
-  If `criteria = "V&VH"`, the cross-validated V&VH loss.
+  If `cv.criteria = "V&VH"`, the cross-validated V&VH loss.
 
 - `LinPred_Loss`:
 
-  If `criteria = "LinPred"`, the loss based on linear predictors.
+  If `cv.criteria = "LinPred"`, the loss based on linear predictors.
 
 - `CIndex_pooled`:
 
-  If `criteria = "CIndex_pooled"`, the pooled cross-validated C-index.
+  If `cv.criteria = "CIndex_pooled"`, the pooled cross-validated
+  C-index.
 
 - `CIndex_foldaverage`:
 
-  If `criteria = "CIndex_foldaverage"`, the average fold-wise C-index.
+  If `cv.criteria = "CIndex_foldaverage"`, the average fold-wise
+  C-index.
 
 ## Examples
 
@@ -147,6 +149,6 @@ cv.result <- cv.coxkl(
   beta = beta_external_lowdim,
   etas = etas,
   nfolds = 5,
-  criteria = "CIndex_pooled")
+  cv.criteria = "CIndex_pooled")
 } # }
 ```

@@ -19,7 +19,7 @@
 #' internal + external data, and then K-fold CV is used to evaluate each \code{lambda}
 #' along this path. The function performs a 2D search over \eqn{(\eta, \lambda)}.
 #'
-#' The \code{criteria} argument controls the CV performance metric:
+#' The \code{cv.criteria} argument controls the CV performance metric:
 #' \itemize{
 #'   \item \code{"loss"}: Average negative conditional log-likelihood on held-out
 #'     strata (lower is better).
@@ -44,7 +44,7 @@
 #' @param lambda.min.ratio Numeric in \eqn{(0,1)}. Ratio of minimum to maximum lambda.
 #'   If \code{NULL}, set internally based on sample size vs. number of covariates.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
-#' @param criteria Character string specifying the CV performance criterion.
+#' @param cv.criteria Character string specifying the CV performance criterion.
 #'   One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.
 #' @param message Logical. If \code{TRUE}, prints progress messages. Default \code{FALSE}.
 #' @param seed Optional integer seed for reproducible fold assignment. Default \code{NULL}.
@@ -53,7 +53,7 @@
 #' @return A list of class \code{"cv.ncc_indi_enet"} containing:
 #' \describe{
 #'   \item{\code{best}}{A list with the global best \eqn{(\eta, \lambda)}:
-#'     \code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{criteria}.}
+#'     \code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{cv.criteria}.}
 #'   \item{\code{integrated_stat.full_results}}{A \code{data.frame} with the CV score
 #'     for every \eqn{(\eta, \lambda)} combination.}
 #'   \item{\code{integrated_stat.best_per_eta}}{A \code{data.frame} with the best
@@ -76,12 +76,12 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
                                  nlambda = 100,
                                  lambda.min.ratio = NULL,
                                  nfolds = 5,
-                                 criteria = c("loss", "AUC", "CIndex", "Brier"),
+                                 cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
                                  message = FALSE,
                                  seed = NULL,
                                  ...) {
 
-  criteria <- match.arg(criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 
   y_int <- as.numeric(y_int)
   z_int <- as.matrix(z_int)
@@ -175,7 +175,7 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
     lambda_seq <- lambda_list[[i]]
     L          <- length(lambda_seq)
 
-    if (criteria == "loss") {
+    if (cv.criteria == "loss") {
       loss_sum <- numeric(L)
       loss_n   <- numeric(L)
     } else {
@@ -223,7 +223,7 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
 
       lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold   # n_test x L
 
-      if (criteria == "loss") {
+      if (cv.criteria == "loss") {
         for (j in seq_len(L)) {
           lp_test_j   <- lp_test_mat[, j]
           loglik_test <- cc_loglik(y = y_test, lp = lp_test_j, stratum = stratum_test)
@@ -235,14 +235,14 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
       }
     } # end folds
 
-    if (criteria == "loss") {
+    if (cv.criteria == "loss") {
       score_eta <- loss_sum / pmax(loss_n, 1)
-    } else if (criteria %in% c("AUC", "CIndex")) {
+    } else if (cv.criteria %in% c("AUC", "CIndex")) {
       score_eta <- apply(
         cv_all_lp, 2,
         function(lp) cc_auc(y = y_int, lp = lp, stratum = stratum_int)
       )
-    } else if (criteria == "Brier") {
+    } else if (cv.criteria == "Brier") {
       score_eta <- apply(
         cv_all_lp, 2,
         function(lp) cc_brier(y = y_int, lp = lp, stratum = stratum_int)
@@ -263,7 +263,7 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
 
   results_df <- do.call(rbind, results_list)
 
-  if (criteria %in% c("loss", "Brier")) {
+  if (cv.criteria %in% c("loss", "Brier")) {
     best_per_eta <- do.call(
       rbind,
       lapply(split(results_df, results_df$eta),
@@ -295,7 +295,7 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
     best_eta    = best_per_eta$eta[best.idx],
     best_lambda = best_per_eta$lambda[best.idx],
     best_beta   = beta_best_mat[, best.idx],
-    criteria    = criteria
+    criteria    = cv.criteria
   )
 
   structure(
@@ -304,7 +304,7 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
       integrated_stat.full_results = results_df,
       integrated_stat.best_per_eta = best_per_eta,
       integrated_stat.betahat_best = beta_best_mat,
-      criteria                     = criteria,
+      criteria                     = cv.criteria,
       alpha                        = alpha,
       nfolds                       = nfolds
     ),
