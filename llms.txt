@@ -110,24 +110,37 @@ Most fit objects have `plot()` methods; CV objects have companion `cv.plot()` ca
 
 ### `eta` intuition
 
-- `eta = 0` → pure internal Cox / NCC, no borrowing at all.
-- **Borrowing strength is monotonically increasing in `eta`.** Larger `eta` shrinks the internal estimate harder toward the external `beta`. As `eta → ∞`, estimates converge to the external solution.
-- The **CV-optimal `eta`** typically lands at a moderate value — not because borrowing is strongest there, but because that is the bias–variance sweet spot: enough borrowing to reduce variance, not so much that bias from internal/external population mismatch dominates. Do **not** describe moderate `eta` as "strongest borrowing"; it is "best trade-off".
+- `eta = 0` → pure internal Cox / NCC, no borrowing.
+- Larger `eta` pulls the internal estimate further toward the external `beta`. The relationship is **monotonic in `eta`**: every increase in `eta` increases the influence of the external information, with no plateau or reversal.
+- As `eta → ∞`, estimates converge to the external solution itself (the internal data effectively stops contributing).
+- The **CV-optimal `eta` is usually a moderate value** — that is where the bias–variance trade-off is best: small enough that internal data still informs the fit, large enough to gain variance reduction from the external information.
 - There is **no universal "correct" range**. Depends on data and compatibility between internal and external populations. Start with `generate_eta(method = "exponential", n = 50, max_eta = 10)` and inspect the CV curve; extend `max_eta` if the optimum sits near the upper boundary.
 
 ### `coxkl_ties` — handling tied event times
 
-Plain `coxkl` does **not** handle ties: it processes events as if all times were unique, which biases the partial likelihood whenever multiple events share an event time. With non-trivial tie density (e.g. ≥5–10% of events tied), switch to `coxkl_ties`.
+Use `coxkl_ties(..., ties = "breslow")` as the drop-in replacement for `coxkl` whenever your data has tied event times. **Always specify the `ties` argument explicitly in any example call** — the package does not auto-detect tie density, and the choice of approximation materially affects results. The two valid values are `"breslow"` (default, fast) and `"exact"` (slow, unbiased); there is **no Efron option** on `coxkl_ties`. A `comb_max = 1e7` safety cap stops the `"exact"` path from running indefinitely on heavy ties.
 
-`coxkl_ties` accepts a `ties` argument (**not** `method=` — that name belongs to `ncckl`):
+Why this matters: plain `coxkl` does **not** handle ties at all. It processes events as if all times were unique, which biases the partial likelihood whenever multiple events share an event time. With non-trivial tie density (≥5–10% of events tied), the bias is non-negligible and you should switch.
+
+Detail on each `ties` option (the argument is **`ties`**, **not** `method=` — that name belongs to `ncckl`):
 
 - `ties = "breslow"` (**default**) — Breslow's approximation. Fast, scales linearly. Recommended for most clinical / epidemiological data even at moderate-to-heavy tie density; bias is small in practice.
 - `ties = "exact"` — exact partial likelihood. Enumerates all combinations within each tied risk set. Cost grows **combinatorially** with the per-time tie multiplicity, so it can become prohibitive for heavily tied large risk sets. Use only when ties are very heavy *and* runtime is acceptable.
 - `comb_max = 1e7` — safety cap on the number of combinations evaluated under `ties = "exact"`. If a risk set would exceed this, the call errors out rather than running indefinitely. Raise this only if you genuinely need to handle a very large tied risk set and have verified the runtime.
 
-**Note: there is no Efron option in `coxkl_ties`.** Only `"breslow"` and `"exact"`. Do not invent `ties = "efron"` — it will fail.
-
 **Note: `coxkl_ties` does not currently have `_ridge` or `_enet` companions.** Ties + regularization is not supported in this package. If you need both, you must choose: either accept the biased plain-Cox tie handling and use `coxkl_enet` / `coxkl_ridge`, or use `coxkl_ties` without regularization.
+
+Minimal example call (always include `ties` explicitly):
+
+```r
+fit <- coxkl_ties(
+  z = train$z, delta = train$status, time = train$time,
+  stratum = train$stratum,
+  beta  = beta_ext,
+  etas  = generate_eta("exponential", n = 50, max_eta = 10),
+  ties  = "breslow"     # or "exact" — must be specified
+)
+```
 
 ### CV criteria
 
