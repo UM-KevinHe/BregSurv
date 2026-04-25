@@ -110,10 +110,24 @@ Most fit objects have `plot()` methods; CV objects have companion `cv.plot()` ca
 
 ### `eta` intuition
 
-- `eta = 0` → pure internal Cox / NCC, no borrowing.
-- Moderate `eta` → strongest borrowing in the relevant region.
-- Very large `eta` → estimates approach the external solution.
+- `eta = 0` → pure internal Cox / NCC, no borrowing at all.
+- **Borrowing strength is monotonically increasing in `eta`.** Larger `eta` shrinks the internal estimate harder toward the external `beta`. As `eta → ∞`, estimates converge to the external solution.
+- The **CV-optimal `eta`** typically lands at a moderate value — not because borrowing is strongest there, but because that is the bias–variance sweet spot: enough borrowing to reduce variance, not so much that bias from internal/external population mismatch dominates. Do **not** describe moderate `eta` as "strongest borrowing"; it is "best trade-off".
 - There is **no universal "correct" range**. Depends on data and compatibility between internal and external populations. Start with `generate_eta(method = "exponential", n = 50, max_eta = 10)` and inspect the CV curve; extend `max_eta` if the optimum sits near the upper boundary.
+
+### `coxkl_ties` — handling tied event times
+
+Plain `coxkl` does **not** handle ties: it processes events as if all times were unique, which biases the partial likelihood whenever multiple events share an event time. With non-trivial tie density (e.g. ≥5–10% of events tied), switch to `coxkl_ties`.
+
+`coxkl_ties` accepts a `ties` argument (**not** `method=` — that name belongs to `ncckl`):
+
+- `ties = "breslow"` (**default**) — Breslow's approximation. Fast, scales linearly. Recommended for most clinical / epidemiological data even at moderate-to-heavy tie density; bias is small in practice.
+- `ties = "exact"` — exact partial likelihood. Enumerates all combinations within each tied risk set. Cost grows **combinatorially** with the per-time tie multiplicity, so it can become prohibitive for heavily tied large risk sets. Use only when ties are very heavy *and* runtime is acceptable.
+- `comb_max = 1e7` — safety cap on the number of combinations evaluated under `ties = "exact"`. If a risk set would exceed this, the call errors out rather than running indefinitely. Raise this only if you genuinely need to handle a very large tied risk set and have verified the runtime.
+
+**Note: there is no Efron option in `coxkl_ties`.** Only `"breslow"` and `"exact"`. Do not invent `ties = "efron"` — it will fail.
+
+**Note: `coxkl_ties` does not currently have `_ridge` or `_enet` companions.** Ties + regularization is not supported in this package. If you need both, you must choose: either accept the biased plain-Cox tie handling and use `coxkl_enet` / `coxkl_ridge`, or use `coxkl_ties` without regularization.
 
 ### CV criteria
 
@@ -121,6 +135,7 @@ Not all criteria apply to all functions.
 
 - **Full-cohort Cox CV** (`cv.coxkl*`, `cv.cox_MDTL*`, `cv.cox_indi*`): `"V&VH"` (Verweij & Van Houwelingen, default), `"LinPred"` (linear-predictor loss), `"CIndex_pooled"`, `"CIndex_foldaverage"`.
 - **NCC CV** (`cv.ncckl*`, `cv.ncc_indi*`, `cv.ncc_MDTL*`): `"loss"` (predicted deviance), `"AUC"`, `"CIndex"`, `"Brier"`.
+- ⚠️ **The two families are disjoint and must not be mixed.** Do **not** pass an NCC criterion (`"AUC"` / `"Brier"` / `"loss"` / `"CIndex"`) to a Cox CV function, and do **not** pass a Cox criterion (`"V&VH"` / `"LinPred"` / `"CIndex_pooled"` / `"CIndex_foldaverage"`) to an NCC CV function. Cross-family misuse is **the most common API mistake** in this package: depending on the combination it may either error out or — worse — silently produce numbers with no statistical meaning. If unsure which family applies: full-cohort Cox data → Cox criteria; matched 1:m case–control data → NCC criteria.
 - **Naming rule (consistent across the package).** Every function whose name starts with `cv.` uses the argument `cv.criteria`. Non-CV helpers (`test_eval`, `test_eval_ncc`, the `plot.*` S3 methods, and `bopt.coxkl`) use the shorter `criteria`. There are no exceptions.
 
 ---
@@ -285,7 +300,7 @@ Bagging objects return `$best_beta` (the aggregated coefficient vector, usable d
 1. **Do not use `coxkl` for matched case–control data.** Use `ncckl`. The sample-per-stratum structure is different.
 2. **`ncckl` requires `stratum`.** Without it, the function assumes everyone is in one matched set — this is almost certainly not what the user wants.
 3. **Do not pass `time` and `delta` to NCC functions.** NCC API uses `y` (binary case/control) and `stratum` (matched-set ID). The `time = 1, delta = y` mapping happens inside.
-4. **`coxkl_ties` is only for full-cohort Cox with tied event times.** Do not suggest it for NCC; NCC does not need ties handling.
+4. **`coxkl_ties` is only for full-cohort Cox with tied event times.** Do not suggest it for NCC. NCC functions have **no ties argument by construction** because each matched set contains exactly one event — tied event times are impossible by design. Do not invent a `ncckl_ties` function (it does not exist) and do not search for a ties option on `ncckl` / `ncc_indi` / `ncc_MDTL`. The `method = c("breslow", "exact")` argument that *does* appear on `ncckl` controls 1:m vs n:m matching likelihood form, not ties handling. See the dedicated `coxkl_ties` subsection above for the `ties` parameter (`"breslow"` / `"exact"`) and the `comb_max` safety cap; note also that `coxkl_ties` has no `_ridge` / `_enet` companion.
 5. **`eta` and `lambda` are different things.** `eta` controls **external borrowing**. `lambda` controls **regularization** (only present in `_ridge` / `_enet`). Both can be tuned, but they play different roles.
 6. **`alpha = 0` in `_enet` is ridge**, but the package provides a dedicated `_ridge` function that is preferred for pure-ridge use cases.
 7. **For Mahalanobis without a curvature matrix**, pass `vcov = NULL` (not `vcov = diag(p)` — both work, but `NULL` is canonical).
