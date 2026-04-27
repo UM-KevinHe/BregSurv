@@ -715,7 +715,7 @@ sim_integration <- function(n_int = 200, n_test = 1000, n_ext = 1000,
 
 # --- Helper functions (Internal Use) ---
 
-simulate_survival_weibull <- function(eta, lambda = lambda0, nu = nu0) {
+simulate_survival_weibull <- function(eta, lambda = 1, nu = 2) {
   U <- runif(length(eta))
   (-log(U) / (lambda * exp(eta)))^(1/nu)
 }

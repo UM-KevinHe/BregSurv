@@ -71,6 +71,12 @@ bopt.coxkl(
   A `data.frame` of initial points for the optimization. Default is `0`
   if `init_grid_dt` is provided.
 
+- init_points:
+
+  Number of randomly drawn initial points to evaluate before the
+  Bayesian search begins, in addition to those supplied via
+  `init_grid_dt`. Default `0`.
+
 - n_iter:
 
   Number of iterations for the Bayesian Optimization process.
@@ -78,6 +84,12 @@ bopt.coxkl(
 - acq:
 
   Acquisition function type. Default is `"ucb"`.
+
+- kappa:
+
+  Numeric tuning parameter controlling the exploration–exploitation
+  trade-off of the upper confidence bound (UCB) acquisition function.
+  Larger values favour exploration. Default `2.576`.
 
 - seed:
 

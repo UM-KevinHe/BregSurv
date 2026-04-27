@@ -181,7 +181,7 @@ List KL_Cox_highdim(const arma::mat& Z, const arma::vec& delta, const arma::vec&
   for (int l = 0; l < n_lambda; l++){
     R_CheckUserInterrupt();
     if (trace_lambda == true){
-      cout << "processing lambda: " << l + 1 << " (total: " << l + 1 << "/" << n_lambda << ")..." << endl;
+      Rcpp::Rcout << "processing lambda: " << l + 1 << " (total: " << l + 1 << "/" << n_lambda << ")..." << endl;
     }
     double lambda = lambda_seq(l);
 
@@ -204,7 +204,7 @@ List KL_Cox_highdim(const arma::mat& Z, const arma::vec& delta, const arma::vec&
     // check whether the iteration number for the current lambda has reached the maximum
     if (iter_l == max_each_iter) {
       if (trace_lambda == true){
-        cout << "Warning: lambda " << l + 1 << "/" << n_lambda << " failed to converge within " << max_each_iter << " iterations!" << endl;
+        Rcpp::Rcout << "Warning: lambda " << l + 1 << "/" << n_lambda << " failed to converge within " << max_each_iter << " iterations!" << endl;
       }
     }
 
@@ -218,11 +218,11 @@ List KL_Cox_highdim(const arma::mat& Z, const arma::vec& delta, const arma::vec&
     }
     if (ng > group_max || nv > nvar_max || total_iter == max_total_iter) {
       if (total_iter == max_total_iter) {
-        cout << "Algorithm has reached the maximum number of total iterations, stops..." << endl;
+        Rcpp::Rcout << "Algorithm has reached the maximum number of total iterations, stops..." << endl;
       } else if (ng > group_max) {
-        cout << "Algorithm has selected the maximum number of groups, stops..." << endl;
+        Rcpp::Rcout << "Algorithm has selected the maximum number of groups, stops..." << endl;
       } else {
-        cout << "Algorithm has selected the maximum number of variables, stops..." << endl;
+        Rcpp::Rcout << "Algorithm has selected the maximum number of variables, stops..." << endl;
       }
 
       for (int ll = (l + 1); ll < n_lambda; ll++){

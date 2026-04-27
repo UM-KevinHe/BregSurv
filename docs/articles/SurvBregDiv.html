@@ -1237,37 +1237,85 @@ importance and stability selection</a> and <a href="#sec_bagging">Bagging</a> in
 case–control sets, and estimation proceeds via conditional logistic
 regression. <code>SurvBregDiv</code> enables external information
 borrowing within this framework through Bregman divergence, allowing
-improved efficiency while respecting the matched-set structure. The
-remainder of this section demonstrates the core usage and workflow.
-Standard matched case–control or matched cohort studies can be viewed as
-special cases of the NCC design. For methodology details, please refer
-to Page: <strong>Appendix: NCC KL Divergence</strong>.</p>
-<p>We adopt the KL-divergence approach for data integration and present
-the usage of the functions for <a href="#sec_low_cc">low-dimensional</a>
-and <a href="#sec_high_cc">high-dimensional</a> settings separately.</p>
+improved efficiency while respecting the matched-set structure. Standard
+matched case–control or matched cohort studies can be viewed as special
+cases of the NCC design. For methodology details, please refer to Page:
+<strong>Appendix: NCC KL Divergence</strong>.</p>
+<p>All three external-integration modes introduced in <a href="#sec_cox">Section 2</a> – individual-level integration, KL
+divergence on summary coefficients, and Mahalanobis-distance integration
+with external curvature – are mirrored in the NCC family with parallel
+APIs:</p>
+<ul>
+<li>
+<strong>KL divergence</strong> (analog of <a href="#sec_coxkl">§2.2</a>): <code><a href="../reference/ncckl.html">ncckl()</a></code> /
+<code><a href="../reference/cv.ncckl.html">cv.ncckl()</a></code>, with <code><a href="../reference/ncckl_enet.html">ncckl_enet()</a></code> /
+<code><a href="../reference/cv.ncckl_enet.html">cv.ncckl_enet()</a></code> for high-dimensional integration.</li>
+<li>
+<strong>Individual-level external data</strong> (analog of <a href="#sec_indi">§2.1</a>): <code><a href="../reference/ncc_indi.html">ncc_indi()</a></code> /
+<code><a href="../reference/cv.ncc_indi.html">cv.ncc_indi()</a></code>, with <code>_enet</code> variants. The
+example dataset <code>ExampleData_cc_indi</code> plays the same role as
+<code>ExampleData_indi</code> does for <code><a href="../reference/cox_indi.html">cox_indi()</a></code>.</li>
+<li>
+<strong>Mahalanobis distance with external curvature</strong>
+(analog of <a href="#sec_coxmaha">§2.3</a>): <code><a href="../reference/ncc_MDTL.html">ncc_MDTL()</a></code> /
+<code><a href="../reference/cv.ncc_MDTL.html">cv.ncc_MDTL()</a></code>, with <code>_enet</code> variants. Takes the
+external
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mover><mi>𝛃</mi><mo accent="true">̃</mo></mover><annotation encoding="application/x-tex">\widetilde{\boldsymbol{\beta}}</annotation></semantics></math>
+plus its covariance/precision matrix <code>vcov</code>.</li>
+</ul>
+<p>A few NCC-specific points are worth flagging before walking through
+the workflow:</p>
+<ul>
+<li>
+<strong>Argument convention.</strong> NCC functions take a binary
+outcome <code>y</code> (1 = case, 0 = control) and a
+<code>stratum</code> identifying the matched set, in place of the Cox
+family’s <code>time</code> + <code>delta</code>. <code>stratum</code> is
+<strong>required</strong>.</li>
+<li>
+<strong>Cross-validation criteria are a different family.</strong>
+<code>cv.ncc*</code> functions accept <code>"loss"</code>,
+<code>"AUC"</code>, <code>"CIndex"</code>, and <code>"Brier"</code> –
+the Cox-family criteria (<code>"V&amp;VH"</code>,
+<code>"LinPred"</code>, <code>"CIndex_pooled"</code>,
+<code>"CIndex_foldaverage"</code>) are not valid here. CV folds are
+constructed at the stratum level so the 1:m matched structure is
+preserved within every fold.</li>
+<li>
+<strong>No tie-handling variant.</strong> Each NCC matched set
+contains exactly one event by construction, so the distinction relevant
+to <code><a href="../reference/coxkl_ties.html">coxkl_ties()</a></code> does not apply – there is no
+<code>ncckl_ties()</code>.</li>
+</ul>
+<p>For brevity, the remainder of this section walks through the
+<strong>KL</strong> workflow as the worked example. The individual-level
+and MDTL workflows mirror <a href="#sec_indi">§2.1</a> and <a href="#sec_coxmaha">§2.3</a> one-to-one with the substitutions above;
+runnable examples for each are provided on the corresponding function
+reference pages.</p>
+<p>We present the KL functions for <a href="#sec_low_cc">low-dimensional</a> and <a href="#sec_high_cc">high-dimensional</a> settings separately.</p>
 <div class="section level3">
 <h3 id="sec_low_cc">3.1 Low-Dimensional Integration<a class="anchor" aria-label="anchor" href="#sec_low_cc"></a>
 </h3>
 <p>The built-in simulated dataset for NCC designs,
-<code>ExampleData_cc</code>, contains a training set (1000 samples) and
-a test set (2500 samples). The data include a <code>stratum</code>
-variable, where observations with the same stratum ID belong to the same
-matched set. The training data contain 200 matched sets and the test
-data contain 500 matched sets, each constructed under a 1:4 matching
-scheme. The dataset further includes six predictors
+<code>ExampleData_cc_lowdim</code>, contains a training set (1000
+samples) and a test set (2500 samples). The data include a
+<code>stratum</code> variable, where observations with the same stratum
+ID belong to the same matched set. The training data contain 200 matched
+sets and the test data contain 500 matched sets, each constructed under
+a 1:4 matching scheme. The dataset further includes six predictors
 (<code>Z1</code>–<code>Z6</code>). Externally derived coefficients are
 provided in <code>beta_external</code>:</p>
 <div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc_lowdim</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">train.cc</span>  <span class="op">&lt;-</span> <span class="va">ExampleData_cc</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">test.cc</span>   <span class="op">&lt;-</span> <span class="va">ExampleData_cc</span><span class="op">$</span><span class="va">test</span></span>
+<span><span class="va">train.cc</span>  <span class="op">&lt;-</span> <span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">train</span></span>
+<span><span class="va">test.cc</span>   <span class="op">&lt;-</span> <span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">test</span></span>
 <span></span>
 <span><span class="va">z.cc</span>      <span class="op">&lt;-</span> <span class="va">train.cc</span><span class="op">$</span><span class="va">z</span></span>
 <span><span class="va">y.cc</span>      <span class="op">&lt;-</span> <span class="va">train.cc</span><span class="op">$</span><span class="va">y</span></span>
 <span><span class="va">set.cc</span>    <span class="op">&lt;-</span> <span class="va">train.cc</span><span class="op">$</span><span class="va">stratum</span></span>
 <span></span>
-<span><span class="va">beta_ext.cc</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc</span><span class="op">$</span><span class="va">beta_external</span></span></code></pre></div>
+<span><span class="va">beta_ext.cc</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">beta_external</span></span></code></pre></div>
 <p>The main fitting function for this setting is <code>ncckl</code>.
 Users must specify the tie-handling method via the <code>method</code>
 argument. For 1:M matched case–control studies, <code>"breslow"</code>

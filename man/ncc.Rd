@@ -55,8 +55,8 @@ the \code{method = "exact"} should be used.}
 }
 \examples{
 \dontrun{
-data(ExampleData_cc)
-train_cc <- ExampleData_cc$train
+data(ExampleData_cc_lowdim)
+train_cc <- ExampleData_cc_lowdim$train
 
 y <- train_cc$y
 z <- train_cc$z

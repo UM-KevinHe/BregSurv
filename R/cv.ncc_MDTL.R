@@ -58,13 +58,13 @@
 #'
 #' @examples
 #' \dontrun{
-#' data(ExampleData_cc)
-#' train_cc <- ExampleData_cc$train
+#' data(ExampleData_cc_lowdim)
+#' train_cc <- ExampleData_cc_lowdim$train
 #'
 #' y        <- train_cc$y
 #' z        <- train_cc$z
 #' sets     <- train_cc$stratum
-#' beta_ext <- ExampleData_cc$beta_external
+#' beta_ext <- ExampleData_cc_lowdim$beta_external
 #'
 #' eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 10)
 #'

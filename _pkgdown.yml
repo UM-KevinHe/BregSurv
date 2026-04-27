@@ -142,6 +142,7 @@ reference:
     contents:
       - ExampleData_lowdim
       - ExampleData_highdim
-      - ExampleData_cc
+      - ExampleData_cc_lowdim
       - ExampleData_cc_highdim
       - ExampleData_indi
+      - ExampleData_cc_indi

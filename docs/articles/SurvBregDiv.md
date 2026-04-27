@@ -1148,19 +1148,70 @@ In the NCC setting, event times are represented through matched
 case–control sets, and estimation proceeds via conditional logistic
 regression. `SurvBregDiv` enables external information borrowing within
 this framework through Bregman divergence, allowing improved efficiency
-while respecting the matched-set structure. The remainder of this
-section demonstrates the core usage and workflow. Standard matched
+while respecting the matched-set structure. Standard matched
 case–control or matched cohort studies can be viewed as special cases of
 the NCC design. For methodology details, please refer to Page:
 **Appendix: NCC KL Divergence**.
 
-We adopt the KL-divergence approach for data integration and present the
-usage of the functions for [low-dimensional](#sec_low_cc) and
+All three external-integration modes introduced in [Section 2](#sec_cox)
+– individual-level integration, KL divergence on summary coefficients,
+and Mahalanobis-distance integration with external curvature – are
+mirrored in the NCC family with parallel APIs:
+
+- **KL divergence** (analog of [§2.2](#sec_coxkl)):
+  [`ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl.md)
+  /
+  [`cv.ncckl()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl.md),
+  with
+  [`ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl_enet.md)
+  /
+  [`cv.ncckl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl_enet.md)
+  for high-dimensional integration.
+- **Individual-level external data** (analog of [§2.1](#sec_indi)):
+  [`ncc_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md)
+  /
+  [`cv.ncc_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncc_indi.md),
+  with `_enet` variants. The example dataset `ExampleData_cc_indi` plays
+  the same role as `ExampleData_indi` does for
+  [`cox_indi()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi.md).
+- **Mahalanobis distance with external curvature** (analog of
+  [§2.3](#sec_coxmaha)):
+  [`ncc_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_MDTL.md)
+  /
+  [`cv.ncc_MDTL()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncc_MDTL.md),
+  with `_enet` variants. Takes the external
+  $`\widetilde{\boldsymbol{\beta}}`$ plus its covariance/precision
+  matrix `vcov`.
+
+A few NCC-specific points are worth flagging before walking through the
+workflow:
+
+- **Argument convention.** NCC functions take a binary outcome `y` (1 =
+  case, 0 = control) and a `stratum` identifying the matched set, in
+  place of the Cox family’s `time` + `delta`. `stratum` is **required**.
+- **Cross-validation criteria are a different family.** `cv.ncc*`
+  functions accept `"loss"`, `"AUC"`, `"CIndex"`, and `"Brier"` – the
+  Cox-family criteria (`"V&VH"`, `"LinPred"`, `"CIndex_pooled"`,
+  `"CIndex_foldaverage"`) are not valid here. CV folds are constructed
+  at the stratum level so the 1:m matched structure is preserved within
+  every fold.
+- **No tie-handling variant.** Each NCC matched set contains exactly one
+  event by construction, so the distinction relevant to
+  [`coxkl_ties()`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_ties.md)
+  does not apply – there is no `ncckl_ties()`.
+
+For brevity, the remainder of this section walks through the **KL**
+workflow as the worked example. The individual-level and MDTL workflows
+mirror [§2.1](#sec_indi) and [§2.3](#sec_coxmaha) one-to-one with the
+substitutions above; runnable examples for each are provided on the
+corresponding function reference pages.
+
+We present the KL functions for [low-dimensional](#sec_low_cc) and
 [high-dimensional](#sec_high_cc) settings separately.
 
 ### 3.1 Low-Dimensional Integration
 
-The built-in simulated dataset for NCC designs, `ExampleData_cc`,
+The built-in simulated dataset for NCC designs, `ExampleData_cc_lowdim`,
 contains a training set (1000 samples) and a test set (2500 samples).
 The data include a `stratum` variable, where observations with the same
 stratum ID belong to the same matched set. The training data contain 200
@@ -1170,16 +1221,16 @@ six predictors (`Z1`–`Z6`). Externally derived coefficients are provided
 in `beta_external`:
 
 ``` r
-data(ExampleData_cc)
+data(ExampleData_cc_lowdim)
 
-train.cc  <- ExampleData_cc$train
-test.cc   <- ExampleData_cc$test
+train.cc  <- ExampleData_cc_lowdim$train
+test.cc   <- ExampleData_cc_lowdim$test
 
 z.cc      <- train.cc$z
 y.cc      <- train.cc$y
 set.cc    <- train.cc$stratum
 
-beta_ext.cc <- ExampleData_cc$beta_external
+beta_ext.cc <- ExampleData_cc_lowdim$beta_external
 ```
 
 The main fitting function for this setting is `ncckl`. Users must

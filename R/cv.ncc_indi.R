@@ -50,15 +50,48 @@
 #' }
 #'
 #' @seealso \code{\link{ncc_indi}}, \code{\link{cv.ncckl}}
+#'
+#' @examples
+#' \dontrun{
+#' ## Load the matched case-control individual-level example data
+#' data(ExampleData_cc_indi)
+#'
+#' y_int       <- ExampleData_cc_indi$internal$y
+#' z_int       <- ExampleData_cc_indi$internal$z
+#' stratum_int <- ExampleData_cc_indi$internal$stratum
+#'
+#' y_ext       <- ExampleData_cc_indi$external$y
+#' z_ext       <- ExampleData_cc_indi$external$z
+#' stratum_ext <- ExampleData_cc_indi$external$stratum
+#'
+#' ## Generate candidate eta values
+#' eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 10)
+#'
+#' ## Cross-validated tuning of eta
+#' cv_fit <- cv.ncc_indi(
+#'   y_int       = y_int,
+#'   z_int       = z_int,
+#'   stratum_int = stratum_int,
+#'   y_ext       = y_ext,
+#'   z_ext       = z_ext,
+#'   stratum_ext = stratum_ext,
+#'   etas        = eta_list,
+#'   nfolds      = 5,
+#'   cv.criteria = "loss",
+#'   seed        = 42
+#' )
+#'
+#' cv_fit$best$best_eta
+#' }
 #' @export
 cv.ncc_indi <- function(y_int, z_int, stratum_int,
-                           y_ext, z_ext, stratum_ext,
-                           etas = NULL,
-                           nfolds = 5,
-                           cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
-                           max_iter = 100, tol = 1.0e-7,
-                           message = FALSE,
-                           seed = NULL) {
+                        y_ext, z_ext, stratum_ext,
+                        etas = NULL,
+                        nfolds = 5,
+                        cv.criteria = c("loss", "AUC", "CIndex", "Brier"),
+                        max_iter = 100, tol = 1.0e-7,
+                        message = FALSE,
+                        seed = NULL) {
 
   cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 

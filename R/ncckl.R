@@ -43,15 +43,15 @@
 #' @examples
 #' \dontrun{
 #' # Load the matched case-control example data
-#' data(ExampleData_cc)
-#' train_cc <- ExampleData_cc$train
+#' data(ExampleData_cc_lowdim)
+#' train_cc <- ExampleData_cc_lowdim$train
 #' 
 #' y <- train_cc$y
 #' z <- train_cc$z
 #' sets <- train_cc$stratum
 #' 
 #' eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 50)
-#' external_beta <- ExampleData_cc$beta_external
+#' external_beta <- ExampleData_cc_lowdim$beta_external
 #' 
 #' # Fit CLR-KL using the Breslow approximation
 #' ncckl.fit_breslow <- ncckl(y = y, z = z, stratum = sets, 

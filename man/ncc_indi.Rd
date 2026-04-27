@@ -63,6 +63,34 @@ The fitted objective is
 where both likelihoods are the conditional (partial) log-likelihoods of the respective
 matched datasets, with internal and external risk sets kept separated.
 }
+\examples{
+\dontrun{
+## Load the matched case-control individual-level example data
+data(ExampleData_cc_indi)
+
+y_int       <- ExampleData_cc_indi$internal$y
+z_int       <- ExampleData_cc_indi$internal$z
+stratum_int <- ExampleData_cc_indi$internal$stratum
+
+y_ext       <- ExampleData_cc_indi$external$y
+z_ext       <- ExampleData_cc_indi$external$z
+stratum_ext <- ExampleData_cc_indi$external$stratum
+
+## Generate a sequence of eta values
+eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 10)
+
+## Fit the composite-likelihood CLR path
+fit_path <- ncc_indi(
+  y_int       = y_int,
+  z_int       = z_int,
+  stratum_int = stratum_int,
+  y_ext       = y_ext,
+  z_ext       = z_ext,
+  stratum_ext = stratum_ext,
+  etas        = eta_list
+)
+}
+}
 \seealso{
 \code{\link{cox_indi}} for the core function documentation.
 }

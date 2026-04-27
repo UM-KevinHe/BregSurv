@@ -177,9 +177,11 @@ designs.
   : Example low-dimensional survival data
 - [`ExampleData_highdim`](https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_highdim.md)
   : Example high-dimensional survival data
-- [`ExampleData_cc`](https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc.md)
+- [`ExampleData_cc_lowdim`](https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc_lowdim.md)
   : Example Data for Conditional Logistic Regression
 - [`ExampleData_cc_highdim`](https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc_highdim.md)
   : Example high-dimensional matched case-control data
 - [`ExampleData_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_indi.md)
   : Example internal/external Cox individual-level data
+- [`ExampleData_cc_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc_indi.md)
+  : Example internal/external matched case-control individual-level data

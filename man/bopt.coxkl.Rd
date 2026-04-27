@@ -46,9 +46,17 @@ e.g., \code{list(eta = c(0, 10))}.}
 \item{init_grid_dt}{A \code{data.frame} of initial points for the optimization.
 Default is \code{0} if \code{init_grid_dt} is provided.}
 
+\item{init_points}{Number of randomly drawn initial points to evaluate before
+the Bayesian search begins, in addition to those supplied via
+\code{init_grid_dt}. Default \code{0}.}
+
 \item{n_iter}{Number of iterations for the Bayesian Optimization process.}
 
 \item{acq}{Acquisition function type. Default is \code{"ucb"}.}
+
+\item{kappa}{Numeric tuning parameter controlling the exploration--exploitation
+trade-off of the upper confidence bound (UCB) acquisition function. Larger
+values favour exploration. Default \code{2.576}.}
 
 \item{seed}{Optional integer seed to ensure reproducible CV fold assignments.}
 

@@ -43,10 +43,13 @@
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/cv.plot.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc_highdim.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc_indi.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_cc_lowdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_highdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_indi.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ExampleData_lowdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/generate_eta.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/get_baseline_hazard.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/index.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ncc.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl.html</loc></url>
@@ -64,6 +67,7 @@
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/plot.cox_MDTL_ridge.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/plot.StabSelect.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/plot.variable_importance.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/predict_surv_prob.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/sim.binary.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/sim.cox.highdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/SurvBregDiv/reference/sim.matched_cc.html</loc></url>

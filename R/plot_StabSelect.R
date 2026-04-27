@@ -12,6 +12,7 @@
 #' @importFrom reshape2 melt
 #' @importFrom ggplot2 ggplot aes geom_line geom_hline scale_x_reverse labs theme_minimal theme element_text element_line element_blank
 #' @importFrom dplyr filter
+#' @importFrom rlang .data
 #' @method plot StabSelect
 #' @export
 plot.StabSelect <- function(x, threshold = 0.75, highlight_color = "red", background_color = "gray", ...) {
@@ -48,10 +49,10 @@ plot.StabSelect <- function(x, threshold = 0.75, highlight_color = "red", backgr
   df_long$Lambda <- lambda_seq[df_long$Index]
   df_long$Status <- ifelse(df_long$Variable %in% selected_vars, "Selected", "Other")
   
-  p <- ggplot2::ggplot(df_long, ggplot2::aes(x = log10(Lambda), y = SelectionFreq, group = Variable)) +
-    ggplot2::geom_line(data = dplyr::filter(df_long, Status == "Other"),
+  p <- ggplot2::ggplot(df_long, ggplot2::aes(x = log10(.data$Lambda), y = .data$SelectionFreq, group = .data$Variable)) +
+    ggplot2::geom_line(data = dplyr::filter(df_long, .data$Status == "Other"),
                        color = background_color, alpha = 0.5, size = 0.5) +
-    ggplot2::geom_line(data = dplyr::filter(df_long, Status == "Selected"),
+    ggplot2::geom_line(data = dplyr::filter(df_long, .data$Status == "Selected"),
                        color = highlight_color, size = 0.8) +
     ggplot2::geom_hline(yintercept = threshold, linetype = "dashed", linewidth = 0.6) +
     ggplot2::scale_x_reverse() +

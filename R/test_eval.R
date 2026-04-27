@@ -247,6 +247,25 @@ test_eval <- function(test_z, test_delta, test_time,
   NA_real_
 }
 
+#' Predict Survival Probabilities From a Baseline-Hazard Object
+#'
+#' @description
+#' Given a per-subject linear predictor (risk score) and a baseline cumulative
+#' hazard object as returned by \code{\link{get_baseline_hazard}}, returns the
+#' predicted survival probability matrix at the supplied evaluation times.
+#' Used internally by \code{\link{test_eval}} for IBS computation.
+#'
+#' @param test_RS Numeric vector of risk scores (\eqn{Z\beta}) for the test subjects.
+#' @param eval_times Numeric vector of times at which to evaluate \eqn{S(t)}.
+#' @param train_baseline_obj A list with element \code{predict_baseline}, as
+#'   returned by \code{\link{get_baseline_hazard}}.
+#' @param test_stratum Optional stratum vector for the test subjects. Defaults
+#'   to a single stratum.
+#'
+#' @return A numeric matrix of dimension \code{length(test_RS) x length(eval_times)}
+#'   of predicted survival probabilities \eqn{\exp(-e^{Z\beta}\,\hat\Lambda_0(t))}.
+#'
+#' @keywords internal
 #' @export
 predict_surv_prob <- function(test_RS, eval_times, train_baseline_obj, test_stratum = NULL) {
   n <- length(test_RS)
@@ -263,6 +282,28 @@ predict_surv_prob <- function(test_RS, eval_times, train_baseline_obj, test_stra
   S_pred
 }
 
+#' Estimate the Baseline Cumulative Hazard for a Cox Fit
+#'
+#' @description
+#' Computes the Breslow estimator of the baseline cumulative hazard
+#' \eqn{\hat\Lambda_0(t)} corresponding to a coefficient vector \code{beta},
+#' optionally stratified, by fitting an offset-only Cox model on the supplied
+#' training data. Returns a closure that evaluates \eqn{\hat\Lambda_0(t)} at
+#' arbitrary times. Used internally by \code{\link{test_eval}} (criterion
+#' \code{"IBS"}).
+#'
+#' @param z Numeric matrix of training covariates.
+#' @param delta Numeric event-indicator vector (1 = event, 0 = censored).
+#' @param time Numeric vector of observed event/censoring times.
+#' @param beta Numeric vector of estimated coefficients.
+#' @param stratum Optional stratum vector. If supplied, a separate baseline
+#'   hazard is estimated within each stratum.
+#'
+#' @return A list with one element, \code{predict_baseline}, a function with
+#'   signature \code{function(times, strat_id = NULL)} returning
+#'   \eqn{\hat\Lambda_0(\text{times})} for the requested stratum.
+#'
+#' @keywords internal
 #' @export
 get_baseline_hazard <- function(z, delta, time, beta, stratum = NULL) {
   lp <- drop(as.matrix(z) %*% as.matrix(beta))
@@ -312,7 +353,7 @@ get_baseline_hazard <- function(z, delta, time, beta, stratum = NULL) {
     )
   }
 
-  predict_baseline <- function(times, strat_id) {
+  predict_baseline <- function(times, strat_id = NULL) {
     sid <- as.character(strat_id)
     if (!sid %in% names(baseline_funs)) {
       stop("Stratum ", strat_id, " not present in training data.")

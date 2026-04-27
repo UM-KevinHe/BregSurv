@@ -59,7 +59,8 @@
 #' # Load example data
 #' data(ExampleData_lowdim)
 #' train_dat_lowdim <- ExampleData_lowdim$train
-#' train_dat_lowdim$time <- round(train_dat_lowdim$time, 2)   # Rounding time introduces ties for demonstration
+#' # Rounding the event times introduces ties for demonstration purposes
+#' train_dat_lowdim$time <- round(train_dat_lowdim$time, 2)
 #' 
 #' eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 50)
 #' 

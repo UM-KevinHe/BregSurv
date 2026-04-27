@@ -214,21 +214,21 @@ cv.plot(cvfit)
 ### Example 5 — NCC (matched case–control) + KL
 
 ```r
-data(ExampleData_cc)
-tr <- ExampleData_cc$train
+data(ExampleData_cc_lowdim)
+tr <- ExampleData_cc_lowdim$train
 
 fit <- ncckl(
   y       = tr$y,              # 0 = control, 1 = case
   z       = tr$z,
   stratum = tr$stratum,        # matched-set ID; REQUIRED
   etas    = generate_eta("exponential", n = 50, max_eta = 5),
-  beta    = ExampleData_cc$beta_external,
+  beta    = ExampleData_cc_lowdim$beta_external,
   method  = "breslow"          # or "exact"; identical for 1:M matching
 )
 
 cvfit <- cv.ncckl(
   y = tr$y, z = tr$z, stratum = tr$stratum,
-  beta = ExampleData_cc$beta_external,
+  beta = ExampleData_cc_lowdim$beta_external,
   etas = generate_eta("exponential", n = 50, max_eta = 5),
   method = "exact", nfolds = 5, cv.criteria = "loss"
 )
@@ -300,7 +300,7 @@ Bagging objects return `$best_beta` (the aggregated coefficient vector, usable d
 - `ExampleData_lowdim` — low-dim Cox: train (n=100), test (n=2000), 6 predictors, plus `beta_external_fair`
 - `ExampleData_highdim` — high-dim Cox: train (n=200), test (n=2000), 50 predictors (6 signal + 44 AR(1) noise), plus `beta_external` and multi-source `beta_external.multi*`
 - `ExampleData_indi` — paired internal/external individual-level Cox data
-- `ExampleData_cc` — NCC: 200 matched sets (1:4) in train, 500 in test, 6 predictors, `beta_external`
+- `ExampleData_cc_lowdim` — NCC: 200 matched sets (1:4) in train, 500 in test, 6 predictors, `beta_external`
 - `ExampleData_cc_highdim` — NCC high-dim: 50 matched sets (1:5) in train, 500 in test, 20 predictors, `beta_external`
 - Simulation helpers: `sim.cox.highdim`, `sim.binary`, `sim_integration`, `sim.matched_cc`
 

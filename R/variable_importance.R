@@ -156,6 +156,7 @@ variable_importance <- function(
 #' @param title Character. Plot title. Default "Top variables by selection frequency".
 #' @param ... Unused.
 #'
+#' @importFrom rlang .data
 #' @export
 plot.variable_importance <- function(
     x,
@@ -191,7 +192,7 @@ plot.variable_importance <- function(
 
   df$Variable <- factor(df$Variable, levels = rev(df$Variable))
 
-  p <- ggplot2::ggplot(df, ggplot2::aes(x = SelectionFreq, y = Variable)) +
+  p <- ggplot2::ggplot(df, ggplot2::aes(x = .data$SelectionFreq, y = .data$Variable)) +
     ggplot2::geom_col(width = 0.8) +
     ggplot2::scale_x_continuous(limits = c(0, 1)) +
     ggplot2::labs(

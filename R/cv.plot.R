@@ -4,7 +4,8 @@
 #' Plots cross-validation performance across eta values for
 #' \code{cv.coxkl}, \code{cv.coxkl_ridge}, \code{cv.coxkl_enet},
 #' \code{cv.cox_MDTL}, \code{cv.cox_MDTL_ridge}, \code{cv.cox_MDTL_enet},
-#' \code{cv.ncckl}, \code{cv.ncckl_enet}, or \code{cv.cox_indi_enet}
+#' \code{cv.ncckl}, \code{cv.ncckl_enet}, \code{cv.ncc_indi},
+#' \code{cv.ncc_MDTL}, or \code{cv.cox_indi_enet}
 #' objects in a Biometrics-style figure. It displays the cross-validated
 #' performance curve (each eta at its best lambda), a baseline reference at
 #' \code{eta = 0}, and marks the optimal \code{eta}.
@@ -29,7 +30,9 @@ cv.plot <- function(object,
   if (inherits(object, "cv.coxkl") ||
       inherits(object, "cv.cox_MDTL") ||
       inherits(object, "cv.ncckl") ||
-      inherits(object, "cv.cox_indi")) {
+      inherits(object, "cv.cox_indi") ||
+      inherits(object, "cv.ncc_indi") ||
+      inherits(object, "cv.ncc_MDTL")) {
 
     df <- object$internal_stat
     criteria <- object$criteria

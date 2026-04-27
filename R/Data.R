@@ -150,9 +150,9 @@
 #' (Conditional Logistic Regression, CLR). The data is organized into matched sets
 #' (strata), with exactly one case (\code{y=1}) and \eqn{m=4} controls (\code{y=0}) per set.
 #'
-#' @name ExampleData_cc
+#' @name ExampleData_cc_lowdim
 #' @docType data
-#' @usage data(ExampleData_cc)
+#' @usage data(ExampleData_cc_lowdim)
 #'
 #' @format A list containing the following elements:
 #' \describe{
@@ -189,8 +189,8 @@
 #' }
 #'
 #' @examples
-#' data(ExampleData_cc)
-"ExampleData_cc"
+#' data(ExampleData_cc_lowdim)
+"ExampleData_cc_lowdim"
 
 
 
@@ -241,6 +241,56 @@
 #' data(ExampleData_indi)
 #' str(ExampleData_indi)
 "ExampleData_indi"
+
+
+
+#' Example internal/external matched case-control individual-level data
+#'
+#' @description
+#' A simulated 1:4 matched case-control dataset for illustrating
+#' \code{\link{ncc_indi}} and \code{\link{cv.ncc_indi}}. The object contains
+#' both an internal cohort and an external cohort in case-control form,
+#' so that the external cohort can be used as individual-level external
+#' information when fitting the conditional logistic regression model with
+#' external integration.
+#'
+#' This is the individual-level analog of \code{\link{ExampleData_cc_lowdim}}:
+#' rather than supplying \code{beta_external} only, the external cohort is
+#' provided in full (subject-level matched-set data).
+#'
+#' @name ExampleData_cc_indi
+#' @docType data
+#' @usage data(ExampleData_cc_indi)
+#'
+#' @format A list containing two cohorts:
+#' \describe{
+#'   \item{internal}{A list with components for the internal matched case-control study:
+#'     \describe{
+#'       \item{z}{Numeric matrix of covariates of dimension \eqn{1000\times 6}
+#'         with columns named \code{Z1}--\code{Z6}.}
+#'       \item{y}{Integer vector of binary outcomes (\code{1}=case, \code{0}=control).}
+#'       \item{stratum}{Integer vector identifying the matched set for each
+#'         observation (200 unique strata, exactly one case and four controls per set).}
+#'     }
+#'   }
+#'   \item{external}{A list with the same component names as \code{internal},
+#'     containing 500 matched sets (\eqn{n = 2500}) with the same 1:4 matching
+#'     design, intended to be passed as the external cohort to
+#'     \code{\link{ncc_indi}}.}
+#' }
+#'
+#' @details
+#' Both the internal and external cohorts are 1:4 matched case-control studies
+#' on six covariates \code{Z1}--\code{Z6}. The matching design (one case and
+#' four controls per stratum) is preserved in both cohorts, which is required
+#' by \code{\link{ncc_indi}} and the stratum-level fold construction in
+#' \code{\link{cv.ncc_indi}}.
+#'
+#' @examples
+#' data(ExampleData_cc_indi)
+#' str(ExampleData_cc_indi, max.level = 2)
+"ExampleData_cc_indi"
+
 
 
 

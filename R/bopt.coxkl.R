@@ -19,8 +19,14 @@
 #'   e.g., \code{list(eta = c(0, 10))}.
 #' @param init_grid_dt A \code{data.frame} of initial points for the optimization.
 #'   Default is \code{0} if \code{init_grid_dt} is provided.
+#' @param init_points Number of randomly drawn initial points to evaluate before
+#'   the Bayesian search begins, in addition to those supplied via
+#'   \code{init_grid_dt}. Default \code{0}.
 #' @param n_iter Number of iterations for the Bayesian Optimization process.
 #' @param acq Acquisition function type. Default is \code{"ucb"}.
+#' @param kappa Numeric tuning parameter controlling the exploration--exploitation
+#'   trade-off of the upper confidence bound (UCB) acquisition function. Larger
+#'   values favour exploration. Default \code{2.576}.
 #' @param seed Optional integer seed to ensure reproducible CV fold assignments.
 #' @param verbose Logical; if \code{TRUE}, progress of the optimization is printed.
 #' @param ... Additional arguments passed to \code{\link{cv.coxkl}} and \code{\link{coxkl}}.
@@ -69,8 +75,6 @@ bopt.coxkl <- function(z, delta, time, stratum = NULL,
                        seed = NULL,
                        verbose = TRUE, ...) {
 
-  library(rBayesianOptimization)
-
   target_criteria <- match.arg(criteria)
 
   if (is.null(seed)) {
@@ -106,7 +110,7 @@ bopt.coxkl <- function(z, delta, time, stratum = NULL,
     ))
   }
 
-  opt_res <- BayesianOptimization(
+  opt_res <- rBayesianOptimization::BayesianOptimization(
     FUN = internal_scoring_func,
     bounds = bounds_list,
     init_grid_dt = init_grid_dt,

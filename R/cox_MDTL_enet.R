@@ -284,8 +284,7 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     result$returnX <- list(XX = std.Z,
                            time = time,
                            delta = delta,
-                           stratum = stratum,
-                           RS = RS)
+                           stratum = stratum)
   }
   return(result)
 }

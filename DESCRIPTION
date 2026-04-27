@@ -30,6 +30,7 @@ Imports:
     survival,
     MASS,
     mvtnorm,
+    scales,
     rBayesianOptimization
 Depends:
     R (>= 4.0)

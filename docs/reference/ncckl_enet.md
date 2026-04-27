@@ -268,14 +268,14 @@ regularization.
 
 ``` r
 if (FALSE) { # \dontrun{
-data(ExampleData_cc)
-train_cc <- ExampleData_cc$train
+data(ExampleData_cc_lowdim)
+train_cc <- ExampleData_cc_lowdim$train
 
 y <- train_cc$y
 z <- train_cc$z
 sets <- train_cc$stratum
 
-beta_external_cc <- ExampleData_cc$beta_external
+beta_external_cc <- ExampleData_cc_lowdim$beta_external
 
 # Fit CLR-KL-ENet with eta = 0 (standard Elastic Net CLR)
 ncckl_enet_fit <- ncckl_enet(
