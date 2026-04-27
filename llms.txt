@@ -327,9 +327,10 @@ Bagging objects return `$best_beta` (the aggregated coefficient vector, usable d
 
 - `ExampleData_lowdim` — low-dim Cox: train (n=100), test (n=2000), 6 predictors, plus `beta_external_fair`
 - `ExampleData_highdim` — high-dim Cox: train (n=200), test (n=2000), 50 predictors (6 signal + 44 AR(1) noise), plus `beta_external` and multi-source `beta_external.multi*`
-- `ExampleData_indi` — paired internal/external individual-level Cox data
-- `ExampleData_cc_lowdim` — NCC: 200 matched sets (1:4) in train, 500 in test, 6 predictors, `beta_external`
+- `ExampleData_indi` — paired internal/external individual-level Cox data (used for `cox_indi` examples)
+- `ExampleData_cc_lowdim` — NCC: 200 matched sets (1:4) in train, 500 in test, 6 predictors, plus `beta_external` (used for `ncckl` / `ncc_MDTL` examples)
 - `ExampleData_cc_highdim` — NCC high-dim: 50 matched sets (1:5) in train, 500 in test, 20 predictors, `beta_external`
+- `ExampleData_cc_indi` — paired internal/external NCC data: internal 200 sets (1:4, n=1000), external 500 sets (1:4, n=2500), 6 predictors. Use for `ncc_indi` / `cv.ncc_indi` examples (the NCC analog of `ExampleData_indi`).
 - Simulation helpers: `sim.cox.highdim`, `sim.binary`, `sim_integration`, `sim.matched_cc`
 
 ---
