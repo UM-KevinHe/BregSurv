@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+test_*.py
+README.md
+INSTALL.md
+.mcpbignore
+*.mcpb

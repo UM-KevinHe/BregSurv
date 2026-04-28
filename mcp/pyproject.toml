@@ -1,0 +1,8 @@
+[project]
+name = "survbregdiv-mcp"
+version = "1.0.0"
+description = "MCP server bridging Claude Desktop to the SurvBregDiv R package for survival-analysis transfer learning."
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.0.0",
+]

@@ -6,8 +6,14 @@ docs/CLAUDE.*
 .cursorrules
 .github/copilot-instructions.md
 
-# MCP server prototype — kept local only for now (Phase 4, not yet publishable)
-mcp/
+# MCP extension — source files (server.py, manifest.json, pyproject.toml,
+# r_scripts/, tests, INSTALL.md, README.md) ARE tracked. Only build
+# artifacts, local Python cache, and config backups stay ignored.
+mcp/__pycache__/
+mcp/*.pyc
+mcp/*.pyo
+mcp/*.mcpb
+mcp/*.bak
 
 .Rproj.user
 .Rhistory
