@@ -49,8 +49,15 @@ def _find_rscript() -> str:
 
     Resolution order:
       1. $SURVBREGDIV_RSCRIPT (explicit override)
-      2. "Rscript" on PATH
-      3. Highest-versioned R-x.y.z under C:\\Program Files\\R\\
+      2. "Rscript" / "Rscript.exe" on PATH
+      3. Windows: highest-versioned R-x.y.z under C:\\Program Files\\R\\
+         (and the x86 sibling)
+      4. macOS / Linux: well-known install locations (CRAN framework,
+         /usr/local/bin, Homebrew, distro defaults)
+
+    The macOS fallback matters because Claude Desktop on macOS does not
+    inherit the user's shell PATH when spawning subprocesses, so step 2
+    can miss an Rscript that "works in Terminal."
     """
     override = os.environ.get("SURVBREGDIV_RSCRIPT")
     if override and Path(override).exists():
@@ -73,10 +80,19 @@ def _find_rscript() -> str:
             if exe.exists():
                 return str(exe)
 
+    for cand in (
+        Path("/Library/Frameworks/R.framework/Resources/bin/Rscript"),
+        Path("/usr/local/bin/Rscript"),
+        Path("/opt/homebrew/bin/Rscript"),
+        Path("/usr/bin/Rscript"),
+    ):
+        if cand.exists():
+            return str(cand)
+
     raise FileNotFoundError(
         "Rscript not found. Install R (https://cran.r-project.org/), or set "
         "the SURVBREGDIV_RSCRIPT environment variable to the full path of "
-        "Rscript(.exe)."
+        "Rscript (or Rscript.exe on Windows)."
     )
 
 

@@ -12,7 +12,6 @@ Description: Transfer Learning for Time-to-Event Modelling via Bregman Divergenc
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 License: GPL-3
 LinkingTo:
     Rcpp,
@@ -41,3 +40,4 @@ Suggests:
     kableExtra
 VignetteBuilder: knitr
 SystemRequirements: GNU make
+Config/roxygen2/version: 8.0.0

@@ -31,3 +31,4 @@ src/*.so
 *.dylib
 /doc/
 /Meta/
+.positai

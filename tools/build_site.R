@@ -31,4 +31,23 @@ if (length(claude_artifacts)) {
           paste(basename(claude_artifacts), collapse = ", "))
 }
 
+# Scrub CLAUDE.md-derived entries from docs/search.json. pkgdown indexes
+# CLAUDE.md into the site-wide search before we remove the rendered file,
+# so without this step the site search box would still surface CLAUDE
+# snippets even though clicking them 404s.
+search_path <- "docs/search.json"
+if (requireNamespace("jsonlite", quietly = TRUE) && file.exists(search_path)) {
+  idx <- jsonlite::fromJSON(search_path, simplifyVector = FALSE)
+  has_claude <- function(entry) {
+    fields <- unlist(entry[c("title", "path")], use.names = FALSE)
+    any(grepl("CLAUDE", fields, fixed = TRUE))
+  }
+  cleaned <- Filter(Negate(has_claude), idx)
+  removed <- length(idx) - length(cleaned)
+  if (removed > 0L) {
+    jsonlite::write_json(cleaned, search_path, auto_unbox = TRUE)
+    message(sprintf("Removed %d CLAUDE entries from %s.", removed, search_path))
+  }
+}
+
 message("docs/llms.txt successfully overridden with curated llms.txt.")
