@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # start_analysis.R - dispatcher for the start_analysis MCP wizard tool.
 #
-# Pure R decision logic — no SurvBregDiv calls. Stateless state machine:
+# Pure R decision logic — no BregSurv calls. Stateless state machine:
 # the AI calls this with whatever it has accumulated; the wizard either
 # returns the next-question payload (so AI can ask the user) or a final
 # recommendation (so AI can proceed to inspect_data + the actual fit/cv tool).

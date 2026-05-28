@@ -1,8 +1,8 @@
-# SurvBregDiv
+# BregSurv
 
 **Transfer learning for time-to-event modelling via Bregman divergence.**
 
-`SurvBregDiv` enables principled borrowing of external information when fitting
+`BregSurv` enables principled borrowing of external information when fitting
 Cox proportional hazards or nested case–control (NCC) models, through a unified
 Bregman-divergence framework that accommodates population heterogeneity between
 internal and external cohorts.
@@ -10,16 +10,16 @@ internal and external cohorts.
 > #### Writing R code with an AI assistant?
 >
 > An AI-optimized reference is published at
-> **<https://um-kevinhe.github.io/SurvBregDiv/llms.txt>**
+> **<https://um-kevinhe.github.io/BregSurv/llms.txt>**
 > (following the [llms.txt](https://llmstxt.org/) convention).
 > Point your AI at that URL, or paste its contents into the chat, to give the
 > assistant a compact map of the package — decision tree, parameter reference,
 > worked examples, and common pitfalls — without ingesting the full website.
 
-## Running SurvBregDiv from Claude Desktop
+## Running BregSurv from Claude Desktop
 
 We also ship a **Claude Desktop extension** (an MCP server) that lets the
-AI assistant run `SurvBregDiv` analyses *for* you, instead of generating R
+AI assistant run `BregSurv` analyses *for* you, instead of generating R
 code for you to run yourself. You describe your data and your question in
 plain English (or Chinese); Claude picks the right model from the package,
 calls the R function on your machine, and explains the result.
@@ -33,7 +33,7 @@ can do the bookkeeping while you focus on the science.
 
 **What you need on your machine:**
 
-- **R ≥ 4.0** with the `SurvBregDiv` package installed (see
+- **R ≥ 4.0** with the `BregSurv` package installed (see
   [Installation](#installation) below).
 - **[Claude Desktop](https://claude.ai/download)** (free; macOS, Windows,
   or Linux).
@@ -43,8 +43,8 @@ can do the bookkeeping while you focus on the science.
   only sends file paths and analysis summaries (coefficients, CV scores)
   back through the chat.
 
-**Quick install.** Download `survbregdiv-<version>.mcpb` from the
-[Releases page](https://github.com/UM-KevinHe/SurvBregDiv/releases),
+**Quick install.** Download `bregsurv-<version>.mcpb` from the
+[Releases page](https://github.com/UM-KevinHe/BregSurv/releases),
 then in Claude Desktop: **Settings → Extensions → Advanced settings →
 Extension Developer → "Install Extension…"** and pick the file. Tell the
 install dialog where your `Rscript` lives, then **toggle the extension
@@ -60,18 +60,18 @@ Full step-by-step instructions, troubleshooting, and the privacy model:
 
 ```r
 # CRAN
-install.packages("SurvBregDiv")
+install.packages("BregSurv")
 
 # Development version from GitHub
-remotes::install_github("UM-KevinHe/SurvBregDiv")
+remotes::install_github("UM-KevinHe/BregSurv")
 ```
 
 Requires R ≥ 4.0.
 
 ## Documentation
 
-- **Tutorials and methodology**: <https://um-kevinhe.github.io/SurvBregDiv/>
-- **Function reference**: <https://um-kevinhe.github.io/SurvBregDiv/reference/>
+- **Tutorials and methodology**: <https://um-kevinhe.github.io/BregSurv/>
+- **Function reference**: <https://um-kevinhe.github.io/BregSurv/reference/>
 
 ## Getting help
 

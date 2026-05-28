@@ -13,7 +13,7 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 
 // KL_Cox_Estimate_cpp
 arma::vec KL_Cox_Estimate_cpp(const double N, const arma::mat& Z, const arma::vec& delta, const arma::vec& delta_eta, const arma::vec& n_each_stratum, const double eta, arma::vec beta_initial, const double tol, const int maxit, const double lambda, bool backtrack, bool message);
-RcppExport SEXP _SurvBregDiv_KL_Cox_Estimate_cpp(SEXP NSEXP, SEXP ZSEXP, SEXP deltaSEXP, SEXP delta_etaSEXP, SEXP n_each_stratumSEXP, SEXP etaSEXP, SEXP beta_initialSEXP, SEXP tolSEXP, SEXP maxitSEXP, SEXP lambdaSEXP, SEXP backtrackSEXP, SEXP messageSEXP) {
+RcppExport SEXP _BregSurv_KL_Cox_Estimate_cpp(SEXP NSEXP, SEXP ZSEXP, SEXP deltaSEXP, SEXP delta_etaSEXP, SEXP n_each_stratumSEXP, SEXP etaSEXP, SEXP beta_initialSEXP, SEXP tolSEXP, SEXP maxitSEXP, SEXP lambdaSEXP, SEXP backtrackSEXP, SEXP messageSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -35,7 +35,7 @@ END_RCPP
 }
 // pl_cal_exact
 double pl_cal_exact(const arma::vec& lp, const arma::vec& delta, const arma::vec& time, const arma::vec& n_each_stratum, const double comb_max);
-RcppExport SEXP _SurvBregDiv_pl_cal_exact(SEXP lpSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP comb_maxSEXP) {
+RcppExport SEXP _BregSurv_pl_cal_exact(SEXP lpSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP comb_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -50,7 +50,7 @@ END_RCPP
 }
 // calculateWTilde_exact
 arma::mat calculateWTilde_exact(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& n_each_stratum, const arma::vec& external_beta, const double comb_max);
-RcppExport SEXP _SurvBregDiv_calculateWTilde_exact(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP external_betaSEXP, SEXP comb_maxSEXP) {
+RcppExport SEXP _BregSurv_calculateWTilde_exact(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP external_betaSEXP, SEXP comb_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -66,7 +66,7 @@ END_RCPP
 }
 // ddloglik_exact_KL
 Rcpp::List ddloglik_exact_KL(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& beta, const arma::vec& n_each_stratum, const arma::mat& tildeW, const double eta, const double comb_max);
-RcppExport SEXP _SurvBregDiv_ddloglik_exact_KL(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP, SEXP tildeWSEXP, SEXP etaSEXP, SEXP comb_maxSEXP) {
+RcppExport SEXP _BregSurv_ddloglik_exact_KL(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP, SEXP tildeWSEXP, SEXP etaSEXP, SEXP comb_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -84,7 +84,7 @@ END_RCPP
 }
 // CoxKL_NR_exact
 arma::vec CoxKL_NR_exact(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& n_each_stratum, const arma::mat& tildeW, double eta, arma::vec beta, double tol, int max_iter, double comb_max);
-RcppExport SEXP _SurvBregDiv_CoxKL_NR_exact(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP tildeWSEXP, SEXP etaSEXP, SEXP betaSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP comb_maxSEXP) {
+RcppExport SEXP _BregSurv_CoxKL_NR_exact(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP tildeWSEXP, SEXP etaSEXP, SEXP betaSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP comb_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -104,7 +104,7 @@ END_RCPP
 }
 // calculateWTilde_breslow
 arma::mat calculateWTilde_breslow(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& risk_score_ext, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_calculateWTilde_breslow(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP risk_score_extSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_calculateWTilde_breslow(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP risk_score_extSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -119,7 +119,7 @@ END_RCPP
 }
 // pl_cal_breslow
 double pl_cal_breslow(const arma::vec& lp, const arma::vec& delta, const arma::vec& time, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_pl_cal_breslow(SEXP lpSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_pl_cal_breslow(SEXP lpSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -133,7 +133,7 @@ END_RCPP
 }
 // ddloglik_breslow_KL
 Rcpp::List ddloglik_breslow_KL(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& beta, const arma::vec& n_each_stratum, const arma::mat& Wtilde, const double eta);
-RcppExport SEXP _SurvBregDiv_ddloglik_breslow_KL(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP, SEXP WtildeSEXP, SEXP etaSEXP) {
+RcppExport SEXP _BregSurv_ddloglik_breslow_KL(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP, SEXP WtildeSEXP, SEXP etaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -150,7 +150,7 @@ END_RCPP
 }
 // CoxKL_NR_breslow
 arma::vec CoxKL_NR_breslow(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& n_each_stratum, const arma::mat& Wtilde, const double eta, arma::vec beta, double tol, int max_iter);
-RcppExport SEXP _SurvBregDiv_CoxKL_NR_breslow(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP WtildeSEXP, SEXP etaSEXP, SEXP betaSEXP, SEXP tolSEXP, SEXP max_iterSEXP) {
+RcppExport SEXP _BregSurv_CoxKL_NR_breslow(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP WtildeSEXP, SEXP etaSEXP, SEXP betaSEXP, SEXP tolSEXP, SEXP max_iterSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -169,7 +169,7 @@ END_RCPP
 }
 // KL_Cox_highdim
 List KL_Cox_highdim(const arma::mat& Z, const arma::vec& delta, const arma::vec& delta_tilde, const double& eta, const arma::vec& n_each_stratum, arma::vec& beta, const arma::vec& K1, const int& K0, const arma::vec& lambda_seq, const double& alpha, bool lambda_early_stop, double stop_loss_ratio, const arma::vec& group_multiplier, const int& max_total_iter, const int& max_each_iter, const double& tol, const int& initial_active_group, const double& nvar_max, const double& group_max, const bool& trace_lambda, const bool& actSet, const int& actIter, const int& activeGroupNum, const bool& actSetRemove);
-RcppExport SEXP _SurvBregDiv_KL_Cox_highdim(SEXP ZSEXP, SEXP deltaSEXP, SEXP delta_tildeSEXP, SEXP etaSEXP, SEXP n_each_stratumSEXP, SEXP betaSEXP, SEXP K1SEXP, SEXP K0SEXP, SEXP lambda_seqSEXP, SEXP alphaSEXP, SEXP lambda_early_stopSEXP, SEXP stop_loss_ratioSEXP, SEXP group_multiplierSEXP, SEXP max_total_iterSEXP, SEXP max_each_iterSEXP, SEXP tolSEXP, SEXP initial_active_groupSEXP, SEXP nvar_maxSEXP, SEXP group_maxSEXP, SEXP trace_lambdaSEXP, SEXP actSetSEXP, SEXP actIterSEXP, SEXP activeGroupNumSEXP, SEXP actSetRemoveSEXP) {
+RcppExport SEXP _BregSurv_KL_Cox_highdim(SEXP ZSEXP, SEXP deltaSEXP, SEXP delta_tildeSEXP, SEXP etaSEXP, SEXP n_each_stratumSEXP, SEXP betaSEXP, SEXP K1SEXP, SEXP K0SEXP, SEXP lambda_seqSEXP, SEXP alphaSEXP, SEXP lambda_early_stopSEXP, SEXP stop_loss_ratioSEXP, SEXP group_multiplierSEXP, SEXP max_total_iterSEXP, SEXP max_each_iterSEXP, SEXP tolSEXP, SEXP initial_active_groupSEXP, SEXP nvar_maxSEXP, SEXP group_maxSEXP, SEXP trace_lambdaSEXP, SEXP actSetSEXP, SEXP actIterSEXP, SEXP activeGroupNumSEXP, SEXP actSetRemoveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -203,7 +203,7 @@ END_RCPP
 }
 // Cox_NR
 List Cox_NR(const arma::mat& Z, const arma::vec& delta, const arma::vec& time, const arma::vec& n_each_stratum, arma::vec beta, int ties_method, double tol, int max_iter, double comb_max);
-RcppExport SEXP _SurvBregDiv_Cox_NR(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP betaSEXP, SEXP ties_methodSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP comb_maxSEXP) {
+RcppExport SEXP _BregSurv_Cox_NR(SEXP ZSEXP, SEXP deltaSEXP, SEXP timeSEXP, SEXP n_each_stratumSEXP, SEXP betaSEXP, SEXP ties_methodSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP comb_maxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -222,7 +222,7 @@ END_RCPP
 }
 // Cox_MDTL_cpp
 arma::vec Cox_MDTL_cpp(const double N, const arma::mat& Z, const arma::vec& delta, const arma::vec& n_each_stratum, const double eta, const arma::vec& external_beta, const arma::mat& Q, const arma::vec& beta_initial, const double lambda, const double tol, const int max_iter, bool backtrack, bool message);
-RcppExport SEXP _SurvBregDiv_Cox_MDTL_cpp(SEXP NSEXP, SEXP ZSEXP, SEXP deltaSEXP, SEXP n_each_stratumSEXP, SEXP etaSEXP, SEXP external_betaSEXP, SEXP QSEXP, SEXP beta_initialSEXP, SEXP lambdaSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP backtrackSEXP, SEXP messageSEXP) {
+RcppExport SEXP _BregSurv_Cox_MDTL_cpp(SEXP NSEXP, SEXP ZSEXP, SEXP deltaSEXP, SEXP n_each_stratumSEXP, SEXP etaSEXP, SEXP external_betaSEXP, SEXP QSEXP, SEXP beta_initialSEXP, SEXP lambdaSEXP, SEXP tolSEXP, SEXP max_iterSEXP, SEXP backtrackSEXP, SEXP messageSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -245,7 +245,7 @@ END_RCPP
 }
 // cox_MDTL_enet_cpp
 List cox_MDTL_enet_cpp(const arma::vec& delta, const arma::mat& Z, const arma::vec& n_each_prov, arma::vec& beta, const int K0, const arma::vec& K1, const arma::vec& lambda_seq, const bool lambda_early_stop, const double stop_loss_ratio, const arma::vec& group_multiplier, const int max_total_iter, const int max_each_iter, const double tol, const int initial_active_group, const double nvar_max, const double group_max, const bool trace_lambda, const bool actSet, const int actIter, const int activeGroupNum, const bool actSetRemove, const double alpha, const double eta_mdtl, const arma::mat& vcov, const arma::vec& Qbeta_ext);
-RcppExport SEXP _SurvBregDiv_cox_MDTL_enet_cpp(SEXP deltaSEXP, SEXP ZSEXP, SEXP n_each_provSEXP, SEXP betaSEXP, SEXP K0SEXP, SEXP K1SEXP, SEXP lambda_seqSEXP, SEXP lambda_early_stopSEXP, SEXP stop_loss_ratioSEXP, SEXP group_multiplierSEXP, SEXP max_total_iterSEXP, SEXP max_each_iterSEXP, SEXP tolSEXP, SEXP initial_active_groupSEXP, SEXP nvar_maxSEXP, SEXP group_maxSEXP, SEXP trace_lambdaSEXP, SEXP actSetSEXP, SEXP actIterSEXP, SEXP activeGroupNumSEXP, SEXP actSetRemoveSEXP, SEXP alphaSEXP, SEXP eta_mdtlSEXP, SEXP vcovSEXP, SEXP Qbeta_extSEXP) {
+RcppExport SEXP _BregSurv_cox_MDTL_enet_cpp(SEXP deltaSEXP, SEXP ZSEXP, SEXP n_each_provSEXP, SEXP betaSEXP, SEXP K0SEXP, SEXP K1SEXP, SEXP lambda_seqSEXP, SEXP lambda_early_stopSEXP, SEXP stop_loss_ratioSEXP, SEXP group_multiplierSEXP, SEXP max_total_iterSEXP, SEXP max_each_iterSEXP, SEXP tolSEXP, SEXP initial_active_groupSEXP, SEXP nvar_maxSEXP, SEXP group_maxSEXP, SEXP trace_lambdaSEXP, SEXP actSetSEXP, SEXP actIterSEXP, SEXP activeGroupNumSEXP, SEXP actSetRemoveSEXP, SEXP alphaSEXP, SEXP eta_mdtlSEXP, SEXP vcovSEXP, SEXP Qbeta_extSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -280,7 +280,7 @@ END_RCPP
 }
 // ddloglik_indi
 Rcpp::List ddloglik_indi(const arma::mat& Z, const arma::vec& delta, const arma::vec& beta, const arma::vec& weight, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_ddloglik_indi(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP weightSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_ddloglik_indi(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP weightSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -295,7 +295,7 @@ END_RCPP
 }
 // Cox_indi
 Rcpp::List Cox_indi(const arma::mat& Z, const arma::vec& delta, const arma::vec& weight, const arma::vec& n_each_stratum, arma::vec beta, double tol, int max_iter);
-RcppExport SEXP _SurvBregDiv_Cox_indi(SEXP ZSEXP, SEXP deltaSEXP, SEXP weightSEXP, SEXP n_each_stratumSEXP, SEXP betaSEXP, SEXP tolSEXP, SEXP max_iterSEXP) {
+RcppExport SEXP _BregSurv_Cox_indi(SEXP ZSEXP, SEXP deltaSEXP, SEXP weightSEXP, SEXP n_each_stratumSEXP, SEXP betaSEXP, SEXP tolSEXP, SEXP max_iterSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -312,7 +312,7 @@ END_RCPP
 }
 // mean_crossprod_weight
 double mean_crossprod_weight(const arma::mat& Z, const arma::vec& r, const int j, const double n_eff);
-RcppExport SEXP _SurvBregDiv_mean_crossprod_weight(SEXP ZSEXP, SEXP rSEXP, SEXP jSEXP, SEXP n_effSEXP) {
+RcppExport SEXP _BregSurv_mean_crossprod_weight(SEXP ZSEXP, SEXP rSEXP, SEXP jSEXP, SEXP n_effSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -326,7 +326,7 @@ END_RCPP
 }
 // StratCox_lasso
 List StratCox_lasso(arma::vec& delta_obs, arma::mat& Z, arma::vec& weight, arma::vec& n_each_prov, arma::vec& beta, int K0, arma::vec& K1, arma::vec& lambda_seq, bool lambda_early_stop, double stop_loss_ratio, arma::vec& group_multiplier, int max_total_iter, int max_each_iter, double tol, int initial_active_group, double nvar_max, double group_max, bool trace_lambda, bool actSet, int actIter, int activeGroupNum, bool actSetRemove);
-RcppExport SEXP _SurvBregDiv_StratCox_lasso(SEXP delta_obsSEXP, SEXP ZSEXP, SEXP weightSEXP, SEXP n_each_provSEXP, SEXP betaSEXP, SEXP K0SEXP, SEXP K1SEXP, SEXP lambda_seqSEXP, SEXP lambda_early_stopSEXP, SEXP stop_loss_ratioSEXP, SEXP group_multiplierSEXP, SEXP max_total_iterSEXP, SEXP max_each_iterSEXP, SEXP tolSEXP, SEXP initial_active_groupSEXP, SEXP nvar_maxSEXP, SEXP group_maxSEXP, SEXP trace_lambdaSEXP, SEXP actSetSEXP, SEXP actIterSEXP, SEXP activeGroupNumSEXP, SEXP actSetRemoveSEXP) {
+RcppExport SEXP _BregSurv_StratCox_lasso(SEXP delta_obsSEXP, SEXP ZSEXP, SEXP weightSEXP, SEXP n_each_provSEXP, SEXP betaSEXP, SEXP K0SEXP, SEXP K1SEXP, SEXP lambda_seqSEXP, SEXP lambda_early_stopSEXP, SEXP stop_loss_ratioSEXP, SEXP group_multiplierSEXP, SEXP max_total_iterSEXP, SEXP max_each_iterSEXP, SEXP tolSEXP, SEXP initial_active_groupSEXP, SEXP nvar_maxSEXP, SEXP group_maxSEXP, SEXP trace_lambdaSEXP, SEXP actSetSEXP, SEXP actIterSEXP, SEXP activeGroupNumSEXP, SEXP actSetRemoveSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -358,7 +358,7 @@ END_RCPP
 }
 // rev_cumsum
 arma::vec rev_cumsum(const arma::vec& X);
-RcppExport SEXP _SurvBregDiv_rev_cumsum(SEXP XSEXP) {
+RcppExport SEXP _BregSurv_rev_cumsum(SEXP XSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -369,7 +369,7 @@ END_RCPP
 }
 // combn_index
 arma::umat combn_index(int n, int r);
-RcppExport SEXP _SurvBregDiv_combn_index(SEXP nSEXP, SEXP rSEXP) {
+RcppExport SEXP _BregSurv_combn_index(SEXP nSEXP, SEXP rSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -381,7 +381,7 @@ END_RCPP
 }
 // pl_cal_theta
 double pl_cal_theta(const arma::vec& lp, const arma::vec& delta, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_pl_cal_theta(SEXP lpSEXP, SEXP deltaSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_pl_cal_theta(SEXP lpSEXP, SEXP deltaSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -394,7 +394,7 @@ END_RCPP
 }
 // calculateDeltaTilde
 arma::vec calculateDeltaTilde(const arma::vec& event, const arma::vec& time, const arma::vec& RS, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_calculateDeltaTilde(SEXP eventSEXP, SEXP timeSEXP, SEXP RSSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_calculateDeltaTilde(SEXP eventSEXP, SEXP timeSEXP, SEXP RSSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -408,7 +408,7 @@ END_RCPP
 }
 // loss_fn_cpp
 List loss_fn_cpp(const arma::mat& Z, const arma::vec& delta, arma::vec& beta, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_loss_fn_cpp(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_loss_fn_cpp(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -422,7 +422,7 @@ END_RCPP
 }
 // ddloglik_S0
 List ddloglik_S0(const arma::mat& Z, const arma::vec& delta, const arma::vec& beta, const arma::vec& n_each_stratum);
-RcppExport SEXP _SurvBregDiv_ddloglik_S0(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP) {
+RcppExport SEXP _BregSurv_ddloglik_S0(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -436,7 +436,7 @@ END_RCPP
 }
 // cox_c_index
 Rcpp::List cox_c_index(const arma::vec& time, const arma::vec& xbeta, const arma::vec& delta);
-RcppExport SEXP _SurvBregDiv_cox_c_index(SEXP timeSEXP, SEXP xbetaSEXP, SEXP deltaSEXP) {
+RcppExport SEXP _BregSurv_cox_c_index(SEXP timeSEXP, SEXP xbetaSEXP, SEXP deltaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -449,7 +449,7 @@ END_RCPP
 }
 // maxgrad
 double maxgrad(arma::mat& x, arma::vec& r, arma::vec& K, arma::vec& m);
-RcppExport SEXP _SurvBregDiv_maxgrad(SEXP xSEXP, SEXP rSEXP, SEXP KSEXP, SEXP mSEXP) {
+RcppExport SEXP _BregSurv_maxgrad(SEXP xSEXP, SEXP rSEXP, SEXP KSEXP, SEXP mSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -463,7 +463,7 @@ END_RCPP
 }
 // maxgrad_MDTL
 double maxgrad_MDTL(arma::mat& x, arma::vec& r, arma::vec& Qbeta_ext, arma::vec& Qbeta_Ustar, arma::vec& K, arma::vec& m, double eta);
-RcppExport SEXP _SurvBregDiv_maxgrad_MDTL(SEXP xSEXP, SEXP rSEXP, SEXP Qbeta_extSEXP, SEXP Qbeta_UstarSEXP, SEXP KSEXP, SEXP mSEXP, SEXP etaSEXP) {
+RcppExport SEXP _BregSurv_maxgrad_MDTL(SEXP xSEXP, SEXP rSEXP, SEXP Qbeta_extSEXP, SEXP Qbeta_UstarSEXP, SEXP KSEXP, SEXP mSEXP, SEXP etaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -480,7 +480,7 @@ END_RCPP
 }
 // maxgrad_indi
 double maxgrad_indi(arma::mat& x, arma::vec& r, arma::vec& K, arma::vec& m, const double n_eff);
-RcppExport SEXP _SurvBregDiv_maxgrad_indi(SEXP xSEXP, SEXP rSEXP, SEXP KSEXP, SEXP mSEXP, SEXP n_effSEXP) {
+RcppExport SEXP _BregSurv_maxgrad_indi(SEXP xSEXP, SEXP rSEXP, SEXP KSEXP, SEXP mSEXP, SEXP n_effSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -495,7 +495,7 @@ END_RCPP
 }
 // Cox_Vcov
 arma::mat Cox_Vcov(const arma::mat& Z, const arma::vec& delta, const arma::vec& beta, const arma::vec& n_each_stratum, const double lambda);
-RcppExport SEXP _SurvBregDiv_Cox_Vcov(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP, SEXP lambdaSEXP) {
+RcppExport SEXP _BregSurv_Cox_Vcov(SEXP ZSEXP, SEXP deltaSEXP, SEXP betaSEXP, SEXP n_each_stratumSEXP, SEXP lambdaSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -510,38 +510,38 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_SurvBregDiv_KL_Cox_Estimate_cpp", (DL_FUNC) &_SurvBregDiv_KL_Cox_Estimate_cpp, 12},
-    {"_SurvBregDiv_pl_cal_exact", (DL_FUNC) &_SurvBregDiv_pl_cal_exact, 5},
-    {"_SurvBregDiv_calculateWTilde_exact", (DL_FUNC) &_SurvBregDiv_calculateWTilde_exact, 6},
-    {"_SurvBregDiv_ddloglik_exact_KL", (DL_FUNC) &_SurvBregDiv_ddloglik_exact_KL, 8},
-    {"_SurvBregDiv_CoxKL_NR_exact", (DL_FUNC) &_SurvBregDiv_CoxKL_NR_exact, 10},
-    {"_SurvBregDiv_calculateWTilde_breslow", (DL_FUNC) &_SurvBregDiv_calculateWTilde_breslow, 5},
-    {"_SurvBregDiv_pl_cal_breslow", (DL_FUNC) &_SurvBregDiv_pl_cal_breslow, 4},
-    {"_SurvBregDiv_ddloglik_breslow_KL", (DL_FUNC) &_SurvBregDiv_ddloglik_breslow_KL, 7},
-    {"_SurvBregDiv_CoxKL_NR_breslow", (DL_FUNC) &_SurvBregDiv_CoxKL_NR_breslow, 9},
-    {"_SurvBregDiv_KL_Cox_highdim", (DL_FUNC) &_SurvBregDiv_KL_Cox_highdim, 24},
-    {"_SurvBregDiv_Cox_NR", (DL_FUNC) &_SurvBregDiv_Cox_NR, 9},
-    {"_SurvBregDiv_Cox_MDTL_cpp", (DL_FUNC) &_SurvBregDiv_Cox_MDTL_cpp, 13},
-    {"_SurvBregDiv_cox_MDTL_enet_cpp", (DL_FUNC) &_SurvBregDiv_cox_MDTL_enet_cpp, 25},
-    {"_SurvBregDiv_ddloglik_indi", (DL_FUNC) &_SurvBregDiv_ddloglik_indi, 5},
-    {"_SurvBregDiv_Cox_indi", (DL_FUNC) &_SurvBregDiv_Cox_indi, 7},
-    {"_SurvBregDiv_mean_crossprod_weight", (DL_FUNC) &_SurvBregDiv_mean_crossprod_weight, 4},
-    {"_SurvBregDiv_StratCox_lasso", (DL_FUNC) &_SurvBregDiv_StratCox_lasso, 22},
-    {"_SurvBregDiv_rev_cumsum", (DL_FUNC) &_SurvBregDiv_rev_cumsum, 1},
-    {"_SurvBregDiv_combn_index", (DL_FUNC) &_SurvBregDiv_combn_index, 2},
-    {"_SurvBregDiv_pl_cal_theta", (DL_FUNC) &_SurvBregDiv_pl_cal_theta, 3},
-    {"_SurvBregDiv_calculateDeltaTilde", (DL_FUNC) &_SurvBregDiv_calculateDeltaTilde, 4},
-    {"_SurvBregDiv_loss_fn_cpp", (DL_FUNC) &_SurvBregDiv_loss_fn_cpp, 4},
-    {"_SurvBregDiv_ddloglik_S0", (DL_FUNC) &_SurvBregDiv_ddloglik_S0, 4},
-    {"_SurvBregDiv_cox_c_index", (DL_FUNC) &_SurvBregDiv_cox_c_index, 3},
-    {"_SurvBregDiv_maxgrad", (DL_FUNC) &_SurvBregDiv_maxgrad, 4},
-    {"_SurvBregDiv_maxgrad_MDTL", (DL_FUNC) &_SurvBregDiv_maxgrad_MDTL, 7},
-    {"_SurvBregDiv_maxgrad_indi", (DL_FUNC) &_SurvBregDiv_maxgrad_indi, 5},
-    {"_SurvBregDiv_Cox_Vcov", (DL_FUNC) &_SurvBregDiv_Cox_Vcov, 5},
+    {"_BregSurv_KL_Cox_Estimate_cpp", (DL_FUNC) &_BregSurv_KL_Cox_Estimate_cpp, 12},
+    {"_BregSurv_pl_cal_exact", (DL_FUNC) &_BregSurv_pl_cal_exact, 5},
+    {"_BregSurv_calculateWTilde_exact", (DL_FUNC) &_BregSurv_calculateWTilde_exact, 6},
+    {"_BregSurv_ddloglik_exact_KL", (DL_FUNC) &_BregSurv_ddloglik_exact_KL, 8},
+    {"_BregSurv_CoxKL_NR_exact", (DL_FUNC) &_BregSurv_CoxKL_NR_exact, 10},
+    {"_BregSurv_calculateWTilde_breslow", (DL_FUNC) &_BregSurv_calculateWTilde_breslow, 5},
+    {"_BregSurv_pl_cal_breslow", (DL_FUNC) &_BregSurv_pl_cal_breslow, 4},
+    {"_BregSurv_ddloglik_breslow_KL", (DL_FUNC) &_BregSurv_ddloglik_breslow_KL, 7},
+    {"_BregSurv_CoxKL_NR_breslow", (DL_FUNC) &_BregSurv_CoxKL_NR_breslow, 9},
+    {"_BregSurv_KL_Cox_highdim", (DL_FUNC) &_BregSurv_KL_Cox_highdim, 24},
+    {"_BregSurv_Cox_NR", (DL_FUNC) &_BregSurv_Cox_NR, 9},
+    {"_BregSurv_Cox_MDTL_cpp", (DL_FUNC) &_BregSurv_Cox_MDTL_cpp, 13},
+    {"_BregSurv_cox_MDTL_enet_cpp", (DL_FUNC) &_BregSurv_cox_MDTL_enet_cpp, 25},
+    {"_BregSurv_ddloglik_indi", (DL_FUNC) &_BregSurv_ddloglik_indi, 5},
+    {"_BregSurv_Cox_indi", (DL_FUNC) &_BregSurv_Cox_indi, 7},
+    {"_BregSurv_mean_crossprod_weight", (DL_FUNC) &_BregSurv_mean_crossprod_weight, 4},
+    {"_BregSurv_StratCox_lasso", (DL_FUNC) &_BregSurv_StratCox_lasso, 22},
+    {"_BregSurv_rev_cumsum", (DL_FUNC) &_BregSurv_rev_cumsum, 1},
+    {"_BregSurv_combn_index", (DL_FUNC) &_BregSurv_combn_index, 2},
+    {"_BregSurv_pl_cal_theta", (DL_FUNC) &_BregSurv_pl_cal_theta, 3},
+    {"_BregSurv_calculateDeltaTilde", (DL_FUNC) &_BregSurv_calculateDeltaTilde, 4},
+    {"_BregSurv_loss_fn_cpp", (DL_FUNC) &_BregSurv_loss_fn_cpp, 4},
+    {"_BregSurv_ddloglik_S0", (DL_FUNC) &_BregSurv_ddloglik_S0, 4},
+    {"_BregSurv_cox_c_index", (DL_FUNC) &_BregSurv_cox_c_index, 3},
+    {"_BregSurv_maxgrad", (DL_FUNC) &_BregSurv_maxgrad, 4},
+    {"_BregSurv_maxgrad_MDTL", (DL_FUNC) &_BregSurv_maxgrad_MDTL, 7},
+    {"_BregSurv_maxgrad_indi", (DL_FUNC) &_BregSurv_maxgrad_indi, 5},
+    {"_BregSurv_Cox_Vcov", (DL_FUNC) &_BregSurv_Cox_Vcov, 5},
     {NULL, NULL, 0}
 };
 
-RcppExport void R_init_SurvBregDiv(DllInfo *dll) {
+RcppExport void R_init_BregSurv(DllInfo *dll) {
     R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
 }

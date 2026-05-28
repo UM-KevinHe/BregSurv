@@ -6,6 +6,12 @@ docs/CLAUDE.*
 .cursorrules
 .github/copilot-instructions.md
 
+# Private maintainer paper-reference notes (same threat model as CLAUDE.md)
+AGENT_NOTES.tex
+INTERNAL_NOTES.tex
+AGENT_NOTES.pdf
+INTERNAL_NOTES.pdf
+
 # MCP extension — source files (server.py, manifest.json, pyproject.toml,
 # r_scripts/, tests, INSTALL.md, README.md) ARE tracked. Only build
 # artifacts, local Python cache, and config backups stay ignored.
@@ -14,6 +20,20 @@ mcp/*.pyc
 mcp/*.pyo
 mcp/*.mcpb
 mcp/*.bak
+
+# Python agent package — source files ARE tracked. Only caches ignored.
+bregsurv_agent/__pycache__/
+bregsurv_agent/**/__pycache__/
+bregsurv_agent/*.pyc
+bregsurv_agent/**/*.pyc
+bregsurv_agent/*.egg-info/
+bregsurv_agent/build/
+bregsurv_agent/dist/
+
+# Top-level Python caches from app.py / dev scripts.
+__pycache__/
+*.pyc
+*.pyo
 
 .Rproj.user
 .Rhistory

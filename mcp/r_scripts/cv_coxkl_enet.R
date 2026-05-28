@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 # cv_coxkl_enet.R - dispatcher for the cv_coxkl_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::coxkl_enet(). Same return
+# K-fold CV of (eta, lambda) for BregSurv::coxkl_enet(). Same return
 # shape as cv_coxkl_ridge: per-eta best-lambda 1D table + global best
 # (eta, lambda) pair + p x n_etas beta matrix.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

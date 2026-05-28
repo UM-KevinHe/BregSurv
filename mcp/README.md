@@ -1,6 +1,6 @@
-# SurvBregDiv MCP server (developer notes)
+# BregSurv MCP server (developer notes)
 
-A FastMCP server that exposes `SurvBregDiv` R functions as MCP tools so
+A FastMCP server that exposes `BregSurv` R functions as MCP tools so
 Claude Desktop (or any MCP client) can fit Cox / NCC models on the
 user's machine without round-tripping through hand-written R code.
 
@@ -29,7 +29,7 @@ mcp/
    `claude_desktop_config.json` at `server.py` directly, so changes only
    require a Claude Desktop restart — no repack, no reinstall.
 2. The direct-mount config and an installed `.mcpb` extension share the
-   server name `survbregdiv` and conflict — disable / uninstall the
+   server name `bregsurv` and conflict — disable / uninstall the
    extension while developing.
 3. Edit `server.py` (or the relevant `r_scripts/*.R`).
 4. Quit Claude Desktop fully (tray icon → Quit), reopen.
@@ -41,7 +41,7 @@ keep them user-side actionable, not implementation notes.
 
 ```bash
 mcpb validate manifest.json          # schema check
-mcpb pack . survbregdiv-<version>.mcpb
+mcpb pack . bregsurv-<version>.mcpb
 ```
 
 The Anthropic `mcpb` CLI is npm-distributed:

@@ -5,12 +5,12 @@
 #   Rscript fit_cox_indi.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions
-# for both internal and external cohorts, calls SurvBregDiv::cox_indi(), writes
+# for both internal and external cohorts, calls BregSurv::cox_indi(), writes
 # results as JSON. On any error, writes a structured {status:"error",...} payload.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

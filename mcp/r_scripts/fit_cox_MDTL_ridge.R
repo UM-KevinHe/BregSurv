@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_cox_MDTL_ridge.R - dispatcher for the fit_cox_MDTL_ridge MCP tool.
 #
-# Calls SurvBregDiv::cox_MDTL_ridge() — Cox PH with Ridge (L2) penalty +
+# Calls BregSurv::cox_MDTL_ridge() — Cox PH with Ridge (L2) penalty +
 # Mahalanobis-distance penalty toward external β. High-dimensional companion
 # of cox_MDTL().
 #
@@ -14,7 +14,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

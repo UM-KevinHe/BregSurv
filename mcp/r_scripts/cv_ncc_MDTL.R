@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncc_MDTL.R - dispatcher for the cv_ncc_MDTL MCP tool.
 #
-# Cross-validates SurvBregDiv::ncc_MDTL() over a candidate `etas` grid.
+# Cross-validates BregSurv::ncc_MDTL() over a candidate `etas` grid.
 # CV criteria are NCC-family only (see whitelist below).
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

@@ -4,14 +4,14 @@
 # Called by mcp/server.py as:
 #   Rscript generate_eta.R <input.json> <output.json>
 #
-# Thin wrapper around SurvBregDiv::generate_eta(). Useful when the user has
+# Thin wrapper around BregSurv::generate_eta(). Useful when the user has
 # only described a range / shape of eta values rather than typing out an
 # explicit numeric array. The returned `etas` array is suitable for direct
 # use as the `etas` argument of any fit_* tool.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

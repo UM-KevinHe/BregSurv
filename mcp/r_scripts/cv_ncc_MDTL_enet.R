@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 # cv_ncc_MDTL_enet.R - dispatcher for the cv_ncc_MDTL_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::ncc_MDTL_enet().
+# K-fold CV of (eta, lambda) for BregSurv::ncc_MDTL_enet().
 # NCC-family CV criteria whitelist enforced at dispatcher level.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional `vcov`).
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

@@ -1,4 +1,4 @@
-url: https://um-kevinhe.github.io/SurvBregDiv/
+url: https://um-kevinhe.github.io/BregSurv/
 template:
   bootstrap: 5
   bslib:
@@ -19,7 +19,7 @@ navbar:
     - text: "Home"
       href: index.html
     - text: "Get started"
-      href: articles/SurvBregDiv.html
+      href: articles/BregSurv.html
     - text: "Appendix"
       menu:
         - text: "CV Criteria"
@@ -34,12 +34,12 @@ navbar:
       href: reference/index.html
   right:
     - icon: fa-github fa-lg
-      href: https://github.com/UM-KevinHe/SurvBregDiv
+      href: https://github.com/UM-KevinHe/BregSurv
       aria-label: "GitHub repository"
 articles:
   - title: "Get started"
     contents:
-      - SurvBregDiv
+      - BregSurv
   - title: "Appendix"
     contents:
       - CV_Criteria

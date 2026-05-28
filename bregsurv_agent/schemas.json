@@ -1,0 +1,2593 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "inspect_data",
+      "description": "Describe the structure of a local R data file (.rda / .RData / .rds).\n\nReads only metadata (object names, classes, dimensions, lengths) — it\nnever materialises the actual data values, so it is safe to run on very\nlarge files. Use this before calling `fit_coxkl` to discover what objects\na file contains and how to reference them in the *_expr parameters.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Absolute path to a local .rda, .RData, or .rds file. On Windows, backslashes in JSON must be escaped as \"\\\\\"."
+          }
+        },
+        "required": [
+          "data_path"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "generate_eta",
+      "description": "Produce a numeric `eta` sequence from a range + grid spec.\n\nConvenience helper: when the user has only described the *range* and\n*shape* of the eta values they want (e.g. \"10 exponentially spaced\nvalues from 0 to 5\"), call this to get a ready-to-use array. The\nreturned `etas` list can be fed directly into the `etas` argument of\nany `fit_*` tool.\n\nThe user does NOT have to type out an explicit eta array. Suggest this\nhelper whenever the user only specifies a range or grid type, or when\nthey ask \"what eta values should I try?\" — propose a sensible default\n(e.g. exponential, n=10, max_eta=5 for typical Cox + KL workflows; the\ngrid always includes 0 so you also recover the no-borrowing baseline)\nand call this tool to materialise it.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "description": "\"exponential\" (default; values are exp-spaced from 0 up to max_eta — denser sampling near 0, sparser near max_eta; good default for KL / MDTL where small eta values are most informative) or \"linear\" (uniform spacing).",
+            "default": "exponential"
+          },
+          "n": {
+            "type": "integer",
+            "description": "Number of grid points. Default 10.",
+            "default": 10
+          },
+          "max_eta": {
+            "type": "number",
+            "description": "Upper end of the eta range. Default 5.",
+            "default": 5.0
+          },
+          "min_eta": {
+            "type": "number",
+            "description": "Lower end. Default 0. **Ignored when method=\"exponential\"** — the exponential grid is rescaled to start at 0 regardless.",
+            "default": 0.0
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "start_analysis",
+      "description": "Guided wizard to pick the right BregSurv model for a new user's data.\n\nUSE THIS FIRST when the user is unsure which model / function they need.\nThe wizard walks them through 5 plain-language questions (no jargon, no\nfunction names) and returns the matching tool internally so AI can drive\nthe next step (inspect_data, then the actual fit/cv tool).\n\nKEY UX RULES (must follow):\n  * NEVER expose `recommended_mcp_tool` to the user — it's an internal\n    handle. Describe the model with `user_facing_model` instead.\n  * NEVER mention `inspect_data` or any other tool name to the user.\n    If you need to scan their file, just say \"let me look at your data\"\n    and call inspect_data silently.\n  * Translate `question` and `options[*].label` to the user's\n    conversation language. The wizard already returns localized strings\n    IF you pass `user_language=\"zh\"` for Chinese conversations or\n    `user_language=\"en\"` for English. Pass it on every call.\n\nSTATELESS state machine: pass back EVERY answer accumulated so far on\neach call, plus the new one. Wizard infers what's still needed.\n\nSKIP-AHEAD supported: if the user volunteers all five answers in one\nbreath, pass them all at once; the wizard returns the final\nrecommendation immediately, skipping the per-question loop.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "study_design": {
+            "type": "string",
+            "description": "\"cohort\" (standard cohort with time + event) or \"ncc\" (matched case-control with strata)."
+          },
+          "has_ties": {
+            "type": "boolean",
+            "description": "True if >~10% of event times repeat (cohort only; wizard sets it to False for NCC automatically)."
+          },
+          "external_info": {
+            "type": "string",
+            "description": "\"beta_only\" / \"beta_and_vcov\" / \"individual_data\" / \"none\". \"none\" → wizard tells user this package is unnecessary (use `survival` directly)."
+          },
+          "regularization": {
+            "type": "string",
+            "description": "\"none\" / \"enet\" / \"ridge\". Wizard handles fallbacks (NCC has no ridge; indi has no ridge; ties + reg not supported)."
+          },
+          "output_type": {
+            "type": "string",
+            "description": "\"fit\" (single eta, point estimate) or \"cv\" (multiple etas, cross-validated optimum)."
+          },
+          "user_language": {
+            "type": "string",
+            "description": "\"en\" (default) or \"zh\". Auto-pass based on the language the user has been writing in."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_coxkl",
+      "description": "Fit BregSurv::coxkl() — Cox PH with KL-divergence external integration.\n\nThe data file is read by a local R subprocess; the file *path* is the\nonly data-related value that transits this conversation. Raw covariate\nvalues stay on disk.\n\nExactly one of `beta_expr`, `beta_inline`, `RS_expr`, `RS_inline` is\nrequired — external information is the whole point of KL integration,\nand `coxkl()` itself enforces this.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file on the local machine."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression resolving to the n×p covariate matrix (or data.frame) inside the loaded file."
+          },
+          "time_expr": {
+            "type": "string",
+            "description": "R expression for the observed-time vector."
+          },
+          "delta_expr": {
+            "type": "string",
+            "description": "R expression for the event indicator (1/0)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of KL tuning values. 0 = no borrowing. If the user only gave a range / grid type rather than an explicit array, call `generate_eta` first and pass its `etas` field here."
+          },
+          "beta_expr": {
+            "type": "string",
+            "description": "R expression naming external β inside the file."
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Alternative — external β as a JSON array typed into chat. RS_expr / RS_inline: same pattern for external risk scores."
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "Optional R expression for stratum vector. tol, Mstop, backtrack, beta_initial_expr: pass-through to coxkl()."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "backtrack": {
+            "type": "boolean",
+            "default": false
+          },
+          "beta_initial_expr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_cox_indi",
+      "description": "Fit BregSurv::cox_indi() — Cox PH with individual-level external data.\n\nUse this when you have full covariate + outcome data for an external\ncohort (not just summary coefficients). The objective is a composite\n(weighted) stratified Cox likelihood: internal observations get weight\n1, external observations get weight `eta`. eta = 0 recovers an\ninternal-only fit.\n\nInternal and external z must have the same number of columns (same\ncovariates, same order). Strata are kept separate across the two\ncohorts — risk sets do not mix.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_int_expr": {
+            "type": "string",
+            "description": "R expression for internal n×p covariate matrix."
+          },
+          "time_int_expr": {
+            "type": "string",
+            "description": "R expression for internal observed-time vector."
+          },
+          "delta_int_expr": {
+            "type": "string",
+            "description": "R expression for internal event indicator (1/0)."
+          },
+          "z_ext_expr": {
+            "type": "string",
+            "description": "R expression for external n×p covariate matrix."
+          },
+          "time_ext_expr": {
+            "type": "string",
+            "description": "R expression for external observed-time vector."
+          },
+          "delta_ext_expr": {
+            "type": "string",
+            "description": "R expression for external event indicator (1/0)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of external weights (≥0). 0 = internal only. If the user only gave a range / grid type rather than an explicit array, call `generate_eta` first and pass its `etas` field here."
+          },
+          "stratum_int_expr": {
+            "type": "string",
+            "description": "Optional R expression for internal stratum vector."
+          },
+          "stratum_ext_expr": {
+            "type": "string",
+            "description": "Optional R expression for external stratum vector. max_iter, tol:    Pass-through to cox_indi() (Newton-Raphson)."
+          },
+          "max_iter": {
+            "type": "integer",
+            "default": 100
+          },
+          "tol": {
+            "type": "number",
+            "default": 1e-07
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "time_int_expr",
+          "delta_int_expr",
+          "z_ext_expr",
+          "time_ext_expr",
+          "delta_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_cox_MDTL",
+      "description": "Fit BregSurv::cox_MDTL() — Cox PH with Mahalanobis-distance penalty.\n\nPenalises (β − β_ext)ᵀ Q (β − β_ext) where β_ext is the external\ncoefficient vector and Q is a p×p weighting matrix (typically the\ninverse covariance / precision matrix of β_ext). When `vcov` is not\nsupplied, Q defaults to the identity → ridge-style shrinkage toward\nβ_ext.\n\nUse this when both external β̂ AND its (precision / covariance) matrix\nare available. If only β̂ is available, use `fit_coxkl` instead.\n\nExactly one of `beta_expr` or `beta_inline` is required. `vcov_expr`\nand `vcov_inline` are optional and mutually exclusive; omit both for\nthe identity-Q ridge variant.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression for the n×p covariate matrix."
+          },
+          "time_expr": {
+            "type": "string",
+            "description": "R expression for observed-time vector."
+          },
+          "delta_expr": {
+            "type": "string",
+            "description": "R expression for event indicator (1/0)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of penalty weights. 0 = standard Cox. If the user only gave a range / grid type rather than an explicit array, call `generate_eta` first and pass its `etas` field here."
+          },
+          "beta_expr": {
+            "type": "string",
+            "description": "R expression naming external β inside the file."
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Alternative — external β as a JSON numeric array."
+          },
+          "vcov_expr": {
+            "type": "string",
+            "description": "R expression for p×p weighting matrix Q (precision)."
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "description": "Alternative — Q as JSON list-of-rows (e.g. [[1,0],[0,1]])."
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "Optional R expression for stratum vector. tol, Mstop, backtrack, beta_initial_expr: pass-through to cox_MDTL()."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 50
+          },
+          "backtrack": {
+            "type": "boolean",
+            "default": false
+          },
+          "beta_initial_expr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_coxkl_ties",
+      "description": "Fit BregSurv::coxkl_ties() — coxkl with proper handling of tied event times.\n\nUse this instead of `fit_coxkl` whenever the data has a non-trivial\nfraction of tied event times. Plain `fit_coxkl` treats events as if all\ntimes were unique, which biases the partial likelihood under repeated\nevent times.\n\n`coxkl_ties` does NOT accept an external risk score (RS) — only `beta`\nis supported. Exactly one of `beta_expr` or `beta_inline` is required.\n\nThere is no Efron option on this function (`ties` is \"breslow\" or\n\"exact\" only). There is also no `_ridge`/`_enet` companion: ties +\nregularization is not currently supported in this package.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression for the n×p covariate matrix."
+          },
+          "time_expr": {
+            "type": "string",
+            "description": "R expression for observed-time vector."
+          },
+          "delta_expr": {
+            "type": "string",
+            "description": "R expression for event indicator (1/0)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of KL tuning values. 0 = no borrowing. If the user only gave a range / grid type, call `generate_eta` first and pass its `etas` field here."
+          },
+          "beta_expr": {
+            "type": "string",
+            "description": "R expression naming external β inside the file."
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Alternative — external β as a JSON numeric array."
+          },
+          "ties": {
+            "type": "string",
+            "description": "\"breslow\" (default; fast, scales linearly) or \"exact\" (enumerates combinations within tied risk sets — slow combinatorially in tie multiplicity). Always pass this argument explicitly.",
+            "default": "breslow"
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "Optional R expression for stratum vector. tol, Mstop, beta_initial_expr: pass-through to coxkl_ties()."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "beta_initial_expr": {
+            "type": "string"
+          },
+          "comb_max": {
+            "type": "number",
+            "description": "Cap on combination evaluations under ties=\"exact\" (default 1e7). Ignored when ties=\"breslow\".",
+            "default": 10000000.0
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_coxkl",
+      "description": "K-fold cross-validation of `eta` for BregSurv::coxkl().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot (\"需要我把 CV\n曲线画出来吗？\"). If the user agrees, do NOT call any MCP tool —\ninstead use Claude Desktop's built-in artifact / visualize feature\nto draw an inline SVG line chart from this result's `etas` and\n`cv_metric.values` arrays. Read `criteria` to set axis labels and\nbest-eta direction correctly. Full instructions live in the result's\n`_followup_offer_plot` field — read it at result-parsing time.\n\nFits `coxkl` on each (training fold + external info) split, evaluates\non the held-out fold under `cv_criteria`, and reports the CV-optimal\neta plus its full coefficient path.\n\n`cv_criteria` is one of (Cox-family):\n  * \"V&VH\" (default; Verweij & van Houwelingen partial-likelihood loss)\n  * \"LinPred\"\n  * \"CIndex_pooled\"\n  * \"CIndex_foldaverage\"\n\nDo NOT pass NCC-family criteria (\"AUC\" / \"Brier\" / \"loss\") here — they\nwill silently misbehave on a Cox cohort. (This is the single biggest\nlandmine in the package's API.)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Candidate eta grid. Use `generate_eta` if you only have a range/method spec. beta_expr / beta_inline / RS_expr / RS_inline: external info, exactly one required."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "cv_criteria": {
+            "type": "string",
+            "description": "One of the four Cox-family criteria above.",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "description": "Number of CV folds (default 5). stratum_expr, c_index_stratum_expr: optional strata. tol, Mstop, backtrack: pass-through to coxkl().",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "backtrack": {
+            "type": "boolean",
+            "default": false
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Optional integer for reproducible fold assignment."
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_coxkl_ties",
+      "description": "K-fold cross-validation of `eta` for BregSurv::coxkl_ties().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot. If the user\nagrees, draw an inline SVG line chart via Claude Desktop's built-in\nartifact / visualize feature from this result's `etas` and\n`cv_metric.values` arrays — there is no MCP plot tool to call. Read\n`criteria` to set axis labels and best-eta direction correctly.\nFull instructions live in the result's `_followup_offer_plot` field.\n\nUse this instead of `cv_coxkl` when the data has tied event times.\nNote: `cv.coxkl_ties` does NOT accept an external risk score — `beta`\nis required (exactly one of `beta_expr` / `beta_inline`).\n\nThe R-side default for `cv_criteria` is `\"CIndex_pooled\"` here, which\ndiffers from `cv_coxkl`'s default of `\"V&VH\"`. Pass `cv_criteria`\nexplicitly to avoid surprise.\n\nSame Cox-family criterion choices and same NCC-criteria warning as\n`cv_coxkl`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Candidate eta grid. beta_expr / beta_inline: external β (one required)."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "ties": {
+            "type": "string",
+            "description": "\"breslow\" (default) or \"exact\".",
+            "default": "breslow"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "description": "One of \"V&VH\", \"LinPred\", \"CIndex_pooled\", \"CIndex_foldaverage\".",
+            "default": "CIndex_pooled"
+          },
+          "nfolds": {
+            "type": "integer",
+            "description": "Number of CV folds. stratum_expr, c_index_stratum_expr: optional strata. tol, Mstop, comb_max: pass-through to coxkl_ties().",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Optional reproducibility seed. Returns: same shape as `cv_coxkl`, plus a `ties` field, plus the `_followup_offer_plot` meta-instruction (act on it)."
+          },
+          "comb_max": {
+            "type": "number",
+            "default": 10000000.0
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_cox_MDTL",
+      "description": "K-fold cross-validation of `eta` for BregSurv::cox_MDTL().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot. If the user\nagrees, draw an inline SVG line chart via Claude Desktop's built-in\nartifact / visualize feature from this result's `etas` and\n`cv_metric.values` arrays — there is no MCP plot tool to call. Read\n`criteria` to set axis labels and best-eta direction correctly.\nFull instructions live in the result's `_followup_offer_plot` field.\n\nMirrors `fit_cox_MDTL`'s parameter style: external `beta` is required;\noptional precision matrix `vcov` either via R expression (`vcov_expr`)\nor inline list-of-rows (`vcov_inline`); when neither is given, Q\ndefaults to identity (ridge-style penalty toward β_ext).\n\nSame Cox-family `cv_criteria` choices as `cv_coxkl`. Same NCC-criteria\nwarning applies.\n\nReturns: same shape as `cv_coxkl`, plus a `vcov_used` field reporting\n`\"identity\"` / `\"vcov_expr\"` / `\"vcov_inline\"`, plus the\n`_followup_offer_plot` meta-instruction (act on it).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_cox_indi",
+      "description": "K-fold cross-validation of `eta` for BregSurv::cox_indi().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot. If the user\nagrees, draw an inline SVG line chart via Claude Desktop's built-in\nartifact / visualize feature from this result's `etas` and\n`cv_metric.values` arrays — there is no MCP plot tool to call. Read\n`criteria` to set axis labels and best-eta direction correctly.\nFull instructions live in the result's `_followup_offer_plot` field.\n\nInternal data are split into folds; for each fold the model is trained\non (internal-train ∪ full external) and evaluated on the held-out\ninternal fold. External data are NEVER held out — they are always\nincluded in training, on the assumption that the external cohort is\nlarge and fixed.\n\nMirrors `fit_cox_indi`'s dual-cohort parameter style: separate\n`*_int_expr` and `*_ext_expr` for z/time/delta/stratum. Internal and\nexternal z must have the same number of columns.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file. z_int_expr, time_int_expr, delta_int_expr: internal cohort. z_ext_expr, time_ext_expr, delta_ext_expr: external cohort."
+          },
+          "z_int_expr": {
+            "type": "string"
+          },
+          "time_int_expr": {
+            "type": "string"
+          },
+          "delta_int_expr": {
+            "type": "string"
+          },
+          "z_ext_expr": {
+            "type": "string"
+          },
+          "time_ext_expr": {
+            "type": "string"
+          },
+          "delta_ext_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Candidate eta grid."
+          },
+          "cv_criteria": {
+            "type": "string",
+            "description": "Cox-family criterion. Default \"V&VH\".",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "description": "Number of CV folds. stratum_int_expr, stratum_ext_expr, c_index_stratum_expr: optional. max_iter, tol:    Pass-through to cox_indi() (Newton-Raphson).",
+            "default": 5
+          },
+          "stratum_int_expr": {
+            "type": "string"
+          },
+          "stratum_ext_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "max_iter": {
+            "type": "integer",
+            "default": 100
+          },
+          "tol": {
+            "type": "number",
+            "default": 1e-07
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Optional reproducibility seed."
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "time_int_expr",
+          "delta_int_expr",
+          "z_ext_expr",
+          "time_ext_expr",
+          "delta_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_coxkl_ridge",
+      "description": "Fit BregSurv::coxkl_ridge() — Cox PH with Ridge (L2) penalty + KL.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_coxkl`: useful when p >> n or under\nheavy collinearity. Ridge does NOT perform variable selection — all\ncoefficients are shrunk toward zero but stay non-zero. Ridge fits run\na full lambda path; on high-dim data this can be slow (see returned\n`_notice_speed_slow` field for tuning tips).\n\nDESIGN CONSTRAINT: `eta` is a SINGLE scalar (not an array). The fit\nreturns the full beta path along the lambda sequence at that one eta.\nTo compare multiple eta values, call `cv_coxkl_ridge` instead — that's\nwhere multi-eta tuning belongs. Same convention as `fit_*_enet` for\nthe KL/MDTL families.\n\nETA DEFAULT POLICY: if `eta` is omitted, it defaults to 0 (no external\nborrowing) and the result carries a `_notice_eta_default` field\ninstructing AI to flag this to the user. Most users actually want\neta > 0 — defaulting silently would discard their external info.\n\nExactly one of `beta_expr` / `beta_inline` / `RS_expr` / `RS_inline`\nis required.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression for the n×p covariate matrix."
+          },
+          "time_expr": {
+            "type": "string",
+            "description": "R expression for the observed-time vector."
+          },
+          "delta_expr": {
+            "type": "string",
+            "description": "R expression for the event indicator (1/0)."
+          },
+          "eta": {
+            "type": "number",
+            "description": "Optional single non-negative scalar. If omitted, defaults to 0 with a user-visible notice. beta_expr / beta_inline / RS_expr / RS_inline: external info, exactly one required. β is length-p; RS is length-n risk score."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Optional explicit lambda sequence (passed as `lambda` to R). If None, an internal sequence of length `nlambda` is auto-generated."
+          },
+          "nlambda": {
+            "type": "integer",
+            "description": "Length of the auto-generated lambda sequence. Default 100.",
+            "default": 100
+          },
+          "penalty_factor": {
+            "type": "number",
+            "description": "Numeric in [0, 1) controlling internal lambda-sequence generation. Default 0.999. Rarely changed.",
+            "default": 0.999
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "Optional R expression for stratum vector. tol, Mstop, backtrack, beta_initial_expr: pass-through to coxkl_ridge()."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 50
+          },
+          "backtrack": {
+            "type": "boolean",
+            "default": false
+          },
+          "beta_initial_expr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_coxkl_ridge",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::coxkl_ridge().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: after summarising results, your VERY FIRST follow-up\nsuggestion must be to offer a CV-path plot. If the user agrees, draw\nan inline SVG line chart via Claude Desktop's built-in artifact /\nvisualize feature from this result's `etas` and `cv_metric.values`\narrays — the values are ALREADY the metric at each eta's best lambda\n(1D plot, same shape as base cv_* tools). Annotate `best_lambda_per_eta`\nin tooltips. Full instructions live in `_followup_offer_plot`.\n\nInternally CVs a 2D (eta x lambda) grid; for each eta, the best lambda\nunder `cv_criteria` is selected; among those per-eta winners, the global\nbest (eta, lambda) pair is reported as `best`.\n\n`cv_criteria` is one of (Cox-family ONLY):\n  * \"V&VH\" (default; partial-likelihood loss)\n  * \"LinPred\"\n  * \"CIndex_pooled\"\n  * \"CIndex_foldaverage\"\n\nNCC-family criteria are rejected at dispatcher level.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Candidate eta grid (plural). Use `generate_eta` if only a range/method spec is available. beta_expr / beta_inline / RS_expr / RS_inline: external info, one required."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Optional explicit lambda sequence (shared across all etas). If None, auto-generated internally per eta."
+          },
+          "nlambda": {
+            "type": "integer",
+            "description": "Length of auto-generated lambda sequence. Default 100.",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number",
+            "description": "Lower-end ratio for auto-generated lambda sequence. If None, R defaults to 0.01 (n<p) or 1e-4 (n≥p)."
+          },
+          "cv_criteria": {
+            "type": "string",
+            "description": "One of the four Cox-family criteria above.",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "description": "Number of CV folds (default 5). stratum_expr, c_index_stratum_expr: optional strata.",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Optional integer for reproducible folds."
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_cox_MDTL_ridge",
+      "description": "Fit BregSurv::cox_MDTL_ridge() — Cox PH with Ridge + Mahalanobis penalty.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_cox_MDTL`: penalises (β−β_ext)ᵀ Q (β−β_ext)\nPLUS an L2 ridge penalty along a lambda path. Q defaults to identity\nwhen `vcov` is omitted (ridge-style shrinkage toward β_ext). Ridge fits\ncan be slow on high-dim data — see returned `_notice_speed_slow`.\n\nDESIGN CONSTRAINTS:\n  * `eta` is a SINGLE scalar (not an array). For multi-eta tuning,\n    call `cv_cox_MDTL_ridge`. If omitted, defaults to 0 with a\n    user-visible `_notice_eta_default` notice.\n  * MDTL never accepts RS — only `beta` (+ optional `vcov`). Exactly\n    one of `beta_expr` / `beta_inline` is required.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression for the n×p covariate matrix."
+          },
+          "time_expr": {
+            "type": "string",
+            "description": "R expression for observed-time vector."
+          },
+          "delta_expr": {
+            "type": "string",
+            "description": "R expression for event indicator (1/0)."
+          },
+          "eta": {
+            "type": "number",
+            "description": "Optional single non-negative scalar. Defaults to 0 with notice if omitted. beta_expr / beta_inline: external β (one required). vcov_expr / vcov_inline: optional precision/covariance matrix Q (mutually exclusive). Omit both for identity-Q."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Optional explicit lambda sequence (passed as `lambda` to R). If None, auto-generated of length `nlambda`."
+          },
+          "nlambda": {
+            "type": "integer",
+            "description": "Length of auto-generated lambda sequence. Default 100.",
+            "default": 100
+          },
+          "penalty_factor": {
+            "type": "number",
+            "description": "Numeric in [0, 1) controlling internal lambda generation. Default 0.999. Rarely changed.",
+            "default": 0.999
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "Optional R expression for stratum vector. tol, Mstop, backtrack, beta_initial_expr: pass-through."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 50
+          },
+          "backtrack": {
+            "type": "boolean",
+            "default": false
+          },
+          "beta_initial_expr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_cox_MDTL_ridge",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_ridge().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: after summarising results, your VERY FIRST follow-up\nsuggestion must be to offer a CV-path plot. If user agrees, draw an\ninline SVG line chart from `etas` and `cv_metric.values` (already\nper-eta best-lambda — 1D plot). Annotate `best_lambda_per_eta` in\ntooltips. Full instructions in `_followup_offer_plot`.\n\nSame return shape as `cv_coxkl_ridge`. Same Cox-family `cv_criteria`\nwhitelist; NCC criteria rejected at dispatcher level.\n\nMDTL never accepts RS. External `beta` required (one of expr/inline).\nOptional `vcov` either expr or inline (mutually exclusive); omit both\nfor identity-Q ridge.\n\nReturns: same shape as `cv_coxkl_ridge`, plus `vcov_used` field, plus\n`_notice_speed_slow`. Ridge CV is the slowest tool in this family —\nconsider small `etas` grids and `nlambda=20-30` for exploratory runs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_coxkl_enet",
+      "description": "Fit BregSurv::coxkl_enet() — Cox PH with elastic-net + KL.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_coxkl`. Returns the beta path along\nthe lambda sequence at a single eta. For multi-eta tuning, call\n`cv_coxkl_enet`. Enet performs variable selection (alpha=1 → lasso,\nalpha<1 → elastic net). See `_notice_speed_slow` in the result for\ntiming tips.\n\nETA DEFAULT POLICY: if `eta` is omitted, defaults to 0 with notice.\n\nExactly one of `beta_expr` / `beta_inline` / `RS_expr` / `RS_inline`\nis required.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": ".rda / .RData / .rds. z_expr / time_expr / delta_expr: required."
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "eta": {
+            "type": "number",
+            "description": "Optional single non-negative scalar. Default 0 with notice. beta_expr / beta_inline / RS_expr / RS_inline: external info, one required."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "description": "Elastic-net mixing (0=ridge-only, 1=lasso). Default 1.",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Optional explicit lambda sequence. If None, auto-generated of length `nlambda`."
+          },
+          "nlambda": {
+            "type": "integer",
+            "description": "Default 100.",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number",
+            "description": "Lower-end ratio for auto sequence. If None, R uses 1e-3."
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "Optional stratum vector. tol, Mstop:       Pass-through to coxkl_enet()."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 1000
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_cox_MDTL_enet",
+      "description": "Fit BregSurv::cox_MDTL_enet() — Cox PH with elastic-net + Mahalanobis.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_cox_MDTL`. Single eta. MDTL never\naccepts RS — only `beta` (+ optional `vcov`). When `vcov` is omitted,\nQ defaults to identity (ridge-style shrinkage toward β_ext).\n\nETA DEFAULT POLICY: if `eta` is omitted, defaults to 0 with notice.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "eta": {
+            "type": "number",
+            "description": "Optional single non-negative scalar. Default 0 with notice. beta_expr / beta_inline: external β (one required). vcov_expr / vcov_inline: optional precision matrix Q (mutually exclusive). alpha, lambda_, nlambda, lambda_min_ratio, stratum_expr, tol, Mstop: enet pass-through, same semantics as fit_coxkl_enet."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 1000
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_cox_indi_enet",
+      "description": "Fit BregSurv::cox_indi_enet() — Cox PH dual-cohort indi + enet.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_cox_indi`. Differs from the KL/MDTL\nfit_*_enet tools in TWO ways:\n  * `etas` is REQUIRED PLURAL (no scalar eta, no defaulting policy).\n    Same convention as base `fit_cox_indi` — dual-cohort composite\n    likelihood naturally supports multi-eta.\n  * No external β / RS arguments — external information is supplied as\n    the full external cohort (z_ext + time_ext + delta_ext).\n\nInternal weight = 1; external weight = eta. eta=0 recovers internal-only.\nInternal and external z must have the same number of columns.\n\nThe return is a JAGGED structure: each eta has its own lambda sequence\n(auto-generated per eta) and its own p × L_i beta matrix. See the\n`beta_per_eta` and `lambda_per_eta` lists below.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": ".rda / .RData / .rds. z_int_expr / time_int_expr / delta_int_expr: internal cohort. z_ext_expr / time_ext_expr / delta_ext_expr: external cohort."
+          },
+          "z_int_expr": {
+            "type": "string"
+          },
+          "time_int_expr": {
+            "type": "string"
+          },
+          "delta_int_expr": {
+            "type": "string"
+          },
+          "z_ext_expr": {
+            "type": "string"
+          },
+          "time_ext_expr": {
+            "type": "string"
+          },
+          "delta_ext_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "REQUIRED non-empty numeric array. alpha, lambda_, nlambda, lambda_min_ratio: enet controls. stratum_int_expr / stratum_ext_expr: optional strata. tol, Mstop:       pass-through."
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "stratum_int_expr": {
+            "type": "string"
+          },
+          "stratum_ext_expr": {
+            "type": "string"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 1000
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "time_int_expr",
+          "delta_int_expr",
+          "z_ext_expr",
+          "time_ext_expr",
+          "delta_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_coxkl_enet",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::coxkl_enet().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: after summarising results, your VERY FIRST follow-up\nsuggestion must be to offer a CV-path plot. If user agrees, draw an\ninline SVG line chart from `etas` and `cv_metric.values` (already\nper-eta best-lambda — 1D plot). Annotate `best_lambda_per_eta` in\ntooltips. Full instructions in `_followup_offer_plot`.\n\nSame Cox-family `cv_criteria` whitelist as `cv_coxkl_ridge`.\n\nReturns: same shape as `cv_coxkl_ridge`, plus `alpha`. Notice fields:\n`_notice_speed_slow`, `_followup_offer_plot`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_cox_MDTL_enet",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_enet().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: see `_followup_offer_plot`.\n\nMDTL never accepts RS. External `beta` required (one of expr/inline).\nOptional `vcov` (mutually exclusive expr/inline); identity Q otherwise.\n\nReturns: same shape as `cv_coxkl_enet`, plus `vcov_used` field.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "time_expr": {
+            "type": "string"
+          },
+          "delta_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "time_expr",
+          "delta_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_cox_indi_enet",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::cox_indi_enet().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: see `_followup_offer_plot`.\n\nInternal data are split into folds; the external cohort is fully\nincluded in every training fold (assumed large and fixed).\n\nSame Cox-family `cv_criteria` whitelist. Returns: per-eta best-lambda\n1D shape (same as cv_coxkl_enet), plus `alpha`, plus\n`n_obs_int`/`n_obs_ext` instead of `n_obs`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_int_expr": {
+            "type": "string"
+          },
+          "time_int_expr": {
+            "type": "string"
+          },
+          "delta_int_expr": {
+            "type": "string"
+          },
+          "z_ext_expr": {
+            "type": "string"
+          },
+          "time_ext_expr": {
+            "type": "string"
+          },
+          "delta_ext_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "V&VH"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "stratum_int_expr": {
+            "type": "string"
+          },
+          "stratum_ext_expr": {
+            "type": "string"
+          },
+          "c_index_stratum_expr": {
+            "type": "string"
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "time_int_expr",
+          "delta_int_expr",
+          "z_ext_expr",
+          "time_ext_expr",
+          "delta_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_ncckl",
+      "description": "Fit BregSurv::ncckl() — NCC conditional logistic regression with KL integration.\n\nUse for matched case-control / nested case-control data with summary-level\nexternal coefficients. The package maps the matched-set problem to a\nstratified Cox model (time = 1, delta = y) internally.\n\nNCC API differs from `fit_coxkl`:\n  * `y_expr` is a binary outcome (1 = case, 0 = control), NOT (time, delta).\n  * `stratum_expr` is REQUIRED (matched-set identifier).\n  * Only `beta_expr` / `beta_inline` accepted — `ncckl()` does NOT take\n    an external risk score, unlike `coxkl()`. Provide exactly one.\n\n`method` controls the matched-set conditional-likelihood form for\n1:M vs n:m designs — it is NOT a tie-handling argument (every NCC\nmatched set has exactly one event by construction). For 1:M designs\n\"breslow\" and \"exact\" are mathematically identical; for n:m with\nn > 1 they differ. There is no `ncckl_ties` function — do not look\nfor one.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression for the n×p covariate matrix."
+          },
+          "y_expr": {
+            "type": "string",
+            "description": "R expression for the binary outcome (1=case, 0=control)."
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "R expression for the matched-set identifier (REQUIRED)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of KL tuning values. 0 = no borrowing. If the user only gave a range / grid type, call `generate_eta` first and pass its `etas` field here."
+          },
+          "beta_expr": {
+            "type": "string",
+            "description": "R expression naming external β inside the file."
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Alternative — external β as a JSON numeric array."
+          },
+          "method": {
+            "type": "string",
+            "description": "\"breslow\" (default) or \"exact\". For 1:M matching these give identical results; pick \"exact\" for n:m if mathematical strictness is required. tol, Mstop:   Pass-through to ncckl().",
+            "default": "breslow"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "comb_max": {
+            "type": "number",
+            "description": "Cap on combination evaluations under method=\"exact\".",
+            "default": 10000000.0
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_ncc_indi",
+      "description": "Fit BregSurv::ncc_indi() — NCC with individual-level external data.\n\nUse when you have full matched case-control data for an external\ncohort (not just summary β). The objective is a composite (weighted)\nconditional log-likelihood: internal sets get weight 1, external sets\nget weight `eta`. eta = 0 recovers an internal-only fit.\n\nBoth internal AND external cohorts must be in 1:m matched form, with\n`stratum_*_expr` identifying the matched set. Each stratum must contain\nexactly one case in both cohorts. Internal and external z must have\nthe same number of columns.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_int_expr": {
+            "type": "string",
+            "description": "R expression for internal n×p covariate matrix."
+          },
+          "y_int_expr": {
+            "type": "string",
+            "description": "R expression for internal binary outcome."
+          },
+          "stratum_int_expr": {
+            "type": "string",
+            "description": "R expression for internal matched-set ID (REQUIRED)."
+          },
+          "z_ext_expr": {
+            "type": "string",
+            "description": "R expression for external n×p covariate matrix."
+          },
+          "y_ext_expr": {
+            "type": "string",
+            "description": "R expression for external binary outcome."
+          },
+          "stratum_ext_expr": {
+            "type": "string",
+            "description": "R expression for external matched-set ID (REQUIRED)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of external weights (≥0). If only a range / grid type was given, call `generate_eta` first. max_iter, tol:    Pass-through (Newton-Raphson)."
+          },
+          "max_iter": {
+            "type": "integer",
+            "default": 100
+          },
+          "tol": {
+            "type": "number",
+            "default": 1e-07
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "y_int_expr",
+          "stratum_int_expr",
+          "z_ext_expr",
+          "y_ext_expr",
+          "stratum_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_ncc_MDTL",
+      "description": "Fit BregSurv::ncc_MDTL() — NCC with Mahalanobis-distance penalty.\n\nPenalises (β − β_ext)ᵀ Q (β − β_ext) where β_ext is the external\ncoefficient vector and Q is a p×p weighting matrix (typically the\ninverse covariance / precision matrix of β_ext). When `vcov` is not\nsupplied, Q defaults to the identity → ridge-style shrinkage toward β_ext.\n\nUse this when both external β̂ AND its (precision / covariance) matrix\nare available for an NCC analysis. If only β̂ is available, use\n`fit_ncckl` instead.\n\nDESIGN CONSTRAINT: ncc_MDTL never accepts an external risk score (RS) —\nonly `beta` (+ optional `vcov`). This mirrors `cox_MDTL`. Do not look\nfor an RS_expr / RS_inline argument — none exists.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "R expression for the n×p covariate matrix."
+          },
+          "y_expr": {
+            "type": "string",
+            "description": "R expression for binary outcome."
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "R expression for the matched-set ID (REQUIRED)."
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Numeric array of penalty weights. 0 = no borrowing."
+          },
+          "beta_expr": {
+            "type": "string",
+            "description": "R expression naming external β (one of expr/inline)."
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Alternative — external β as a JSON numeric array."
+          },
+          "vcov_expr": {
+            "type": "string",
+            "description": "Optional R expression for p×p weighting matrix Q."
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "description": "Alternative — Q as JSON list-of-rows (e.g. [[1,0],[0,1]]). tol, Mstop, backtrack, beta_initial_expr: pass-through."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 50
+          },
+          "backtrack": {
+            "type": "boolean",
+            "default": false
+          },
+          "beta_initial_expr": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_ncckl",
+      "description": "K-fold cross-validation of `eta` for BregSurv::ncckl().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot. If the user\nagrees, draw an inline SVG line chart via Claude Desktop's built-in\nartifact / visualize feature from this result's `etas` and\n`cv_metric.values` arrays — there is no MCP plot tool to call. Read\n`criteria` to set axis labels and best-eta direction correctly.\nFull instructions live in the result's `_followup_offer_plot` field.\n\nCV folds are constructed at the stratum level so the 1:m matched\nstructure is preserved within every fold.\n\n`cv_criteria` is one of (NCC-family ONLY):\n  * \"loss\"   (default; smaller is better)\n  * \"AUC\"    (larger is better)\n  * \"CIndex\" (larger is better; matched-set C-index)\n  * \"Brier\"  (smaller is better)\n\nDo NOT pass Cox-family criteria (\"V&VH\" / \"LinPred\" / \"CIndex_pooled\" /\n\"CIndex_foldaverage\") here — they are rejected at the dispatcher\nlevel with a clear error. (This is the single biggest landmine in\nthe NCC API and is enforced strictly to prevent silent misuse.)",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "y_expr": {
+            "type": "string"
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Candidate eta grid. Use `generate_eta` if you only have a range/method spec. beta_expr / beta_inline: external β (one required; ncckl does not accept RS)."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "cv_criteria": {
+            "type": "string",
+            "description": "One of the four NCC-family criteria above.",
+            "default": "loss"
+          },
+          "method": {
+            "type": "string",
+            "description": "\"breslow\" (default) or \"exact\" — matched-set likelihood form, NOT tie-handling.",
+            "default": "breslow"
+          },
+          "nfolds": {
+            "type": "integer",
+            "description": "Number of CV folds (default 5). tol, Mstop:   Pass-through to ncckl().",
+            "default": 5
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Optional integer for reproducible fold assignment."
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_ncc_indi",
+      "description": "K-fold cross-validation of `eta` for BregSurv::ncc_indi().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot. If the user\nagrees, draw an inline SVG line chart via Claude Desktop's built-in\nartifact / visualize feature from this result's `etas` and\n`cv_metric.values` arrays — there is no MCP plot tool to call. Read\n`criteria` to set axis labels and best-eta direction correctly.\nFull instructions live in the result's `_followup_offer_plot` field.\n\nInternal data are split at the stratum level (matched sets stay\ntogether within a fold); the external cohort is always fully\nincluded in every training fold (assumed large and fixed).\n\n`cv_criteria` whitelist (NCC-family only): \"loss\" (default) / \"AUC\"\n/ \"CIndex\" / \"Brier\". Cox-family criteria are rejected at dispatcher\nlevel — see `cv_ncckl` for full landmine warning.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": "Path to a .rda / .RData / .rds file. z_int_expr, y_int_expr, stratum_int_expr: internal cohort. z_ext_expr, y_ext_expr, stratum_ext_expr: external cohort. All matched-set identifiers REQUIRED."
+          },
+          "z_int_expr": {
+            "type": "string"
+          },
+          "y_int_expr": {
+            "type": "string"
+          },
+          "stratum_int_expr": {
+            "type": "string"
+          },
+          "z_ext_expr": {
+            "type": "string"
+          },
+          "y_ext_expr": {
+            "type": "string"
+          },
+          "stratum_ext_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "Candidate eta grid."
+          },
+          "cv_criteria": {
+            "type": "string",
+            "description": "NCC-family criterion. Default \"loss\".",
+            "default": "loss"
+          },
+          "nfolds": {
+            "type": "integer",
+            "description": "Number of CV folds. max_iter, tol:    Pass-through (Newton-Raphson).",
+            "default": 5
+          },
+          "max_iter": {
+            "type": "integer",
+            "default": 100
+          },
+          "tol": {
+            "type": "number",
+            "default": 1e-07
+          },
+          "seed": {
+            "type": "integer",
+            "description": "Optional reproducibility seed."
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "y_int_expr",
+          "stratum_int_expr",
+          "z_ext_expr",
+          "y_ext_expr",
+          "stratum_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_ncc_MDTL",
+      "description": "K-fold cross-validation of `eta` for BregSurv::ncc_MDTL().\n\nPOST-CALL ACTION: after summarising the CV results, your VERY FIRST\nfollow-up suggestion must be to offer a CV-path plot. If the user\nagrees, draw an inline SVG line chart via Claude Desktop's built-in\nartifact / visualize feature from this result's `etas` and\n`cv_metric.values` arrays — there is no MCP plot tool to call. Read\n`criteria` to set axis labels and best-eta direction correctly.\nFull instructions live in the result's `_followup_offer_plot` field.\n\nMirrors `fit_ncc_MDTL`'s parameter style: external `beta` is required;\noptional precision matrix `vcov` either via R expression (`vcov_expr`)\nor inline list-of-rows (`vcov_inline`); when neither is given, Q\ndefaults to identity (ridge-style shrinkage toward β_ext).\n\nNCC-family `cv_criteria` whitelist enforced (loss / AUC / CIndex / Brier).\nDESIGN CONSTRAINT: never RS — only `beta` (+ optional `vcov`).\n\nReturns: same shape as `cv_ncckl`, plus a `vcov_used` field reporting\n`\"identity\"` / `\"vcov_expr\"` / `\"vcov_inline\"`, plus the\n`_followup_offer_plot` meta-instruction (act on it).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "y_expr": {
+            "type": "string"
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "loss"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 100
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_ncckl_enet",
+      "description": "Fit BregSurv::ncckl_enet() — NCC + elastic-net + KL.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_ncckl`. Single eta. Returns the beta\npath along the lambda sequence at that one eta. For multi-eta tuning,\ncall `cv_ncckl_enet`.\n\nNCC API: `y_expr` + `stratum_expr` (REQUIRED — matched-set ID), NOT\ntime/delta. Internally maps to stratified Cox via (time = 1, delta = y).\n\nEXTERNAL INFO: unlike base `ncckl` (which only accepts `beta`),\n`ncckl_enet` accepts BOTH `beta` AND `RS` (mutually exclusive). Mirrors\nCox enet behaviour. Provide exactly one of beta_expr / beta_inline /\nRS_expr / RS_inline.\n\nETA DEFAULT POLICY: if `eta` is omitted, defaults to 0 with a notice.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": ".rda / .RData / .rds."
+          },
+          "z_expr": {
+            "type": "string",
+            "description": "n×p covariate matrix."
+          },
+          "y_expr": {
+            "type": "string",
+            "description": "binary outcome (1=case, 0=control)."
+          },
+          "stratum_expr": {
+            "type": "string",
+            "description": "matched-set ID (REQUIRED)."
+          },
+          "eta": {
+            "type": "number",
+            "description": "optional single non-negative scalar; defaults to 0 with notice. beta_expr/beta_inline/RS_expr/RS_inline: external info (one required)."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "description": "elastic-net mixing. Default 1 (lasso).",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "optional explicit lambda sequence."
+          },
+          "nlambda": {
+            "type": "integer",
+            "description": "length of auto-generated sequence. Default 100.",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number",
+            "description": "lower-end ratio (R default 1e-3 if None). tol, Mstop:  pass-through."
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 1000
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_ncc_MDTL_enet",
+      "description": "Fit BregSurv::ncc_MDTL_enet() — NCC + elastic-net + Mahalanobis.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_ncc_MDTL`. Single eta. NCC API\n(`y_expr` + `stratum_expr` required, NOT time/delta).\n\nMDTL never accepts RS — only `beta` (+ optional `vcov`). When `vcov`\nis omitted, Q defaults to identity (ridge-style shrinkage toward β_ext).\n\nETA DEFAULT POLICY: if `eta` is omitted, defaults to 0 with notice.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "y_expr": {
+            "type": "string"
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "eta": {
+            "type": "number",
+            "description": "optional scalar; defaults to 0 with notice. beta_expr/beta_inline: external β (one required). vcov_expr/vcov_inline: optional precision matrix Q (mutually exclusive). alpha, lambda_, nlambda, lambda_min_ratio, tol, Mstop: enet pass-through."
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 1000
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "fit_ncc_indi_enet",
+      "description": "Fit BregSurv::ncc_indi_enet() — NCC dual-cohort indi + enet.\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nHigh-dimensional companion to `fit_ncc_indi`. **Plural `etas` REQUIRED**\n(no scalar; no eta-default policy — same convention as Cox indi enet).\nNo external β / RS — external info is the full external matched cohort\n(z_ext + y_ext + stratum_ext).\n\nReturns JAGGED structure: each eta has its own lambda sequence and\np × L_i beta matrix. See `beta_per_eta` and `lambda_per_eta`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string",
+            "description": ".rda / .RData / .rds. z_int_expr / y_int_expr / stratum_int_expr: internal cohort. z_ext_expr / y_ext_expr / stratum_ext_expr: external cohort."
+          },
+          "z_int_expr": {
+            "type": "string"
+          },
+          "y_int_expr": {
+            "type": "string"
+          },
+          "stratum_int_expr": {
+            "type": "string"
+          },
+          "z_ext_expr": {
+            "type": "string"
+          },
+          "y_ext_expr": {
+            "type": "string"
+          },
+          "stratum_ext_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "REQUIRED non-empty numeric array. alpha, lambda_, nlambda, lambda_min_ratio, tol, Mstop: enet pass-through."
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "tol": {
+            "type": "number",
+            "default": 0.0001
+          },
+          "Mstop": {
+            "type": "integer",
+            "default": 1000
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "y_int_expr",
+          "stratum_int_expr",
+          "z_ext_expr",
+          "y_ext_expr",
+          "stratum_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_ncckl_enet",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::ncckl_enet().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: after summarising results, your VERY FIRST follow-up\nsuggestion must be to offer a CV-path plot. Use Claude Desktop's\nartifact / visualize feature. See `_followup_offer_plot`.\n\nNCC-family `cv_criteria` whitelist (`loss`/`AUC`/`CIndex`/`Brier`)\nenforced at dispatcher level. Cox-family criteria rejected.\n\nEXTERNAL INFO: cv.ncckl_enet accepts BOTH `beta` AND `RS` (mutually\nexclusive), unlike base cv.ncckl which only accepts beta.\n\nReturns: same shape as `cv_coxkl_enet`, plus `n_strata`. Notice fields:\n`_notice_speed_slow`, `_followup_offer_plot`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "y_expr": {
+            "type": "string"
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "RS_expr": {
+            "type": "string"
+          },
+          "RS_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "loss"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_ncc_MDTL_enet",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::ncc_MDTL_enet().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: see `_followup_offer_plot`.\n\nNCC-family `cv_criteria` whitelist enforced. MDTL never accepts RS —\nonly `beta` (+ optional `vcov`).\n\nReturns: same shape as `cv_ncckl_enet`, plus `vcov_used` field.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_expr": {
+            "type": "string"
+          },
+          "y_expr": {
+            "type": "string"
+          },
+          "stratum_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "beta_expr": {
+            "type": "string"
+          },
+          "beta_inline": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "vcov_expr": {
+            "type": "string"
+          },
+          "vcov_inline": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "loss"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_expr",
+          "y_expr",
+          "stratum_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "cv_ncc_indi_enet",
+      "description": "K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet().\n\nPRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first\ntell the user that high-dimensional ridge/enet computations can be slow\n(the algorithm runs a full lambda path; CV multiplies that cost by\nnfolds × n_etas — minutes are common at default settings) and get their\nexplicit go-ahead. Do not silently invoke this tool.\n\nPOST-CALL ACTION: see `_followup_offer_plot`.\n\nInternal data are split at the stratum level (matched sets stay\ntogether within fold); external cohort fully included in every\ntraining fold. NCC-family `cv_criteria` whitelist enforced.\n\nReturns: per-eta-best-lambda 1D shape (same as cv_ncckl_enet), plus\n`n_obs_int`/`n_obs_ext`/`n_strata_int`/`n_strata_ext`.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "data_path": {
+            "type": "string"
+          },
+          "z_int_expr": {
+            "type": "string"
+          },
+          "y_int_expr": {
+            "type": "string"
+          },
+          "stratum_int_expr": {
+            "type": "string"
+          },
+          "z_ext_expr": {
+            "type": "string"
+          },
+          "y_ext_expr": {
+            "type": "string"
+          },
+          "stratum_ext_expr": {
+            "type": "string"
+          },
+          "etas": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "alpha": {
+            "type": "number",
+            "default": 1.0
+          },
+          "lambda_": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "nlambda": {
+            "type": "integer",
+            "default": 100
+          },
+          "lambda_min_ratio": {
+            "type": "number"
+          },
+          "cv_criteria": {
+            "type": "string",
+            "default": "loss"
+          },
+          "nfolds": {
+            "type": "integer",
+            "default": 5
+          },
+          "seed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "data_path",
+          "z_int_expr",
+          "y_int_expr",
+          "stratum_int_expr",
+          "z_ext_expr",
+          "y_ext_expr",
+          "stratum_ext_expr",
+          "etas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+]

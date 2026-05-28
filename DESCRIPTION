@@ -1,8 +1,8 @@
-Package: SurvBregDiv
+Package: BregSurv
 Type: Package
 Title: Transfer Learning for Cox Models via Bregman Divergence
 Version: 1.0.0
-URL: https://um-kevinhe.github.io/SurvBregDiv/
+URL: https://um-kevinhe.github.io/BregSurv/
 Authors@R: c(
     person("Yubo","Shao",role=c("aut","cre"),email="ybshao@umich.edu")
   )

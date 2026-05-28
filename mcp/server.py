@@ -1,8 +1,8 @@
 """
-SurvBregDiv MCP server.
+BregSurv MCP server.
 
 FastMCP server that bridges Claude Desktop (or any MCP client) to the
-SurvBregDiv R package. Each tool shells out to Rscript via a temp JSON
+BregSurv R package. Each tool shells out to Rscript via a temp JSON
 file; no R logic lives in this module.
 
 Tool surface (see individual @mcp.tool docstrings for parameters):
@@ -112,7 +112,7 @@ def _run_r(script_name: str, payload: dict, timeout_s: int = 600) -> dict:
     Two non-obvious flag choices:
       * --no-save --no-restore --no-init-file (NOT --vanilla). `--vanilla`
         also implies `--no-environ`, which suppresses R_LIBS_USER. When the
-        required R packages (jsonlite, SurvBregDiv) are installed only in
+        required R packages (jsonlite, BregSurv) are installed only in
         the user library (default on Windows via `install.packages()`), R
         started with --vanilla cannot find them.
       * stdin=subprocess.DEVNULL. Without this, the Rscript child inherits
@@ -225,7 +225,7 @@ def _attach_plot_hint(result: dict, highdim: bool = False) -> dict:
     moment the AI is deciding what to say next — far more reliable.
 
     Why no MCP plot tool: an earlier iteration (Stage 3.5, 2026-04-25)
-    shipped four `plot_cv_*` tools that called SurvBregDiv::cv.plot() and
+    shipped four `plot_cv_*` tools that called BregSurv::cv.plot() and
     returned the PNG via FastMCP `Image`. Wire emission was correct, but
     Claude Desktop's UI did not render the inline ImageContent reliably.
     User confirmed the workaround that does render reliably is Claude
@@ -397,7 +397,7 @@ def _attach_eta_default_notice(result: dict, notice: Optional[str]) -> dict:
 # MCP tools
 # --------------------------------------------------------------------------
 
-mcp = FastMCP("survbregdiv")
+mcp = FastMCP("bregsurv")
 
 
 @mcp.tool()
@@ -482,7 +482,7 @@ def start_analysis(
     output_type: Optional[str] = None,
     user_language: Optional[str] = None,
 ) -> dict:
-    """Guided wizard to pick the right SurvBregDiv model for a new user's data.
+    """Guided wizard to pick the right BregSurv model for a new user's data.
 
     USE THIS FIRST when the user is unsure which model / function they need.
     The wizard walks them through 5 plain-language questions (no jargon, no
@@ -553,16 +553,16 @@ def start_analysis(
 
 
 @mcp.prompt(
-    name="survbregdiv-start",
-    description="Start a guided SurvBregDiv analysis (recommended for first-time users).",
+    name="bregsurv-start",
+    description="Start a guided BregSurv analysis (recommended for first-time users).",
 )
-def survbregdiv_start_prompt() -> str:
+def bregsurv_start_prompt() -> str:
     """User-clickable entry point. When the user picks this from Claude
     Desktop's slash menu, this text gets injected into the conversation as
     if the user typed it — kicking off the start_analysis wizard.
     """
     return (
-        "I'd like to use SurvBregDiv to analyze my data, but I'm not sure "
+        "I'd like to use BregSurv to analyze my data, but I'm not sure "
         "which model is right for me. Please call the `start_analysis` MCP "
         "tool to walk me through choosing step by step. Detect my preferred "
         "language from how I respond (Chinese or English) and pass it to "
@@ -589,7 +589,7 @@ def fit_coxkl(
     backtrack: bool = False,
     beta_initial_expr: Optional[str] = None,
 ) -> dict:
-    """Fit SurvBregDiv::coxkl() — Cox PH with KL-divergence external integration.
+    """Fit BregSurv::coxkl() — Cox PH with KL-divergence external integration.
 
     The data file is read by a local R subprocess; the file *path* is the
     only data-related value that transits this conversation. Raw covariate
@@ -654,7 +654,7 @@ def fit_cox_indi(
     max_iter: int = 100,
     tol: float = 1e-7,
 ) -> dict:
-    """Fit SurvBregDiv::cox_indi() — Cox PH with individual-level external data.
+    """Fit BregSurv::cox_indi() — Cox PH with individual-level external data.
 
     Use this when you have full covariate + outcome data for an external
     cohort (not just summary coefficients). The objective is a composite
@@ -721,7 +721,7 @@ def fit_cox_MDTL(
     backtrack: bool = False,
     beta_initial_expr: Optional[str] = None,
 ) -> dict:
-    """Fit SurvBregDiv::cox_MDTL() — Cox PH with Mahalanobis-distance penalty.
+    """Fit BregSurv::cox_MDTL() — Cox PH with Mahalanobis-distance penalty.
 
     Penalises (β − β_ext)ᵀ Q (β − β_ext) where β_ext is the external
     coefficient vector and Q is a p×p weighting matrix (typically the
@@ -793,7 +793,7 @@ def fit_coxkl_ties(
     beta_initial_expr: Optional[str] = None,
     comb_max: float = 1e7,
 ) -> dict:
-    """Fit SurvBregDiv::coxkl_ties() — coxkl with proper handling of tied event times.
+    """Fit BregSurv::coxkl_ties() — coxkl with proper handling of tied event times.
 
     Use this instead of `fit_coxkl` whenever the data has a non-trivial
     fraction of tied event times. Plain `fit_coxkl` treats events as if all
@@ -869,7 +869,7 @@ def cv_coxkl(
     backtrack: bool = False,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::coxkl().
+    """K-fold cross-validation of `eta` for BregSurv::coxkl().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot ("需要我把 CV
@@ -956,7 +956,7 @@ def cv_coxkl_ties(
     seed: Optional[int] = None,
     comb_max: float = 1e7,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::coxkl_ties().
+    """K-fold cross-validation of `eta` for BregSurv::coxkl_ties().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot. If the user
@@ -1031,7 +1031,7 @@ def cv_cox_MDTL(
     Mstop: int = 100,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::cox_MDTL().
+    """K-fold cross-validation of `eta` for BregSurv::cox_MDTL().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot. If the user
@@ -1093,7 +1093,7 @@ def cv_cox_indi(
     tol: float = 1e-7,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::cox_indi().
+    """K-fold cross-validation of `eta` for BregSurv::cox_indi().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot. If the user
@@ -1190,7 +1190,7 @@ def fit_coxkl_ridge(
     backtrack: bool = False,
     beta_initial_expr: Optional[str] = None,
 ) -> dict:
-    """Fit SurvBregDiv::coxkl_ridge() — Cox PH with Ridge (L2) penalty + KL.
+    """Fit BregSurv::coxkl_ridge() — Cox PH with Ridge (L2) penalty + KL.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1289,7 +1289,7 @@ def cv_coxkl_ridge(
     c_index_stratum_expr: Optional[str] = None,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::coxkl_ridge().
+    """K-fold CV of (eta, lambda) for BregSurv::coxkl_ridge().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1387,7 +1387,7 @@ def fit_cox_MDTL_ridge(
     backtrack: bool = False,
     beta_initial_expr: Optional[str] = None,
 ) -> dict:
-    """Fit SurvBregDiv::cox_MDTL_ridge() — Cox PH with Ridge + Mahalanobis penalty.
+    """Fit BregSurv::cox_MDTL_ridge() — Cox PH with Ridge + Mahalanobis penalty.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1478,7 +1478,7 @@ def cv_cox_MDTL_ridge(
     c_index_stratum_expr: Optional[str] = None,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::cox_MDTL_ridge().
+    """K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_ridge().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1551,7 +1551,7 @@ def fit_coxkl_enet(
     tol: float = 1e-4,
     Mstop: int = 1000,
 ) -> dict:
-    """Fit SurvBregDiv::coxkl_enet() — Cox PH with elastic-net + KL.
+    """Fit BregSurv::coxkl_enet() — Cox PH with elastic-net + KL.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1635,7 +1635,7 @@ def fit_cox_MDTL_enet(
     tol: float = 1e-4,
     Mstop: int = 1000,
 ) -> dict:
-    """Fit SurvBregDiv::cox_MDTL_enet() — Cox PH with elastic-net + Mahalanobis.
+    """Fit BregSurv::cox_MDTL_enet() — Cox PH with elastic-net + Mahalanobis.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1708,7 +1708,7 @@ def fit_cox_indi_enet(
     tol: float = 1e-4,
     Mstop: int = 1000,
 ) -> dict:
-    """Fit SurvBregDiv::cox_indi_enet() — Cox PH dual-cohort indi + enet.
+    """Fit BregSurv::cox_indi_enet() — Cox PH dual-cohort indi + enet.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1791,7 +1791,7 @@ def cv_coxkl_enet(
     c_index_stratum_expr: Optional[str] = None,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::coxkl_enet().
+    """K-fold CV of (eta, lambda) for BregSurv::coxkl_enet().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1856,7 +1856,7 @@ def cv_cox_MDTL_enet(
     c_index_stratum_expr: Optional[str] = None,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::cox_MDTL_enet().
+    """K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_enet().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1917,7 +1917,7 @@ def cv_cox_indi_enet(
     c_index_stratum_expr: Optional[str] = None,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::cox_indi_enet().
+    """K-fold CV of (eta, lambda) for BregSurv::cox_indi_enet().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -1992,7 +1992,7 @@ def fit_ncckl(
     Mstop: int = 100,
     comb_max: float = 1e7,
 ) -> dict:
-    """Fit SurvBregDiv::ncckl() — NCC conditional logistic regression with KL integration.
+    """Fit BregSurv::ncckl() — NCC conditional logistic regression with KL integration.
 
     Use for matched case-control / nested case-control data with summary-level
     external coefficients. The package maps the matched-set problem to a
@@ -2061,7 +2061,7 @@ def fit_ncc_indi(
     max_iter: int = 100,
     tol: float = 1e-7,
 ) -> dict:
-    """Fit SurvBregDiv::ncc_indi() — NCC with individual-level external data.
+    """Fit BregSurv::ncc_indi() — NCC with individual-level external data.
 
     Use when you have full matched case-control data for an external
     cohort (not just summary β). The objective is a composite (weighted)
@@ -2122,7 +2122,7 @@ def fit_ncc_MDTL(
     backtrack: bool = False,
     beta_initial_expr: Optional[str] = None,
 ) -> dict:
-    """Fit SurvBregDiv::ncc_MDTL() — NCC with Mahalanobis-distance penalty.
+    """Fit BregSurv::ncc_MDTL() — NCC with Mahalanobis-distance penalty.
 
     Penalises (β − β_ext)ᵀ Q (β − β_ext) where β_ext is the external
     coefficient vector and Q is a p×p weighting matrix (typically the
@@ -2189,7 +2189,7 @@ def cv_ncckl(
     Mstop: int = 100,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::ncckl().
+    """K-fold cross-validation of `eta` for BregSurv::ncckl().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot. If the user
@@ -2270,7 +2270,7 @@ def cv_ncc_indi(
     tol: float = 1e-7,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::ncc_indi().
+    """K-fold cross-validation of `eta` for BregSurv::ncc_indi().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot. If the user
@@ -2343,7 +2343,7 @@ def cv_ncc_MDTL(
     Mstop: int = 100,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold cross-validation of `eta` for SurvBregDiv::ncc_MDTL().
+    """K-fold cross-validation of `eta` for BregSurv::ncc_MDTL().
 
     POST-CALL ACTION: after summarising the CV results, your VERY FIRST
     follow-up suggestion must be to offer a CV-path plot. If the user
@@ -2414,7 +2414,7 @@ def fit_ncckl_enet(
     tol: float = 1e-4,
     Mstop: int = 1000,
 ) -> dict:
-    """Fit SurvBregDiv::ncckl_enet() — NCC + elastic-net + KL.
+    """Fit BregSurv::ncckl_enet() — NCC + elastic-net + KL.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -2498,7 +2498,7 @@ def fit_ncc_MDTL_enet(
     tol: float = 1e-4,
     Mstop: int = 1000,
 ) -> dict:
-    """Fit SurvBregDiv::ncc_MDTL_enet() — NCC + elastic-net + Mahalanobis.
+    """Fit BregSurv::ncc_MDTL_enet() — NCC + elastic-net + Mahalanobis.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -2569,7 +2569,7 @@ def fit_ncc_indi_enet(
     tol: float = 1e-4,
     Mstop: int = 1000,
 ) -> dict:
-    """Fit SurvBregDiv::ncc_indi_enet() — NCC dual-cohort indi + enet.
+    """Fit BregSurv::ncc_indi_enet() — NCC dual-cohort indi + enet.
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -2639,7 +2639,7 @@ def cv_ncckl_enet(
     nfolds: int = 5,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::ncckl_enet().
+    """K-fold CV of (eta, lambda) for BregSurv::ncckl_enet().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -2702,7 +2702,7 @@ def cv_ncc_MDTL_enet(
     nfolds: int = 5,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::ncc_MDTL_enet().
+    """K-fold CV of (eta, lambda) for BregSurv::ncc_MDTL_enet().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow
@@ -2758,7 +2758,7 @@ def cv_ncc_indi_enet(
     nfolds: int = 5,
     seed: Optional[int] = None,
 ) -> dict:
-    """K-fold CV of (eta, lambda) for SurvBregDiv::ncc_indi_enet().
+    """K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet().
 
     PRE-CALL ACTION (REQUIRED): before invoking this tool, you MUST first
     tell the user that high-dimensional ridge/enet computations can be slow

@@ -1,0 +1,55 @@
+# Keep the Docker build context small (faster uploads to HF Space and
+# faster local builds). Anything not COPY'd by the Dockerfile is wasted
+# bytes if listed in context.
+
+# Version control + IDE state
+.git
+.github
+.cursor
+.cursorrules
+.claude
+.Rproj.user
+.Rhistory
+.RData
+
+# Private maintainer notes — MUST NEVER ship to HF Space or Docker Hub
+CLAUDE.md
+AGENT_NOTES.tex
+AGENT_NOTES.pdf
+INTERNAL_NOTES.tex
+INTERNAL_NOTES.pdf
+
+# Build artifacts (regenerated inside the image)
+__pycache__
+*.pyc
+*.pyo
+.DS_Store
+Meta
+doc
+docs
+inst/doc
+
+# Compiled artifacts from local development — Docker rebuilds these
+src/*.o
+src/*.so
+src/*.dll
+src/*.dylib
+
+# pkgdown site (generated artifacts, big)
+_pkgdown.yml
+pkgdown
+
+# Paper drafts / transcripts (not part of the app)
+paper_figures
+*.tex
+*.pdf
+
+# MCPB bundles (not used at runtime; they're the Claude Desktop dist path)
+mcp/*.mcpb
+mcp/INSTALL.md
+mcp/README.md
+mcp/manifest.json
+mcp/pyproject.toml
+
+# Local-only dev artifacts
+prompt_v2.txt

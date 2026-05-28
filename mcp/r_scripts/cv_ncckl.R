@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncckl.R - dispatcher for the cv_ncckl MCP tool.
 #
-# Cross-validates SurvBregDiv::ncckl() over a candidate `etas` grid and
+# Cross-validates BregSurv::ncckl() over a candidate `etas` grid and
 # selects the best eta under the chosen cv.criteria.
 #
 # CV folds are constructed at the stratum level (via get_fold_cc) so the
@@ -15,7 +15,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

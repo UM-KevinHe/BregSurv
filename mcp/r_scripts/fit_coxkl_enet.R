@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_coxkl_enet.R - dispatcher for the fit_coxkl_enet MCP tool.
 #
-# Calls SurvBregDiv::coxkl_enet() — Cox PH with elastic-net penalty + KL
+# Calls BregSurv::coxkl_enet() — Cox PH with elastic-net penalty + KL
 # divergence integration of external β. Single-eta convention: returns the
 # beta path along the lambda sequence at one eta. Multi-eta scanning belongs
 # in cv.coxkl_enet.
@@ -13,7 +13,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

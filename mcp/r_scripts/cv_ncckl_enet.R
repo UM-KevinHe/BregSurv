@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncckl_enet.R - dispatcher for the cv_ncckl_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::ncckl_enet(). Same per-eta-best-
+# K-fold CV of (eta, lambda) for BregSurv::ncckl_enet(). Same per-eta-best-
 # lambda 1D return shape as cv_coxkl_enet, plus alpha + n_strata.
 #
 # CV CRITERIA WHITELIST (NCC FAMILY ONLY): "loss" / "AUC" / "CIndex" / "Brier".
@@ -12,7 +12,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

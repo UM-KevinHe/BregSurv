@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 # cv_cox_indi.R - dispatcher for the cv_cox_indi MCP tool.
 #
-# Cross-validates SurvBregDiv::cox_indi() over a candidate `etas` grid.
+# Cross-validates BregSurv::cox_indi() over a candidate `etas` grid.
 # Internal data are split into folds; for each fold the model is trained on
 # (internal-train + full external) and evaluated on the held-out internal
 # fold. External data are always fully included in training.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

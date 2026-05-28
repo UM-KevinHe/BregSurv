@@ -1,0 +1,24 @@
+[project]
+name = "bregsurv-agent"
+version = "0.1.0"
+description = "Local Qwen tool-use agent over the BregSurv R package."
+requires-python = ">=3.8"
+dependencies = [
+    "openai>=1.0.0",
+]
+
+[project.optional-dependencies]
+ui = ["gradio>=4.0.0"]
+pdf = ["weasyprint>=60.0"]
+dev = ["pytest>=7.0.0"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bregsurv_agent*"]
+
+[tool.setuptools.package-data]
+bregsurv_agent = ["schemas.json"]

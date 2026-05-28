@@ -5,7 +5,7 @@
 #   Rscript fit_ncckl.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions
-# against the loaded environment, calls SurvBregDiv::ncckl(), writes results
+# against the loaded environment, calls BregSurv::ncckl(), writes results
 # as JSON. On any error, writes a structured {status:"error",...} payload.
 #
 # NCC API differs from Cox in three ways enforced here:
@@ -15,7 +15,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

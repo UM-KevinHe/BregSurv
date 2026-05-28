@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncc_indi.R - dispatcher for the cv_ncc_indi MCP tool.
 #
-# Cross-validates SurvBregDiv::ncc_indi() over a candidate `etas` grid.
+# Cross-validates BregSurv::ncc_indi() over a candidate `etas` grid.
 # Internal data are split at the stratum level; the external cohort is
 # always fully included in every training fold.
 #
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

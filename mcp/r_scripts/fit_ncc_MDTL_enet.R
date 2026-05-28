@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 # fit_ncc_MDTL_enet.R - dispatcher for the fit_ncc_MDTL_enet MCP tool.
 #
-# Calls SurvBregDiv::ncc_MDTL_enet() — NCC + elastic-net + Mahalanobis penalty
+# Calls BregSurv::ncc_MDTL_enet() — NCC + elastic-net + Mahalanobis penalty
 # toward external β. Single-eta convention.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional `vcov`).
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

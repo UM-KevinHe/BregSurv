@@ -17,8 +17,8 @@ pkgdown::build_site()
 file.copy("llms.txt", "docs/llms.txt", overwrite = TRUE)
 
 first_line <- readLines("docs/llms.txt", n = 1)
-if (!identical(first_line, "# SurvBregDiv")) {
-  stop("docs/llms.txt does not start with the expected '# SurvBregDiv' header. ",
+if (!identical(first_line, "# BregSurv")) {
+  stop("docs/llms.txt does not start with the expected '# BregSurv' header. ",
        "Check that llms.txt at the repo root is the curated version.")
 }
 

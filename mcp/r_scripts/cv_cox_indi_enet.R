@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_cox_indi_enet.R - dispatcher for the cv_cox_indi_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::cox_indi_enet(). Internal
+# K-fold CV of (eta, lambda) for BregSurv::cox_indi_enet(). Internal
 # data are split into folds; the external cohort is fully included in
 # every training fold (assumed large and fixed).
 #
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

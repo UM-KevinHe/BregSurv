@@ -1,6 +1,6 @@
-# Install SurvBregDiv for Claude Desktop
+# Install BregSurv for Claude Desktop
 
-This extension lets you run survival-analysis models from the **SurvBregDiv** R package directly inside Claude Desktop. You describe your data and your question in plain English (or Chinese); Claude picks the right model, runs it on your machine, and explains the results.
+This extension lets you run survival-analysis models from the **BregSurv** R package directly inside Claude Desktop. You describe your data and your question in plain English (or Chinese); Claude picks the right model, runs it on your machine, and explains the results.
 
 **Your data never leaves your computer.** The extension only sends file paths and analysis results back to Claude — never the raw data file.
 
@@ -12,7 +12,7 @@ Check off both of these before downloading the extension. Skipping these is the 
 
 ### Prerequisite 1 — R (≥ version 4.0)
 
-**What it is.** R is a free statistical computing language. SurvBregDiv is written in R, so you need R installed for the extension to do any computing.
+**What it is.** R is a free statistical computing language. BregSurv is written in R, so you need R installed for the extension to do any computing.
 
 **How to check whether you already have R installed:**
 
@@ -30,32 +30,32 @@ Download R from the official site: <https://cran.r-project.org/>
 
 **After installing, verify it worked:** open R (or RStudio if you have it), and you should see a `>` prompt. Type `R.version.string` and press Enter — it should print something like `"R version 4.5.2 (2025-10-31)"`. As long as the number is 4.0 or higher, you're good.
 
-### Prerequisite 2 — The `SurvBregDiv` R package
+### Prerequisite 2 — The `BregSurv` R package
 
-**What it is.** R itself is just the language. The actual SurvBregDiv functions (`coxkl`, `cox_MDTL`, etc.) live in a separate package you install into R.
+**What it is.** R itself is just the language. The actual BregSurv functions (`coxkl`, `cox_MDTL`, etc.) live in a separate package you install into R.
 
 **How to install it.** Open R (or RStudio), and at the `>` prompt, paste this single line and press Enter:
 
 ```r
-install.packages("SurvBregDiv")
+install.packages("BregSurv")
 ```
 
-R will download from CRAN and compile the package. **The first install takes 2–5 minutes** (it compiles C++ code). You'll see progress messages — that's normal. When it ends with something like `* DONE (SurvBregDiv)`, it's installed.
+R will download from CRAN and compile the package. **The first install takes 2–5 minutes** (it compiles C++ code). You'll see progress messages — that's normal. When it ends with something like `* DONE (BregSurv)`, it's installed.
 
 If you want the latest development version instead (newer features, less battle-tested):
 
 ```r
 install.packages("remotes")  # one-time, if you don't have it
-remotes::install_github("UM-KevinHe/SurvBregDiv")
+remotes::install_github("UM-KevinHe/BregSurv")
 ```
 
 **Verify it worked.** Still in R, type:
 
 ```r
-library(SurvBregDiv)
+library(BregSurv)
 ```
 
-If it returns to the `>` prompt with no errors, you're done. If it says "there is no package called 'SurvBregDiv'", the install didn't finish — re-run `install.packages("SurvBregDiv")` and watch for errors.
+If it returns to the `>` prompt with no errors, you're done. If it says "there is no package called 'BregSurv'", the install didn't finish — re-run `install.packages("BregSurv")` and watch for errors.
 
 ### What you do NOT need to install
 
@@ -68,7 +68,7 @@ If it returns to the `>` prompt with no errors, you're done. If it says "there i
 
 ## Install the extension
 
-1. Download the `.mcpb` file from the [Releases page](https://github.com/UM-KevinHe/SurvBregDiv/releases/latest). Pick the file named `survbregdiv-<version>.mcpb`.
+1. Download the `.mcpb` file from the [Releases page](https://github.com/UM-KevinHe/BregSurv/releases/latest). Pick the file named `bregsurv-<version>.mcpb`.
 2. Open **Claude Desktop**.
 3. Click the **Settings** icon (gear) in the bottom-left.
 4. Click **Extensions** in the sidebar.
@@ -87,7 +87,7 @@ The install dialog asks one question:
 
 > **Path to your Rscript executable**
 
-This is the program that runs R from the command line. The extension uses it to call SurvBregDiv. **`Rscript` is installed automatically when you install R** — you don't need to install anything extra, you just need to tell the extension where to find it.
+This is the program that runs R from the command line. The extension uses it to call BregSurv. **`Rscript` is installed automatically when you install R** — you don't need to install anything extra, you just need to tell the extension where to find it.
 
 **Click the file picker button and navigate to the path below for your OS:**
 
@@ -110,18 +110,18 @@ After you confirm, click **Install**. Claude Desktop will set up Python and the 
 
 **This step is easy to miss and is the #1 cause of "I installed it but Claude can't see it".**
 
-When the install finishes, you'll be back on the Extensions page with **SurvBregDiv** in the list. **By default the extension is installed but disabled** — there is a toggle switch on the right side of its row that starts in the OFF (gray) position.
+When the install finishes, you'll be back on the Extensions page with **BregSurv** in the list. **By default the extension is installed but disabled** — there is a toggle switch on the right side of its row that starts in the OFF (gray) position.
 
 Click the toggle so it turns ON (blue/green). Claude Desktop will then start the extension's server in the background; you may briefly see a "starting…" indicator. Once the toggle is on and steady, you're ready to use it.
 
-If you skip this step, Claude in a new chat will not see any of the SurvBregDiv tools — the extension is sitting dormant.
+If you skip this step, Claude in a new chat will not see any of the BregSurv tools — the extension is sitting dormant.
 
 ---
 
 ## Verify the extension works
 
 1. Open a new chat in Claude Desktop.
-2. Type: **"Use SurvBregDiv to help me start a survival analysis."**
+2. Type: **"Use BregSurv to help me start a survival analysis."**
 3. Claude should respond by walking you through a short questionnaire about your data (the guided wizard).
 
 If Claude asks what file your data is in and runs analysis steps without errors, you're set.
@@ -130,25 +130,25 @@ If Claude asks what file your data is in and runs analysis steps without errors,
 
 ## Troubleshooting
 
-### "Claude doesn't see SurvBregDiv even though I installed it"
+### "Claude doesn't see BregSurv even though I installed it"
 
-The extension is almost certainly installed but **not enabled**. Open Settings → Extensions, find SurvBregDiv in the list, and click the toggle on its row so it turns ON (blue/green). New extensions are disabled by default — installing only puts them in the list; the toggle is what actually starts the server. After enabling, open a *new* chat (existing chats need to be reopened to see freshly enabled tools).
+The extension is almost certainly installed but **not enabled**. Open Settings → Extensions, find BregSurv in the list, and click the toggle on its row so it turns ON (blue/green). New extensions are disabled by default — installing only puts them in the list; the toggle is what actually starts the server. After enabling, open a *new* chat (existing chats need to be reopened to see freshly enabled tools).
 
 ### "Rscript not found" or "Could not find R"
 
-- The path you entered during install is wrong. Open Settings → Extensions → SurvBregDiv → and re-enter the path. Use the OS-specific paths in the install section above.
+- The path you entered during install is wrong. Open Settings → Extensions → BregSurv → and re-enter the path. Use the OS-specific paths in the install section above.
 - On Windows: make sure the path ends in `Rscript.exe` (with the `.exe`), not just `Rscript`.
 
-### "there is no package called 'SurvBregDiv'"
+### "there is no package called 'BregSurv'"
 
 The R package didn't install (or installed under a different R version than the one Claude is using). Open the same R version that you pointed the extension at, and re-run:
 
 ```r
-install.packages("SurvBregDiv")
-library(SurvBregDiv)  # should return cleanly
+install.packages("BregSurv")
+library(BregSurv)  # should return cleanly
 ```
 
-If you have multiple R versions installed, the extension uses whichever `Rscript.exe` you selected — make sure SurvBregDiv is installed in *that* R, not a different one.
+If you have multiple R versions installed, the extension uses whichever `Rscript.exe` you selected — make sure BregSurv is installed in *that* R, not a different one.
 
 ### "package 'jsonlite' is not available" (or similar dependency error)
 
@@ -158,7 +158,7 @@ Open R and run:
 install.packages("jsonlite")
 ```
 
-`jsonlite` is the only Python↔R bridge dependency the extension needs that isn't auto-installed by SurvBregDiv. (SurvBregDiv's own dependencies like `survival`, `RcppArmadillo` install automatically.)
+`jsonlite` is the only Python↔R bridge dependency the extension needs that isn't auto-installed by BregSurv. (BregSurv's own dependencies like `survival`, `RcppArmadillo` install automatically.)
 
 ### The extension runs the wrong tool
 
@@ -178,7 +178,7 @@ Claude will render the plot via its built-in artifact tool.
 
 ### Something else
 
-Open an issue at <https://github.com/UM-KevinHe/SurvBregDiv/issues> with:
+Open an issue at <https://github.com/UM-KevinHe/BregSurv/issues> with:
 
 - Your OS + version (e.g. "Windows 11", "macOS 14.5")
 - Your R version (`R.version.string` in R)
@@ -200,4 +200,4 @@ For the full privacy model, see the project README.
 
 ## Uninstall
 
-Settings → Extensions → SurvBregDiv → Uninstall. This removes the extension from Claude Desktop. It does **not** uninstall R or the SurvBregDiv R package — those stay on your system.
+Settings → Extensions → BregSurv → Uninstall. This removes the extension from Claude Desktop. It does **not** uninstall R or the BregSurv R package — those stay on your system.

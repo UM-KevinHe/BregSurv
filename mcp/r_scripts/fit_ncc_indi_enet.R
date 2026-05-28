@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_ncc_indi_enet.R - dispatcher for the fit_ncc_indi_enet MCP tool.
 #
-# Calls SurvBregDiv::ncc_indi_enet() — NCC + elastic-net + dual-cohort
+# Calls BregSurv::ncc_indi_enet() — NCC + elastic-net + dual-cohort
 # composite likelihood. Internal weight 1, external weight = eta.
 #
 # DESIGN: PLURAL `etas` (no scalar; no eta-default policy). Returns jagged
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

@@ -1,12 +1,12 @@
 ---
-title: "SurvBregDiv: Bregman Divergence Data Integration for Time-to-Event Modelling"
+title: "BregSurv: Bregman Divergence Data Integration for Time-to-Event Modelling"
 output:
   bookdown::html_document2:
     toc: true
     toc_depth: 6
     number_sections: true
 vignette: >
-  %\VignetteIndexEntry{SurvBregDiv: Bregman Divergence Data Integration for Time-to-Event Modelling}
+  %\VignetteIndexEntry{BregSurv: Bregman Divergence Data Integration for Time-to-Event Modelling}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options:
@@ -27,14 +27,14 @@ knitr::opts_chunk$set(
 
 
 ```{r, include=FALSE}
-knitr::opts_chunk$set(fig.alt = "Plot generated in SurvBregDiv vignette")
+knitr::opts_chunk$set(fig.alt = "Plot generated in BregSurv vignette")
 library(dplyr)
 ```
 
 
 ## 1. Introduction {#sec-intro}
 
-The `SurvBregDiv` package implements a Bregman-divergence-based transfer learning
+The `BregSurv` package implements a Bregman-divergence-based transfer learning
 framework for survival analysis, enabling principled borrowing of external
 information while explicitly accommodating population heterogeneity between the
 internal study and external sources.
@@ -93,9 +93,9 @@ candidate is computationally expensive.
 
 ### Package Workflow
 
-The following flowchart illustrates the overall workflow of the `SurvBregDiv` package. Users first choose an integration strategy based on the type of external information available, then select a study design (full-cohort Cox model or nested case–control). The package supports both low-dimensional estimation and high-dimensional penalized regression, with a suite of cross-cutting features applicable across methods.
+The following flowchart illustrates the overall workflow of the `BregSurv` package. Users first choose an integration strategy based on the type of external information available, then select a study design (full-cohort Cox model or nested case–control). The package supports both low-dimensional estimation and high-dimensional penalized regression, with a suite of cross-cutting features applicable across methods.
 ```{r, echo=FALSE, eval=TRUE, out.width="100%"}
-knitr::include_graphics("../man/figures/SurvBregDiv_flowchart.svg")
+knitr::include_graphics("../man/figures/BregSurv_flowchart.svg")
 ```
 
 
@@ -115,15 +115,15 @@ example datasets included in the package.
 
 You can install the package from CRAN:
 ```{r, eval=FALSE}
-install.packages("SurvBregDiv")
+install.packages("BregSurv")
 ```
 
 Or install the development version from GitHub:
 ```{r, eval=FALSE}
-remotes::install_github("UM-KevinHe/SurvBregDiv", ref = "main")
+remotes::install_github("UM-KevinHe/BregSurv", ref = "main")
 ```
 ```{r}
-library(SurvBregDiv)
+library(BregSurv)
 ```
 
 ## 2. Cox Proportional Hazards Model {#sec_cox}
@@ -313,7 +313,7 @@ fit.coxkl.ties <- coxkl_ties(
 
 #### High-Dimensional Integration {#sec_coxkl_high}
 
-In high-dimensional regimes—such as when the number of predictors is comparable to or exceeds the sample size—the `SurvBregDiv` package extends KL divergence--integrated Cox modeling with regularization.
+In high-dimensional regimes—such as when the number of predictors is comparable to or exceeds the sample size—the `BregSurv` package extends KL divergence--integrated Cox modeling with regularization.
 
 Two families of penalties are implemented:
 
@@ -647,7 +647,7 @@ cv.plot(cvfit.cox_MDTL)
 
 #### High-Dimensional Integration {#sec_coxMD_high}
 
-In high-dimensional regimes—such as when the number of predictors is comparable to or exceeds the sample size—the `SurvBregDiv` package extends Mahalanobis Distance--integrated Cox modeling with regularization. The families of penalties, the tuning parameters, the built-in high-dimensional dataset `ExampleData_highdim`, and the workflow for fitting and tuning penalized KL-integrated models are the same as described in the [KL divergence section](#sec_coxkl_high). The only difference is that users should use the functions `cox_MDTL_ridge()` and `cox_MDTL_enet()` for fitting, and `cv.cox_MDTL_ridge()` and `cv.cox_MDTL_enet()` for cross-validation.
+In high-dimensional regimes—such as when the number of predictors is comparable to or exceeds the sample size—the `BregSurv` package extends Mahalanobis Distance--integrated Cox modeling with regularization. The families of penalties, the tuning parameters, the built-in high-dimensional dataset `ExampleData_highdim`, and the workflow for fitting and tuning penalized KL-integrated models are the same as described in the [KL divergence section](#sec_coxkl_high). The only difference is that users should use the functions `cox_MDTL_ridge()` and `cox_MDTL_enet()` for fitting, and `cv.cox_MDTL_ridge()` and `cv.cox_MDTL_enet()` for cross-validation.
 
 For example, we fit a Mahalanobis Distance-integrated Ridge model for a fixed integration weight $\eta$ using an automatically generated lambda sequence:
 
@@ -757,7 +757,7 @@ For variable importance and stability selection, the functions `variable_importa
 
 ## 3. (Nested) Case-Control Design {#sec_cc}
 
-In the NCC setting, event times are represented through matched case--control sets, and estimation proceeds via conditional logistic regression. `SurvBregDiv` enables external information borrowing within this framework through Bregman divergence, allowing improved efficiency while respecting the matched-set structure. Standard matched case--control or matched cohort studies can be viewed as special cases of the NCC design. For methodology details, please refer to Page: **Appendix: NCC KL Divergence**.
+In the NCC setting, event times are represented through matched case--control sets, and estimation proceeds via conditional logistic regression. `BregSurv` enables external information borrowing within this framework through Bregman divergence, allowing improved efficiency while respecting the matched-set structure. Standard matched case--control or matched cohort studies can be viewed as special cases of the NCC design. For methodology details, please refer to Page: **Appendix: NCC KL Divergence**.
 
 All three external-integration modes introduced in [Section 2](#sec_cox) -- individual-level integration, KL divergence on summary coefficients, and Mahalanobis-distance integration with external curvature -- are mirrored in the NCC family with parallel APIs:
 

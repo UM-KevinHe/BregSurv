@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_cox_MDTL_ridge.R - dispatcher for the cv_cox_MDTL_ridge MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::cox_MDTL_ridge(). Same
+# K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_ridge(). Same
 # 2D-grid -> per-eta-best-lambda -> global-best return shape as
 # cv_coxkl_ridge.
 #
@@ -10,7 +10,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

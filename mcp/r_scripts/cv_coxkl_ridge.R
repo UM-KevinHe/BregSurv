@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_coxkl_ridge.R - dispatcher for the cv_coxkl_ridge MCP tool.
 #
-# K-fold cross-validation of (eta, lambda) for SurvBregDiv::coxkl_ridge().
+# K-fold cross-validation of (eta, lambda) for BregSurv::coxkl_ridge().
 # Internally evaluates a 2D grid of (eta x lambda); for each eta, the best
 # lambda is selected; among those per-eta winners, the global best (eta,
 # lambda) pair is reported.
@@ -21,7 +21,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

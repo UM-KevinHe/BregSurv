@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_cox_MDTL_enet.R - dispatcher for the fit_cox_MDTL_enet MCP tool.
 #
-# Calls SurvBregDiv::cox_MDTL_enet() — Cox PH with elastic-net penalty +
+# Calls BregSurv::cox_MDTL_enet() — Cox PH with elastic-net penalty +
 # Mahalanobis-distance penalty toward external β. Single-eta convention.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

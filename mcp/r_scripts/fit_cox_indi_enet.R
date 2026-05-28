@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_cox_indi_enet.R - dispatcher for the fit_cox_indi_enet MCP tool.
 #
-# Calls SurvBregDiv::cox_indi_enet() — Cox PH with elastic-net + dual-cohort
+# Calls BregSurv::cox_indi_enet() — Cox PH with elastic-net + dual-cohort
 # composite likelihood. Internal observations get weight 1, external get
 # weight `eta`. eta=0 recovers internal-only fit.
 #
@@ -12,7 +12,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

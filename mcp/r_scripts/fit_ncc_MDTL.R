@@ -4,7 +4,7 @@
 # Called by mcp/server.py as:
 #   Rscript fit_ncc_MDTL.R <input.json> <output.json>
 #
-# Calls SurvBregDiv::ncc_MDTL() with external beta and optional precision
+# Calls BregSurv::ncc_MDTL() with external beta and optional precision
 # matrix vcov. Penalty is (eta/2) * (beta - beta_ext)^T Q (beta - beta_ext).
 #
 # DESIGN INVARIANT: MDTL family never accepts RS. Only `beta` (+ optional
@@ -13,7 +13,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

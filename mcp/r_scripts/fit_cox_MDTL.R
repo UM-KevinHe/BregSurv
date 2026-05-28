@@ -5,13 +5,13 @@
 #   Rscript fit_cox_MDTL.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions,
-# calls SurvBregDiv::cox_MDTL() with external beta and optional precision matrix
+# calls BregSurv::cox_MDTL() with external beta and optional precision matrix
 # vcov, writes results as JSON. On any error, writes a structured
 # {status:"error",...} payload.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

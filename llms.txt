@@ -1,10 +1,10 @@
-# SurvBregDiv
+# BregSurv
 
 > R package for **transfer learning in survival analysis** via Bregman-divergence-based integration of external information. It lets an internal study borrow strength from an external cohort or study when fitting Cox proportional hazards models or nested case–control (NCC) models, in both low-dimensional (coefficient estimation) and high-dimensional (variable selection) settings.
 
-- **Homepage**: https://um-kevinhe.github.io/SurvBregDiv/
-- **Install (CRAN)**: `install.packages("SurvBregDiv")`
-- **Install (dev)**: `remotes::install_github("UM-KevinHe/SurvBregDiv")`
+- **Homepage**: https://um-kevinhe.github.io/BregSurv/
+- **Install (CRAN)**: `install.packages("BregSurv")`
+- **Install (dev)**: `remotes::install_github("UM-KevinHe/BregSurv")`
 - **Language**: R (user API) + C++ via RcppArmadillo (internal optimizer)
 - **Maintainer**: Yubo Shao (ybshao@umich.edu)
 
@@ -158,7 +158,7 @@ Not all criteria apply to all functions.
 ### Example 1 — Low-dim Cox + external coefficients (KL divergence)
 
 ```r
-library(SurvBregDiv)
+library(BregSurv)
 data(ExampleData_lowdim)
 
 train <- ExampleData_lowdim$train
@@ -344,15 +344,15 @@ The integrated objective functions have closed-form interpretations as **weighte
 - **Mahalanobis**: `Q_eta(beta) = -loglik_internal(beta) + (eta/2) (beta - beta_ext)' Q (beta - beta_ext)`. With `Q = vcov` (or identity if `NULL`).
 - **Composite likelihood (individual-level)**: `loglik_int(beta) + eta * loglik_ext(beta)` — equivalent to stacking cohorts with observation weights `1` (internal) and `eta` (external), with strata kept separate so risk sets do not mix.
 
-Full derivations are in the package vignettes (`vignette("coxkl")`, `vignette("ncc")`, `vignette("CV_Criteria")`, `vignette("SurvBregDiv")`).
+Full derivations are in the package vignettes (`vignette("coxkl")`, `vignette("ncc")`, `vignette("CV_Criteria")`, `vignette("BregSurv")`).
 
 ---
 
 ## Documentation pointers (for deeper reading by the AI)
 
-- Main vignette: https://um-kevinhe.github.io/SurvBregDiv/articles/SurvBregDiv.html
-- Cox KL methodology: https://um-kevinhe.github.io/SurvBregDiv/articles/coxkl.html
-- Cox KL with tied event times: https://um-kevinhe.github.io/SurvBregDiv/articles/coxkl_ties.html
-- NCC methodology: https://um-kevinhe.github.io/SurvBregDiv/articles/ncc.html
-- CV criteria reference: https://um-kevinhe.github.io/SurvBregDiv/articles/CV_Criteria.html
-- Function reference (all exported functions): https://um-kevinhe.github.io/SurvBregDiv/reference/index.html
+- Main vignette: https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html
+- Cox KL methodology: https://um-kevinhe.github.io/BregSurv/articles/coxkl.html
+- Cox KL with tied event times: https://um-kevinhe.github.io/BregSurv/articles/coxkl_ties.html
+- NCC methodology: https://um-kevinhe.github.io/BregSurv/articles/ncc.html
+- CV criteria reference: https://um-kevinhe.github.io/BregSurv/articles/CV_Criteria.html
+- Function reference (all exported functions): https://um-kevinhe.github.io/BregSurv/reference/index.html

@@ -2,114 +2,114 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 KL_Cox_Estimate_cpp <- function(N, Z, delta, delta_eta, n_each_stratum, eta, beta_initial, tol = 1.0e-7, maxit = 50L, lambda = 0.0, backtrack = FALSE, message = FALSE) {
-    .Call(`_SurvBregDiv_KL_Cox_Estimate_cpp`, N, Z, delta, delta_eta, n_each_stratum, eta, beta_initial, tol, maxit, lambda, backtrack, message)
+    .Call(`_BregSurv_KL_Cox_Estimate_cpp`, N, Z, delta, delta_eta, n_each_stratum, eta, beta_initial, tol, maxit, lambda, backtrack, message)
 }
 
 pl_cal_exact <- function(lp, delta, time, n_each_stratum, comb_max = 200000.0) {
-    .Call(`_SurvBregDiv_pl_cal_exact`, lp, delta, time, n_each_stratum, comb_max)
+    .Call(`_BregSurv_pl_cal_exact`, lp, delta, time, n_each_stratum, comb_max)
 }
 
 calculateWTilde_exact <- function(Z, delta, time, n_each_stratum, external_beta, comb_max = 200000.0) {
-    .Call(`_SurvBregDiv_calculateWTilde_exact`, Z, delta, time, n_each_stratum, external_beta, comb_max)
+    .Call(`_BregSurv_calculateWTilde_exact`, Z, delta, time, n_each_stratum, external_beta, comb_max)
 }
 
 ddloglik_exact_KL <- function(Z, delta, time, beta, n_each_stratum, tildeW, eta, comb_max = 200000.0) {
-    .Call(`_SurvBregDiv_ddloglik_exact_KL`, Z, delta, time, beta, n_each_stratum, tildeW, eta, comb_max)
+    .Call(`_BregSurv_ddloglik_exact_KL`, Z, delta, time, beta, n_each_stratum, tildeW, eta, comb_max)
 }
 
 CoxKL_NR_exact <- function(Z, delta, time, n_each_stratum, tildeW, eta, beta, tol, max_iter, comb_max = 200000.0) {
-    .Call(`_SurvBregDiv_CoxKL_NR_exact`, Z, delta, time, n_each_stratum, tildeW, eta, beta, tol, max_iter, comb_max)
+    .Call(`_BregSurv_CoxKL_NR_exact`, Z, delta, time, n_each_stratum, tildeW, eta, beta, tol, max_iter, comb_max)
 }
 
 calculateWTilde_breslow <- function(Z, delta, time, risk_score_ext, n_each_stratum) {
-    .Call(`_SurvBregDiv_calculateWTilde_breslow`, Z, delta, time, risk_score_ext, n_each_stratum)
+    .Call(`_BregSurv_calculateWTilde_breslow`, Z, delta, time, risk_score_ext, n_each_stratum)
 }
 
 pl_cal_breslow <- function(lp, delta, time, n_each_stratum) {
-    .Call(`_SurvBregDiv_pl_cal_breslow`, lp, delta, time, n_each_stratum)
+    .Call(`_BregSurv_pl_cal_breslow`, lp, delta, time, n_each_stratum)
 }
 
 ddloglik_breslow_KL <- function(Z, delta, time, beta, n_each_stratum, Wtilde, eta) {
-    .Call(`_SurvBregDiv_ddloglik_breslow_KL`, Z, delta, time, beta, n_each_stratum, Wtilde, eta)
+    .Call(`_BregSurv_ddloglik_breslow_KL`, Z, delta, time, beta, n_each_stratum, Wtilde, eta)
 }
 
 CoxKL_NR_breslow <- function(Z, delta, time, n_each_stratum, Wtilde, eta, beta, tol, max_iter) {
-    .Call(`_SurvBregDiv_CoxKL_NR_breslow`, Z, delta, time, n_each_stratum, Wtilde, eta, beta, tol, max_iter)
+    .Call(`_BregSurv_CoxKL_NR_breslow`, Z, delta, time, n_each_stratum, Wtilde, eta, beta, tol, max_iter)
 }
 
 KL_Cox_highdim <- function(Z, delta, delta_tilde, eta, n_each_stratum, beta, K1, K0, lambda_seq, alpha, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove) {
-    .Call(`_SurvBregDiv_KL_Cox_highdim`, Z, delta, delta_tilde, eta, n_each_stratum, beta, K1, K0, lambda_seq, alpha, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove)
+    .Call(`_BregSurv_KL_Cox_highdim`, Z, delta, delta_tilde, eta, n_each_stratum, beta, K1, K0, lambda_seq, alpha, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove)
 }
 
 Cox_NR <- function(Z, delta, time, n_each_stratum, beta, ties_method, tol, max_iter, comb_max = 1e7) {
-    .Call(`_SurvBregDiv_Cox_NR`, Z, delta, time, n_each_stratum, beta, ties_method, tol, max_iter, comb_max)
+    .Call(`_BregSurv_Cox_NR`, Z, delta, time, n_each_stratum, beta, ties_method, tol, max_iter, comb_max)
 }
 
 Cox_MDTL_cpp <- function(N, Z, delta, n_each_stratum, eta, external_beta, Q, beta_initial, lambda = 0.0, tol = 1.0e-7, max_iter = 100L, backtrack = FALSE, message = FALSE) {
-    .Call(`_SurvBregDiv_Cox_MDTL_cpp`, N, Z, delta, n_each_stratum, eta, external_beta, Q, beta_initial, lambda, tol, max_iter, backtrack, message)
+    .Call(`_BregSurv_Cox_MDTL_cpp`, N, Z, delta, n_each_stratum, eta, external_beta, Q, beta_initial, lambda, tol, max_iter, backtrack, message)
 }
 
 cox_MDTL_enet_cpp <- function(delta, Z, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove, alpha, eta_mdtl, vcov, Qbeta_ext) {
-    .Call(`_SurvBregDiv_cox_MDTL_enet_cpp`, delta, Z, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove, alpha, eta_mdtl, vcov, Qbeta_ext)
+    .Call(`_BregSurv_cox_MDTL_enet_cpp`, delta, Z, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove, alpha, eta_mdtl, vcov, Qbeta_ext)
 }
 
 ddloglik_indi <- function(Z, delta, beta, weight, n_each_stratum) {
-    .Call(`_SurvBregDiv_ddloglik_indi`, Z, delta, beta, weight, n_each_stratum)
+    .Call(`_BregSurv_ddloglik_indi`, Z, delta, beta, weight, n_each_stratum)
 }
 
 Cox_indi <- function(Z, delta, weight, n_each_stratum, beta, tol = 1e-6, max_iter = 100L) {
-    .Call(`_SurvBregDiv_Cox_indi`, Z, delta, weight, n_each_stratum, beta, tol, max_iter)
+    .Call(`_BregSurv_Cox_indi`, Z, delta, weight, n_each_stratum, beta, tol, max_iter)
 }
 
 mean_crossprod_weight <- function(Z, r, j, n_eff) {
-    .Call(`_SurvBregDiv_mean_crossprod_weight`, Z, r, j, n_eff)
+    .Call(`_BregSurv_mean_crossprod_weight`, Z, r, j, n_eff)
 }
 
 StratCox_lasso <- function(delta_obs, Z, weight, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove) {
-    .Call(`_SurvBregDiv_StratCox_lasso`, delta_obs, Z, weight, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove)
+    .Call(`_BregSurv_StratCox_lasso`, delta_obs, Z, weight, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove)
 }
 
 rev_cumsum <- function(X) {
-    .Call(`_SurvBregDiv_rev_cumsum`, X)
+    .Call(`_BregSurv_rev_cumsum`, X)
 }
 
 combn_index <- function(n, r) {
-    .Call(`_SurvBregDiv_combn_index`, n, r)
+    .Call(`_BregSurv_combn_index`, n, r)
 }
 
 pl_cal_theta <- function(lp, delta, n_each_stratum) {
-    .Call(`_SurvBregDiv_pl_cal_theta`, lp, delta, n_each_stratum)
+    .Call(`_BregSurv_pl_cal_theta`, lp, delta, n_each_stratum)
 }
 
 calculateDeltaTilde <- function(event, time, RS, n_each_stratum) {
-    .Call(`_SurvBregDiv_calculateDeltaTilde`, event, time, RS, n_each_stratum)
+    .Call(`_BregSurv_calculateDeltaTilde`, event, time, RS, n_each_stratum)
 }
 
 loss_fn_cpp <- function(Z, delta, beta, n_each_stratum) {
-    .Call(`_SurvBregDiv_loss_fn_cpp`, Z, delta, beta, n_each_stratum)
+    .Call(`_BregSurv_loss_fn_cpp`, Z, delta, beta, n_each_stratum)
 }
 
 ddloglik_S0 <- function(Z, delta, beta, n_each_stratum) {
-    .Call(`_SurvBregDiv_ddloglik_S0`, Z, delta, beta, n_each_stratum)
+    .Call(`_BregSurv_ddloglik_S0`, Z, delta, beta, n_each_stratum)
 }
 
 cox_c_index <- function(time, xbeta, delta) {
-    .Call(`_SurvBregDiv_cox_c_index`, time, xbeta, delta)
+    .Call(`_BregSurv_cox_c_index`, time, xbeta, delta)
 }
 
 maxgrad <- function(x, r, K, m) {
-    .Call(`_SurvBregDiv_maxgrad`, x, r, K, m)
+    .Call(`_BregSurv_maxgrad`, x, r, K, m)
 }
 
 maxgrad_MDTL <- function(x, r, Qbeta_ext, Qbeta_Ustar, K, m, eta) {
-    .Call(`_SurvBregDiv_maxgrad_MDTL`, x, r, Qbeta_ext, Qbeta_Ustar, K, m, eta)
+    .Call(`_BregSurv_maxgrad_MDTL`, x, r, Qbeta_ext, Qbeta_Ustar, K, m, eta)
 }
 
 maxgrad_indi <- function(x, r, K, m, n_eff) {
-    .Call(`_SurvBregDiv_maxgrad_indi`, x, r, K, m, n_eff)
+    .Call(`_BregSurv_maxgrad_indi`, x, r, K, m, n_eff)
 }
 
 Cox_Vcov <- function(Z, delta, beta, n_each_stratum, lambda = 0.0) {
-    .Call(`_SurvBregDiv_Cox_Vcov`, Z, delta, beta, n_each_stratum, lambda)
+    .Call(`_BregSurv_Cox_Vcov`, Z, delta, beta, n_each_stratum, lambda)
 }
 

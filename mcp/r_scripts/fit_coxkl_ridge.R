@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_coxkl_ridge.R - dispatcher for the fit_coxkl_ridge MCP tool.
 #
-# Calls SurvBregDiv::coxkl_ridge() — Cox PH with Ridge (L2) penalty + KL
+# Calls BregSurv::coxkl_ridge() — Cox PH with Ridge (L2) penalty + KL
 # integration of external information. High-dimensional companion of
 # coxkl(); useful when p >> n or under heavy collinearity.
 #
@@ -12,7 +12,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

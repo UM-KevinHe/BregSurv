@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncc_indi_enet.R - dispatcher for the cv_ncc_indi_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::ncc_indi_enet().
+# K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet().
 # NCC-family CV criteria whitelist enforced at dispatcher level.
 #
 # Internal data are split at the stratum level; the external cohort is fully
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

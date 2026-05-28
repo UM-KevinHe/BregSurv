@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_cox_MDTL_enet.R - dispatcher for the cv_cox_MDTL_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for SurvBregDiv::cox_MDTL_enet().
+# K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_enet().
 # Same return shape as cv_coxkl_enet, plus `vcov_used`.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

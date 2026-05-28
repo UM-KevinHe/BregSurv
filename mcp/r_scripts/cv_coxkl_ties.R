@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_coxkl_ties.R - dispatcher for the cv_coxkl_ties MCP tool.
 #
-# Cross-validates SurvBregDiv::coxkl_ties() over a candidate `etas` grid.
+# Cross-validates BregSurv::coxkl_ties() over a candidate `etas` grid.
 # Use this when event times have ties and you also want CV-based eta tuning.
 # Note: cv.coxkl_ties does NOT accept RS — `beta` is required.
 # Default cv.criteria here is "CIndex_pooled" (different from cv.coxkl's
@@ -9,7 +9,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

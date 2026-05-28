@@ -1,13 +1,13 @@
 #!/usr/bin/env Rscript
 # cv_cox_MDTL.R - dispatcher for the cv_cox_MDTL MCP tool.
 #
-# Cross-validates SurvBregDiv::cox_MDTL() over a candidate `etas` grid.
+# Cross-validates BregSurv::cox_MDTL() over a candidate `etas` grid.
 # Mirrors fit_cox_MDTL's parameter style: external `beta` is required,
 # optional precision matrix `vcov` either as expression or inline list-of-rows.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

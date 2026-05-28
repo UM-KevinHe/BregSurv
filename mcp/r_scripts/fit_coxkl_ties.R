@@ -4,13 +4,13 @@
 # Called by mcp/server.py as:
 #   Rscript fit_coxkl_ties.R <input.json> <output.json>
 #
-# Like fit_coxkl, but uses SurvBregDiv::coxkl_ties() which handles tied event
+# Like fit_coxkl, but uses BregSurv::coxkl_ties() which handles tied event
 # times via the Breslow or Exact partial likelihood. Note: coxkl_ties does NOT
 # accept an external risk score (RS) — `beta` is required.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

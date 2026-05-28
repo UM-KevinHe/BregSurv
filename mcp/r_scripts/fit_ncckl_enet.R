@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_ncckl_enet.R - dispatcher for the fit_ncckl_enet MCP tool.
 #
-# Calls SurvBregDiv::ncckl_enet() — NCC conditional logistic regression with
+# Calls BregSurv::ncckl_enet() — NCC conditional logistic regression with
 # elastic-net penalty + KL divergence integration of external β. Single-eta
 # convention.
 #
@@ -10,7 +10,7 @@
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

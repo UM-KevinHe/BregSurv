@@ -1,0 +1,104 @@
+[
+  {
+    "name": "01_lowdim_coxkl",
+    "data": "ExampleData_lowdim.rda",
+    "expected_tool": "fit_coxkl",
+    "data_exists": true,
+    "query_style": "explicit",
+    "wall_s": 39.36,
+    "llm_turns": 2,
+    "tools_called": [
+      "fit_coxkl"
+    ],
+    "routed_correctly": true,
+    "succeeded_eventually": true,
+    "retries_before_success": 0,
+    "all_tools_ok": true,
+    "pdf_generated": false
+  },
+  {
+    "name": "02_indi_cox_indi",
+    "data": "ExampleData_indi.rda",
+    "expected_tool": "fit_cox_indi",
+    "data_exists": true,
+    "query_style": "explicit",
+    "wall_s": 10.64,
+    "llm_turns": 2,
+    "tools_called": [
+      "fit_cox_indi"
+    ],
+    "routed_correctly": true,
+    "succeeded_eventually": true,
+    "retries_before_success": 0,
+    "all_tools_ok": true,
+    "pdf_generated": false
+  },
+  {
+    "name": "03_highdim_coxkl_enet",
+    "data": "ExampleData_highdim.rda",
+    "expected_tool": "fit_coxkl_enet",
+    "data_exists": true,
+    "query_style": "explicit",
+    "wall_s": 13.22,
+    "llm_turns": 2,
+    "tools_called": [
+      "fit_coxkl_enet"
+    ],
+    "routed_correctly": true,
+    "succeeded_eventually": true,
+    "retries_before_success": 0,
+    "all_tools_ok": false,
+    "pdf_generated": false
+  },
+  {
+    "name": "04_cc_lowdim_ncckl",
+    "data": "ExampleData_cc_lowdim.rda",
+    "expected_tool": "fit_ncckl",
+    "data_exists": true,
+    "query_style": "explicit",
+    "wall_s": 8.18,
+    "llm_turns": 2,
+    "tools_called": [
+      "fit_ncckl"
+    ],
+    "routed_correctly": true,
+    "succeeded_eventually": true,
+    "retries_before_success": 0,
+    "all_tools_ok": true,
+    "pdf_generated": false
+  },
+  {
+    "name": "05_cc_indi_ncc_indi",
+    "data": "ExampleData_cc_indi.rda",
+    "expected_tool": "fit_ncc_indi",
+    "data_exists": true,
+    "query_style": "explicit",
+    "wall_s": 9.42,
+    "llm_turns": 2,
+    "tools_called": [
+      "fit_ncc_indi"
+    ],
+    "routed_correctly": true,
+    "succeeded_eventually": true,
+    "retries_before_success": 0,
+    "all_tools_ok": true,
+    "pdf_generated": false
+  },
+  {
+    "name": "06_cc_highdim_ncckl_enet",
+    "data": "ExampleData_cc_highdim.rda",
+    "expected_tool": "fit_ncckl_enet",
+    "data_exists": true,
+    "query_style": "explicit",
+    "wall_s": 8.71,
+    "llm_turns": 2,
+    "tools_called": [
+      "fit_ncckl_enet"
+    ],
+    "routed_correctly": true,
+    "succeeded_eventually": true,
+    "retries_before_success": 0,
+    "all_tools_ok": false,
+    "pdf_generated": false
+  }
+]

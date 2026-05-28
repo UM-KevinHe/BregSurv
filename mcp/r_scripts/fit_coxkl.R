@@ -5,12 +5,12 @@
 #   Rscript fit_coxkl.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions
-# against the loaded environment, calls SurvBregDiv::coxkl(), writes results
+# against the loaded environment, calls BregSurv::coxkl(), writes results
 # as JSON. On any error, writes a structured {status:"error",...} payload.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)

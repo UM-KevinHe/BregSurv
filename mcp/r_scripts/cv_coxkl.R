@@ -4,12 +4,12 @@
 # Called by mcp/server.py as:
 #   Rscript cv_coxkl.R <input.json> <output.json>
 #
-# Cross-validates SurvBregDiv::coxkl() over a candidate `etas` grid and
+# Cross-validates BregSurv::coxkl() over a candidate `etas` grid and
 # selects the best eta under the chosen cv.criteria.
 
 suppressPackageStartupMessages({
   library(jsonlite)
-  library(SurvBregDiv)
+  library(BregSurv)
 })
 
 args <- commandArgs(trailingOnly = TRUE)
