@@ -23,22 +23,32 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # --------------------------------------------------------------------
 # System packages
-#   * R + dev headers (for compiling RcppArmadillo etc.)
-#   * Pango / Cairo / harfbuzz: weasyprint runtime deps
-#   * libxml2 / libssl / libcurl: required by R's curl/openssl/xml2
-#   * build tools + gfortran: needed by some CRAN compiles
+#
+# *-dev variants are REQUIRED — R packages like textshaping, systemfonts,
+# ragg, svglite compile from source against harfbuzz/fribidi/freetype/
+# fontconfig/png/jpeg/tiff headers. Listing only the runtime libs
+# (libharfbuzz0b, libfontconfig1, etc.) causes textshaping to fail with
+# a 2MiB cascade of Eigen template errors that's painful to diagnose.
+# (-dev packages pull in their runtime counterparts automatically.)
+#
+# Also bundled:
+#   * r-base / r-base-dev: R + headers for RcppArmadillo etc.
+#   * build-essential + gfortran: required by several CRAN compiles
+#   * libxml2/libssl/libcurl-dev: R's xml2/openssl/curl packages
+#   * libpango1.0-dev + libcairo2-dev: weasyprint AND R graphics
 # --------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
       r-base r-base-dev \
-      build-essential gfortran \
+      build-essential gfortran pkg-config \
       libxml2-dev libssl-dev libcurl4-openssl-dev \
-      libpango-1.0-0 libpangoft2-1.0-0 libpangocairo-1.0-0 \
-      libcairo2 libcairo2-dev \
-      libharfbuzz0b libfribidi0 \
+      libpango1.0-dev libcairo2-dev \
+      libharfbuzz-dev libfribidi-dev \
+      libfreetype6-dev libfontconfig1-dev \
+      libpng-dev libjpeg-dev libtiff-dev \
+      libmagick++-dev \
+      libuv1-dev libsodium-dev libgit2-dev libsecret-1-dev \
       libffi-dev \
-      libfontconfig1 libfreetype6 \
       ca-certificates curl \
-      pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------
@@ -62,11 +72,33 @@ RUN R -e " \
       'survival', 'MASS', 'mvtnorm', 'scales', \
       'rBayesianOptimization', \
       'jsonlite', 'remotes' \
-    ), dependencies = TRUE); \
+    ), dependencies = c('Depends', 'Imports', 'LinkingTo')); \
     missing <- c('Rcpp','RcppArmadillo','ggplot2','cowplot','Matrix','rlang','riskRegression','dplyr','reshape2','survival','MASS','mvtnorm','scales','rBayesianOptimization','jsonlite','remotes'); \
     missing <- missing[!missing %in% rownames(installed.packages())]; \
     if (length(missing)) stop('Failed to install: ', paste(missing, collapse=', ')); \
     cat('R deps installed; library:', .libPaths()[1], '\n')"
+
+# --------------------------------------------------------------------
+# Defense-in-depth runtime extras — added in a SEPARATE layer AFTER
+# the slow R install so this can change without invalidating the
+# R-install cache.
+#   * fonts-dejavu-core / fonts-liberation: matplotlib + weasyprint
+#     need at least one TrueType family to render text. python-slim
+#     ships none; without these, plots have empty glyphs and PDFs
+#     are blank.
+#   * shared-mime-info: weasyprint uses it to identify image MIMEs;
+#     missing it manifests as a noisy warning at PDF time, not a hard
+#     fail, but trivially cheap to fix.
+#   * locales: ensures en_US.UTF-8 is generated so R / Python don't
+#     fall back to C-locale and choke on non-ASCII data.
+# --------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      fonts-dejavu-core fonts-liberation \
+      shared-mime-info \
+      locales \
+    && sed -i '/^# en_US.UTF-8/s/^# //' /etc/locale.gen \
+    && locale-gen \
+    && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------
 # Python deps
@@ -103,7 +135,10 @@ ENV GRADIO_SERVER_NAME=0.0.0.0 \
     GRADIO_SERVER_PORT=7860 \
     DEPLOYMENT_MODE=demo \
     SURVBREGDIV_RSCRIPT=/usr/bin/Rscript \
-    SURVBREGDIV_R_SCRIPTS=/app/mcp/r_scripts
+    SURVBREGDIV_R_SCRIPTS=/app/mcp/r_scripts \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    PYTHONIOENCODING=utf-8
 
 EXPOSE 7860
 

@@ -36,6 +36,27 @@ import traceback
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
+# Monkey-patch gradio_client to fix a known bug where its JSON-schema
+# walker crashes on bool-valued schemas (e.g. `additionalProperties: true`
+# emitted by gr.Dataframe / gr.Chatbot). The bug is fixed in
+# gradio_client >= 1.4.1, but Gradio 4.44 pins gradio_client ~= 1.3, so
+# we patch in place rather than juggling versions. Without this, HF Space
+# startup crashes inside `gradio_client.utils.get_type(schema)` with
+# `TypeError: argument of type 'bool' is not iterable`.
+import gradio_client.utils as _gc_utils
+_orig_get_type = _gc_utils.get_type
+def _safe_get_type(schema):
+    if not isinstance(schema, dict):
+        return "Any"
+    return _orig_get_type(schema)
+_gc_utils.get_type = _safe_get_type
+_orig_json_to_pytype = _gc_utils._json_schema_to_python_type
+def _safe_json_to_pytype(schema, defs=None):
+    if not isinstance(schema, dict):
+        return "Any"
+    return _orig_json_to_pytype(schema, defs)
+_gc_utils._json_schema_to_python_type = _safe_json_to_pytype
+
 import gradio as gr
 import pandas as pd
 import matplotlib
@@ -464,4 +485,5 @@ if __name__ == "__main__":
         server_port=int(os.environ.get("GRADIO_SERVER_PORT", "7860")),
         inbrowser=False,
         show_error=True,
+        show_api=False,  # extra defense against gradio_client schema bug
     )
