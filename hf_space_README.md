@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: gpl-3.0
-short_description: Verification-backed LLM agent for transfer-learning survival analysis (Cox + NCC).
+short_description: Verified-tool Qwen 7B agent for survival transfer learning
 ---
 
 # BregSurv Agent
@@ -41,22 +41,14 @@ For a cross-validation example:
 
 ## Privacy
 
-In demo mode (this Space), file uploads are disabled — you can only run the bundled `.rda` fixtures. Chat messages and tool call arguments are sent to the configured LLM provider (default: OpenAI), but the data files themselves are read by a local R subprocess inside the Space and never leave it.
+In demo mode (this Space), file uploads are disabled — you can only run the bundled `.rda` fixtures. The LLM **Qwen 2.5-7B-Instruct-AWQ** runs locally inside this container via vLLM, so chat messages and tool-call arguments stay inside the Space. The data files themselves are read by a local R subprocess and never leave the container.
 
-For your own data, run locally:
-
-```bash
-docker run -p 7860:7860 \
-  -v $(pwd)/data:/app/data \
-  -e DEPLOYMENT_MODE=local \
-  -e OPENAI_API_KEY=sk-... \
-  <docker-image-coordinate>
-```
+We still recommend the **Docker self-host** path for any real research data — a public-internet service is the wrong place for PHI even when the model is local. See <https://github.com/UM-KevinHe/BregSurv/blob/main/mcp/DEPLOY.md> for the self-host recipe.
 
 ## Tech
 
 - **Statistical engine:** [BregSurv](https://github.com/UM-KevinHe/BregSurv) R package (Bregman / KL / Mahalanobis penalties; Cox PH, NCC, ties, high-dimensional enet/ridge).
-- **Agent loop:** Python; OpenAI-compatible Chat Completions API with tool use.
+- **Agent loop:** Python; OpenAI-compatible Chat Completions API with tool use, served by vLLM (`Qwen/Qwen2.5-7B-Instruct-AWQ`).
 - **UI:** Gradio.
 
 ## License

@@ -1,18 +1,41 @@
-# HuggingFace Space Dockerfile — runs the BregSurv agent with a locally
-# served Qwen 2.5-7B-AWQ (no OpenAI / Together API call). Model weights
-# are baked into the image at build time (NOT downloaded at runtime) so
-# every wake-up after sleep starts in ~90 s rather than re-pulling 5 GB.
+# Self-host Dockerfile for the BregSurv agent — bundles vLLM + Qwen 2.5-7B-AWQ
+# alongside the R package and Gradio UI. Image runs end-to-end on a single
+# host with an NVIDIA GPU (≥ 12 GB VRAM); no external LLM API call leaves
+# the machine.
 #
-# Pair with `Dockerfile.selfhost`: same FROM, same R / BregSurv install,
-# same `mcp/entrypoint.sh`. The only deltas are (a) weights baked vs
-# volume-mounted, (b) HF Space binds port 7860 and runs as the default
-# `root` user (HF Docker-SDK Spaces allow this), (c) Gradio password
-# auth gated by env vars set as HF Space Secrets.
+# Compare with `Dockerfile` (HF Space): same R + BregSurv install, same
+# `app.py`, but adds CUDA + vLLM and points the agent at localhost:8000
+# instead of OpenAI. The two files are intentionally NOT factored into a
+# shared base — their FROMs (python:3.11-slim vs nvidia/cuda) and final
+# sizes (~3 GB vs ~10 GB) are too different to share usefully. If you
+# change the R-deps list or the BregSurv install pattern here, mirror the
+# edit in `Dockerfile` and vice versa.
 #
-# Keep the R-deps list and the BregSurv install block in sync with
-# `Dockerfile.selfhost` — they share the same canonical source
-# (DESCRIPTION's Imports list).
+# Build:
+#   docker build -f Dockerfile.selfhost -t bregsurv-agent:selfhost .
+#
+# Run (minimal):
+#   docker run --rm --gpus all -p 7860:7860 \
+#       -v bregsurv-models:/root/.cache/huggingface \
+#       bregsurv-agent:selfhost
+#
+# Run (with user data mounted):
+#   docker run --rm --gpus all -p 7860:7860 \
+#       -v bregsurv-models:/root/.cache/huggingface \
+#       -v "$PWD/my_data:/data" \
+#       bregsurv-agent:selfhost
+#
+# See mcp/DEPLOY.md for the full recipe (prerequisites, troubleshooting,
+# docker-compose alternative).
 
+# --------------------------------------------------------------------
+# Base — CUDA 12.4 devel (NOT runtime). The devel variant ships `nvcc`,
+# which flashinfer needs at vLLM startup to JIT-compile a kernel. Using
+# the runtime image instead manifests as:
+#   RuntimeError: Could not find nvcc and default cuda_home='/usr/local/
+#   cuda' doesn't exist
+# deep inside flashinfer. Don't optimise this by switching to runtime.
+# --------------------------------------------------------------------
 FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -23,9 +46,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1
 
 # --------------------------------------------------------------------
-# System packages — see Dockerfile.selfhost for the *-dev rationale.
-# Identical block; the lesson about runtime vs -dev variants applies
-# the same way here.
+# System packages
+#
+# Mirrors Dockerfile's apt list (the *-dev / fonts / locales lessons
+# apply identically to ubuntu22.04). Additions for self-host:
+#   * python3.11 from deadsnakes PPA — matches HF Space's interpreter
+#     version. Ubuntu 22.04's system python3 is 3.10, which works for
+#     bregsurv_agent (needs ≥ 3.8) but vLLM has had 3.10-specific bugs
+#     historically; 3.11 is the recommended target.
+#   * software-properties-common: to add deadsnakes PPA.
 # --------------------------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
       software-properties-common ca-certificates curl gnupg \
@@ -52,25 +81,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && locale-gen \
     && rm -rf /var/lib/apt/lists/*
 
+# Make python3.11 the default `python` / `pip`.
 RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
     && curl -sS https://bootstrap.pypa.io/get-pip.py | python
 
 # --------------------------------------------------------------------
-# R packages — mirror Dockerfile.selfhost (canonical source: DESCRIPTION
-# Imports).
+# R packages — SAME list as Dockerfile. The DESCRIPTION Imports list
+# is the canonical source of truth. Past Stage 4c lesson: missing any
+# of dplyr/reshape2/rlang/mvtnorm/scales here causes R CMD INSTALL of
+# BregSurv to fail at "dependencies not available".
 #
-# Repo strategy: Posit Package Manager (PPM) Jammy binaries first,
-# CRAN source as fallback. PPM serves Ubuntu-22.04-precompiled binaries
-# for every package on CRAN, in step with CRAN's current version. This
-# (a) avoids the 15+ min compile-from-source chain, (b) dodges system-
-# lib mismatches between Ubuntu 22.04 and the Debian-based Stage 4c
-# environment that surfaced as `riskRegression` failing with
-# `dependencies 'rms', 'Hmisc' are not available` (rms/Hmisc compiled
-# fine on Debian bookworm + R 4.2.x but failed silently on the Ubuntu
-# 22.04 + R 4.1.2 stack we're on now).
-#
-# Past Stage 4c lesson preserved: every named package gets verified
-# post-install or the build fails fast.
+# Repo strategy: Posit PPM Jammy binaries first, CRAN source fallback.
+# See Stage 4f Dockerfile commentary for why — short version: rms +
+# Hmisc compile-from-source fails on this Ubuntu 22.04 + R 4.1.2
+# stack, breaking riskRegression transitively. PPM serves pre-built
+# binaries that sidestep the whole compile chain. Keep in sync with
+# Dockerfile's R-install block.
 # --------------------------------------------------------------------
 RUN R -e " \
     options(repos = c( \
@@ -91,8 +117,14 @@ RUN R -e " \
     cat('R deps installed; library:', .libPaths()[1], '\n')"
 
 # --------------------------------------------------------------------
-# Python deps — Gradio + vLLM + huggingface_hub CLI for the build-time
-# weight download.
+# Python deps — base UI (from requirements.txt) + vLLM.
+#
+# vLLM is pinned loosely (>=0.6.0,<0.8.0). The 0.6/0.7 line tracks Qwen
+# 2.5 and supports `--tool-call-parser hermes` + `--enable-auto-tool-
+# choice` (added in 0.6.0). vLLM 0.8+ rewrote the scheduler and the
+# hermes parser interface changed; revisit once we want to upgrade.
+# `huggingface_hub[cli]` is needed so the entrypoint can call `hf
+# download` for model weights on first boot.
 # --------------------------------------------------------------------
 WORKDIR /app
 COPY requirements.txt /app/requirements.txt
@@ -103,24 +135,8 @@ RUN pip install -r /app/requirements.txt \
        "huggingface_hub[cli]>=0.20"
 
 # --------------------------------------------------------------------
-# Qwen 2.5-7B-Instruct-AWQ — baked at build time, NOT runtime.
-#
-# HF Space ephemeral storage clears /root/.cache between wake-ups, so a
-# runtime download would re-pull 5.2 GB every time the container wakes
-# from sleep — bad for cold-start latency AND HF egress quotas. Baking
-# the weights into a fixed dir (`/opt/qwen-awq`) makes them part of the
-# cached image layer; every wake-up uses the same baked copy.
-#
-# `Dockerfile.selfhost` does this differently (runtime download to a
-# named volume) because that deployment runs on the user's machine with
-# their own disk, no ephemeral-storage problem.
-# --------------------------------------------------------------------
-RUN hf download Qwen/Qwen2.5-7B-Instruct-AWQ --local-dir /opt/qwen-awq \
-    && du -sh /opt/qwen-awq \
-    && ls /opt/qwen-awq | head
-
-# --------------------------------------------------------------------
-# BregSurv R package — local source install, same as Dockerfile.selfhost.
+# BregSurv R package — installed from local source (no network call,
+# no GitHub dependency). Identical to Dockerfile.
 # --------------------------------------------------------------------
 COPY DESCRIPTION NAMESPACE /app/_bregsurv_pkg/
 COPY R/    /app/_bregsurv_pkg/R/
@@ -131,7 +147,7 @@ COPY data/ /app/_bregsurv_pkg/data/
 RUN R CMD INSTALL --no-docs --no-multiarch /app/_bregsurv_pkg \
     && R -e "library(BregSurv); cat('BregSurv installed:', as.character(packageVersion('BregSurv')), '\n')"
 
-# Application files — kept last so edits don't bust the slow layers.
+# Application files — kept last so edits don't bust the slow R-install layer.
 COPY mcp/r_scripts/ /app/mcp/r_scripts/
 COPY mcp/server.py /app/mcp/server.py
 COPY mcp/entrypoint.sh /app/mcp/entrypoint.sh
@@ -143,28 +159,23 @@ RUN chmod +x /app/mcp/entrypoint.sh
 # --------------------------------------------------------------------
 # Runtime configuration
 #
-# vLLM is local: agent talks to 127.0.0.1:8000/v1. OPENAI_API_KEY is
-# the literal string "EMPTY" — vLLM ignores it, but the OpenAI Python
-# client rejects truly empty strings, so a placeholder is required.
-#
-# BREGSURV_AUTH_USER / BREGSURV_AUTH_PASS are NOT set here — they MUST
-# come from HF Space Secrets so the credentials never live in the
-# image. When unset, Gradio launches without auth (fine for local
-# Docker self-host where the user already controls the host).
+# vLLM is local: agent points at 127.0.0.1:8000/v1, dummy API key.
+# Model weights cached at /root/.cache/huggingface — mount a volume
+# here to persist across `docker run --rm` invocations.
 # --------------------------------------------------------------------
 ENV GRADIO_SERVER_NAME=0.0.0.0 \
     GRADIO_SERVER_PORT=7860 \
-    DEPLOYMENT_MODE=demo \
+    DEPLOYMENT_MODE=local \
     SURVBREGDIV_RSCRIPT=/usr/bin/Rscript \
     SURVBREGDIV_R_SCRIPTS=/app/mcp/r_scripts \
     SURVBREGDIV_MODEL_ENDPOINT=http://127.0.0.1:8000/v1 \
     SURVBREGDIV_MODEL_NAME=qwen2.5-7b-awq \
     OPENAI_API_KEY=EMPTY \
-    VLLM_MODEL_ID=/opt/qwen-awq \
+    VLLM_MODEL_ID=Qwen/Qwen2.5-7B-Instruct-AWQ \
     VLLM_HOST=127.0.0.1 \
     VLLM_PORT=8000 \
     VLLM_MAX_MODEL_LEN=32768 \
-    VLLM_GPU_MEM_UTIL=0.95 \
+    VLLM_GPU_MEM_UTIL=0.5 \
     HF_HOME=/root/.cache/huggingface \
     LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
@@ -172,8 +183,10 @@ ENV GRADIO_SERVER_NAME=0.0.0.0 \
 
 EXPOSE 7860
 
-# Healthcheck: Gradio responds on / once both vLLM AND app.py are up.
-HEALTHCHECK --interval=60s --timeout=10s --start-period=180s --retries=3 \
+# Health probe — Gradio responds on / once both vLLM AND app.py are up.
+# Longer start-period than the HF Space image because first boot also
+# downloads ~5.2 GB of model weights (network-bound).
+HEALTHCHECK --interval=60s --timeout=10s --start-period=600s --retries=3 \
     CMD curl -fs http://127.0.0.1:7860/ >/dev/null || exit 1
 
 ENTRYPOINT ["/app/mcp/entrypoint.sh"]

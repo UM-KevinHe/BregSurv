@@ -160,3 +160,75 @@ def attach_eta_default_notice(
             and result.get("status") == "ok"):
         result["_notice_eta_default"] = notice
     return result
+
+
+# -- Tool result compression for the LLM loop (Stage 4i-B) ---------------------
+#
+# The agent's `messages` list grows by one tool_result per tool call. Real
+# `fit_*` / `cv_*` results contain large numeric arrays (beta matrices,
+# cv-metric values, eta grids), each ~5K tokens when JSON-serialised. After
+# 3-4 internal LLM iterations on a single user query these tool_results
+# saturate Qwen 7B's 32K context window and the next iteration fails with
+# `BadRequestError: maximum context length exceeded`. The trace.json,
+# repro.R, and final user-facing reply still receive the FULL result; only
+# the copy passed BACK to the LLM on subsequent iterations is compressed —
+# yielding ~25x reduction with no loss of routing-relevant signal.
+#
+# What gets compressed vs preserved:
+#   - Long numeric vectors → "[vector len=N, range [lo, hi], full values in
+#     trace.json]" placeholder
+#   - Nested-list matrices → "[matrix RxC; full values in trace.json]"
+#   - Short lists (≤ 5 items), scalars, strings, dicts → kept verbatim
+#   - `status`, `class`, `where`, error `message` → always kept verbatim
+#     (load-bearing for self-recovery from R-side errors like cv_criteria
+#     family mismatch)
+def compress_tool_result_for_llm(result):
+    """Return a token-shrunk version of a tool result for the LLM loop.
+
+    The original ``result`` is NOT mutated. Callers should record the full
+    result via :func:`trace.summarize_result` BEFORE compressing.
+    """
+    if not isinstance(result, dict):
+        return result
+    # Keys that MUST be preserved verbatim for the LLM to reason about
+    # status + recover from R-side errors. Adding to this list is safer
+    # than expanding compression rules.
+    _ALWAYS_KEEP = {
+        "status", "class", "where", "message", "error_message",
+        "remediation", "offending_args",
+        "_notice_eta_default", "_notice_speed_slow",
+        "_followup_offer_plot", "_plot_axis_metadata",
+        "criteria", "cv_metric.name", "cv_criteria",
+        "best.best_eta", "best.best_lambda", "best.best_alpha",
+        "n_obs", "n_covariates", "n_etas", "n_lambdas",
+        "method", "external_via", "ties",
+    }
+    out = {}
+    for k, v in result.items():
+        if k in _ALWAYS_KEEP:
+            out[k] = v
+        elif isinstance(v, list) and len(v) > 5:
+            if all(isinstance(x, (int, float)) for x in v):
+                try:
+                    lo, hi = min(v), max(v)
+                    out[k] = (f"[vector len={len(v)}, range "
+                              f"[{lo:.4g}, {hi:.4g}]; "
+                              f"full values in trace.json]")
+                except Exception:
+                    out[k] = (f"[vector len={len(v)}; "
+                              f"full values in trace.json]")
+            elif v and isinstance(v[0], list):
+                rows = len(v)
+                cols = len(v[0]) if v[0] else 0
+                out[k] = (f"[matrix {rows}x{cols}; "
+                          f"full values in trace.json]")
+            else:
+                # Mixed-type list (rare); keep but truncate long ones.
+                out[k] = v if len(v) <= 20 else (
+                    list(v[:3]) + ["..."] + list(v[-2:]))
+        elif isinstance(v, dict):
+            # Recurse one level for nested structures (e.g. best.* groups).
+            out[k] = compress_tool_result_for_llm(v)
+        else:
+            out[k] = v
+    return out

@@ -25,9 +25,49 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from . import tools as _tools
+from .helpers import compress_tool_result_for_llm
 from .prompts import SYSTEM_PROMPT_V2, prompt_sha256
 from .trace import AgentTrace, TraceEvent, summarize_result, _utc_iso
 from .repro import write_repro_r
+
+
+# -- Stage 4k: structural routing hint -----------------------------------------
+#
+# After auto-inspect we know whether the data is Cox-cohort shape (z + time +
+# delta/status) or NCC matched-set shape (z + y + stratum). Qwen 7B otherwise
+# routes by query keywords — "cross validation" → cv_coxkl regardless of
+# whether the data has time/status. Empirically (NCC CV runaway 2026-05-29)
+# this leads to cv_coxkl being called on $y+$stratum data and crashing R with
+# "argument lengths differ", then Qwen consumes the entire max-tokens budget
+# trying to "fix" it. The hint below appears AT THE END of the user message,
+# making the routing constraint impossible to overlook.
+def _detect_data_family_hint(inspect_result):
+    """Return a one-line ROUTING HINT string, or '' if structure is ambiguous.
+
+    Delegates family classification to :func:`tools.classify_data_family`
+    (single source of truth, shared with the tool-subsetting logic so the
+    hint and the exposed tool set can never disagree). Since Stage 4l also
+    HIDES the wrong-family tools from the request, the hint no longer needs
+    the "DO NOT call cohort tools" negative half — the wrong-family tools
+    aren't callable. The hint now just confirms the regime so the LLM
+    doesn't waste a turn second-guessing the data shape.
+    """
+    family = _tools.classify_data_family(inspect_result)
+    if family == "ncc":
+        return (
+            "ROUTING HINT: the DATA STRUCTURE above shows $y + $stratum "
+            "fields and no $time/$status/$delta — this is NCC (nested "
+            "case-control / matched-set) data. Use an NCC-family tool "
+            "(fit_ncc* / cv_ncc*); only those are available to you."
+        )
+    if family == "cox":
+        return (
+            "ROUTING HINT: the DATA STRUCTURE above shows $time + "
+            "$status/$delta and no $y/$stratum — this is Cox cohort data. "
+            "Use a cohort-family tool (fit_cox* / cv_cox* / fit_coxkl* / "
+            "cv_coxkl*); only those are available to you."
+        )
+    return ""
 
 
 @dataclass
@@ -126,6 +166,9 @@ class BregSurvAgent:
         user_text: str,
         data_path: Optional[str] = None,
         history: Optional[List] = None,
+        family_override: Optional[str] = None,
+        method_override: Optional[str] = None,
+        bound_context: Optional[str] = None,
     ) -> AgentResponse:
         """Run one user turn end-to-end. Returns an :class:`AgentResponse`.
 
@@ -149,13 +192,93 @@ class BregSurvAgent:
             deployment_mode=self.deployment_mode,
         )
 
-        # Optionally include data_path as a context line so the model
-        # knows the exact path string to pass to tool args.
+        # Stage 4h: Scaffolded context injection.
+        #
+        # When data_path is given, we pre-dispatch `inspect_data` ourselves
+        # and embed the resulting structure verbatim into the user message.
+        # Rationale: Qwen 2.5-7B does NOT reliably obey a soft prompt rule
+        # like "MUST call inspect_data before fit_*" — even after Stage 4g
+        # tightened that rule. It will skip inspect_data and guess ASCII-but-
+        # wrong field names ("z" instead of "ExampleData_lowdim$train$z"),
+        # then fail at the R subprocess on a shape/name mismatch.
+        #
+        # By injecting the structure upfront, we make verification an
+        # ARCHITECTURAL GUARANTEE rather than a Qwen-compliance question.
+        # Trace and repro still record the auto-inspect call so the
+        # audit chain stays intact.
+        # Stage 4l: context-aware tool subsetting. Default to the full
+        # catalogue; narrowed below once we have an inspect result.
+        active_schemas = self._tool_schemas
+
         user_content = user_text
         if data_path is not None:
-            user_content += (
-                f"\n\n[The user's data file is at: {data_path}]"
-            )
+            auto_inspect = _tools.dispatch("inspect_data",
+                                           data_path=data_path)
+            # Record the auto-inspect call in the trace for audit symmetry
+            # with any LLM-initiated inspect_data call. The
+            # _auto_prepend=True flag inside effective_args lets reviewers
+            # distinguish architectural pre-call from LLM-issued call.
+            trace.events.append(TraceEvent(
+                timestamp=_utc_iso(),
+                tool="inspect_data",
+                llm_args={},
+                effective_args={"data_path": data_path,
+                                "_auto_prepend": True},
+                status=auto_inspect.get("status", "ok"),
+                result_summary=summarize_result("inspect_data",
+                                               auto_inspect),
+                latency_ms=0,
+            ))
+            structure_block = json.dumps(auto_inspect, indent=2,
+                                          ensure_ascii=False)
+            # Stage 4k: structural routing hint. The auto-inspect tells us
+            # which tool family the data fits BEFORE the LLM sees the query;
+            # without this hint Qwen 7B routes by query keywords ("cross
+            # validation" → Cox) and ignores the data structure, calling
+            # cv_coxkl on NCC data and crashing R with "argument lengths
+            # differ". Prepending a one-line ROUTING HINT works around the
+            # query-wording bias.
+            routing_hint = _detect_data_family_hint(auto_inspect)
+
+            # Stage 4l: narrow the exposed tool schemas to the admissible
+            # family (+ dimensionality when unambiguous). Cuts the ~18K
+            # all-33-tools payload to ~5-12K and shrinks the routing
+            # decision space. Recorded in the trace for audit.
+            active_schemas, exposed_meta = _tools.select_tool_schemas(
+                self._tool_schemas, auto_inspect,
+                family_override=family_override,
+                method_override=method_override)
+            trace.tools_exposed = exposed_meta
+
+            # When the UI supplies bound_context (demo path), it already
+            # lists the exact object/field/beta paths — the raw DATA
+            # STRUCTURE block is then redundant AND counterproductive: for
+            # high-dim data it balloons to thousands of tokens (e.g. 50
+            # Z-column names) and its visible `$test` split tempts the
+            # model into picking an individual-data tool. So inject the
+            # structure block + routing hint ONLY on the upload path,
+            # where the model must build args itself.
+            if not bound_context:
+                user_content += (
+                    f"\n\n[The user's data file is at: {data_path}]"
+                    f"\n\n[DATA STRUCTURE — already inspected for you. Use "
+                    f"the object name and field names below verbatim in any "
+                    f"*_expr arguments. Do NOT call inspect_data again. Do "
+                    f"NOT invent or translate field names — only use what is "
+                    f"shown here, in ASCII, exactly as written:\n"
+                    f"{structure_block}\n]"
+                )
+                if routing_hint:
+                    user_content += f"\n\n[{routing_hint}]"
+
+        # Stage 4m: UI-bound facts. When the deployment UI resolved the
+        # dataset / external-beta object / eta grid from explicit
+        # selections, it passes them here as authoritative values the LLM
+        # must use verbatim (fixes the bare-`beta_external` path bug and
+        # the hand-written eta grid). Injected for BOTH the data-file and
+        # no-file paths.
+        if bound_context:
+            user_content += f"\n\n[{bound_context}]"
 
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": self.system_prompt},
@@ -189,8 +312,25 @@ class BregSurvAgent:
                 completion = client.chat.completions.create(
                     model=self.model_name,
                     messages=messages,
-                    tools=self._tool_schemas,
+                    tools=active_schemas,
                     tool_choice="auto",
+                    # Deterministic greedy decoding. The deployed agent
+                    # previously left temperature unset → vLLM's non-zero
+                    # default → nondeterministic routing and intermittent
+                    # "describe instead of call" turns (observed
+                    # 2026-05-30, Cox highdim fit returned prose with no
+                    # tool call). The Stage 2 routing benchmark that hit
+                    # 83% used temperature=0.0; match it here.
+                    temperature=0.0,
+                    # Stage 4k: cap per-turn generation. Without this,
+                    # vLLM fills the entire remaining context window —
+                    # 2026-05-29 trace had max_tokens=8274 (~4 min at
+                    # 38 tok/s) after Qwen mis-routed an NCC query and
+                    # tried to "fix" the R error by rambling. 2048 is
+                    # plenty for one tool call's arguments + brief
+                    # reasoning text + tool calls list; the loop can
+                    # take multiple turns if Qwen needs more thinking.
+                    max_tokens=2048,
                 )
                 # Best-effort token accounting.
                 usage = getattr(completion, "usage", None)
@@ -225,6 +365,10 @@ class BregSurvAgent:
                     final_text = msg.content or ""
                     break
 
+                # Names exposed to the LLM this run — used to hard-reject
+                # hallucinated / non-exposed tool calls.
+                active_names = {s["function"]["name"] for s in active_schemas}
+
                 # Dispatch every tool call this turn.
                 for tc in tool_calls:
                     name = tc.function.name
@@ -239,7 +383,27 @@ class BregSurvAgent:
                         effective_args["eta"] = 0.0
 
                     t0 = time.monotonic()
-                    result = _tools.dispatch(name, **llm_args)
+                    # Stage 4m: hard-guard. Tool subsetting only controls
+                    # what the LLM is SHOWN; dispatch() itself still
+                    # accepts any of the 33 registry tools. A 7B model can
+                    # hallucinate a non-exposed tool name (observed
+                    # 2026-05-30: cv_coxkl emitted on NCC data despite an
+                    # NCC-only subset, then run by dispatch and crashing
+                    # R). Refuse it here and tell the model what IS
+                    # available, forcing a retry within the family.
+                    if name not in active_names:
+                        result = {
+                            "status": "error",
+                            "class": "ToolNotAvailable",
+                            "where": "bregsurv_agent.agent",
+                            "message": (
+                                f"Tool '{name}' is not available for this "
+                                f"dataset. Choose one of the available "
+                                f"tools instead: {sorted(active_names)}."
+                            ),
+                        }
+                    else:
+                        result = _tools.dispatch(name, **llm_args)
                     latency_ms = int((time.monotonic() - t0) * 1000)
 
                     status = result.get("status", "ok") if isinstance(result, dict) else "non_dict"
@@ -260,10 +424,19 @@ class BregSurvAgent:
                     tool_results.append({"tool": name, "args": llm_args,
                                           "result": result})
 
+                    # Stage 4i-B: compress the tool result that the LLM
+                    # sees on subsequent iterations. The FULL result is
+                    # already in `tool_results` (returned to UI) and in
+                    # `trace.events` (via summarize_result above and the
+                    # write_repro_r call later) — only the LLM-facing copy
+                    # is shrunk. Drops per-iteration cost from ~5K to
+                    # ~200 tokens for typical fit_* / cv_* results.
+                    llm_facing = compress_tool_result_for_llm(result)
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
-                        "content": json.dumps(result, ensure_ascii=False),
+                        "content": json.dumps(llm_facing,
+                                              ensure_ascii=False),
                     })
             else:
                 # Loop exited via max_turns without a content-only reply.
@@ -272,7 +445,23 @@ class BregSurvAgent:
                 final_text = (messages[-1].get("content") or "") if messages else ""
 
         except Exception as e:
-            error = f"{type(e).__name__}: {e}"
+            # Stage 4i-A: BadRequestError from a context-length overflow
+            # gets a user-readable message instead of a raw traceback.
+            # The trace.json and repro.R from successful tool calls in
+            # this turn ARE still valid and downloadable — the only
+            # thing that failed is the LLM's final response synthesis.
+            err_text = str(e)
+            err_class = type(e).__name__
+            if ("BadRequest" in err_class
+                    and "maximum context" in err_text.lower()):
+                error = (
+                    "This conversation has grown past the model's "
+                    "context window (32K tokens). Click 'Clear' to "
+                    "start a fresh chat. Your trace.json and repro.R "
+                    "downloaded from earlier turns remain valid."
+                )
+            else:
+                error = f"{err_class}: {e}"
             final_text = final_text or ""
 
         # Run-level metadata.

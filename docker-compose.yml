@@ -1,0 +1,64 @@
+# One-command launch for the self-hosted BregSurv agent.
+#
+# Requires:
+#   * Docker Engine 24+ with Compose v2
+#   * NVIDIA GPU + driver + nvidia-container-toolkit
+#     (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/)
+#
+# Usage:
+#   docker compose up --build           # build & run, foreground
+#   docker compose up -d --build        # detached
+#   docker compose logs -f bregsurv     # tail logs
+#   docker compose down                 # stop & remove
+#
+# First boot takes ~10 min (R + Python install during build) + ~5 min
+# (Qwen 2.5-7B-AWQ download from HF on first run). Subsequent boots
+# reuse the model cache volume and start in ~60 s.
+#
+# To use a local dataset, drop the file into ./data_in/ on the host
+# (visible inside the container at /data) and reference it from the
+# Gradio UI as /data/your_file.rda.
+
+services:
+  bregsurv:
+    build:
+      context: .
+      dockerfile: Dockerfile.selfhost
+    image: bregsurv-agent:selfhost
+    container_name: bregsurv-agent
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      DEPLOYMENT_MODE: local
+      # vLLM bind config — usually no need to change.
+      VLLM_HOST: 127.0.0.1
+      VLLM_PORT: 8000
+      VLLM_MAX_MODEL_LEN: 32768
+      VLLM_GPU_MEM_UTIL: 0.5
+      VLLM_MODEL_ID: Qwen/Qwen2.5-7B-Instruct-AWQ
+      SURVBREGDIV_MODEL_NAME: qwen2.5-7b-awq
+      # Agent → local vLLM (overridable to OpenAI / Together / etc.).
+      SURVBREGDIV_MODEL_ENDPOINT: http://127.0.0.1:8000/v1
+      OPENAI_API_KEY: EMPTY
+    volumes:
+      # Persist Qwen weights across container rebuilds — saves the
+      # ~5 GB re-download every time.
+      - bregsurv-models:/root/.cache/huggingface
+      # User-data drop directory. Mount even if empty so the path
+      # exists inside the container.
+      - ./data_in:/data:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Increase shared-memory size — vLLM uses /dev/shm heavily for the
+    # KV cache; the Docker default of 64 MB causes "Bus error" crashes.
+    shm_size: "8gb"
+
+volumes:
+  bregsurv-models:
+    driver: local

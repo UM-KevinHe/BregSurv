@@ -60,6 +60,10 @@ class AgentTrace:
     llm_turns: int = 0
     prompt_tokens_total: Optional[int] = None
     completion_tokens_total: Optional[int] = None
+    # Stage 4l: which tools were exposed to the LLM this run (after
+    # context-aware subsetting). {family, dimensionality, n_exposed,
+    # n_total, names}. None when no data file was inspected (full 33).
+    tools_exposed: Optional[Dict[str, Any]] = None
     events: List[TraceEvent] = field(default_factory=list)
 
     def add_event(self, event: TraceEvent) -> None:
@@ -78,6 +82,7 @@ class AgentTrace:
             "llm_turns": self.llm_turns,
             "prompt_tokens_total": self.prompt_tokens_total,
             "completion_tokens_total": self.completion_tokens_total,
+            "tools_exposed": self.tools_exposed,
             "events": [e.to_dict() for e in self.events],
         }
 

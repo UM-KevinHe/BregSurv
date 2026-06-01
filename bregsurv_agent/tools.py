@@ -24,8 +24,9 @@ Post-processing flags:
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
-from typing import Any, Dict, FrozenSet, List, Tuple
+from typing import Any, Dict, FrozenSet, List, Optional, Tuple
 
 from . import helpers
 from . import runner
@@ -97,6 +98,269 @@ def load_schemas() -> List[dict]:
         return json.load(f)
 
 
+# -- Context-aware tool subsetting --------------------------------------------
+#
+# The 33 tool schemas cost ~18K tokens — the single largest fixed item in
+# every request, eating ~56% of Qwen 7B's 32K window before the user says
+# anything. But once we have auto-inspected the data file (Stage 4h), the
+# data structure already determines which tool FAMILY is admissible. There
+# is no reason to send the LLM the NCC tool schemas when the data is Cox
+# cohort shape (and vice-versa) — those tools would crash R anyway (the
+# Stage 4k "argument lengths differ" failure mode). Subsetting the schema
+# list to the admissible family (and, when unambiguous, dimensionality
+# regime) before the request both cuts tokens AND shrinks the routing
+# decision space, which raises small-model routing accuracy.
+#
+# Two axes:
+#   * Family (Cox vs NCC) — DEFINITIVE from field names; always applied.
+#   * Dimensionality (base vs ridge/enet) — CONSERVATIVE; applied only in
+#     unambiguous cases so a legitimate request is never blocked.
+#
+# Helpers (inspect_data / generate_eta / start_analysis) are ALWAYS kept:
+# inspect_data is the documented self-recovery path for the ASCII gate
+# (Stage 4g), and start_analysis is the wizard escape for any query the
+# subset can't satisfy.
+
+_HELPER_TOOLS: FrozenSet[str] = frozenset(
+    {"inspect_data", "generate_eta", "start_analysis"}
+)
+
+
+def _tool_family(name: str) -> str:
+    """Return "ncc", "cox", or "helper" for a registry tool name."""
+    if name in _HELPER_TOOLS:
+        return "helper"
+    low = name.lower()
+    if "ncc" in low:
+        return "ncc"
+    if "cox" in low:
+        return "cox"
+    return "helper"
+
+
+def _is_highdim_tool(name: str) -> bool:
+    """True for the ridge / enet (high-dimensional) tool variants."""
+    return "_ridge" in name or "_enet" in name
+
+
+def classify_data_family(inspect_result: Any) -> "Optional[str]":
+    """Return "ncc" | "cox" | None from an inspect_data result.
+
+    Field-name signatures (matches the deployed Stage 4k heuristic
+    verbatim so behaviour does not regress): NCC = $y + $stratum with no
+    $time/$status/$delta; Cox = $time + $status/$delta with no $y+$stratum.
+    Anything else (individual two-source, MDTL with vcov, mixed) → None.
+    """
+    if not isinstance(inspect_result, dict):
+        return None
+    blob = json.dumps(inspect_result).lower()
+    has_y = '"y"' in blob
+    has_stratum = '"stratum"' in blob
+    has_time = '"time"' in blob
+    has_status = '"status"' in blob
+    has_delta = '"delta"' in blob
+    is_ncc = (has_y and has_stratum) and not (has_time and (has_status or has_delta))
+    is_cox = (has_time and (has_status or has_delta)) and not (has_y and has_stratum)
+    if is_ncc:
+        return "ncc"
+    if is_cox:
+        return "cox"
+    return None
+
+
+_DIM_RE = re.compile(r"(\d+)\s*x\s*(\d+)")
+
+
+def _covariate_dims(obj: Any) -> "Optional[Tuple[int, int]]":
+    """Depth-first search for a ``z`` field; parse its "(n)x(p)" dims.
+
+    ``inspect_data`` reports the covariate matrix as either a plain string
+    ("matrix 1000x6 (double)") or a dict with a ``.kind`` string
+    ("data.frame 100x6"). Returns ``(n_rows, p_cols)`` or ``None``.
+    """
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if k == "z":
+                dims = _parse_dims(v)
+                if dims:
+                    return dims
+            found = _covariate_dims(v)
+            if found:
+                return found
+    elif isinstance(obj, list):
+        for item in obj:
+            found = _covariate_dims(item)
+            if found:
+                return found
+    return None
+
+
+def _parse_dims(v: Any) -> "Optional[Tuple[int, int]]":
+    s = v if isinstance(v, str) else (v.get(".kind") if isinstance(v, dict) else None)
+    if not isinstance(s, str):
+        return None
+    m = _DIM_RE.search(s)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2))
+
+
+def classify_dimensionality(inspect_result: Any) -> "Optional[str]":
+    """Return "lowdim" | "highdim" | None — conservatively.
+
+    Only the unambiguous extremes are classified, so a borderline case
+    (where a user might legitimately want either base or regularized
+    tools) keeps the full family and is never blocked:
+
+      * ``lowdim``  — p <= 10 AND n >= 3p  (classical low-dimensional Cox;
+        ridge/enet are pointless → safe to drop them)
+      * ``highdim`` — p >= n  (base Cox cannot fit; safe to drop base)
+      * otherwise   — None  (keep both base and regularized variants)
+    """
+    if not isinstance(inspect_result, dict):
+        return None
+    dims = _covariate_dims(inspect_result.get("structure", inspect_result))
+    if not dims:
+        return None
+    n, p = dims
+    if p <= 10 and n >= 3 * p:
+        return "lowdim"
+    if p >= n:
+        return "highdim"
+    return None
+
+
+def select_tool_schemas(
+    all_schemas: List[dict],
+    inspect_result: Any,
+    family_override: "Optional[str]" = None,
+    method_override: "Optional[str]" = None,
+) -> "Tuple[List[dict], Dict[str, Any]]":
+    """Return (subset_of_schemas, decision_metadata) for one request.
+
+    ``family_override`` ("cox" / "ncc"), when supplied by the UI (which
+    knows the family definitively from the user's dataset selection),
+    takes precedence over the inspect-result heuristic. Otherwise the
+    family is classified from the data structure.
+
+    ``method_override`` ("kl") narrows further to the KL-divergence
+    tools only (names containing ``kl``), dropping the individual-data
+    (``_indi``) and Mahalanobis (``_MDTL``) tools. The deployment UI sets
+    this because its only external-information option is a coefficient
+    vector → KL. Without it, a 7B model seeing a ``$train``/``$test``
+    split mistakes ``$test`` for an external cohort and picks an
+    ``_indi`` tool (observed 2026-05-30, NCC cv).
+
+    ``decision_metadata`` is recorded in the trace for audit. When the
+    family is ambiguous (None and no override), the full 33-tool list is
+    returned unchanged (safe fallback — e.g. individual / MDTL-vcov
+    data, or no inspect result available).
+    """
+    family = family_override or classify_data_family(inspect_result)
+    dim = classify_dimensionality(inspect_result) if family else None
+
+    if family is None:
+        kept = [s["function"]["name"] for s in all_schemas]
+        return all_schemas, {
+            "family": None, "dimensionality": None, "method": None,
+            "n_exposed": len(kept), "n_total": len(all_schemas),
+            "names": kept,
+        }
+
+    keep: List[str] = []
+    for name in TOOL_REGISTRY:
+        fam = _tool_family(name)
+        if fam == "helper":
+            keep.append(name)
+            continue
+        if fam != family:
+            continue
+        if dim == "lowdim" and _is_highdim_tool(name):
+            continue
+        if dim == "highdim" and not _is_highdim_tool(name):
+            continue
+        if method_override == "kl" and "kl" not in name:
+            continue
+        keep.append(name)
+
+    keep_set = set(keep)
+    subset = [s for s in all_schemas if s["function"]["name"] in keep_set]
+    return subset, {
+        "family": family, "dimensionality": dim, "method": method_override,
+        "n_exposed": len(subset), "n_total": len(all_schemas),
+        "names": [s["function"]["name"] for s in subset],
+    }
+
+
+# -- ASCII validation for R expression args ----------------------------------
+#
+# Qwen 2.5-7B-AWQ has a documented Chinese-language bias: when uncertain
+# about R field names, it falls back to its Chinese training distribution
+# and emits things like `dataset$生存时间` / `dataset$事件发生`. These are
+# never valid R identifiers (R syntax requires ASCII-letter / digit / dot
+# / underscore in identifiers). Rather than relying on the LLM to comply
+# with a soft prompt rule, we enforce ASCII at the dispatcher boundary:
+# any `*_expr` arg containing a non-ASCII character is rejected with a
+# structured error that explicitly tells the agent to call `inspect_data`
+# before retrying. The next turn's prompt then contains this error, and
+# the agent self-corrects.
+#
+# Note: we do NOT validate `data_path` (a Chinese filesystem path is
+# legitimate) or descriptive free-text args. Only the R-expression args
+# where non-ASCII guarantees a downstream R parse error.
+
+_EXPR_ARGS_REQUIRE_ASCII: FrozenSet[str] = frozenset({
+    # Cohort / NCC core fields
+    "z_expr", "time_expr", "delta_expr", "y_expr", "stratum_expr",
+    # External-info fields
+    "beta_expr", "vcov_expr", "RS_expr", "beta_initial_expr",
+    # Two-source individual-data variants (_int / _ext)
+    "z_int_expr", "time_int_expr", "delta_int_expr",
+    "y_int_expr", "stratum_int_expr",
+    "z_ext_expr", "time_ext_expr", "delta_ext_expr",
+    "y_ext_expr", "stratum_ext_expr",
+    # NCC-specific c-index stratum (Brier / CIndex CV)
+    "c_index_stratum_expr",
+})
+
+
+def _validate_ascii_in_exprs(name: str, kwargs: Dict[str, Any]) -> dict:
+    """If any `*_expr` arg contains non-ASCII, return a structured error.
+
+    Returns an empty dict when validation passes (clean dispatch can proceed).
+    The error message instructs the LLM to call `inspect_data` first.
+    """
+    offenders: Dict[str, str] = {}
+    for arg_name, val in kwargs.items():
+        if arg_name not in _EXPR_ARGS_REQUIRE_ASCII:
+            continue
+        if not isinstance(val, str):
+            continue
+        try:
+            val.encode("ascii")
+        except UnicodeEncodeError:
+            offenders[arg_name] = val
+    if not offenders:
+        return {}
+    return {
+        "status": "error",
+        "class": "NonAsciiIdentifier",
+        "where": "bregsurv_agent.tools.dispatch",
+        "message": (
+            f"Tool {name!r} was called with non-ASCII characters in R "
+            f"field expressions: {offenders}. R variable names MUST be "
+            f"valid R syntax in ASCII only — never Chinese, Japanese, "
+            f"Korean, or other non-Latin scripts. Do NOT guess field "
+            f"names. Call `inspect_data` on the data file FIRST to "
+            f"discover the actual R object structure, then retry this "
+            f"tool with the verbatim field names you observe (they will "
+            f"be ASCII)."
+        ),
+        "offending_args": offenders,
+        "remediation": "call_inspect_data_then_retry",
+    }
+
+
 # -- Dispatch ----------------------------------------------------------------
 
 def dispatch(name: str, **kwargs: Any) -> dict:
@@ -104,6 +368,9 @@ def dispatch(name: str, **kwargs: Any) -> dict:
 
     Mirrors the per-tool wrappers in ``mcp/server.py``:
 
+    0. Reject non-ASCII characters in any ``*_expr`` argument with a
+       structured error (forces the agent to call ``inspect_data`` first
+       instead of hallucinating non-ASCII field names — see Stage 4g).
     1. If ``resolve_eta`` flag set and ``eta`` arg is None / missing, default
        to 0.0 and capture an eta-default notice to attach later.
     2. Build payload = kwargs (R scripts ignore extra keys, but we drop
@@ -121,6 +388,12 @@ def dispatch(name: str, **kwargs: Any) -> dict:
             "class": "UnknownTool",
             "where": "bregsurv_agent.tools.dispatch",
         }
+
+    # Step 0: ASCII gate (Stage 4g defense against Qwen's Chinese
+    # hallucination on field-name args).
+    ascii_err = _validate_ascii_in_exprs(name, kwargs)
+    if ascii_err:
+        return ascii_err
 
     script, flags = TOOL_REGISTRY[name]
 

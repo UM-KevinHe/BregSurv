@@ -16,44 +16,95 @@ internal and external cohorts.
 > assistant a compact map of the package — decision tree, parameter reference,
 > worked examples, and common pitfalls — without ingesting the full website.
 
-## Running BregSurv from Claude Desktop
+## Running BregSurv with an AI assistant
 
-We also ship a **Claude Desktop extension** (an MCP server) that lets the
-AI assistant run `BregSurv` analyses *for* you, instead of generating R
-code for you to run yourself. You describe your data and your question in
-plain English (or Chinese); Claude picks the right model from the package,
-calls the R function on your machine, and explains the result.
+The R API has many models (Cox / NCC × KL / MDTL / individual-level ×
+low-dim / ridge / enet) and several CV criterion families. Choosing the
+right combination — and tuning η — is the part non-statistician users
+struggle with. We ship an AI **agent layer** on top of the package: you
+describe your data and your question in plain English, the agent picks
+the right model, runs it on your machine, and explains the result.
 
-**Why this exists.** The R API has many models (Cox / NCC × KL / MDTL /
-individual-level × low-dim / ridge / enet) and several CV criterion
-families. Choosing the right combination — and tuning η — is the part
-non-statistician users struggle with. The extension exposes a guided
-5-question wizard plus all model fitters as MCP tools, so the assistant
-can do the bookkeeping while you focus on the science.
+There are **three ways** to access the agent, picking different
+trade-offs between setup, LLM cost, and data privacy:
 
-**What you need on your machine:**
+| Path | Setup | LLM | Data | Best for |
+|---|---|---|---|---|
+| **HF Space demo** | None — open a URL + reviewer credentials | Qwen 2.5-7B-AWQ (vLLM, in-container) | Demo data only; chat stays inside the Space container | Paper review, quick exploration |
+| **Claude Desktop extension** | Install R + `.mcpb` | Claude (your existing subscription) | File paths stay local; only tool args + results in chat | Day-to-day use on your own data |
+| **Docker self-host** | NVIDIA GPU + Docker | Qwen 2.5-7B-AWQ (vLLM, in-container) | 100% local; no external API call | PHI, air-gapped networks, paper experiments |
+
+### 1. Hugging Face Space (zero-install demo)
+
+Open <https://huggingface.co/spaces/anon-bregsurv/BregSurv> in any
+browser. The Space loads the same Gradio UI as the local install with
+bundled example datasets pre-loaded, and serves the same Qwen 2.5-7B-AWQ
+weights via vLLM as the Docker self-host path — so what you see is what
+the paper claims, not a different model's behaviour.
+
+Access is gated by a reviewer login; credentials are provided in the
+paper submission. The Space sleeps after 15 min of inactivity to control
+GPU cost; the first request after sleep takes ~90 s to wake.
+
+**Do not upload real patient data** — although Qwen runs inside the
+container (chat does not leave the Space), the demo is a public-internet
+service and we make no PHI guarantees here. Use the Docker self-host or
+the Claude Desktop extension for actual research data.
+
+### 2. Claude Desktop extension (MCPB)
+
+For day-to-day use with your own data on your own machine, but using
+Claude as the LLM driver.
+
+**Prerequisites:**
 
 - **R ≥ 4.0** with the `BregSurv` package installed (see
   [Installation](#installation) below).
 - **[Claude Desktop](https://claude.ai/download)** (free; macOS, Windows,
   or Linux).
 - *Nothing else.* Python and the `uv` runtime are bundled inside Claude
-  Desktop and set up automatically the first time you install the
-  extension. **Your data never leaves your computer** — the extension
-  only sends file paths and analysis summaries (coefficients, CV scores)
-  back through the chat.
+  Desktop. **Your data file never leaves your computer** — only file
+  paths and analysis summaries (coefficients, CV scores) transit
+  the Claude chat.
 
-**Quick install.** Download `bregsurv-<version>.mcpb` from the
-[Releases page](https://github.com/UM-KevinHe/BregSurv/releases),
-then in Claude Desktop: **Settings → Extensions → Advanced settings →
-Extension Developer → "Install Extension…"** and pick the file. Tell the
-install dialog where your `Rscript` lives, then **toggle the extension
-ON** in the Extensions list (new extensions are disabled by default —
-this is the most common "I installed it but Claude doesn't see it"
-problem).
+**Install.** Download `bregsurv-<version>.mcpb` from the
+[Releases page](https://github.com/UM-KevinHe/BregSurv/releases), then in
+Claude Desktop: **Settings → Extensions → Advanced settings → Extension
+Developer → "Install Extension…"** and pick the file. Tell the install
+dialog where your `Rscript` lives, then **toggle the extension ON** in
+the Extensions list (new extensions are disabled by default — this is
+the most common "I installed it but Claude doesn't see it" problem).
 
-Full step-by-step instructions, troubleshooting, and the privacy model:
+Full walkthrough, troubleshooting, and privacy model:
 [`mcp/INSTALL.md`](mcp/INSTALL.md).
+
+### 3. Docker self-host (fully local, no API egress)
+
+For PHI workflows, hospital networks that block outbound LLM API calls,
+or anyone who wants the agent stack to run entirely on hardware they
+control. Bundles a local Qwen 2.5-7B-AWQ model (via vLLM) alongside the
+R package and Gradio UI in a single Docker image.
+
+**Prerequisites:**
+
+- Linux x86_64 host with NVIDIA GPU (≥ 12 GB VRAM) + driver ≥ 550.
+- Docker 24+ with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+
+**Quick start:**
+
+```
+git clone https://github.com/UM-KevinHe/BregSurv.git
+cd BregSurv
+docker compose up --build
+```
+
+Then open <http://localhost:7860>. First boot takes ~15 min (R compile +
+model download); subsequent boots ~60 s.
+
+Full guide, troubleshooting, and offline-install (air-gapped):
+[`mcp/DEPLOY.md`](mcp/DEPLOY.md).
+
+---
 
 
 ## Installation

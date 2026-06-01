@@ -65,6 +65,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 from bregsurv_agent import BregSurvAgent, AgentResponse
+from bregsurv_agent import tools
 from bregsurv_agent.report import build_markdown, markdown_to_pdf
 
 
@@ -74,9 +75,97 @@ from bregsurv_agent.report import build_markdown, markdown_to_pdf
 
 REPO_ROOT = Path(__file__).parent.resolve()
 SAMPLES_DIR = REPO_ROOT / "data"
-SAMPLE_FILES = sorted(
-    [p for p in SAMPLES_DIR.glob("*.rda") if not p.name.startswith(".")]
-)
+
+# --------------------------------------------------------------------------
+# Demo dataset catalogue (user-facing).
+#
+# The reviewer picks a study type + a friendly dataset name + an external
+# estimate; the UI resolves these to the real .rda file, the family, and
+# the exact R field expressions. Those resolved facts are injected into
+# the agent (see _build_bound_context) so the 7B model never has to guess
+# the object name, the field paths, or the beta-object path — eliminating
+# the bare-`beta_external` / wrong-family / train-vs-test-confusion bugs.
+# Individual-level (`indi`) datasets are intentionally excluded from the
+# demo to keep the choice space small; the KL family (coxkl / ncckl) is
+# the flagship method.
+# --------------------------------------------------------------------------
+
+DEMO_DATASETS = {
+    "Cohort · low-dimensional (6 covariates)": {
+        "file": "ExampleData_lowdim.rda",
+        "object": "ExampleData_lowdim",
+        "family": "cox",
+        "exprs": {
+            "z_expr": "ExampleData_lowdim$train$z",
+            "time_expr": "ExampleData_lowdim$train$time",
+            "delta_expr": "ExampleData_lowdim$train$status",
+            "stratum_expr": "ExampleData_lowdim$train$stratum",
+        },
+        "betas": {
+            "Good external estimate": "ExampleData_lowdim$beta_external_good",
+            "Fair external estimate": "ExampleData_lowdim$beta_external_fair",
+            "Poor external estimate": "ExampleData_lowdim$beta_external_poor",
+        },
+    },
+    "Cohort · high-dimensional (50 covariates)": {
+        "file": "ExampleData_highdim.rda",
+        "object": "ExampleData_highdim",
+        "family": "cox",
+        "exprs": {
+            "z_expr": "ExampleData_highdim$train$z",
+            "time_expr": "ExampleData_highdim$train$time",
+            "delta_expr": "ExampleData_highdim$train$status",
+            "stratum_expr": "ExampleData_highdim$train$stratum",
+        },
+        "betas": {
+            "External estimate": "ExampleData_highdim$beta_external",
+        },
+    },
+    "Nested case-control · low-dimensional (6 covariates)": {
+        "file": "ExampleData_cc_lowdim.rda",
+        "object": "ExampleData_cc_lowdim",
+        "family": "ncc",
+        "exprs": {
+            "z_expr": "ExampleData_cc_lowdim$train$z",
+            "y_expr": "ExampleData_cc_lowdim$train$y",
+            "stratum_expr": "ExampleData_cc_lowdim$train$stratum",
+        },
+        "betas": {
+            "External estimate": "ExampleData_cc_lowdim$beta_external",
+        },
+    },
+    "Nested case-control · high-dimensional (20 covariates)": {
+        "file": "ExampleData_cc_highdim.rda",
+        "object": "ExampleData_cc_highdim",
+        "family": "ncc",
+        "exprs": {
+            "z_expr": "ExampleData_cc_highdim$train$z",
+            "y_expr": "ExampleData_cc_highdim$train$y",
+            "stratum_expr": "ExampleData_cc_highdim$train$stratum",
+        },
+        "betas": {
+            "External estimate": "ExampleData_cc_highdim$beta_external",
+        },
+    },
+}
+
+STUDY_TYPES = ["Any", "Cohort (Cox)", "Nested case-control (NCC)"]
+_STUDY_FAMILY = {"Cohort (Cox)": "cox", "Nested case-control (NCC)": "ncc"}
+ETA_METHODS = ["exponential", "linear"]
+
+
+def _datasets_for_study_type(study_type: str):
+    """Friendly dataset names admissible under the chosen study type."""
+    fam = _STUDY_FAMILY.get(study_type)
+    if fam is None:  # "Any"
+        return list(DEMO_DATASETS)
+    return [name for name, d in DEMO_DATASETS.items() if d["family"] == fam]
+
+
+def _beta_choices(dataset_name: str):
+    """External-estimate choices for a dataset (e.g. good/fair/poor)."""
+    d = DEMO_DATASETS.get(dataset_name)
+    return list(d["betas"]) if d else []
 
 DEPLOYMENT_MODE = os.environ.get("DEPLOYMENT_MODE", "local").lower()
 DEFAULT_ENDPOINT = os.environ.get(
@@ -93,7 +182,36 @@ Survival-analysis transfer learning with the
 by a tool-use LLM agent. Describe your analysis in plain language; the
 agent picks the right estimator, runs it on your data locally, and
 returns coefficients along with a reproducible R script.
+
+*Tip: press **Tab** in an empty message box to auto-fill the example query.*
 """
+
+# Canonical example query — kept in one place so the textbox placeholder
+# and the Tab-to-fill JS stay in sync.
+EXAMPLE_QUERY = (
+    "Cross-validate the KL model on the selected data and plot the CV path."
+)
+
+# Injected on page load: pressing Tab in the (empty) message box fills
+# the example. Document-level capture listener survives Gradio re-renders.
+# Uses the native value setter + an 'input' event so Svelte picks up the
+# change (a bare el.value = ... would desync Gradio's reactive state).
+_TAB_AUTOFILL_JS = """
+() => {
+  const EXAMPLE = %s;
+  document.addEventListener('keydown', (e) => {
+    const ta = e.target;
+    if (ta && ta.tagName === 'TEXTAREA' && ta.closest('#msg_in')
+        && e.key === 'Tab' && ta.value.trim() === '') {
+      e.preventDefault();
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLTextAreaElement.prototype, 'value').set;
+      setter.call(ta, EXAMPLE);
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, true);
+}
+""" % json.dumps(EXAMPLE_QUERY)
 
 
 # --------------------------------------------------------------------------
@@ -127,17 +245,68 @@ def _mode_banner_html() -> str:
 # Data path resolution
 # --------------------------------------------------------------------------
 
-def _resolve_data_path(sample_choice: str, uploaded_file) -> Optional[str]:
-    """Prefer an upload over the sample dropdown. Returns None if neither."""
-    if uploaded_file:
-        # Gradio File: 4.x exposes file.name (str path).
-        try:
-            return uploaded_file.name if hasattr(uploaded_file, "name") else str(uploaded_file)
-        except Exception:
-            return None
-    if sample_choice and sample_choice != "(none)":
-        return str(SAMPLES_DIR / sample_choice)
-    return None
+def _resolve_upload_path(uploaded_file) -> Optional[str]:
+    """Local-mode upload path (Gradio File exposes ``.name``)."""
+    if not uploaded_file:
+        return None
+    try:
+        return uploaded_file.name if hasattr(uploaded_file, "name") else str(uploaded_file)
+    except Exception:
+        return None
+
+
+def _build_bound_context(dataset_name: str, beta_choice: str,
+                         eta_method: str, eta_n: int, eta_max: float):
+    """Resolve sidebar selections to (data_path, family, bound_context_str).
+
+    The returned ``bound_context_str`` is injected into the agent message
+    as authoritative pre-resolved facts (object/field paths, the exact
+    external-beta object path, the eta grid). Returns (None, None, None)
+    when the dataset is unknown.
+    """
+    d = DEMO_DATASETS.get(dataset_name)
+    if d is None:
+        return None, None, None
+    data_path = str(SAMPLES_DIR / d["file"])
+    family = d["family"]
+
+    # External-beta object path (full, e.g. ExampleData_lowdim$beta_external_fair).
+    betas = d["betas"]
+    beta_expr = betas.get(beta_choice) or next(iter(betas.values()))
+
+    # Eta grid for cross-validation — generated by the R package's own
+    # generate_eta so it matches exactly what a reproducible script would
+    # produce (user choice: UI builds the grid; the model never hand-writes it).
+    etas = None
+    try:
+        g = tools.dispatch("generate_eta", method=eta_method,
+                           n=int(eta_n), max_eta=float(eta_max))
+        if isinstance(g, dict):
+            etas = g.get("etas")
+    except Exception:
+        etas = None
+
+    fam_word = "cohort" if family == "cox" else "NCC"
+    kl_tool = "coxkl" if family == "cox" else "ncckl"
+    lines = [
+        "SELECTED SETUP — use these EXACT argument values; do not alter, "
+        "re-derive, or translate them:",
+        f"- Study family: {family}  (call a {fam_word}-family tool only)",
+        f"- Method: KL divergence — the external information is a "
+        f"coefficient VECTOR, so use the KL tool (fit_{kl_tool} / "
+        f"cv_{kl_tool} or its _enet variant). This is NOT individual-"
+        f"level external data: the $test split is held-out evaluation "
+        f"data, never an external cohort, so do NOT use an _indi tool.",
+        f"- data_path: {data_path}",
+    ]
+    for arg, expr in d["exprs"].items():
+        lines.append(f'- {arg}: "{expr}"')
+    lines.append(f'- beta_expr (external coefficients): "{beta_expr}"')
+    if etas:
+        lines.append(
+            f"- For cross-validation use this eta grid verbatim: etas={etas}"
+        )
+    return data_path, family, "\n".join(lines)
 
 
 # --------------------------------------------------------------------------
@@ -327,7 +496,11 @@ def _make_agent(endpoint: str, model: str, api_key: str) -> BregSurvAgent:
 def chat_submit(
     user_msg: str,
     history: List[Tuple[str, str]],
-    sample_choice: str,
+    dataset_name: str,
+    beta_choice: str,
+    eta_method: str,
+    eta_n: int,
+    eta_max: float,
     uploaded_file,
     endpoint: str,
     model: str,
@@ -353,7 +526,21 @@ def chat_submit(
                 a = re.sub(r"\n\n<small>Tools:[^<]*</small>\s*$", "", a)
             clean_history.append((u, a))
 
-    data_path = _resolve_data_path(sample_choice, uploaded_file)
+    # Resolve the data source. An upload (local mode) takes precedence and
+    # uses the un-bound path (the agent auto-inspects and builds args).
+    # Otherwise a selected demo dataset is fully resolved: data_path,
+    # family override (for tool subsetting), and a bound-context block of
+    # pre-resolved field/beta/eta facts injected into the agent message.
+    upload_path = _resolve_upload_path(uploaded_file)
+    if upload_path:
+        data_path, family_override, bound_context = upload_path, None, None
+        method_override = None
+    else:
+        data_path, family_override, bound_context = _build_bound_context(
+            dataset_name, beta_choice, eta_method, eta_n, eta_max)
+        # Demo external info is always a coefficient vector → KL family.
+        method_override = "kl" if family_override else None
+
     try:
         agent = _make_agent(endpoint, model, api_key)
         # Pass prior chat history so follow-ups like "use loss instead"
@@ -361,7 +548,10 @@ def chat_submit(
         # this the agent treats every turn as a fresh conversation and
         # asks for missing context the user has already given.
         response = agent.query(user_msg, data_path=data_path,
-                               history=clean_history)
+                               history=clean_history,
+                               family_override=family_override,
+                               method_override=method_override,
+                               bound_context=bound_context)
     except Exception:
         tb = traceback.format_exc()
         history.append((user_msg, f"**Agent crashed:**\n```\n{tb[-2000:]}\n```"))
@@ -394,7 +584,8 @@ def reset_chat():
 # Layout
 # --------------------------------------------------------------------------
 
-with gr.Blocks(title="BregSurv Agent", theme=gr.themes.Soft()) as demo:
+with gr.Blocks(title="BregSurv Agent", theme=gr.themes.Soft(),
+               js=_TAB_AUTOFILL_JS) as demo:
     gr.HTML(_mode_banner_html())
     gr.Markdown(INTRO_MD)
 
@@ -415,33 +606,51 @@ with gr.Blocks(title="BregSurv Agent", theme=gr.themes.Soft()) as demo:
 
     with gr.Row():
         # ---- Left: data ----
-        with gr.Column(scale=1, min_width=240):
-            gr.Markdown("### Data")
-            data_sample = gr.Dropdown(
-                choices=["(none)"] + [p.name for p in SAMPLE_FILES],
-                value="(none)",
-                label="Sample dataset",
-                info="Bundled .rda files in data/.",
+        with gr.Column(scale=1, min_width=260):
+            gr.Markdown("### 1 · Choose your data")
+            _DEFAULT_STUDY = "Cohort (Cox)"
+            _default_datasets = _datasets_for_study_type(_DEFAULT_STUDY)
+            _default_ds = "Cohort · low-dimensional (6 covariates)"
+            _default_beta = "Poor external estimate"
+            study_type = gr.Radio(
+                choices=STUDY_TYPES, value=_DEFAULT_STUDY,
+                label="Study type",
+                info="Optional — filters the datasets below.",
             )
+            data_sample = gr.Dropdown(
+                choices=_default_datasets, value=_default_ds,
+                label="Dataset",
+            )
+            beta_select = gr.Dropdown(
+                choices=_beta_choices(_default_ds),
+                value=_default_beta,
+                label="External information",
+                info="The external estimate to borrow from.",
+            )
+
+            gr.Markdown("### 2 · Eta grid (for cross-validation)")
+            eta_method = gr.Dropdown(
+                choices=ETA_METHODS, value="exponential",
+                label="Spacing",
+            )
+            with gr.Row():
+                eta_n = gr.Number(value=20, label="# of etas", precision=0,
+                                  minimum=2, maximum=50)
+                eta_max = gr.Number(value=50.0, label="Max eta", minimum=0.1)
+
             data_upload = gr.File(
                 label="Or upload your own (.rda / .rds / .RData)",
                 file_types=[".rda", ".rds", ".RData"],
                 visible=(DEPLOYMENT_MODE == "local"),
             )
-            if DEPLOYMENT_MODE != "local":
-                gr.Markdown(
-                    "<small>Uploads disabled in demo mode. "
-                    "Use the sample dropdown above.</small>"
-                )
 
         # ---- Center: chat ----
         with gr.Column(scale=2, min_width=420):
             chatbot = gr.Chatbot(height=500, label="Conversation",
                                  show_copy_button=True)
             msg_in = gr.Textbox(
-                placeholder="e.g. 'Fit Cox KL on the lowdim sample with "
-                            "eta=[0, 0.5, 1] using the good external beta.'",
-                lines=2, label="Your message",
+                placeholder=f"e.g. '{EXAMPLE_QUERY}'  (press Tab to fill)",
+                lines=2, label="Your message", elem_id="msg_in",
             )
             with gr.Row():
                 send_btn = gr.Button("Send", variant="primary")
@@ -468,9 +677,29 @@ with gr.Blocks(title="BregSurv Agent", theme=gr.themes.Soft()) as demo:
 
     # ----------------------------- Handlers --------------------------------
 
+    # Cascade: study type filters the dataset list; dataset choice resets
+    # the external-information options to that dataset's set.
+    def _on_study_type(study_type_val):
+        names = _datasets_for_study_type(study_type_val)
+        first = names[0] if names else None
+        betas = _beta_choices(first) if first else []
+        return (
+            gr.update(choices=names, value=first),
+            gr.update(choices=betas, value=(betas[0] if betas else None)),
+        )
+
+    def _on_dataset(dataset_val):
+        betas = _beta_choices(dataset_val)
+        return gr.update(choices=betas, value=(betas[0] if betas else None))
+
+    study_type.change(_on_study_type, inputs=study_type,
+                      outputs=[data_sample, beta_select])
+    data_sample.change(_on_dataset, inputs=data_sample, outputs=beta_select)
+
     outputs = [chatbot, msg_in, coeff_out, cv_plot_out,
                trace_out, repro_out, md_out, pdf_out]
-    inputs = [msg_in, chatbot, data_sample, data_upload,
+    inputs = [msg_in, chatbot, data_sample, beta_select,
+              eta_method, eta_n, eta_max, data_upload,
               endpoint_in, model_in, api_key_in]
 
     send_btn.click(chat_submit, inputs=inputs, outputs=outputs)
@@ -478,12 +707,37 @@ with gr.Blocks(title="BregSurv Agent", theme=gr.themes.Soft()) as demo:
     clear_btn.click(reset_chat, inputs=None, outputs=outputs)
 
 
+def _resolve_auth():
+    """Return Gradio auth tuple from env, or None when unset.
+
+    Both ``BREGSURV_AUTH_USER`` and ``BREGSURV_AUTH_PASS`` must be set
+    (non-empty) for the login gate to engage. This is the HF Space
+    deployment pattern: credentials live in HF Space Secrets, never in
+    the image. Local Docker self-host and dev runs leave the env vars
+    unset so Gradio launches without a login page.
+    """
+    user = os.environ.get("BREGSURV_AUTH_USER", "").strip()
+    pw = os.environ.get("BREGSURV_AUTH_PASS", "").strip()
+    if user and pw:
+        return (user, pw)
+    return None
+
+
 if __name__ == "__main__":
     demo.queue()
+    _auth = _resolve_auth()
+    if _auth is not None:
+        print(f"[app] Gradio auth enabled (user={_auth[0]})", flush=True)
     demo.launch(
         server_name=os.environ.get("GRADIO_SERVER_NAME", "127.0.0.1"),
         server_port=int(os.environ.get("GRADIO_SERVER_PORT", "7860")),
         inbrowser=False,
         show_error=True,
         show_api=False,  # extra defense against gradio_client schema bug
+        auth=_auth,
+        auth_message=(
+            "Reviewer access only. Credentials are provided in the "
+            "paper submission. Random visitors: please use the local "
+            "Docker self-host (mcp/DEPLOY.md) instead."
+        ),
     )
