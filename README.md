@@ -30,26 +30,36 @@ trade-offs between setup, LLM cost, and data privacy:
 
 | Path | Setup | LLM | Data | Best for |
 |---|---|---|---|---|
-| **HF Space demo** | None — open a URL + reviewer credentials | Qwen 2.5-7B-AWQ (vLLM, in-container) | Demo data only; chat stays inside the Space container | Paper review, quick exploration |
+| **Docker self-host** | NVIDIA GPU + Docker | Qwen 2.5-7B-AWQ (vLLM, in-container) | 100% local; no external API call | PHI, air-gapped networks, reproducing the paper |
 | **Claude Desktop extension** | Install R + `.mcpb` | Claude (your existing subscription) | File paths stay local; only tool args + results in chat | Day-to-day use on your own data |
-| **Docker self-host** | NVIDIA GPU + Docker | Qwen 2.5-7B-AWQ (vLLM, in-container) | 100% local; no external API call | PHI, air-gapped networks, paper experiments |
+| **Hosted demo** | None, but on request | Qwen 2.5-7B-AWQ (vLLM, in-container) | Demo data only | A quick look without installing anything |
 
-### 1. Hugging Face Space (zero-install demo)
+### 1. Docker self-host (fully local, no API egress)
 
-Open <https://huggingface.co/spaces/anon-bregsurv/BregSurv> in any
-browser. The Space loads the same Gradio UI as the local install with
-bundled example datasets pre-loaded, and serves the same Qwen 2.5-7B-AWQ
-weights via vLLM as the Docker self-host path — so what you see is what
-the paper claims, not a different model's behaviour.
+The deployment the paper describes and evaluates. For PHI workflows,
+hospital networks that block outbound LLM API calls, or anyone who wants
+the agent stack to run entirely on hardware they control. Bundles a local
+Qwen 2.5-7B-AWQ model (via vLLM) alongside the R package and Gradio UI in
+a single Docker image.
 
-Access is gated by a reviewer login; credentials are provided in the
-paper submission. The Space sleeps after 15 min of inactivity to control
-GPU cost; the first request after sleep takes ~90 s to wake.
+**Prerequisites:**
 
-**Do not upload real patient data** — although Qwen runs inside the
-container (chat does not leave the Space), the demo is a public-internet
-service and we make no PHI guarantees here. Use the Docker self-host or
-the Claude Desktop extension for actual research data.
+- Linux x86_64 host with NVIDIA GPU (>= 12 GB VRAM) + driver >= 550.
+- Docker 24+ with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+
+**Quick start:**
+
+```
+git clone https://github.com/UM-KevinHe/BregSurv.git
+cd BregSurv
+docker compose up --build
+```
+
+Then open <http://localhost:7860>. First boot takes ~15 min (R compile +
+model download); subsequent boots ~60 s.
+
+Full guide, troubleshooting, and offline-install (air-gapped):
+[`mcp/DEPLOY.md`](mcp/DEPLOY.md).
 
 ### 2. Claude Desktop extension (MCPB)
 
@@ -78,42 +88,42 @@ the most common "I installed it but Claude doesn't see it" problem).
 Full walkthrough, troubleshooting, and privacy model:
 [`mcp/INSTALL.md`](mcp/INSTALL.md).
 
-### 3. Docker self-host (fully local, no API egress)
+### 3. Hosted demo (on request)
 
-For PHI workflows, hospital networks that block outbound LLM API calls,
-or anyone who wants the agent stack to run entirely on hardware they
-control. Bundles a local Qwen 2.5-7B-AWQ model (via vLLM) alongside the
-R package and Gradio UI in a single Docker image.
+A hosted Gradio deployment runs the identical stack on a HuggingFace
+Space: the same Dockerfile, the same in-container vLLM, the same
+Qwen 2.5-7B-AWQ weights. It is **kept asleep by default**, because the
+GPU tier it needs bills by the hour and the demo is a convenience rather
+than the artifact the paper rests on. **Contact a maintainer (below) and
+we will bring it up.**
 
-**Prerequisites:**
+The Space itself is public and browsable while it sleeps, so its
+configuration can be inspected without it running:
 
-- Linux x86_64 host with NVIDIA GPU (≥ 12 GB VRAM) + driver ≥ 550.
-- Docker 24+ with [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html).
+- **Files** — <https://huggingface.co/spaces/anon-bregsurv/BregSurv/tree/main>
+- **Dockerfile** — <https://huggingface.co/spaces/anon-bregsurv/BregSurv/blob/main/Dockerfile>
 
-**Quick start:**
+Those show the CUDA base image, the `Qwen/Qwen2.5-7B-Instruct-AWQ`
+download step, and the vLLM entrypoint, i.e. that the hosted deployment
+serves the same open-weights model as the self-host path rather than a
+different model behind a web form.
 
-```
-git clone https://github.com/UM-KevinHe/BregSurv.git
-cd BregSurv
-docker compose up --build
-```
+If you want to run it yourself rather than wait on us, path 1 above gives
+the same thing on your own GPU, and is the configuration we report.
 
-Then open <http://localhost:7860>. First boot takes ~15 min (R compile +
-model download); subsequent boots ~60 s.
-
-Full guide, troubleshooting, and offline-install (air-gapped):
-[`mcp/DEPLOY.md`](mcp/DEPLOY.md).
+**Do not upload real patient data to the hosted demo.** Although the
+model runs inside the container, it is a public-internet service and we
+make no PHI guarantees there. Use path 1 or path 2 for research data.
 
 ---
 
 
 ## Installation
 
-```r
-# CRAN
-install.packages("BregSurv")
+Not yet on CRAN; install from GitHub:
 
-# Development version from GitHub
+```r
+install.packages("remotes")
 remotes::install_github("UM-KevinHe/BregSurv")
 ```
 
