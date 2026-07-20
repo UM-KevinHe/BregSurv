@@ -1,4 +1,4 @@
-# AI assistant files (kept fully private — must NEVER be pushed to GitHub)
+# Local editor/assistant config and private notes — never published.
 CLAUDE.md
 docs/CLAUDE.*
 .claude/
@@ -6,7 +6,7 @@ docs/CLAUDE.*
 .cursorrules
 .github/copilot-instructions.md
 
-# Private maintainer paper-reference notes (same threat model as CLAUDE.md)
+# Private maintainer notes — same treatment as the files above.
 AGENT_NOTES.tex
 INTERNAL_NOTES.tex
 AGENT_NOTES.pdf

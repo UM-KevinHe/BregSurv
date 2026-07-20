@@ -9,7 +9,7 @@
 #
 # DESIGN INVARIANT: MDTL family never accepts RS. Only `beta` (+ optional
 # `vcov`). If you ever see RS as a parameter or returned field for an MDTL
-# function, that's a bug — see CLAUDE.md "MDTL never accepts RS" rule.
+# function, that's a bug: the KL family takes `beta` or `RS`, MDTL never `RS`.
 
 suppressPackageStartupMessages({
   library(jsonlite)

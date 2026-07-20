@@ -5,7 +5,7 @@ so ``bregsurv_agent`` does not depend on the ``mcp`` library (which
 requires Python >= 3.10). Both files implement the same R-bridge logic;
 keep them in sync.
 
-Invariants (do NOT change without re-verifying — see CLAUDE.md Phase 4):
+Invariants (do NOT change without re-verifying against a real MCP client):
   1. ``subprocess.run(..., stdin=subprocess.DEVNULL)`` on every Rscript
      call. Without DEVNULL, Rscript can inherit a never-writing stdin
      and stall on TTY probes (readline).

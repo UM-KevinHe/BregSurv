@@ -15,7 +15,6 @@ user's machine without round-tripping through hand-written R code.
 | Self-host the agent with Docker (local Qwen 7B, GPU) | [`DEPLOY.md`](./DEPLOY.md) |
 | Configure or redeploy the public HuggingFace Space | [`HF_SPACE_DEPLOY.md`](./HF_SPACE_DEPLOY.md) |
 | Edit this MCP server's code | this file (below) |
-| Private maintenance log / design decisions | `../CLAUDE.md` (local-only, uncommitted) |
 
 The Space's own landing page is `../hf_space_README.md`; HuggingFace requires it
 to be named `README.md` on the Space itself, which is why it sits at the repo
@@ -72,9 +71,10 @@ python test_wizard_e2e.py
 Each test spawns a fresh Rscript per call; the suites take a few minutes
 on this machine.
 
-## Where the maintenance log lives
+## A note on comments
 
-Internal design decisions, invariants, and the "why" behind the current
-shape of the code are in the project root's `CLAUDE.md`. That file is
-not committed and not published — keep maintenance commentary there,
-not in user-facing docs.
+Design invariants are documented inline, next to the code they constrain —
+look for the `DESIGN INVARIANT` and `Architecture invariants` comments in
+`server.py` and the `r_scripts/`. Each states what must not change and why,
+so the rationale travels with the code rather than living in a separate
+document that can drift out of sync.

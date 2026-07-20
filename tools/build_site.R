@@ -28,13 +28,9 @@ if (!identical(first_line, "# BregSurv")) {
 # pkgdown renders EVERY top-level .md it finds into the site and indexes it
 # into the search box. .gitignore does not help: it stops git, not pkgdown.
 #
-# This bit the project twice. CLAUDE.md leaked into a published search.json
-# for ~3 weeks in 2026-04/05. Then on 2026-07-15 a REPO_CLEANUP.md written
-# during a repo tidy-up was rendered to docs/REPO_CLEANUP.html and 15 search
-# entries, exposing internal notes, before the same rebuild caught it.
-#
-# So this is a LIST, not a single filename. Any new private .md at the repo
-# root must be added here AND to .gitignore -- the two are not substitutes.
+# This is a LIST, not a single filename: any private .md left at the repo root
+# would otherwise be rendered and indexed. Add new ones here AND to .gitignore
+# -- the two are not substitutes, since they guard different steps.
 # ---------------------------------------------------------------------------
 private_docs <- c("CLAUDE", "REPO_CLEANUP", "AGENT_NOTES", "INTERNAL_NOTES")
 
@@ -66,12 +62,35 @@ if (requireNamespace("jsonlite", quietly = TRUE) && file.exists(search_path)) {
   }
 }
 
+# Third exit: the sitemap. pkgdown lists every rendered page there, so without
+# this the file is gone but the sitemap still invites crawlers to fetch it.
+sitemap_path <- "docs/sitemap.xml"
+if (file.exists(sitemap_path)) {
+  lines <- readLines(sitemap_path, warn = FALSE)
+  drop <- Reduce(`|`, lapply(private_docs, function(d) grepl(d, lines, fixed = TRUE)))
+  if (any(drop)) {
+    writeLines(lines[!drop], sitemap_path)
+    message(sprintf("Removed %d private URLs from %s.", sum(drop), sitemap_path))
+  }
+}
+
 # Fail loudly if anything private still made it through -- better to break the
-# build than to publish it.
+# build than to publish it. Checks all three exits: rendered files, the search
+# index, and the sitemap.
 leaked <- list.files("docs", pattern = pattern, recursive = TRUE)
 if (length(leaked)) {
   stop("Private documents still present under docs/: ",
        paste(leaked, collapse = ", "))
+}
+for (f in c("docs/search.json", sitemap_path)) {
+  if (file.exists(f)) {
+    txt <- paste(readLines(f, warn = FALSE), collapse = "\n")
+    hit <- private_docs[vapply(private_docs, grepl, logical(1), x = txt, fixed = TRUE)]
+    if (length(hit)) {
+      stop("Private references still present in ", f, ": ",
+           paste(hit, collapse = ", "))
+    }
+  }
 }
 
 message("docs/llms.txt successfully overridden with curated llms.txt.")

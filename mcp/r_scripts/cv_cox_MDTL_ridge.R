@@ -6,7 +6,7 @@
 # cv_coxkl_ridge.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional
-# `vcov`). See CLAUDE.md.
+# `vcov`). If you ever see `RS` referenced by an MDTL function, that is a bug.
 
 suppressPackageStartupMessages({
   library(jsonlite)

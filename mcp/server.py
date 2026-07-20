@@ -12,7 +12,7 @@ Tool surface (see individual @mcp.tool docstrings for parameters):
     each with low-dim, ridge, and elastic-net variants where applicable.
 
 Architecture invariants — DO NOT change without re-verifying in Claude
-Desktop (see CLAUDE.md "Phase 4" section for the failure modes):
+Desktop. Each one fixes a specific, reproducible failure:
   1. `subprocess.run(..., stdin=subprocess.DEVNULL)` on every Rscript
      call. Without this, Rscript inherits Claude Desktop's never-writing
      stdin and stalls on TTY probes (readline).
