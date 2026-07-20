@@ -1,11 +1,21 @@
-# Cross-Validated cox_indi to Tune etas
+<div id="main" class="col-md-9" role="main">
+
+# Cross-Validated cox\_indi to Tune etas
+
+<div class="ref-description section level2">
 
 Performs K-fold cross-validation over candidate `etas`. Internal data
 are split into folds. For each fold, the model is trained on the
 internal training split plus the full external dataset, then evaluated
 on the held-out internal fold.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 cv.cox_indi(
@@ -28,55 +38,72 @@ cv.cox_indi(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z_int, delta_int, time_int, stratum_int:
+-   z\_int, delta\_int, time\_int, stratum\_int:
 
-  Internal data.
+    Internal data.
 
-- z_ext, delta_ext, time_ext, stratum_ext:
+-   z\_ext, delta\_ext, time\_ext, stratum\_ext:
 
-  External data (always fully included in training).
+    External data (always fully included in training).
 
-- etas:
+-   etas:
 
-  Numeric vector of candidate eta values (must be provided).
+    Numeric vector of candidate eta values (must be provided).
 
-- nfolds:
+-   nfolds:
 
-  Number of folds (default 5).
+    Number of folds (default 5).
 
-- cv.criteria:
+-   cv.criteria:
 
-  Performance criterion.
+    Performance criterion.
 
-- c_index_stratum:
+-   c\_index\_stratum:
 
-  Optional stratum vector used for C-index evaluation on internal data.
+    Optional stratum vector used for C-index evaluation on internal
+    data.
 
-- max_iter, tol:
+-   max\_iter, tol:
 
-  Passed to `cox_indi`.
+    Passed to `cox_indi`.
 
-- message:
+-   message:
 
-  Logical; print progress (default FALSE).
+    Logical; print progress (default FALSE).
 
-- seed:
+-   seed:
 
-  Optional seed for reproducible folds.
+    Optional seed for reproducible folds.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"cv.cox_indi"` with components:
 
-- `internal_stat`: data.frame of CV stats by eta
+-   `internal_stat`: data.frame of CV stats by eta
 
-- `beta_full`: matrix of full-data estimates (p x length(etas))
+-   `beta_full`: matrix of full-data estimates (p x length(etas))
 
-- `best`: list with `best_eta`, `best_beta`, `criteria`
+-   `best`: list with `best_eta`, `best_beta`, `criteria`
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -112,3 +139,9 @@ cv_fit <- cv.cox_indi(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

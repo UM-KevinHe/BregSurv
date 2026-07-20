@@ -1,10 +1,20 @@
+<div id="main" class="col-md-9" role="main">
+
 # Cox Proportional Hazards Model Integrated with External Individual-level Information
+
+<div class="ref-description section level2">
 
 Fits a series of composite-likelihood (weighted) stratified Cox models
 that integrate an external individual-level dataset via an external
 likelihood weight `eta`.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 cox_indi(
@@ -23,100 +33,120 @@ cox_indi(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z_int:
+-   z\_int:
 
-  Matrix of covariates for the internal dataset (n_int x p).
+    Matrix of covariates for the internal dataset (n\_int x p).
 
-- delta_int:
+-   delta\_int:
 
-  Event indicators for the internal dataset (0/1).
+    Event indicators for the internal dataset (0/1).
 
-- time_int:
+-   time\_int:
 
-  Survival times for the internal dataset.
+    Survival times for the internal dataset.
 
-- stratum_int:
+-   stratum\_int:
 
-  Optional stratum identifiers for the internal dataset (default `NULL`
-  -\> single stratum).
+    Optional stratum identifiers for the internal dataset (default
+    `NULL` -&gt; single stratum).
 
-- z_ext:
+-   z\_ext:
 
-  Matrix of covariates for the external dataset (n_ext x p).
+    Matrix of covariates for the external dataset (n\_ext x p).
 
-- delta_ext:
+-   delta\_ext:
 
-  Event indicators for the external dataset (0/1).
+    Event indicators for the external dataset (0/1).
 
-- time_ext:
+-   time\_ext:
 
-  Survival times for the external dataset.
+    Survival times for the external dataset.
 
-- stratum_ext:
+-   stratum\_ext:
 
-  Optional stratum identifiers for the external dataset (default `NULL`
-  -\> single stratum).
+    Optional stratum identifiers for the external dataset (default
+    `NULL` -&gt; single stratum).
 
-- etas:
+-   etas:
 
-  Numeric vector of nonnegative external weights. `eta = 0` gives
-  internal-only fit.
+    Numeric vector of nonnegative external weights. `eta = 0` gives
+    internal-only fit.
 
-- max_iter:
+-   max\_iter:
 
-  Maximum Newton-Raphson iterations (default 100).
+    Maximum Newton-Raphson iterations (default 100).
 
-- tol:
+-   tol:
 
-  Convergence tolerance (default 1e-7).
+    Convergence tolerance (default 1e-7).
 
-- message:
+-   message:
 
-  Logical; if `TRUE`, show a progress bar. Default `FALSE`.
+    Logical; if `TRUE`, show a progress bar. Default `FALSE`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"cox_indi"` containing:
 
-- `eta`:
+-   `eta`:
 
-  Sorted sequence of \\\eta\\ values used.
+    Sorted sequence of \\(\\eta\\) values used.
 
-- `beta`:
+-   `beta`:
 
-  Matrix of estimated coefficients (\\p \times n\_{etas}\\). Columns
-  correspond to `etas`.
+    Matrix of estimated coefficients (\\(p \\times n\_{etas}\\)).
+    Columns correspond to `etas`.
 
-- `linear.predictors_int`:
+-   `linear.predictors_int`:
 
-  Matrix of internal linear predictors for each `eta` (\\n\_{int} \times
-  n\_{etas}\\).
+    Matrix of internal linear predictors for each `eta` (\\(n\_{int}
+    \\times n\_{etas}\\)).
 
-- `linear.predictors_ext`:
+-   `linear.predictors_ext`:
 
-  Matrix of external linear predictors for each `eta` (\\n\_{ext} \times
-  n\_{etas}\\).
+    Matrix of external linear predictors for each `eta` (\\(n\_{ext}
+    \\times n\_{etas}\\)).
 
-- `data`:
+-   `data`:
 
-  List of inputs used.
+    List of inputs used.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
-The fitted objective is \$\$\ell\_\eta(\beta) =
-\ell\_{\text{int}}(\beta) + \eta \\ \ell\_{\text{ext}}(\beta),\$\$ which
-is equivalent to fitting a stratified Cox model on the stacked data with
-observation weights 1 (internal) and `eta` (external), while keeping
-internal and external strata separated (no mixing of risk sets across
-cohorts).
+The fitted objective is $$\\ell\_\\eta(\\beta) =
+\\ell\_{\\text{int}}(\\beta) + \\eta \\, \\ell\_{\\text{ext}}(\\beta),$$
+which is equivalent to fitting a stratified Cox model on the stacked
+data with observation weights 1 (internal) and `eta` (external), while
+keeping internal and external strata separated (no mixing of risk sets
+across cohorts).
 
 The function fits one model per `eta` value. It uses a warm-start
 strategy: the solution at the current `eta` is used as the initial value
 for the next `eta` in the sorted sequence.
 
+</div>
+
+<div class="section level2">
+
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -153,3 +183,9 @@ fit_path <- cox_indi(
 fit_path$beta
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

@@ -1,13 +1,22 @@
+<div id="main" class="col-md-9" role="main">
+
 # Bayesian Optimization for the Cox–KL Integration Parameter (eta)
+
+<div class="ref-description section level2">
 
 Employs Bayesian Optimization to find the optimal integration parameter
 `eta` for the Cox–KL model by maximizing a cross-validated performance
-criterion. The function wraps
-[`cv.coxkl`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl.md)
-and uses the rBayesianOptimization framework to efficiently search the
-parameter space.
+criterion. The function wraps `cv.coxkl` and uses the
+rBayesianOptimization framework to efficiently search the parameter
+space.
+
+</div>
+
+<div class="section level2">
 
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 bopt.coxkl(
@@ -30,117 +39,130 @@ bopt.coxkl(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Numeric matrix of covariates.
+    Numeric matrix of covariates.
 
-- delta:
+-   delta:
 
-  Numeric vector of event indicators (1 = event, 0 = censored).
+    Numeric vector of event indicators (1 = event, 0 = censored).
 
-- time:
+-   time:
 
-  Numeric vector of observed event or censoring times.
+    Numeric vector of observed event or censoring times.
 
-- stratum:
+-   stratum:
 
-  Optional numeric or factor vector defining strata.
+    Optional numeric or factor vector defining strata.
 
-- RS:
+-   RS:
 
-  Optional numeric vector or matrix of external risk scores.
+    Optional numeric vector or matrix of external risk scores.
 
-- beta:
+-   beta:
 
-  Optional numeric vector of external coefficients.
+    Optional numeric vector of external coefficients.
 
-- criteria:
+-   criteria:
 
-  Character string specifying the performance criterion. Choices are
-  `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
+    Character string specifying the performance criterion. Choices are
+    `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
 
-- bounds_list:
+-   bounds\_list:
 
-  A named list defining the search range for `eta`, e.g.,
-  `list(eta = c(0, 10))`.
+    A named list defining the search range for `eta`, e.g.,
+    `list(eta = c(0, 10))`.
 
-- init_grid_dt:
+-   init\_grid\_dt:
 
-  A `data.frame` of initial points for the optimization. Default is `0`
-  if `init_grid_dt` is provided.
+    A `data.frame` of initial points for the optimization. Default is
+    `0` if `init_grid_dt` is provided.
 
-- init_points:
+-   init\_points:
 
-  Number of randomly drawn initial points to evaluate before the
-  Bayesian search begins, in addition to those supplied via
-  `init_grid_dt`. Default `0`.
+    Number of randomly drawn initial points to evaluate before the
+    Bayesian search begins, in addition to those supplied via
+    `init_grid_dt`. Default `0`.
 
-- n_iter:
+-   n\_iter:
 
-  Number of iterations for the Bayesian Optimization process.
+    Number of iterations for the Bayesian Optimization process.
 
-- acq:
+-   acq:
 
-  Acquisition function type. Default is `"ucb"`.
+    Acquisition function type. Default is `"ucb"`.
 
-- kappa:
+-   kappa:
 
-  Numeric tuning parameter controlling the exploration–exploitation
-  trade-off of the upper confidence bound (UCB) acquisition function.
-  Larger values favour exploration. Default `2.576`.
+    Numeric tuning parameter controlling the exploration–exploitation
+    trade-off of the upper confidence bound (UCB) acquisition function.
+    Larger values favour exploration. Default `2.576`.
 
-- seed:
+-   seed:
 
-  Optional integer seed to ensure reproducible CV fold assignments.
+    Optional integer seed to ensure reproducible CV fold assignments.
 
-- verbose:
+-   verbose:
 
-  Logical; if `TRUE`, progress of the optimization is printed.
+    Logical; if `TRUE`, progress of the optimization is printed.
 
-- ...:
+-   ...:
 
-  Additional arguments passed to
-  [`cv.coxkl`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl.md)
-  and
-  [`coxkl`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl.md).
+    Additional arguments passed to `cv.coxkl` and `coxkl`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A list containing:
 
-- `best_eta`:
+-   `best_eta`:
 
-  The optimal `eta` value discovered.
+    The optimal `eta` value discovered.
 
-- `best_beta`:
+-   `best_beta`:
 
-  The coefficient vector corresponding to `best_eta`.
+    The coefficient vector corresponding to `best_eta`.
 
-- `best_score`:
+-   `best_score`:
 
-  The raw performance metric value at `best_eta`.
+    The raw performance metric value at `best_eta`.
 
-- `full_stats`:
+-   `full_stats`:
 
-  A `data.frame` of all evaluated `eta` values and their scores, sorted
-  by `eta`.
+    A `data.frame` of all evaluated `eta` values and their scores,
+    sorted by `eta`.
 
-- `beta_matrix`:
+-   `beta_matrix`:
 
-  A matrix where each column corresponds to the fitted `beta` for each
-  `eta` in `full_stats`.
+    A matrix where each column corresponds to the fitted `beta` for each
+    `eta` in `full_stats`.
 
-- `bo_object`:
+-   `bo_object`:
 
-  The raw object returned by `BayesianOptimization`.
+    The raw object returned by `BayesianOptimization`.
 
-- `criteria`:
+-   `criteria`:
 
-  The criterion used for optimization.
+    The criterion used for optimization.
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -163,3 +185,9 @@ opt_res <- bopt.coxkl(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

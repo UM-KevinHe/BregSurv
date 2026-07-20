@@ -1,4 +1,8 @@
+<div id="main" class="col-md-9" role="main">
+
 # Bagging for KL-Integrated Cox Elastic-Net Models
+
+<div class="ref-description section level2">
 
 Performs bootstrap aggregation (bagging) for the KL-integrated Cox
 elastic-net model by repeatedly applying `cv.coxkl_enet` on bootstrap
@@ -6,7 +10,13 @@ resamples of the data. The procedure aggregates fitted coefficient
 vectors across replicates to produce a more stable estimate that is less
 sensitive to sampling variation or a single data split.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 coxkl_enet_bagging(
@@ -32,104 +42,118 @@ coxkl_enet_bagging(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Matrix of predictors of dimension `n x p`.
+    Matrix of predictors of dimension `n x p`.
 
-- delta:
+-   delta:
 
-  Event indicator vector.
+    Event indicator vector.
 
-- time:
+-   time:
 
-  Survival time vector.
+    Survival time vector.
 
-- stratum:
+-   stratum:
 
-  Optional stratum indicator vector for stratified Cox models.
+    Optional stratum indicator vector for stratified Cox models.
 
-- RS:
+-   RS:
 
-  Optional matrix or vector of external risk scores. If provided, it is
-  resampled within each bootstrap replicate.
+    Optional matrix or vector of external risk scores. If provided, it
+    is resampled within each bootstrap replicate.
 
-- beta:
+-   beta:
 
-  Optional vector of external coefficients. If provided, it is treated
-  as fixed and not resampled.
+    Optional vector of external coefficients. If provided, it is treated
+    as fixed and not resampled.
 
-- etas:
+-   etas:
 
-  Vector of `eta` values for transfer-learning shrinkage.
+    Vector of `eta` values for transfer-learning shrinkage.
 
-- alpha:
+-   alpha:
 
-  Elastic-net mixing parameter (between `0` and `1`).
+    Elastic-net mixing parameter (between `0` and `1`).
 
-- B:
+-   B:
 
-  Number of bootstrap replicates. Default is `100`.
+    Number of bootstrap replicates. Default is `100`.
 
-- lambda:
+-   lambda:
 
-  Optional user-specified `lambda` sequence for the underlying
-  elastic-net fit.
+    Optional user-specified `lambda` sequence for the underlying
+    elastic-net fit.
 
-- nlambda:
+-   nlambda:
 
-  Number of `lambda` values to generate if `lambda` is not supplied.
+    Number of `lambda` values to generate if `lambda` is not supplied.
 
-- lambda.min.ratio:
+-   lambda.min.ratio:
 
-  Ratio of smallest to largest `lambda` value when generating a `lambda`
-  sequence.
+    Ratio of smallest to largest `lambda` value when generating a
+    `lambda` sequence.
 
-- nfolds:
+-   nfolds:
 
-  Number of folds for cross-validation in `cv.coxkl_enet`.
+    Number of folds for cross-validation in `cv.coxkl_enet`.
 
-- cv.criteria:
+-   cv.criteria:
 
-  Cross-validation criterion used for selecting `eta`–`lambda` pairs.
+    Cross-validation criterion used for selecting `eta`–`lambda` pairs.
 
-- c_index_stratum:
+-   c\_index\_stratum:
 
-  Optional stratum assignment for stratified C-index evaluation.
+    Optional stratum assignment for stratified C-index evaluation.
 
-- message:
+-   message:
 
-  Logical indicating whether to print progress.
+    Logical indicating whether to print progress.
 
-- seed:
+-   seed:
 
-  Optional seed for reproducibility.
+    Optional seed for reproducibility.
 
-- ncores:
+-   ncores:
 
-  Integer. Number of parallel cores. Default 1 (sequential execution).
+    Integer. Number of parallel cores. Default 1 (sequential execution).
 
-- ...:
+-   ...:
 
-  Additional arguments passed to `cv.coxkl_enet`.
+    Additional arguments passed to `cv.coxkl_enet`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"bagging"`, which is a list containing:
 
-- `best_beta` — aggregated coefficient estimate obtained via averaging
-  across valid replicates.
+-   `best_beta` — aggregated coefficient estimate obtained via averaging
+    across valid replicates.
 
-- `all_betas` — matrix of dimension `p x B_valid` containing coefficient
-  vectors from each successful bootstrap fit.
+-   `all_betas` — matrix of dimension `p x B_valid` containing
+    coefficient vectors from each successful bootstrap fit.
 
-- `B` — total number of bootstrap replicates.
+-   `B` — total number of bootstrap replicates.
 
-- `seed` — seed used (if any).
+-   `seed` — seed used (if any).
 
-- `valid_replicates` — number of successful (non-error) bootstrap fits
-  used in aggregation.
+-   `valid_replicates` — number of successful (non-error) bootstrap fits
+    used in aggregation.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
@@ -139,7 +163,13 @@ vector (`beta`) or as pre-computed external risk scores (`RS`). When
 when `beta` is provided, it is treated as fixed across replicates and
 not resampled.
 
+</div>
+
+<div class="section level2">
+
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -160,3 +190,9 @@ bag.out <- coxkl_enet_bagging(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

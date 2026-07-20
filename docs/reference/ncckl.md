@@ -1,10 +1,20 @@
+<div id="main" class="col-md-9" role="main">
+
 # Conditional Logistic Regression with KL Divergence (CLR-KL)
+
+<div class="ref-description section level2">
 
 Fits a series of Conditional Logistic Regression models that integrate
 external coefficient information (`beta`) using Kullback–Leibler (KL)
 divergence, suitable for matched case-control studies.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 ncckl(
@@ -21,88 +31,113 @@ ncckl(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- y:
+-   y:
 
-  Numeric vector of binary outcomes (0 = control, 1 = case).
+    Numeric vector of binary outcomes (0 = control, 1 = case).
 
-- z:
+-   z:
 
-  Numeric matrix of covariates.
+    Numeric matrix of covariates.
 
-- stratum:
+-   stratum:
 
-  Numeric or factor vector defining the matched sets (strata). This is
-  **required** for CLR.
+    Numeric or factor vector defining the matched sets (strata). This is
+    **required** for CLR.
 
-- etas:
+-   etas:
 
-  Numeric vector of tuning parameters. Controls the strength of external
-  information integration.
+    Numeric vector of tuning parameters. Controls the strength of
+    external information integration.
 
-- beta:
+-   beta:
 
-  Numeric vector of external coefficients. Used to compute the KL
-  divergence penalty.
+    Numeric vector of external coefficients. Used to compute the KL
+    divergence penalty.
 
-- method:
+-   method:
 
-  Character string specifying the tie-handling method ("breslow" or
-  "exact").
+    Character string specifying the tie-handling method ("breslow" or
+    "exact").
 
-- Mstop:
+-   Mstop:
 
-  Integer. Maximum number of Newton-Raphson iterations. Default `100`.
+    Integer. Maximum number of Newton-Raphson iterations. Default `100`.
 
-- tol:
+-   tol:
 
-  Numeric. Convergence tolerance. Default `1e-4`.
+    Numeric. Convergence tolerance. Default `1e-4`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, prints progress during fitting. Default `FALSE`.
+    Logical. If `TRUE`, prints progress during fitting. Default `FALSE`.
 
-- comb_max:
+-   comb\_max:
 
-  Integer. Maximum number of combinations for the `method = "exact"`
-  calculation. Default `1e7`.
+    Integer. Maximum number of combinations for the `method = "exact"`
+    calculation. Default `1e7`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
-An object of class `"coxkl"` (inherited from
-[`coxkl_ties`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_ties.md))
-containing the estimation results for each `eta` value, including
-estimated coefficients, linear predictors, and log-partial likelihoods.
+An object of class `"coxkl"` (inherited from `coxkl_ties`) containing
+the estimation results for each `eta` value, including estimated
+coefficients, linear predictors, and log-partial likelihoods.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
 This function maps the Conditional Logistic Regression problem to the
-Cox Proportional Hazards model with fixed event time \\T=1\\ and event
-indicator \\\delta=y\\. It utilizes the
-[`coxkl_ties`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_ties.md)
-core engine to perform the data integration via the KL divergence
-penalty.
+Cox Proportional Hazards model with fixed event time \\(T=1\\) and event
+indicator \\(\\delta=y\\). It utilizes the `coxkl_ties` core engine to
+perform the data integration via the KL divergence penalty.
 
-- **Method**: The `method` ("breslow" or "exact") specifies which form
-  of the partial likelihood is used. For 1:M matched case-control
-  studies, "breslow" and "exact" yield identical results, but "exact" is
-  theoretically preferable. For \\n:m\\ matched designs (\\n\>1\\), the
-  results will differ.
+-   **Method**: The `method` ("breslow" or "exact") specifies which form
+    of the partial likelihood is used. For 1:M matched case-control
+    studies, "breslow" and "exact" yield identical results, but "exact"
+    is theoretically preferable. For \\(n:m\\) matched designs
+    (\\(n&gt;1\\)), the results will differ.
 
-- **External Information**: Larger values of the tuning parameter `eta`
-  enforce stronger agreement with the external coefficients `beta`.
+-   **External Information**: Larger values of the tuning parameter
+    `eta` enforce stronger agreement with the external coefficients
+    `beta`.
 
-- **Standard CLR**: Setting `etas = 0` (or including 0 in the sequence)
-  recovers the standard Maximum Likelihood Estimates for Conditional
-  Logistic Regression.
+-   **Standard CLR**: Setting `etas = 0` (or including 0 in the
+    sequence) recovers the standard Maximum Likelihood Estimates for
+    Conditional Logistic Regression.
+
+</div>
+
+<div class="section level2">
 
 ## See also
 
-[`coxkl_ties`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_ties.md)
-for the core function documentation.
+<div class="dont-index">
+
+`coxkl_ties` for the core function documentation.
+
+</div>
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -123,3 +158,9 @@ ncckl.fit_breslow <- ncckl(y = y, z = z, stratum = sets,
                                  method = "breslow")
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

@@ -1,9 +1,19 @@
-# Plot Validation Results for coxkl_ridge Object
+<div id="main" class="col-md-9" role="main">
+
+# Plot Validation Results for coxkl\_ridge Object
+
+<div class="ref-description section level2">
 
 Plots the validation performance against the penalty parameter `lambda`
 (on log scale). The optimal lambda is marked with a dashed orange line.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 # S3 method for class 'coxkl_ridge'
@@ -18,41 +28,57 @@ plot(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- x:
+-   x:
 
-  An object of class `"coxkl_ridge"`.
+    An object of class `"coxkl_ridge"`.
 
-- test_z:
+-   test\_z:
 
-  Matrix of test covariates.
+    Matrix of test covariates.
 
-- test_time:
+-   test\_time:
 
-  Vector of test survival times.
+    Vector of test survival times.
 
-- test_delta:
+-   test\_delta:
 
-  Vector of test status indicators.
+    Vector of test status indicators.
 
-- test_stratum:
+-   test\_stratum:
 
-  Vector of test strata.
+    Vector of test strata.
 
-- criteria:
+-   criteria:
 
-  Metric to plot: `"loss"` or `"CIndex"`.
+    Metric to plot: `"loss"` or `"CIndex"`.
 
-- ...:
+-   ...:
 
-  Additional arguments.
+    Additional arguments.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A `ggplot` object.
 
+</div>
+
+<div class="section level2">
+
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -76,3 +102,9 @@ plot.coxkl_ridge(coxkl_ridge_est,
                  criteria = "CIndex")
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

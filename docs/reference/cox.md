@@ -1,11 +1,21 @@
+<div id="main" class="col-md-9" role="main">
+
 # Estimate Cox Proportional Hazards Model Coefficients
+
+<div class="ref-description section level2">
 
 Estimates the coefficients of a Cox Proportional Hazards model using the
 Newton-Raphson method implemented in C++ (Rcpp). It supports
 stratification, observation weights, and different tie-handling methods
 (Breslow, Efron, Exact).
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 cox(
@@ -20,61 +30,78 @@ cox(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  A matrix or data frame of covariates (n x p).
+    A matrix or data frame of covariates (n x p).
 
-- delta:
+-   delta:
 
-  A binary event indicator vector (length n), where 1 = event and 0 =
-  censored.
+    A binary event indicator vector (length n), where 1 = event and 0 =
+    censored.
 
-- time:
+-   time:
 
-  A numeric vector of observed times (length n).
+    A numeric vector of observed times (length n).
 
-- stratum:
+-   stratum:
 
-  A vector indicating strata for a stratified Cox model. If missing, all
-  data is assumed to belong to a single stratum.
+    A vector indicating strata for a stratified Cox model. If missing,
+    all data is assumed to belong to a single stratum.
 
-- ties:
+-   ties:
 
-  A character string specifying the method for tie handling. Options are
-  "breslow" (default), "efron", or "exact".
+    A character string specifying the method for tie handling. Options
+    are "breslow" (default), "efron", or "exact".
 
-- max_iter:
+-   max\_iter:
 
-  Maximum number of Newton-Raphson iterations (default = 100).
+    Maximum number of Newton-Raphson iterations (default = 100).
 
-- tol:
+-   tol:
 
-  Convergence tolerance for the Newton-Raphson update (default = 1e-7).
+    Convergence tolerance for the Newton-Raphson update (default =
+    1e-7).
 
-- comb_max:
+-   comb\_max:
 
-  Maximum number of combinations allowed for the "exact" method (default
-  = 1e7).
+    Maximum number of combinations allowed for the "exact" method
+    (default = 1e7).
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A list containing:
 
-- beta:
+-   beta:
 
-  Estimated coefficient vector (length p).
+    Estimated coefficient vector (length p).
 
-- loglik:
+-   loglik:
 
-  The log-partial likelihood at convergence.
+    The log-partial likelihood at convergence.
 
-- ...:
+-   ...:
 
-  Additional outputs returned by the underlying Rcpp function.
+    Additional outputs returned by the underlying Rcpp function.
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 # \donttest{
@@ -95,3 +122,9 @@ fit_Breslow <- cox(z = train_dat_lowdim$z,
 #> Warning: Stratum information not provided. All data is assumed to originate from a single stratum!
 # }
 ```
+
+</div>
+
+</div>
+
+</div>

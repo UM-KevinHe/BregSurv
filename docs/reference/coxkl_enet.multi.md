@@ -1,10 +1,20 @@
+<div id="main" class="col-md-9" role="main">
+
 # Multi-Source Integration for KL-Integrated Cox Elastic-Net Models
+
+<div class="ref-description section level2">
 
 Fits multiple KL-integrated Cox elastic-net models on the full data
 using multiple external sources, and combines the fitted coefficient
 vectors across sources to produce a single aggregated estimate.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 coxkl_enet.multi(
@@ -22,83 +32,97 @@ coxkl_enet.multi(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Matrix/data.frame of predictors of dimension `n x p`.
+    Matrix/data.frame of predictors of dimension `n x p`.
 
-- delta:
+-   delta:
 
-  Event indicator vector.
+    Event indicator vector.
 
-- time:
+-   time:
 
-  Survival time vector.
+    Survival time vector.
 
-- stratum:
+-   stratum:
 
-  Optional stratum indicator vector for stratified Cox models.
+    Optional stratum indicator vector for stratified Cox models.
 
-- beta_list:
+-   beta\_list:
 
-  A list of external coefficient vectors. Each element must have length
-  `p`. If provided, `RS_list` should be `NULL`.
+    A list of external coefficient vectors. Each element must have
+    length `p`. If provided, `RS_list` should be `NULL`.
 
-- RS_list:
+-   RS\_list:
 
-  Optional list of external risk score vectors/matrices. Each element
-  should be conformable with `n`. If provided, `beta_list` is ignored.
+    Optional list of external risk score vectors/matrices. Each element
+    should be conformable with `n`. If provided, `beta_list` is ignored.
 
-- etas:
+-   etas:
 
-  Vector of `eta` values for transfer-learning shrinkage.
+    Vector of `eta` values for transfer-learning shrinkage.
 
-- combine:
+-   combine:
 
-  How to combine coefficients across sources. Either `"mean"` (default)
-  or `"median"`.
+    How to combine coefficients across sources. Either `"mean"`
+    (default) or `"median"`.
 
-- message:
+-   message:
 
-  Logical indicating whether to print progress.
+    Logical indicating whether to print progress.
 
-- seed:
+-   seed:
 
-  Optional seed for reproducibility (passed to each CV run with an
-  offset).
+    Optional seed for reproducibility (passed to each CV run with an
+    offset).
 
-- ...:
+-   ...:
 
-  Additional arguments passed to
-  [`cv.coxkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl_enet.md)
-  (e.g., `alpha`, `lambda`, `nlambda`, `lambda.min.ratio`, `nfolds`,
-  `cv.criteria`, `c_index_stratum`, etc.).
+    Additional arguments passed to `cv.coxkl_enet()` (e.g., `alpha`,
+    `lambda`, `nlambda`, `lambda.min.ratio`, `nfolds`, `cv.criteria`,
+    `c_index_stratum`, etc.).
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"coxkl_enet.multi"`, which is a list containing:
 
-- `best_beta` — combined coefficient estimate across sources.
+-   `best_beta` — combined coefficient estimate across sources.
 
-- `all_betas` — matrix of dimension `p x K_valid` of coefficient vectors
-  from each successful fit.
+-   `all_betas` — matrix of dimension `p x K_valid` of coefficient
+    vectors from each successful fit.
 
-- `K` — total number of external sources provided.
+-   `K` — total number of external sources provided.
 
-- `valid_sources` — number of successful (non-error) fits used in
-  aggregation.
+-   `valid_sources` — number of successful (non-error) fits used in
+    aggregation.
 
-- `combine` — combination rule used.
+-   `combine` — combination rule used.
 
-- `seed` — seed used (if any).
+-   `seed` — seed used (if any).
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
-Unlike
-[`coxkl_enet_bagging()`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_enet_bagging.md),
-this function does not bootstrap the data. Instead, it runs
-[`cv.coxkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl_enet.md)
-once per external source on the full dataset. The resulting coefficient
-vectors are then aggregated (by default, averaged) to obtain a combined
-estimate.
+Unlike `coxkl_enet_bagging()`, this function does not bootstrap the
+data. Instead, it runs `cv.coxkl_enet()` once per external source on the
+full dataset. The resulting coefficient vectors are then aggregated (by
+default, averaged) to obtain a combined estimate.
+
+</div>
+
+</div>

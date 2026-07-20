@@ -1,11 +1,21 @@
+<div id="main" class="col-md-9" role="main">
+
 # Plot Method for Multi-Source KL-Integrated Cox Elastic-Net Models
 
+<div class="ref-description section level2">
+
 Produces a line plot of model performance (loss or C-index) as a
-function of the transfer-learning shrinkage parameter \\\eta\\ for each
-external source in a `coxkl_enet.multi` object. Each source is displayed
-as a separate line with a distinct color and linetype.
+function of the transfer-learning shrinkage parameter \\(\\eta\\) for
+each external source in a `coxkl_enet.multi` object. Each source is
+displayed as a separate line with a distinct color and linetype.
+
+</div>
+
+<div class="section level2">
 
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 # S3 method for class 'coxkl_enet.multi'
@@ -20,81 +30,103 @@ plot(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- x:
+-   x:
 
-  An object of class `"coxkl_enet.multi"`, as returned by
-  [`coxkl_enet.multi`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_enet.multi.md).
+    An object of class `"coxkl_enet.multi"`, as returned by
+    `coxkl_enet.multi`.
 
-- test_z:
+-   test\_z:
 
-  Optional numeric matrix of test predictors of dimension `n_test x p`.
-  If `NULL` (default), training data stored inside each source fit are
-  used for evaluation.
+    Optional numeric matrix of test predictors of dimension
+    `n_test x p`. If `NULL` (default), training data stored inside each
+    source fit are used for evaluation.
 
-- test_time:
+-   test\_time:
 
-  Optional numeric vector of test survival times of length `n_test`.
-  Must be provided together with `test_z` and `test_delta` when
-  evaluating on external test data.
+    Optional numeric vector of test survival times of length `n_test`.
+    Must be provided together with `test_z` and `test_delta` when
+    evaluating on external test data.
 
-- test_delta:
+-   test\_delta:
 
-  Optional numeric vector of test event indicators of length `n_test`.
-  Must be provided together with `test_z` and `test_time` when
-  evaluating on external test data.
+    Optional numeric vector of test event indicators of length `n_test`.
+    Must be provided together with `test_z` and `test_time` when
+    evaluating on external test data.
 
-- test_stratum:
+-   test\_stratum:
 
-  Optional vector of stratum indicators of length `n_test` for
-  stratified Cox models. Ignored if `NULL` (default).
+    Optional vector of stratum indicators of length `n_test` for
+    stratified Cox models. Ignored if `NULL` (default).
 
-- criteria:
+-   criteria:
 
-  Character string specifying the performance metric to plot. Either
-  `"loss"` (default, negative log partial likelihood scaled by sample
-  size) or `"CIndex"` (Harrell's concordance index).
+    Character string specifying the performance metric to plot. Either
+    `"loss"` (default, negative log partial likelihood scaled by sample
+    size) or `"CIndex"` (Harrell's concordance index).
 
-- ...:
+-   ...:
 
-  Currently unused. Reserved for future extensions.
+    Currently unused. Reserved for future extensions.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
-A [`ggplot`](https://ggplot2.tidyverse.org/reference/ggplot.html)
-object. The plot can be further customized with standard ggplot2 layers
-and themes.
+A `ggplot` object. The plot can be further customized with standard
+ggplot2 layers and themes.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
 For each valid source fit stored in `x$source_fits`, the function
 extracts the `p x n_eta` coefficient matrix
 `integrated_stat.betahat_best`, where each column corresponds to one
-value of \\\eta\\. It then calls
-[`test_eval()`](https://um-kevinhe.github.io/SurvBregDiv/reference/test_eval.md)
-on every column to compute the chosen performance metric, and overlays
-the resulting curves on a single ggplot2 figure.
+value of \\(\\eta\\). It then calls `test_eval()` on every column to
+compute the chosen performance metric, and overlays the resulting curves
+on a single ggplot2 figure.
 
 If all four test arguments (`test_z`, `test_time`, `test_delta`,
 `test_stratum`) are `NULL`, evaluation is performed on the training data
 embedded in each source fit object. This is useful for a quick in-sample
 diagnostic but may give optimistic estimates of performance.
 
-Colors are assigned automatically via
-[`hue_pal`](https://scales.r-lib.org/reference/pal_hue.html) and
-linetypes cycle through `"solid"`, `"dashed"`, `"dotdash"`,
-`"longdash"`, and `"twodash"` to remain distinguishable when printed in
-grayscale.
+Colors are assigned automatically via `hue_pal` and linetypes cycle
+through `"solid"`, `"dashed"`, `"dotdash"`, `"longdash"`, and
+`"twodash"` to remain distinguishable when printed in grayscale.
+
+</div>
+
+<div class="section level2">
 
 ## See also
 
-[`coxkl_enet.multi`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_enet.multi.md)
-for fitting the multi-source model,
-[`plot.coxkl`](https://um-kevinhe.github.io/SurvBregDiv/reference/plot.coxkl.md)
-for the analogous plot method for single-source `"coxkl"` objects.
+<div class="dont-index">
+
+`coxkl_enet.multi` for fitting the multi-source model, `plot.coxkl` for
+the analogous plot method for single-source `"coxkl"` objects.
+
+</div>
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -117,3 +149,9 @@ plot(fit,
      criteria   = "loss")
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

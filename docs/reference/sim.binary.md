@@ -1,9 +1,19 @@
+<div id="main" class="col-md-9" role="main">
+
 # Simulate stratified binary outcomes
+
+<div class="ref-description section level2">
 
 Internal function to simulate stratified binary data (logistic or
 probit) with random intercepts and no prevalence calibration.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 sim.binary(
@@ -17,36 +27,50 @@ sim.binary(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- n_stratum:
+-   n\_stratum:
 
-  Number of strata.
+    Number of strata.
 
-- beta:
+-   beta:
 
-  Numeric vector of coefficients (length p).
+    Numeric vector of coefficients (length p).
 
-- stratum.size.mean:
+-   stratum.size.mean:
 
-  Mean stratum size (Poisson distributed).
+    Mean stratum size (Poisson distributed).
 
-- rho:
+-   rho:
 
-  Correlation parameter for Z within stratum.
+    Correlation parameter for Z within stratum.
 
-- link:
+-   link:
 
-  Link function, one of "logit" or "probit".
+    Link function, one of "logit" or "probit".
 
-- stratum_sd:
+-   stratum\_sd:
 
-  Standard deviation of stratum random intercepts.
+    Standard deviation of stratum random intercepts.
 
-- seed:
+-   seed:
 
-  Optional RNG seed.
+    Optional RNG seed.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A list with combined data frame, data list, and metadata.
+
+</div>
+
+</div>

@@ -1,53 +1,83 @@
+<div id="main" class="col-md-9" role="main">
+
 # Generate a Sequence of Tuning Parameters (eta)
+
+<div class="ref-description section level2">
 
 Produces a numeric vector of `eta` values to be used in Cox–KL model.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 generate_eta(method = "exponential", n = 10, max_eta = 5, min_eta = 0)
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- method:
+-   method:
 
-  Character string selecting how to generate `eta`: “linear” or
-  “exponential”. Default is “exponential”. for an exponentially spaced
-  sequence scaled to `max_eta`. Default is `"exponential"`.
+    Character string selecting how to generate `eta`: “linear” or
+    “exponential”. Default is “exponential”. for an exponentially spaced
+    sequence scaled to `max_eta`. Default is `"exponential"`.
 
-- n:
+-   n:
 
-  Integer, the number of `eta` values to generate. Default is 10.
+    Integer, the number of `eta` values to generate. Default is 10.
 
-- max_eta:
+-   max\_eta:
 
-  Numeric, the maximum value of `eta` in the sequence. Default is 5.
+    Numeric, the maximum value of `eta` in the sequence. Default is 5.
 
-- min_eta:
+-   min\_eta:
 
-  Numeric, the minimum value of `eta` in the sequence. Default is 0.
+    Numeric, the minimum value of `eta` in the sequence. Default is 0.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 Numeric vector of length `n` containing the generated `eta` values.
 
+</div>
+
+<div class="section level2">
+
 ## Details
 
-- *Exponential*: values are formed by exponentiating a grid from
-  `log(1)` to `log(100)`, then linearly rescaling to the interval
-  `[0, max_eta]`. Thus the smallest value equals `0` and the largest
-  equals `max_eta`.
+-   *Exponential*: values are formed by exponentiating a grid from
+    `log(1)` to `log(100)`, then linearly rescaling to the interval
+    `[0, max_eta]`. Thus the smallest value equals `0` and the largest
+    equals `max_eta`.
 
-- *Linear*: the current implementation calls
-  `seq(min_eta, max_eta, length.out = n)` and therefore assumes a
-  numeric object `min_eta` exists in the calling environment.
+-   *Linear*: the current implementation calls
+    `seq(min_eta, max_eta, length.out = n)` and therefore assumes a
+    numeric object `min_eta` exists in the calling environment.
 
 Only the exact strings “linear” and “exponential” are supported; other
 values for `method` will result in an error because `eta_values` is
 never created.
 
+</div>
+
+<div class="section level2">
+
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 # Generate 10 exponentially spaced eta values up to 5
@@ -59,3 +89,9 @@ generate_eta(method = "exponential", n = 10, max_eta = 5)
 generate_eta(method = "linear", n = 5, min_eta= 0, max_eta = 3)
 #> [1] 0.00 0.75 1.50 2.25 3.00
 ```
+
+</div>
+
+</div>
+
+</div>

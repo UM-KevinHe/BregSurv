@@ -1,10 +1,20 @@
+<div id="main" class="col-md-9" role="main">
+
 # Simulate 1:m matched case-control data with mean/SD control
+
+<div class="ref-description section level2">
 
 Internal function to simulate 1:m matched data. Each stratum contains
 exactly one case. The case is sampled with probability proportional to
-exp(eta), where eta = theta_stratum + Z %\*% beta.
+exp(eta), where eta = theta\_stratum + Z %\*% beta.
+
+</div>
+
+<div class="section level2">
 
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 sim.matched_cc(
@@ -19,40 +29,55 @@ sim.matched_cc(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- n_stratum:
+-   n\_stratum:
 
-  Number of matched strata (sets).
+    Number of matched strata (sets).
 
-- m:
+-   m:
 
-  Number of controls per case (\>=1).
+    Number of controls per case (&gt;=1).
 
-- beta:
+-   beta:
 
-  Numeric vector of coefficients (length p).
+    Numeric vector of coefficients (length p).
 
-- rho:
+-   rho:
 
-  Correlation parameter for Z within stratum (equicorrelation).
+    Correlation parameter for Z within stratum (equicorrelation).
 
-- mu_Z:
+-   mu\_Z:
 
-  Mean vector for Z. Scalar or length p.
+    Mean vector for Z. Scalar or length p.
 
-- sd_Z:
+-   sd\_Z:
 
-  Standard deviation vector for Z. Scalar or length p, must be positive.
+    Standard deviation vector for Z. Scalar or length p, must be
+    positive.
 
-- stratum_sd:
+-   stratum\_sd:
 
-  SD of stratum random intercepts.
+    SD of stratum random intercepts.
 
-- seed:
+-   seed:
 
-  Optional RNG seed.
+    Optional RNG seed.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A list containing matched data frames and simulation metadata.
+
+</div>
+
+</div>

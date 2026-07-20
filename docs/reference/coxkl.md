@@ -1,19 +1,29 @@
+<div id="main" class="col-md-9" role="main">
+
 # Cox Proportional Hazards Model with KL Divergence for Data Integration
+
+<div class="ref-description section level2">
 
 Fits a series of Cox proportional hazards models that incorporate
 external information using Kullback–Leibler (KL) divergence.
 
 External information can be supplied either as:
 
-- Precomputed external risk scores (`RS`).
+-   Precomputed external risk scores (`RS`).
 
-- Externally derived coefficients (`beta`).
+-   Externally derived coefficients (`beta`).
 
 The strength of integration is controlled by a sequence of tuning
 parameters (`etas`). The function fits a model for each `eta` value
 provided.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 coxkl(
@@ -33,114 +43,136 @@ coxkl(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Numeric matrix of covariates. Rows represent observations, columns
-  represent predictor variables.
+    Numeric matrix of covariates. Rows represent observations, columns
+    represent predictor variables.
 
-- delta:
+-   delta:
 
-  Numeric vector of event indicators (1 = event, 0 = censored).
+    Numeric vector of event indicators (1 = event, 0 = censored).
 
-- time:
+-   time:
 
-  Numeric vector of observed event or censoring times.
+    Numeric vector of observed event or censoring times.
 
-- stratum:
+-   stratum:
 
-  Optional numeric or factor vector defining strata.
+    Optional numeric or factor vector defining strata.
 
-- RS:
+-   RS:
 
-  Optional numeric vector or matrix of external risk scores. Length must
-  equal the number of observations. If not supplied, `beta` must be
-  provided.
+    Optional numeric vector or matrix of external risk scores. Length
+    must equal the number of observations. If not supplied, `beta` must
+    be provided.
 
-- beta:
+-   beta:
 
-  Optional numeric vector of external coefficients. Length must equal
-  the number of columns in `z`. If provided, these are used to calculate
-  risk scores internally. If not supplied, `RS` must be provided.
+    Optional numeric vector of external coefficients. Length must equal
+    the number of columns in `z`. If provided, these are used to
+    calculate risk scores internally. If not supplied, `RS` must be
+    provided.
 
-- etas:
+-   etas:
 
-  Numeric vector of tuning parameters. Controls the reliance on external
-  information. The function will sort these values and fit a model for
-  each.
+    Numeric vector of tuning parameters. Controls the reliance on
+    external information. The function will sort these values and fit a
+    model for each.
 
-- tol:
+-   tol:
 
-  Numeric. Convergence tolerance for the optimization algorithm. Default
-  is `1e-4`.
+    Numeric. Convergence tolerance for the optimization algorithm.
+    Default is `1e-4`.
 
-- Mstop:
+-   Mstop:
 
-  Integer. Maximum number of iterations for the optimization. Default is
-  `100`.
+    Integer. Maximum number of iterations for the optimization. Default
+    is `100`.
 
-- backtrack:
+-   backtrack:
 
-  Logical. If `TRUE`, applies backtracking line search during
-  optimization. Default is `FALSE`.
+    Logical. If `TRUE`, applies backtracking line search during
+    optimization. Default is `FALSE`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, prints progress messages (e.g., progress bar)
-  during fitting. Default is `FALSE`.
+    Logical. If `TRUE`, prints progress messages (e.g., progress bar)
+    during fitting. Default is `FALSE`.
 
-- data_sorted:
+-   data\_sorted:
 
-  Logical. Internal use. If `TRUE`, assumes data is already sorted by
-  stratum and time.
+    Logical. Internal use. If `TRUE`, assumes data is already sorted by
+    stratum and time.
 
-- beta_initial:
+-   beta\_initial:
 
-  Optional numeric vector. Initial values for the coefficients for the
-  first `eta`.
+    Optional numeric vector. Initial values for the coefficients for the
+    first `eta`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"coxkl"` containing:
 
-- `eta`:
+-   `eta`:
 
-  The sorted sequence of \\\eta\\ values used.
+    The sorted sequence of \\(\\eta\\) values used.
 
-- `beta`:
+-   `beta`:
 
-  Matrix of estimated coefficients (\\p \times n\_{etas}\\). Columns
-  correspond to `eta` values.
+    Matrix of estimated coefficients (\\(p \\times n\_{etas}\\)).
+    Columns correspond to `eta` values.
 
-- `linear.predictors`:
+-   `linear.predictors`:
 
-  Matrix of linear predictors (risk scores) for each `eta`.
+    Matrix of linear predictors (risk scores) for each `eta`.
 
-- `likelihood`:
+-   `likelihood`:
 
-  Vector of negative log-partial likelihoods for each `eta`.
+    Vector of negative log-partial likelihoods for each `eta`.
 
-- `data`:
+-   `data`:
 
-  List containing the input data used (`z`, `time`, `delta`, `stratum`,
-  `RS`).
+    List containing the input data used (`z`, `time`, `delta`,
+    `stratum`, `RS`).
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
 The objective function is a weighted combination of the internal partial
 likelihood and the KL divergence from the external information.
 
-- Larger values of `eta` place more weight on the external information.
+-   Larger values of `eta` place more weight on the external
+    information.
 
-- `eta = 0` corresponds to the standard Cox model relying solely on
-  internal data.
+-   `eta = 0` corresponds to the standard Cox model relying solely on
+    internal data.
 
 The function uses a "warm start" strategy where the solution for the
 current `eta` is used as the initial value for the next `eta` in the
 sorted sequence.
 
+</div>
+
+<div class="section level2">
+
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -163,3 +195,9 @@ coxkl_est <- coxkl(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

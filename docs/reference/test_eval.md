@@ -1,10 +1,20 @@
+<div id="main" class="col-md-9" role="main">
+
 # Evaluate Survival Model Performance
+
+<div class="ref-description section level2">
 
 Computes predictive performance metrics for stratified or unstratified
 Cox models. Supports Loss, C-index, Integrated Brier Score (IBS), and
 Time-Dependent AUC (tdAUC).
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 test_eval(
@@ -18,44 +28,58 @@ test_eval(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- test_z:
+-   test\_z:
 
-  Matrix of predictors for the test set.
+    Matrix of predictors for the test set.
 
-- test_delta:
+-   test\_delta:
 
-  Numeric vector of event indicators (1 for event, 0 for censored).
+    Numeric vector of event indicators (1 for event, 0 for censored).
 
-- test_time:
+-   test\_time:
 
-  Numeric vector of observed times.
+    Numeric vector of observed times.
 
-- betahat:
+-   betahat:
 
-  Numeric vector of estimated coefficients.
+    Numeric vector of estimated coefficients.
 
-- test_stratum:
+-   test\_stratum:
 
-  Vector indicating strata for test subjects. Defaults to NULL (single
-  stratum).
+    Vector indicating strata for test subjects. Defaults to NULL (single
+    stratum).
 
-- train_baseline_obj:
+-   train\_baseline\_obj:
 
-  A list containing the baseline hazard function (typically from
-  `get_baseline_hazard`). Required only when `criteria = "IBS"`.
+    A list containing the baseline hazard function (typically from
+    `get_baseline_hazard`). Required only when `criteria = "IBS"`.
 
-- criteria:
+-   criteria:
 
-  Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex"
-  (Concordance Index), "IBS" (Integrated Brier Score), or "tdAUC"
-  (Integrated Time-Dependent AUC).
+    Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex"
+    (Concordance Index), "IBS" (Integrated Brier Score), or "tdAUC"
+    (Integrated Time-Dependent AUC).
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A numeric value representing the performance metric. Returns `NA` if the
 metric cannot be computed (e.g., no events in test set).
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
@@ -63,3 +87,7 @@ For "IBS", the function predicts survival probabilities and converts
 them to risk (1 - S). If `riskRegression` fails to provide a
 pre-computed IBS, the function manually integrates the Brier score using
 the trapezoidal rule.
+
+</div>
+
+</div>

@@ -1,4 +1,8 @@
+<div id="main" class="col-md-9" role="main">
+
 # Cross-Validation for CoxKL Model with Elastic Net & Lasso Penalty
+
+<div class="ref-description section level2">
 
 Performs k-fold cross-validation to tune the hyperparameters for the
 high-dimensional Cox proportional hazards model with Kullback–Leibler
@@ -8,7 +12,13 @@ This function primarily tunes the external information weight `eta`. For
 each candidate `eta`, it internally validates the optimal regularization
 parameter `lambda`.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 cv.coxkl_enet(
@@ -32,141 +42,155 @@ cv.coxkl_enet(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Numeric matrix of covariates. Rows represent individuals and columns
-  represent predictors.
+    Numeric matrix of covariates. Rows represent individuals and columns
+    represent predictors.
 
-- delta:
+-   delta:
 
-  Numeric vector of event indicators (1 = event, 0 = censored).
+    Numeric vector of event indicators (1 = event, 0 = censored).
 
-- time:
+-   time:
 
-  Numeric vector of observed times (event or censoring).
+    Numeric vector of observed times (event or censoring).
 
-- stratum:
+-   stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+    Optional numeric or factor vector indicating strata. If `NULL`, all
+    subjects are assumed to be in the same stratum.
 
-- RS:
+-   RS:
 
-  Optional numeric vector or matrix of external risk scores. If not
-  provided, `beta` must be supplied.
+    Optional numeric vector or matrix of external risk scores. If not
+    provided, `beta` must be supplied.
 
-- beta:
+-   beta:
 
-  Optional numeric vector of external coefficients (length equal to
-  `ncol(z)`). If provided, it is used to compute external risk scores.
-  If not provided, `RS` must be supplied.
+    Optional numeric vector of external coefficients (length equal to
+    `ncol(z)`). If provided, it is used to compute external risk scores.
+    If not provided, `RS` must be supplied.
 
-- etas:
+-   etas:
 
-  Numeric vector of candidate `eta` values to be evaluated.
+    Numeric vector of candidate `eta` values to be evaluated.
 
-- alpha:
+-   alpha:
 
-  Elastic-net mixing parameter in \\(0,1\]\\. Default is `1` (lasso
-  penalty).
+    Elastic-net mixing parameter in \\((0,1\]\\). Default is `1` (lasso
+    penalty).
 
-- lambda:
+-   lambda:
 
-  Optional numeric vector of lambda values. If `NULL`, a path is
-  generated automatically.
+    Optional numeric vector of lambda values. If `NULL`, a path is
+    generated automatically.
 
-- nlambda:
+-   nlambda:
 
-  Integer. Number of lambda values to generate if `lambda` is NULL.
-  Default is 100.
+    Integer. Number of lambda values to generate if `lambda` is NULL.
+    Default is 100.
 
-- lambda.min.ratio:
+-   lambda.min.ratio:
 
-  Numeric. Ratio of min/max lambda. Default depends on sample size vs
-  dimension (0.05 if n \< p, else 1e-03).
+    Numeric. Ratio of min/max lambda. Default depends on sample size vs
+    dimension (0.05 if n &lt; p, else 1e-03).
 
-- nfolds:
+-   nfolds:
 
-  Integer. Number of cross-validation folds. Default is `5`.
+    Integer. Number of cross-validation folds. Default is `5`.
 
-- cv.criteria:
+-   cv.criteria:
 
-  Character string specifying the cross-validation criterion for
-  selecting both `eta` and `lambda`. Choices are:
+    Character string specifying the cross-validation criterion for
+    selecting both `eta` and `lambda`. Choices are:
 
-  - `"V&VH"` (default): V&VH loss.
+    -   `"V&VH"` (default): V&VH loss.
 
-  - `"LinPred"`: Loss based on cross-validated linear predictors.
+    -   `"LinPred"`: Loss based on cross-validated linear predictors.
 
-  - `"CIndex_pooled"`: Pooled C-Index.
+    -   `"CIndex_pooled"`: Pooled C-Index.
 
-  - `"CIndex_foldaverage"`: Average C-Index across folds.
+    -   `"CIndex_foldaverage"`: Average C-Index across folds.
 
-- c_index_stratum:
+-   c\_index\_stratum:
 
-  Optional stratum vector. Required only when `cv.criteria` is set to
-  `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified C-index
-  needs to be computed while the fitted model is non-stratified. Default
-  is `NULL`.
+    Optional stratum vector. Required only when `cv.criteria` is set to
+    `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified
+    C-index needs to be computed while the fitted model is
+    non-stratified. Default is `NULL`.
 
-- message:
+-   message:
 
-  Logical. Whether to print progress messages. Default is `FALSE`.
+    Logical. Whether to print progress messages. Default is `FALSE`.
 
-- seed:
+-   seed:
 
-  Optional integer. Random seed for reproducible fold assignment.
+    Optional integer. Random seed for reproducible fold assignment.
 
-- ...:
+-   ...:
 
-  Additional arguments passed to the underlying fitting function
-  [`coxkl_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/coxkl_enet.md).
+    Additional arguments passed to the underlying fitting function
+    `coxkl_enet`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"cv.coxkl_enet"`. A list containing:
 
-- `best`:
+-   `best`:
 
-  A list with the optimal parameters:
+    A list with the optimal parameters:
 
-  - `best_eta`: The selected eta value.
+    -   `best_eta`: The selected eta value.
 
-  - `best_lambda`: The selected lambda value.
+    -   `best_lambda`: The selected lambda value.
 
-  - `best_beta`: The coefficient vector corresponding to the best eta
-    and lambda.
+    -   `best_beta`: The coefficient vector corresponding to the best
+        eta and lambda.
 
-  - `criteria`: The criterion used for selection.
+    -   `criteria`: The criterion used for selection.
 
-- `integrated_stat.full_results`:
+-   `integrated_stat.full_results`:
 
-  A `data.frame` containing the performance metric for every combination
-  of `eta` and `lambda`.
+    A `data.frame` containing the performance metric for every
+    combination of `eta` and `lambda`.
 
-- `integrated_stat.best_per_eta`:
+-   `integrated_stat.best_per_eta`:
 
-  A `data.frame` containing the best lambda and corresponding score for
-  each candidate `eta`.
+    A `data.frame` containing the best lambda and corresponding score
+    for each candidate `eta`.
 
-- `integrated_stat.betahat_best`:
+-   `integrated_stat.betahat_best`:
 
-  A matrix of coefficients where each column corresponds to the optimal
-  model for a specific `eta`.
+    A matrix of coefficients where each column corresponds to the
+    optimal model for a specific `eta`.
 
-- `criteria`:
+-   `criteria`:
 
-  The selection criterion used.
+    The selection criterion used.
 
-- `alpha`:
+-   `alpha`:
 
-  The elastic net mixing parameter used.
+    The elastic net mixing parameter used.
 
-- `nfolds`:
+-   `nfolds`:
 
-  The number of folds used.
+    The number of folds used.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
@@ -176,19 +200,25 @@ performs cross-validation (based on `nfolds`) to select the optimal
 
 The available criteria for selection are:
 
-- `"V&VH"`: The Verweij & Van Houwelingen partial likelihood loss
-  (default).
+-   `"V&VH"`: The Verweij & Van Houwelingen partial likelihood loss
+    (default).
 
-- `"LinPred"`: Loss based on the prognostic performance of the linear
-  predictor.
+-   `"LinPred"`: Loss based on the prognostic performance of the linear
+    predictor.
 
-- `"CIndex_pooled"`: Harrell's C-index computed by pooling linear
-  predictors across folds.
+-   `"CIndex_pooled"`: Harrell's C-index computed by pooling linear
+    predictors across folds.
 
-- `"CIndex_foldaverage"`: Harrell's C-index computed within each fold
-  and averaged.
+-   `"CIndex_foldaverage"`: Harrell's C-index computed within each fold
+    and averaged.
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -210,3 +240,9 @@ cv.coxkl_enet_est <- cv.coxkl_enet(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

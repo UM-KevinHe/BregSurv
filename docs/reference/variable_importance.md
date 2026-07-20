@@ -1,11 +1,21 @@
+<div id="main" class="col-md-9" role="main">
+
 # Bootstrap Variable Importance via Selection Frequency
+
+<div class="ref-description section level2">
 
 Performs bootstrap resampling and refits the CoxKL elastic-net/LASSO CV
 procedure B times, then summarizes each variable's selection frequency
 (proportion of times the variable is selected with nonzero coefficient
 in the best model).
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 variable_importance(
@@ -25,80 +35,94 @@ variable_importance(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Numeric covariate matrix/data.frame (n x p). If a data.frame is
-  provided, it will be converted to a numeric matrix via `as.matrix(z)`.
+    Numeric covariate matrix/data.frame (n x p). If a data.frame is
+    provided, it will be converted to a numeric matrix via
+    `as.matrix(z)`.
 
-- delta:
+-   delta:
 
-  Numeric vector of event indicators.
+    Numeric vector of event indicators.
 
-- time:
+-   time:
 
-  Numeric vector of observed times.
+    Numeric vector of observed times.
 
-- stratum:
+-   stratum:
 
-  Optional stratum vector. Default NULL.
+    Optional stratum vector. Default NULL.
 
-- RS:
+-   RS:
 
-  Optional external risk scores. Default NULL.
+    Optional external risk scores. Default NULL.
 
-- beta:
+-   beta:
 
-  Optional external coefficients. Default NULL.
+    Optional external coefficients. Default NULL.
 
-- etas:
+-   etas:
 
-  Numeric vector of candidate eta values.
+    Numeric vector of candidate eta values.
 
-- B:
+-   B:
 
-  Integer. Number of bootstrap replications.
+    Integer. Number of bootstrap replications.
 
-- nonzero_tol:
+-   nonzero\_tol:
 
-  Numeric tolerance for defining "selected". Default 1e-10.
+    Numeric tolerance for defining "selected". Default 1e-10.
 
-- seed:
+-   seed:
 
-  Optional integer seed for reproducibility.
+    Optional integer seed for reproducibility.
 
-- message:
+-   message:
 
-  Logical. Whether to print progress messages. Default FALSE.
+    Logical. Whether to print progress messages. Default FALSE.
 
-- ncores:
+-   ncores:
 
-  Integer. Number of parallel cores. Default 1 (sequential execution).
+    Integer. Number of parallel cores. Default 1 (sequential execution).
 
-- ...:
+-   ...:
 
-  Additional arguments passed to
-  [`cv.coxkl_enet()`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.coxkl_enet.md)
-  (e.g., `alpha`, `lambda`, `nlambda`, `lambda.min.ratio`, `nfolds`,
-  `cv.criteria`, `c_index_stratum`, etc.).
+    Additional arguments passed to `cv.coxkl_enet()` (e.g., `alpha`,
+    `lambda`, `nlambda`, `lambda.min.ratio`, `nfolds`, `cv.criteria`,
+    `c_index_stratum`, etc.).
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
-An object of class "variable_importance" with fields:
+An object of class "variable\_importance" with fields:
 
-- freq:
+-   freq:
 
-  Named numeric vector of selection frequencies (length p).
+    Named numeric vector of selection frequencies (length p).
 
-- count:
+-   count:
 
-  Named integer vector of selection counts (length p).
+    Named integer vector of selection counts (length p).
 
-- B:
+-   B:
 
-  Number of bootstrap replications.
+    Number of bootstrap replications.
 
-- call:
+-   call:
 
-  Matched call.
+    Matched call.
+
+</div>
+
+</div>

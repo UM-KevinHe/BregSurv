@@ -1,10 +1,20 @@
+<div id="main" class="col-md-9" role="main">
+
 # Conditional Logistic Regression with Mahalanobis Distance Transfer Learning (CLR-MDTL)
+
+<div class="ref-description section level2">
 
 Fits a series of Conditional Logistic Regression models that incorporate
 external coefficient information via a Mahalanobis distance penalty,
 suitable for matched case-control studies.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 ncc_MDTL(
@@ -22,92 +32,116 @@ ncc_MDTL(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- y:
+-   y:
 
-  Numeric vector of binary outcomes (0 = control, 1 = case).
+    Numeric vector of binary outcomes (0 = control, 1 = case).
 
-- z:
+-   z:
 
-  Numeric matrix of covariates.
+    Numeric matrix of covariates.
 
-- stratum:
+-   stratum:
 
-  Numeric or factor vector defining the matched sets (strata).
-  **Required**.
+    Numeric or factor vector defining the matched sets (strata).
+    **Required**.
 
-- beta:
+-   beta:
 
-  Numeric vector of external coefficients (length `ncol(z)`).
-  **Required**.
+    Numeric vector of external coefficients (length `ncol(z)`).
+    **Required**.
 
-- vcov:
+-   vcov:
 
-  Optional numeric matrix (`ncol(z)` x `ncol(z)`) acting as the
-  weighting matrix \\Q\\ in the Mahalanobis penalty. Typically the
-  inverse of the external covariance (precision matrix). If `NULL`,
-  defaults to the identity matrix.
+    Optional numeric matrix (`ncol(z)` x `ncol(z)`) acting as the
+    weighting matrix \\(Q\\) in the Mahalanobis penalty. Typically the
+    inverse of the external covariance (precision matrix). If `NULL`,
+    defaults to the identity matrix.
 
-- etas:
+-   etas:
 
-  Numeric vector of tuning parameters to evaluate. **Required**.
+    Numeric vector of tuning parameters to evaluate. **Required**.
 
-- tol:
+-   tol:
 
-  Convergence tolerance for the Newton-Raphson algorithm. Default
-  `1e-4`.
+    Convergence tolerance for the Newton-Raphson algorithm. Default
+    `1e-4`.
 
-- Mstop:
+-   Mstop:
 
-  Maximum number of Newton-Raphson iterations. Default `50`.
+    Maximum number of Newton-Raphson iterations. Default `50`.
 
-- backtrack:
+-   backtrack:
 
-  Logical. If `TRUE`, uses backtracking line search. Default `FALSE`.
+    Logical. If `TRUE`, uses backtracking line search. Default `FALSE`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, progress messages are printed. Default `FALSE`.
+    Logical. If `TRUE`, progress messages are printed. Default `FALSE`.
 
-- beta_initial:
+-   beta\_initial:
 
-  Optional initial coefficient vector for warm start.
+    Optional initial coefficient vector for warm start.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"ncc_MDTL"` and `"cox_MDTL"` containing the
-estimation results for each `eta` value. See
-[`cox_MDTL`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL.md)
-for a description of the return components.
+estimation results for each `eta` value. See `cox_MDTL` for a
+description of the return components.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
 This function maps the Conditional Logistic Regression problem to a Cox
-PH model with fixed event time \\T=1\\ and event indicator \\\delta=y\\,
-then calls
-[`cox_MDTL`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL.md)
-as the core engine.
+PH model with fixed event time \\(T=1\\) and event indicator
+\\(\\delta=y\\), then calls `cox_MDTL` as the core engine.
 
 The objective function minimizes the negative conditional log-likelihood
-plus a Mahalanobis distance penalty: \$\$P(\beta) = \frac{\eta}{2}
-(\beta - \beta\_{ext})^T Q (\beta - \beta\_{ext})\$\$ where \\Q\\ is the
-weighting matrix (identity if `vcov` is `NULL`).
+plus a Mahalanobis distance penalty: $$P(\\beta) = \\frac{\\eta}{2}
+(\\beta - \\beta\_{ext})^T Q (\\beta - \\beta\_{ext})$$ where \\(Q\\) is
+the weighting matrix (identity if `vcov` is `NULL`).
 
-- Setting `etas = 0` recovers the standard CLR (no external
-  information).
+-   Setting `etas = 0` recovers the standard CLR (no external
+    information).
 
-- Larger `eta` enforces stronger agreement with `beta`.
+-   Larger `eta` enforces stronger agreement with `beta`.
 
-- If `vcov = NULL`, \\Q = I\\ (Euclidean/Ridge-type shrinkage towards
-  `beta`).
+-   If `vcov = NULL`, \\(Q = I\\) (Euclidean/Ridge-type shrinkage
+    towards `beta`).
+
+</div>
+
+<div class="section level2">
 
 ## See also
 
-[`cox_MDTL`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL.md),
-[`ncckl`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl.md)
+<div class="dont-index">
+
+`cox_MDTL`, `ncckl`
+
+</div>
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -131,3 +165,9 @@ fit <- ncc_MDTL(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

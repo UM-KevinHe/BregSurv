@@ -1,4 +1,8 @@
+<div id="main" class="col-md-9" role="main">
+
 # Conditional Logistic Regression with Individual-level External Data and Elastic Net Penalty (CLR-Indi-ENet)
+
+<div class="ref-description section level2">
 
 Fits a series of penalized Conditional Logistic Regression models for
 matched case-control data that integrate external individual-level data
@@ -6,7 +10,13 @@ via a composite likelihood weight `etas`, while applying an Elastic Net
 penalty for variable selection and regularization in high-dimensional
 settings.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 ncc_indi_enet(
@@ -42,163 +52,184 @@ ncc_indi_enet(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- y_int:
+-   y\_int:
 
-  Numeric vector of binary outcomes for the internal dataset (0 =
-  control, 1 = case).
+    Numeric vector of binary outcomes for the internal dataset (0 =
+    control, 1 = case).
 
-- z_int:
+-   z\_int:
 
-  Numeric matrix of covariates for the internal dataset.
+    Numeric matrix of covariates for the internal dataset.
 
-- stratum_int:
+-   stratum\_int:
 
-  Numeric or factor vector defining the internal matched sets.
-  **Required**.
+    Numeric or factor vector defining the internal matched sets.
+    **Required**.
 
-- y_ext:
+-   y\_ext:
 
-  Numeric vector of binary outcomes for the external dataset (0 =
-  control, 1 = case).
+    Numeric vector of binary outcomes for the external dataset (0 =
+    control, 1 = case).
 
-- z_ext:
+-   z\_ext:
 
-  Numeric matrix of covariates for the external dataset.
+    Numeric matrix of covariates for the external dataset.
 
-- stratum_ext:
+-   stratum\_ext:
 
-  Numeric or factor vector defining the external matched sets.
-  **Required**.
+    Numeric or factor vector defining the external matched sets.
+    **Required**.
 
-- etas:
+-   etas:
 
-  Numeric vector of nonnegative external weights. `eta = 0` gives
-  internal-only fit.
+    Numeric vector of nonnegative external weights. `eta = 0` gives
+    internal-only fit.
 
-- alpha:
+-   alpha:
 
-  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
-  `alpha = 1` is Lasso; `alpha` close to 0 approaches Ridge. Default
-  `1`.
+    The Elastic Net mixing parameter, with \\(0 &lt; \\alpha \\le 1\\).
+    `alpha = 1` is Lasso; `alpha` close to 0 approaches Ridge. Default
+    `1`.
 
-- lambda:
+-   lambda:
 
-  Optional numeric vector of penalty parameters. If `NULL`, a path is
-  generated automatically for each `eta`.
+    Optional numeric vector of penalty parameters. If `NULL`, a path is
+    generated automatically for each `eta`.
 
-- nlambda:
+-   nlambda:
 
-  Integer. Number of lambda values to generate. Default `100`.
+    Integer. Number of lambda values to generate. Default `100`.
 
-- lambda.min.ratio:
+-   lambda.min.ratio:
 
-  Numeric. Ratio of smallest to largest lambda. Default `NULL`
-  (determined automatically based on sample size vs. number of
-  covariates).
+    Numeric. Ratio of smallest to largest lambda. Default `NULL`
+    (determined automatically based on sample size vs. number of
+    covariates).
 
-- lambda.early.stop:
+-   lambda.early.stop:
 
-  Logical. If `TRUE`, stops the lambda path early if the loss
-  improvement is small. Default `FALSE`.
+    Logical. If `TRUE`, stops the lambda path early if the loss
+    improvement is small. Default `FALSE`.
 
-- tol:
+-   tol:
 
-  Convergence tolerance. Default `1e-4`.
+    Convergence tolerance. Default `1e-4`.
 
-- Mstop:
+-   Mstop:
 
-  Maximum coordinate descent iterations per lambda. Default `1000`.
+    Maximum coordinate descent iterations per lambda. Default `1000`.
 
-- max.total.iter:
+-   max.total.iter:
 
-  Maximum total iterations across the entire lambda path. Default
-  `Mstop * nlambda`.
+    Maximum total iterations across the entire lambda path. Default
+    `Mstop * nlambda`.
 
-- group:
+-   group:
 
-  Integer vector defining group membership for grouped penalties.
-  Default treats each variable as its own group.
+    Integer vector defining group membership for grouped penalties.
+    Default treats each variable as its own group.
 
-- group.multiplier:
+-   group.multiplier:
 
-  Numeric vector of multiplicative factors for group penalties.
+    Numeric vector of multiplicative factors for group penalties.
 
-- standardize:
+-   standardize:
 
-  Logical. If `TRUE`, `z` is standardized internally. Coefficients are
-  returned on the original scale. Default `TRUE`.
+    Logical. If `TRUE`, `z` is standardized internally. Coefficients are
+    returned on the original scale. Default `TRUE`.
 
-- nvar.max:
+-   nvar.max:
 
-  Integer. Maximum number of active variables. Default `ncol(z_int)`.
+    Integer. Maximum number of active variables. Default `ncol(z_int)`.
 
-- group.max:
+-   group.max:
 
-  Integer. Maximum number of active groups.
+    Integer. Maximum number of active groups.
 
-- stop.loss.ratio:
+-   stop.loss.ratio:
 
-  Numeric. Threshold for early stopping. Default `1e-2`.
+    Numeric. Threshold for early stopping. Default `1e-2`.
 
-- actSet:
+-   actSet:
 
-  Logical. If `TRUE`, uses active-set strategy. Default `TRUE`.
+    Logical. If `TRUE`, uses active-set strategy. Default `TRUE`.
 
-- actIter:
+-   actIter:
 
-  Integer. Iterations for active set refinement. Default `Mstop`.
+    Integer. Iterations for active set refinement. Default `Mstop`.
 
-- actGroupNum:
+-   actGroupNum:
 
-  Integer. Limit on active groups.
+    Integer. Limit on active groups.
 
-- actSetRemove:
+-   actSetRemove:
 
-  Logical. Whether to allow removal from active set. Default `FALSE`.
+    Logical. Whether to allow removal from active set. Default `FALSE`.
 
-- returnX:
+-   returnX:
 
-  Logical. If `TRUE`, returns the standardized design matrix. Default
-  `FALSE`.
+    Logical. If `TRUE`, returns the standardized design matrix. Default
+    `FALSE`.
 
-- trace.lambda:
+-   trace.lambda:
 
-  Logical. If `TRUE`, prints the lambda sequence progress. Default
-  `FALSE`.
+    Logical. If `TRUE`, prints the lambda sequence progress. Default
+    `FALSE`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, shows a progress bar. Default `FALSE`.
+    Logical. If `TRUE`, shows a progress bar. Default `FALSE`.
 
-- ...:
+-   ...:
 
-  Additional arguments passed to
-  [`cox_indi_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi_enet.md).
+    Additional arguments passed to `cox_indi_enet`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"ncc_indi_enet"` and `"cox_indi_enet"`. See
-[`cox_indi_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi_enet.md)
-for a description of the return components.
+`cox_indi_enet` for a description of the return components.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
 This function maps the CLR problem to a Cox PH model with fixed event
-time \\T=1\\ and \\\delta=y\\ for both internal and external datasets,
-then calls
-[`cox_indi_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi_enet.md)
-as the core engine.
+time \\(T=1\\) and \\(\\delta=y\\) for both internal and external
+datasets, then calls `cox_indi_enet` as the core engine.
 
-- If `alpha = 1`, the penalty is Lasso.
+-   If `alpha = 1`, the penalty is Lasso.
 
-- If `alpha` is close to 0, the penalty approaches Ridge.
+-   If `alpha` is close to 0, the penalty approaches Ridge.
 
-- If `eta = 0`, external data is ignored and the model reduces to a
-  standard Elastic Net CLR on internal data only.
+-   If `eta = 0`, external data is ignored and the model reduces to a
+    standard Elastic Net CLR on internal data only.
+
+</div>
+
+<div class="section level2">
 
 ## See also
 
-[`cox_indi_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_indi_enet.md),
-[`ncc_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md)
+<div class="dont-index">
+
+`cox_indi_enet`, `ncc_indi`
+
+</div>
+
+</div>
+
+</div>

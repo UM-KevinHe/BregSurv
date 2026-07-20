@@ -1,4 +1,8 @@
+<div id="main" class="col-md-9" role="main">
+
 # Cox MDTL with Ridge Regularization
+
+<div class="ref-description section level2">
 
 Fits a Cox Proportional Hazards model that simultaneously incorporates:
 
@@ -13,7 +17,13 @@ Fits a Cox Proportional Hazards model that simultaneously incorporates:
 The function computes the solution path over a sequence of `lambda`
 values for a fixed `eta`.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 cox_MDTL_ridge(
@@ -37,112 +47,130 @@ cox_MDTL_ridge(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  A numeric matrix or data frame of covariates (n x p).
+    A numeric matrix or data frame of covariates (n x p).
 
-- delta:
+-   delta:
 
-  A numeric vector of event indicators (1 = event, 0 = censored).
+    A numeric vector of event indicators (1 = event, 0 = censored).
 
-- time:
+-   time:
 
-  A numeric vector of observed times.
+    A numeric vector of observed times.
 
-- stratum:
+-   stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+    Optional numeric or factor vector indicating strata. If `NULL`, all
+    subjects are assumed to be in the same stratum.
 
-- beta:
+-   beta:
 
-  A numeric vector of external coefficients (length p).
+    A numeric vector of external coefficients (length p).
 
-- vcov:
+-   vcov:
 
-  Optional numeric matrix (p x p) representing the weighting matrix
-  \\Q\\ for the Mahalanobis penalty. Typically the inverse covariance
-  matrix. If `NULL`, defaults to the identity matrix.
+    Optional numeric matrix (p x p) representing the weighting matrix
+    \\(Q\\) for the Mahalanobis penalty. Typically the inverse
+    covariance matrix. If `NULL`, defaults to the identity matrix.
 
-- eta:
+-   eta:
 
-  A single non-negative numeric value controlling the weight of the
-  external information (Mahalanobis distance penalty). If `NULL`,
-  defaults to 0 (no transfer learning).
+    A single non-negative numeric value controlling the weight of the
+    external information (Mahalanobis distance penalty). If `NULL`,
+    defaults to 0 (no transfer learning).
 
-- lambda:
+-   lambda:
 
-  Optional numeric vector of regularization parameters. If `NULL`, a
-  sequence is generated automatically.
+    Optional numeric vector of regularization parameters. If `NULL`, a
+    sequence is generated automatically.
 
-- nlambda:
+-   nlambda:
 
-  Integer. The number of lambda values to generate if `lambda` is
-  `NULL`. Default is 100.
+    Integer. The number of lambda values to generate if `lambda` is
+    `NULL`. Default is 100.
 
-- penalty.factor:
+-   penalty.factor:
 
-  Numeric value used to determine the elastic net mixing parameter
-  `alpha`. The function sets `alpha = 1 - penalty.factor`. A value close
-  to 1 (default 0.999) results in `alpha` close to 0, enforcing a
-  Ridge-like penalty.
+    Numeric value used to determine the elastic net mixing parameter
+    `alpha`. The function sets `alpha = 1 - penalty.factor`. A value
+    close to 1 (default 0.999) results in `alpha` close to 0, enforcing
+    a Ridge-like penalty.
 
-- tol:
+-   tol:
 
-  Convergence tolerance for the optimization algorithm. Default is 1e-4.
+    Convergence tolerance for the optimization algorithm. Default is
+    1e-4.
 
-- Mstop:
+-   Mstop:
 
-  Maximum number of iterations. Default is 50.
+    Maximum number of iterations. Default is 50.
 
-- backtrack:
+-   backtrack:
 
-  Logical. If `TRUE`, uses backtracking line search. Default is `FALSE`.
+    Logical. If `TRUE`, uses backtracking line search. Default is
+    `FALSE`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, progress messages are printed.
+    Logical. If `TRUE`, progress messages are printed.
 
-- data_sorted:
+-   data\_sorted:
 
-  Logical. If `TRUE`, assumes input data is already sorted by stratum
-  and time.
+    Logical. If `TRUE`, assumes input data is already sorted by stratum
+    and time.
 
-- beta_initial:
+-   beta\_initial:
 
-  Optional initial coefficient vector for warm start.
+    Optional initial coefficient vector for warm start.
 
-- ...:
+-   ...:
 
-  Additional arguments passed to internal functions.
+    Additional arguments passed to internal functions.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"cox_MDTL_ridge"` containing:
 
-- `lambda`:
+-   `lambda`:
 
-  The sequence of lambda values used.
+    The sequence of lambda values used.
 
-- `beta`:
+-   `beta`:
 
-  A matrix of estimated coefficients (p x nlambda).
+    A matrix of estimated coefficients (p x nlambda).
 
-- `linear.predictors`:
+-   `linear.predictors`:
 
-  A matrix of linear predictors (n x nlambda).
+    A matrix of linear predictors (n x nlambda).
 
-- `likelihood`:
+-   `likelihood`:
 
-  A vector of log-partial likelihoods for each lambda.
+    A vector of log-partial likelihoods for each lambda.
 
-- `data`:
+-   `data`:
 
-  A list containing the input data (z, time, delta, stratum).
+    A list containing the input data (z, time, delta, stratum).
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -161,3 +189,9 @@ cox_MDTL_ridge_est <- cox_MDTL_ridge(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

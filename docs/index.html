@@ -5,10 +5,10 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Transfer Learning for Cox Models via Bregman Divergence • SurvBregDiv</title>
+<title>Transfer Learning for Cox Models via Bregman Divergence • BregSurv</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/Roboto-0.4.10/font.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/Roboto-0.4.10/font.css" rel="stylesheet">
 <link href="deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet">
 <link href="deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
@@ -31,7 +31,7 @@
 
     <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="inverse" aria-label="Site navigation"><div class="container">
 
-    <a class="navbar-brand me-2" href="index.html">SurvBregDiv</a>
+    <a class="navbar-brand me-2" href="index.html">BregSurv</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">1.0.0</small>
 
@@ -43,7 +43,7 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="active nav-item"><a class="nav-link" href="index.html">Home</a></li>
-<li class="nav-item"><a class="nav-link" href="articles/SurvBregDiv.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="articles/BregSurv.html">Get started</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-appendix" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Appendix</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-appendix">
@@ -56,7 +56,7 @@
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/UM-KevinHe/SurvBregDiv" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/UM-KevinHe/BregSurv" aria-label="GitHub repository"><span class="fa fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -65,23 +65,109 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="survbregdiv">SurvBregDiv<a class="anchor" aria-label="anchor" href="#survbregdiv"></a>
+<div class="page-header"><h1 id="bregsurv">BregSurv<a class="anchor" aria-label="anchor" href="#bregsurv"></a>
 </h1></div>
 <p><strong>Transfer learning for time-to-event modelling via Bregman divergence.</strong></p>
-<p><code>SurvBregDiv</code> enables principled borrowing of external information when fitting Cox proportional hazards or nested case–control (NCC) models, through a unified Bregman-divergence framework that accommodates population heterogeneity between internal and external cohorts.</p>
+<p><code>BregSurv</code> enables principled borrowing of external information when fitting Cox proportional hazards or nested case–control (NCC) models, through a unified Bregman-divergence framework that accommodates population heterogeneity between internal and external cohorts.</p>
 <blockquote>
-<h4 id="using-survbregdiv-with-an-ai-assistant">Using SurvBregDiv with an AI assistant?</h4>
-<p>An AI-optimized reference is published at <strong><a href="https://um-kevinhe.github.io/SurvBregDiv/llms.txt" class="uri">https://um-kevinhe.github.io/SurvBregDiv/llms.txt</a></strong> (following the <a href="https://llmstxt.org/" class="external-link">llms.txt</a> convention). Point your AI at that URL, or paste its contents into the chat, to give the assistant a compact map of the package — decision tree, parameter reference, worked examples, and common pitfalls — without ingesting the full website.</p>
+<h4 id="writing-r-code-with-an-ai-assistant">Writing R code with an AI assistant?</h4>
+<p>An AI-optimized reference is published at <strong><a href="https://um-kevinhe.github.io/BregSurv/llms.txt" class="uri">https://um-kevinhe.github.io/BregSurv/llms.txt</a></strong> (following the <a href="https://llmstxt.org/" class="external-link">llms.txt</a> convention). Point your AI at that URL, or paste its contents into the chat, to give the assistant a compact map of the package — decision tree, parameter reference, worked examples, and common pitfalls — without ingesting the full website.</p>
 </blockquote>
+<div class="section level2">
+<h2 id="running-bregsurv-with-an-ai-assistant">Running BregSurv with an AI assistant<a class="anchor" aria-label="anchor" href="#running-bregsurv-with-an-ai-assistant"></a>
+</h2>
+<p>The R API has many models (Cox / NCC × KL / MDTL / individual-level × low-dim / ridge / enet) and several CV criterion families. Choosing the right combination — and tuning η — is the part non-statistician users struggle with. We ship an AI <strong>agent layer</strong> on top of the package: you describe your data and your question in plain English, the agent picks the right model, runs it on your machine, and explains the result.</p>
+<p>There are <strong>three ways</strong> to access the agent, picking different trade-offs between setup, LLM cost, and data privacy:</p>
+<table class="table">
+<colgroup>
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+<col width="20%">
+</colgroup>
+<thead><tr class="header">
+<th>Path</th>
+<th>Setup</th>
+<th>LLM</th>
+<th>Data</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>HF Space demo</strong></td>
+<td>None — open a URL + reviewer credentials</td>
+<td>Qwen 2.5-7B-AWQ (vLLM, in-container)</td>
+<td>Demo data only; chat stays inside the Space container</td>
+<td>Paper review, quick exploration</td>
+</tr>
+<tr class="even">
+<td><strong>Claude Desktop extension</strong></td>
+<td>Install R + <code>.mcpb</code>
+</td>
+<td>Claude (your existing subscription)</td>
+<td>File paths stay local; only tool args + results in chat</td>
+<td>Day-to-day use on your own data</td>
+</tr>
+<tr class="odd">
+<td><strong>Docker self-host</strong></td>
+<td>NVIDIA GPU + Docker</td>
+<td>Qwen 2.5-7B-AWQ (vLLM, in-container)</td>
+<td>100% local; no external API call</td>
+<td>PHI, air-gapped networks, paper experiments</td>
+</tr>
+</tbody>
+</table>
+<div class="section level3">
+<h3 id="1-hugging-face-space-zero-install-demo">1. Hugging Face Space (zero-install demo)<a class="anchor" aria-label="anchor" href="#1-hugging-face-space-zero-install-demo"></a>
+</h3>
+<p>Open <a href="https://huggingface.co/spaces/anon-bregsurv/BregSurv" class="external-link uri">https://huggingface.co/spaces/anon-bregsurv/BregSurv</a> in any browser. The Space loads the same Gradio UI as the local install with bundled example datasets pre-loaded, and serves the same Qwen 2.5-7B-AWQ weights via vLLM as the Docker self-host path — so what you see is what the paper claims, not a different model’s behaviour.</p>
+<p>Access is gated by a reviewer login; credentials are provided in the paper submission. The Space sleeps after 15 min of inactivity to control GPU cost; the first request after sleep takes ~90 s to wake.</p>
+<p><strong>Do not upload real patient data</strong> — although Qwen runs inside the container (chat does not leave the Space), the demo is a public-internet service and we make no PHI guarantees here. Use the Docker self-host or the Claude Desktop extension for actual research data.</p>
+</div>
+<div class="section level3">
+<h3 id="2-claude-desktop-extension-mcpb">2. Claude Desktop extension (MCPB)<a class="anchor" aria-label="anchor" href="#2-claude-desktop-extension-mcpb"></a>
+</h3>
+<p>For day-to-day use with your own data on your own machine, but using Claude as the LLM driver.</p>
+<p><strong>Prerequisites:</strong></p>
+<ul>
+<li>
+<strong>R ≥ 4.0</strong> with the <code>BregSurv</code> package installed (see <a href="#installation">Installation</a> below).</li>
+<li>
+<strong><a href="https://claude.ai/download" class="external-link">Claude Desktop</a></strong> (free; macOS, Windows, or Linux).</li>
+<li>
+<em>Nothing else.</em> Python and the <code>uv</code> runtime are bundled inside Claude Desktop. <strong>Your data file never leaves your computer</strong> — only file paths and analysis summaries (coefficients, CV scores) transit the Claude chat.</li>
+</ul>
+<p><strong>Install.</strong> Download <code>bregsurv-&lt;version&gt;.mcpb</code> from the <a href="https://github.com/UM-KevinHe/BregSurv/releases" class="external-link">Releases page</a>, then in Claude Desktop: <strong>Settings → Extensions → Advanced settings → Extension Developer → “Install Extension…”</strong> and pick the file. Tell the install dialog where your <code>Rscript</code> lives, then <strong>toggle the extension ON</strong> in the Extensions list (new extensions are disabled by default — this is the most common “I installed it but Claude doesn’t see it” problem).</p>
+<p>Full walkthrough, troubleshooting, and privacy model: <a href="mcp/INSTALL.html"><code>mcp/INSTALL.md</code></a>.</p>
+</div>
+<div class="section level3">
+<h3 id="3-docker-self-host-fully-local-no-api-egress">3. Docker self-host (fully local, no API egress)<a class="anchor" aria-label="anchor" href="#3-docker-self-host-fully-local-no-api-egress"></a>
+</h3>
+<p>For PHI workflows, hospital networks that block outbound LLM API calls, or anyone who wants the agent stack to run entirely on hardware they control. Bundles a local Qwen 2.5-7B-AWQ model (via vLLM) alongside the R package and Gradio UI in a single Docker image.</p>
+<p><strong>Prerequisites:</strong></p>
+<ul>
+<li>Linux x86_64 host with NVIDIA GPU (≥ 12 GB VRAM) + driver ≥ 550.</li>
+<li>Docker 24+ with <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html" class="external-link">NVIDIA Container Toolkit</a>.</li>
+</ul>
+<p><strong>Quick start:</strong></p>
+<pre><code>git clone https://github.com/UM-KevinHe/BregSurv.git
+cd BregSurv
+docker compose up --build</code></pre>
+<p>Then open <a href="http://localhost:7860" class="external-link uri">http://localhost:7860</a>. First boot takes ~15 min (R compile + model download); subsequent boots ~60 s.</p>
+<p>Full guide, troubleshooting, and offline-install (air-gapped): <a href="mcp/DEPLOY.html"><code>mcp/DEPLOY.md</code></a>.</p>
+<hr>
+</div>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># CRAN</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"SurvBregDiv"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BregSurv"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Development version from GitHub</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"UM-KevinHe/SurvBregDiv"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"UM-KevinHe/BregSurv"</span><span class="op">)</span></span></code></pre></div>
 <p>Requires R ≥ 4.0.</p>
 </div>
 <div class="section level2">
@@ -89,10 +175,10 @@
 </h2>
 <ul>
 <li>
-<strong>Tutorials and methodology</strong>: <a href="https://um-kevinhe.github.io/SurvBregDiv/" class="uri">https://um-kevinhe.github.io/SurvBregDiv/</a>
+<strong>Tutorials and methodology</strong>: <a href="https://um-kevinhe.github.io/BregSurv/" class="uri">https://um-kevinhe.github.io/BregSurv/</a>
 </li>
 <li>
-<strong>Function reference</strong>: <a href="https://um-kevinhe.github.io/SurvBregDiv/reference/" class="uri">https://um-kevinhe.github.io/SurvBregDiv/reference/</a>
+<strong>Function reference</strong>: <a href="https://um-kevinhe.github.io/BregSurv/reference/" class="uri">https://um-kevinhe.github.io/BregSurv/reference/</a>
 </li>
 </ul>
 </div>
@@ -113,7 +199,8 @@
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
-<li><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></li>
+<li><a href="LICENSE.html">Full license</a></li>
+<li><small><a href="https://www.r-project.org/Licenses/GPL-3" class="external-link">GPL-3</a></small></li>
 </ul>
 </div>
 
@@ -121,7 +208,7 @@
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
 <ul class="list-unstyled">
-<li><a href="authors.html#citation">Citing SurvBregDiv</a></li>
+<li><a href="authors.html#citation">Citing BregSurv</a></li>
 </ul>
 </div>
 

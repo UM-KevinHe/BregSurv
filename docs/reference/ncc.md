@@ -1,11 +1,21 @@
+<div id="main" class="col-md-9" role="main">
+
 # Conditional Logistic Regression (CLR) using Cox PH Core
+
+<div class="ref-description section level2">
 
 Estimates the coefficients for a Conditional Logistic Regression model,
 particularly suitable for 1:M matched case-control studies, by
 leveraging the core Cox Proportional Hazards estimation function
-([`cox`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox.md)).
+(`cox`).
+
+</div>
+
+<div class="section level2">
 
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 ncc(
@@ -19,57 +29,72 @@ ncc(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- y:
+-   y:
 
-  Numeric vector of binary outcomes (0 = control, 1 = case).
+    Numeric vector of binary outcomes (0 = control, 1 = case).
 
-- z:
+-   z:
 
-  Numeric matrix of covariates (rows = observations, columns =
-  variables).
+    Numeric matrix of covariates (rows = observations, columns =
+    variables).
 
-- stratum:
+-   stratum:
 
-  Numeric or factor vector defining the matched sets. This is
-  **required**    for CLR; if omitted, a warning is issued and all data
-  is treated as one stratum,    which defeats the purpose of matching.
+    Numeric or factor vector defining the matched sets. This is
+    **required**    for CLR; if omitted, a warning is issued and all
+    data is treated as one stratum,    which defeats the purpose of
+    matching.
 
-- method:
+-   method:
 
-  Character string specifying the tie-handling method, which determines
-     the conditional likelihood approximation. Choices are `"breslow"`,
-  `"exact"`, or `"efron"`.    Default is to use the first match, but
-  typically `"exact"` is preferred for CLR.
+    Character string specifying the tie-handling method, which
+    determines    the conditional likelihood approximation. Choices are
+    `"breslow"`, `"exact"`, or `"efron"`.    Default is to use the first
+    match, but typically `"exact"` is preferred for CLR.
 
-- max_iter:
+-   max\_iter:
 
-  Maximum number of Newton-Raphson iterations passed to `cox`. Default
-  `100`.
+    Maximum number of Newton-Raphson iterations passed to `cox`. Default
+    `100`.
 
-- tol:
+-   tol:
 
-  Convergence tolerance for the Newton-Raphson update passed to `cox`.
-  Default `1e-7`.
+    Convergence tolerance for the Newton-Raphson update passed to `cox`.
+    Default `1e-7`.
 
-- comb_max:
+-   comb\_max:
 
-  Maximum number of combinations allowed for the `method = "exact"`
-  calculation. Default `1e7`.
+    Maximum number of combinations allowed for the `method = "exact"`
+    calculation. Default `1e7`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A `list` containing:
 
-- `beta`:
+-   `beta`:
 
-  Estimated coefficient vector (length p).
+    Estimated coefficient vector (length p).
 
-- `loglik`:
+-   `loglik`:
 
-  The log-conditional likelihood (which is the log-partial likelihood
-  from `cox`) at convergence.
+    The log-conditional likelihood (which is the log-partial likelihood
+    from `cox`) at convergence.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
@@ -84,12 +109,25 @@ different approximations of the Conditional Likelihood. **For
 mathematically exact CLR results, the `method = "exact"` should be
 used.**
 
+</div>
+
+<div class="section level2">
+
 ## See also
 
-[`cox`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox.md) for
-the underlying Cox PH estimation function.
+<div class="dont-index">
+
+`cox` for the underlying Cox PH estimation function.
+
+</div>
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -107,3 +145,9 @@ fit_exact <- ncc(y = y, z = z, stratum = sets, method = "exact")
 fit_breslow <- ncc(y = y, z = z, stratum = sets, method = "breslow")
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

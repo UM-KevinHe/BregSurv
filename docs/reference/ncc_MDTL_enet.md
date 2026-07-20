@@ -1,4 +1,8 @@
+<div id="main" class="col-md-9" role="main">
+
 # Conditional Logistic Regression with Mahalanobis Distance Transfer Learning and Elastic Net (CLR-MDTL-ENet)
+
+<div class="ref-description section level2">
 
 Fits a Conditional Logistic Regression model for matched case-control
 (1:M) data by mapping the problem to a Cox proportional hazards model
@@ -6,7 +10,13 @@ with fixed event time, while incorporating external coefficient
 information via a Mahalanobis distance penalty and applying an Elastic
 Net (Lasso + Ridge) penalty for variable selection.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 ncc_MDTL_enet(
@@ -41,174 +51,199 @@ ncc_MDTL_enet(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- y:
+-   y:
 
-  Numeric vector of binary outcomes (0 = control, 1 = case).
+    Numeric vector of binary outcomes (0 = control, 1 = case).
 
-- z:
+-   z:
 
-  Numeric matrix of covariates (rows = observations, columns =
-  variables).
+    Numeric matrix of covariates (rows = observations, columns =
+    variables).
 
-- stratum:
+-   stratum:
 
-  Numeric or factor vector defining the matched sets (strata).
-  **Required**.
+    Numeric or factor vector defining the matched sets (strata).
+    **Required**.
 
-- beta:
+-   beta:
 
-  Numeric vector of external coefficients (length `ncol(z)`).
-  **Required**.
+    Numeric vector of external coefficients (length `ncol(z)`).
+    **Required**.
 
-- vcov:
+-   vcov:
 
-  Optional numeric matrix (`ncol(z)` x `ncol(z)`) acting as the
-  weighting matrix \\Q\\. Typically the precision matrix of the external
-  estimator. If `NULL`, defaults to the identity matrix.
+    Optional numeric matrix (`ncol(z)` x `ncol(z)`) acting as the
+    weighting matrix \\(Q\\). Typically the precision matrix of the
+    external estimator. If `NULL`, defaults to the identity matrix.
 
-- eta:
+-   eta:
 
-  Numeric scalar. The transfer learning parameter (\\\geq 0\\). Controls
-  the strength of external information. `eta = 0` ignores external info.
+    Numeric scalar. The transfer learning parameter (\\(\\geq 0\\)).
+    Controls the strength of external information. `eta = 0` ignores
+    external info.
 
-- alpha:
+-   alpha:
 
-  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
-  `alpha = 1` is Lasso; `alpha` close to 0 approaches Ridge. Default
-  `NULL` (set to 1 with a warning if not supplied).
+    The Elastic Net mixing parameter, with \\(0 &lt; \\alpha \\le 1\\).
+    `alpha = 1` is Lasso; `alpha` close to 0 approaches Ridge. Default
+    `NULL` (set to 1 with a warning if not supplied).
 
-- lambda:
+-   lambda:
 
-  Optional user-supplied lambda sequence. If `NULL`, the algorithm
-  generates its own sequence based on `nlambda` and `lambda.min.ratio`.
+    Optional user-supplied lambda sequence. If `NULL`, the algorithm
+    generates its own sequence based on `nlambda` and
+    `lambda.min.ratio`.
 
-- nlambda:
+-   nlambda:
 
-  Integer. Number of lambda values. Default `100`.
+    Integer. Number of lambda values. Default `100`.
 
-- lambda.min.ratio:
+-   lambda.min.ratio:
 
-  Smallest value for lambda as a fraction of `lambda.max`. Default
-  depends on sample size relative to number of covariates.
+    Smallest value for lambda as a fraction of `lambda.max`. Default
+    depends on sample size relative to number of covariates.
 
-- lambda.early.stop:
+-   lambda.early.stop:
 
-  Logical. Whether to stop early if deviance changes minimally. Default
-  `FALSE`.
+    Logical. Whether to stop early if deviance changes minimally.
+    Default `FALSE`.
 
-- tol:
+-   tol:
 
-  Convergence tolerance for coordinate descent. Default `1e-4`.
+    Convergence tolerance for coordinate descent. Default `1e-4`.
 
-- Mstop:
+-   Mstop:
 
-  Maximum iterations per lambda step. Default `1000`.
+    Maximum iterations per lambda step. Default `1000`.
 
-- max.total.iter:
+-   max.total.iter:
 
-  Maximum total iterations across all lambda values. Default
-  `Mstop * nlambda`.
+    Maximum total iterations across all lambda values. Default
+    `Mstop * nlambda`.
 
-- group:
+-   group:
 
-  Integer vector describing group membership of coefficients. Default
-  `1:ncol(z)` (no grouping).
+    Integer vector describing group membership of coefficients. Default
+    `1:ncol(z)` (no grouping).
 
-- group.multiplier:
+-   group.multiplier:
 
-  Numeric vector of multipliers for each group.
+    Numeric vector of multipliers for each group.
 
-- standardize:
+-   standardize:
 
-  Logical. If `TRUE`, predictors are standardized before fitting.
-  Default `TRUE`.
+    Logical. If `TRUE`, predictors are standardized before fitting.
+    Default `TRUE`.
 
-- nvar.max:
+-   nvar.max:
 
-  Maximum number of variables in the model. Default `ncol(z)`.
+    Maximum number of variables in the model. Default `ncol(z)`.
 
-- group.max:
+-   group.max:
 
-  Maximum number of groups in the model.
+    Maximum number of groups in the model.
 
-- stop.loss.ratio:
+-   stop.loss.ratio:
 
-  Ratio of loss change for early path stopping. Default `1e-2`.
+    Ratio of loss change for early path stopping. Default `1e-2`.
 
-- actSet:
+-   actSet:
 
-  Logical. Whether to use active set convergence strategy. Default
-  `TRUE`.
+    Logical. Whether to use active set convergence strategy. Default
+    `TRUE`.
 
-- actIter:
+-   actIter:
 
-  Iterations for active set. Default `Mstop`.
+    Iterations for active set. Default `Mstop`.
 
-- actGroupNum:
+-   actGroupNum:
 
-  Number of active groups.
+    Number of active groups.
 
-- actSetRemove:
+-   actSetRemove:
 
-  Logical. Whether to remove inactive groups from active set. Default
-  `FALSE`.
+    Logical. Whether to remove inactive groups from active set. Default
+    `FALSE`.
 
-- returnX:
+-   returnX:
 
-  Logical. If `TRUE`, returns the standardized design matrix. Default
-  `FALSE`.
+    Logical. If `TRUE`, returns the standardized design matrix. Default
+    `FALSE`.
 
-- trace.lambda:
+-   trace.lambda:
 
-  Logical. If `TRUE`, prints current lambda during fitting. Default
-  `FALSE`.
+    Logical. If `TRUE`, prints current lambda during fitting. Default
+    `FALSE`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, prints warnings and progress messages. Default
-  `FALSE`.
+    Logical. If `TRUE`, prints warnings and progress messages. Default
+    `FALSE`.
 
-- ...:
+-   ...:
 
-  Additional arguments passed to
-  [`cox_MDTL_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_enet.md).
+    Additional arguments passed to `cox_MDTL_enet`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"ncc_MDTL_enet"` and `"cox_MDTL_enet"`. See
-[`cox_MDTL_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_enet.md)
-for a description of the return components.
+`cox_MDTL_enet` for a description of the return components.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
-This function maps the CLR problem to a Cox model with \\T = 1\\ and
-\\\delta = y\\, then calls
-[`cox_MDTL_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_enet.md)
-as the core engine.
+This function maps the CLR problem to a Cox model with \\(T = 1\\) and
+\\(\\delta = y\\), then calls `cox_MDTL_enet` as the core engine.
 
 The objective function minimizes the negative conditional log-likelihood
-plus: \$\$\frac{\eta}{2}(\beta - \beta\_{ext})^T Q (\beta -
-\beta\_{ext}) + \text{Pen}\_{\lambda,\alpha}(\beta)\$\$ where \\Q\\ is
-the weighting matrix and \\\text{Pen}\_{\lambda,\alpha}\\ is the Elastic
-Net penalty.
+plus: $$\\frac{\\eta}{2}(\\beta - \\beta\_{ext})^T Q (\\beta -
+\\beta\_{ext}) + \\text{Pen}\_{\\lambda,\\alpha}(\\beta)$$ where \\(Q\\)
+is the weighting matrix and \\(\\text{Pen}\_{\\lambda,\\alpha}\\) is the
+Elastic Net penalty.
 
-- If `eta = 0`, the method reduces to a standard Elastic Net CLR.
+-   If `eta = 0`, the method reduces to a standard Elastic Net CLR.
 
-- If `alpha = 1`, the penalty is Lasso.
+-   If `alpha = 1`, the penalty is Lasso.
 
-- If `alpha` is close to 0, the penalty approaches Ridge.
+-   If `alpha` is close to 0, the penalty approaches Ridge.
 
-- If `vcov = NULL`, \\Q = I\\ (Euclidean distance shrinkage towards
-  `beta`).
+-   If `vcov = NULL`, \\(Q = I\\) (Euclidean distance shrinkage towards
+    `beta`).
+
+</div>
+
+<div class="section level2">
 
 ## See also
 
-[`cox_MDTL_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/cox_MDTL_enet.md),
-[`ncckl_enet`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncckl_enet.md)
+<div class="dont-index">
+
+`cox_MDTL_enet`, `ncckl_enet`
+
+</div>
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -231,3 +266,9 @@ fit <- ncc_MDTL_enet(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

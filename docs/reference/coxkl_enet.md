@@ -1,4 +1,8 @@
+<div id="main" class="col-md-9" role="main">
+
 # Cox Proportional Hazards Model with KL Divergence and Elastic Net Penalty
+
+<div class="ref-description section level2">
 
 Fits a Cox proportional hazards model that integrates external
 information using Kullback–Leibler (KL) divergence, while applying an
@@ -7,14 +11,20 @@ regularization.
 
 External information can be provided as:
 
-- `RS`: Precomputed external risk scores.
+-   `RS`: Precomputed external risk scores.
 
-- `beta`: Externally derived coefficients (which are converted to risk
-  scores internally).
+-   `beta`: Externally derived coefficients (which are converted to risk
+    scores internally).
 
 The strength of integration is controlled by the tuning parameter `eta`.
 
+</div>
+
+<div class="section level2">
+
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 coxkl_enet(
@@ -51,196 +61,218 @@ coxkl_enet(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- z:
+-   z:
 
-  Numeric matrix of covariates (predictors). Rows are observations,
-  columns are variables.
+    Numeric matrix of covariates (predictors). Rows are observations,
+    columns are variables.
 
-- delta:
+-   delta:
 
-  Numeric vector of event indicators (1 = event, 0 = censored).
+    Numeric vector of event indicators (1 = event, 0 = censored).
 
-- time:
+-   time:
 
-  Numeric vector of follow-up times (observed event or censoring time).
+    Numeric vector of follow-up times (observed event or censoring
+    time).
 
-- stratum:
+-   stratum:
 
-  Optional numeric or factor vector for stratified analysis.
+    Optional numeric or factor vector for stratified analysis.
 
-- RS:
+-   RS:
 
-  Optional numeric vector of external risk scores. Length must equal
-  `nrow(z)`. If not provided, `beta` must be supplied.
+    Optional numeric vector of external risk scores. Length must equal
+    `nrow(z)`. If not provided, `beta` must be supplied.
 
-- beta:
+-   beta:
 
-  Optional numeric vector of external coefficients. Length must equal
-  `ncol(z)`. If provided, it is used to calculate risk scores. If not
-  provided, `RS` must be supplied.
+    Optional numeric vector of external coefficients. Length must equal
+    `ncol(z)`. If provided, it is used to calculate risk scores. If not
+    provided, `RS` must be supplied.
 
-- eta:
+-   eta:
 
-  Numeric scalar. The tuning parameter for KL divergence (integration
-  strength). Defaults to 0 (no external information).
+    Numeric scalar. The tuning parameter for KL divergence (integration
+    strength). Defaults to 0 (no external information).
 
-- alpha:
+-   alpha:
 
-  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
-  `alpha = 1` is the lasso penalty, and `alpha` close to 0 approaches
-  ridge. Defaults to 1.
+    The Elastic Net mixing parameter, with \\(0 &lt; \\alpha \\le 1\\).
+    `alpha = 1` is the lasso penalty, and `alpha` close to 0 approaches
+    ridge. Defaults to 1.
 
-- lambda:
+-   lambda:
 
-  Optional numeric vector of penalty parameters. If `NULL`, a path is
-  generated automatically.
+    Optional numeric vector of penalty parameters. If `NULL`, a path is
+    generated automatically.
 
-- nlambda:
+-   nlambda:
 
-  Integer. The number of lambda values to generate. Default is 100.
+    Integer. The number of lambda values to generate. Default is 100.
 
-- lambda.min.ratio:
+-   lambda.min.ratio:
 
-  Numeric. The ratio of the smallest to the largest lambda in the
-  sequence. Default depends on sample size relative to features (0.05 if
-  n \< p, else 1e-3).
+    Numeric. The ratio of the smallest to the largest lambda in the
+    sequence. Default depends on sample size relative to features (0.05
+    if n &lt; p, else 1e-3).
 
-- lambda.early.stop:
+-   lambda.early.stop:
 
-  Logical. If `TRUE`, stops the lambda path early if the loss
-  improvement is small.
+    Logical. If `TRUE`, stops the lambda path early if the loss
+    improvement is small.
 
-- tol:
+-   tol:
 
-  Numeric. Convergence tolerance for the optimization. Default is 1e-4.
+    Numeric. Convergence tolerance for the optimization. Default is
+    1e-4.
 
-- Mstop:
+-   Mstop:
 
-  Integer. Maximum iterations for the inner loop per lambda. Default is
-  1000.
+    Integer. Maximum iterations for the inner loop per lambda. Default
+    is 1000.
 
-- max.total.iter:
+-   max.total.iter:
 
-  Integer. Maximum total iterations across the entire path.
+    Integer. Maximum total iterations across the entire path.
 
-- group:
+-   group:
 
-  Integer vector defining group membership for grouped penalties.
-  Default treats each variable as its own group.
+    Integer vector defining group membership for grouped penalties.
+    Default treats each variable as its own group.
 
-- group.multiplier:
+-   group.multiplier:
 
-  Numeric vector. Multiplicative factors for penalties applied to each
-  group.
+    Numeric vector. Multiplicative factors for penalties applied to each
+    group.
 
-- standardize:
+-   standardize:
 
-  Logical. If `TRUE`, `z` is standardized internally. Coefficients are
-  returned on the original scale.
+    Logical. If `TRUE`, `z` is standardized internally. Coefficients are
+    returned on the original scale.
 
-- nvar.max:
+-   nvar.max:
 
-  Integer. Maximum number of active variables allowed.
+    Integer. Maximum number of active variables allowed.
 
-- group.max:
+-   group.max:
 
-  Integer. Maximum number of active groups allowed.
+    Integer. Maximum number of active groups allowed.
 
-- stop.loss.ratio:
+-   stop.loss.ratio:
 
-  Numeric. Threshold for early stopping based on loss ratio.
+    Numeric. Threshold for early stopping based on loss ratio.
 
-- actSet:
+-   actSet:
 
-  Logical. If `TRUE`, uses an active-set strategy for optimization.
+    Logical. If `TRUE`, uses an active-set strategy for optimization.
 
-- actIter:
+-   actIter:
 
-  Integer. Iterations for active set refinement.
+    Integer. Iterations for active set refinement.
 
-- actGroupNum:
+-   actGroupNum:
 
-  Integer. Limit on active groups in active set strategy.
+    Integer. Limit on active groups in active set strategy.
 
-- actSetRemove:
+-   actSetRemove:
 
-  Logical. Whether to allow removal from the active set.
+    Logical. Whether to allow removal from the active set.
 
-- returnX:
+-   returnX:
 
-  Logical. If `TRUE`, returns the standardized design matrix and data in
-  the result.
+    Logical. If `TRUE`, returns the standardized design matrix and data
+    in the result.
 
-- trace.lambda:
+-   trace.lambda:
 
-  Logical. If `TRUE`, prints the lambda sequence progress.
+    Logical. If `TRUE`, prints the lambda sequence progress.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, prints informative messages during fitting.
+    Logical. If `TRUE`, prints informative messages during fitting.
 
-- data_sorted:
+-   data\_sorted:
 
-  Logical. Internal use. Indicates if data is already sorted by
-  time/stratum.
+    Logical. Internal use. Indicates if data is already sorted by
+    time/stratum.
 
-- ...:
+-   ...:
 
-  Additional arguments.
+    Additional arguments.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 An object of class `"coxkl_enet"`. A list containing:
 
-- `beta`:
+-   `beta`:
 
-  Matrix of coefficient estimates (p x nlambda).
+    Matrix of coefficient estimates (p x nlambda).
 
-- `lambda`:
+-   `lambda`:
 
-  The sequence of lambda values used.
+    The sequence of lambda values used.
 
-- `alpha`:
+-   `alpha`:
 
-  The elastic-net mixing parameter used.
+    The elastic-net mixing parameter used.
 
-- `likelihood`:
+-   `likelihood`:
 
-  Vector of negative log-partial likelihoods (loss) for each lambda.
+    Vector of negative log-partial likelihoods (loss) for each lambda.
 
-- `df`:
+-   `df`:
 
-  Vector of degrees of freedom (number of non-zero coefficients) for
-  each lambda.
+    Vector of degrees of freedom (number of non-zero coefficients) for
+    each lambda.
 
-- `iter`:
+-   `iter`:
 
-  Vector of iteration counts for each lambda.
+    Vector of iteration counts for each lambda.
 
-- `W`:
+-   `W`:
 
-  Matrix of exponentiated linear predictors (risk scores) on the
-  original scale.
+    Matrix of exponentiated linear predictors (risk scores) on the
+    original scale.
 
-- `data`:
+-   `data`:
 
-  List containing the input data used.
+    List containing the input data used.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
 The objective function optimizes the partial likelihood penalized by the
 KL divergence from the external information and the Elastic Net norm.
 
-- If `eta = 0`, the method reduces to a standard Elastic Net Cox model
-  (ignoring external info).
+-   If `eta = 0`, the method reduces to a standard Elastic Net Cox model
+    (ignoring external info).
 
-- If `alpha = 1`, the penalty is Lasso.
+-   If `alpha = 1`, the penalty is Lasso.
 
-- If `alpha` is close to 0, the penalty approaches Ridge.
+-   If `alpha` is close to 0, the penalty approaches Ridge.
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -259,3 +291,9 @@ coxkl_enet_est <- coxkl_enet(
 )
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>

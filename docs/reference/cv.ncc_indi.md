@@ -1,14 +1,24 @@
+<div id="main" class="col-md-9" role="main">
+
 # Cross-Validated CLR with Individual-Level External Data
+
+<div class="ref-description section level2">
 
 Performs K-fold cross-validation (CV) to select the integration
 parameter `eta` for Conditional Logistic Regression with
-individual-level external data integration, implemented via
-[`ncc_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md).
+individual-level external data integration, implemented via `ncc_indi`.
 
 This function is designed for 1:m matched case-control settings where
-each stratum (matched set) contains exactly one case and \\m\\ controls.
+each stratum (matched set) contains exactly one case and \\(m\\)
+controls.
+
+</div>
+
+<div class="section level2">
 
 ## Usage
+
+<div class="sourceCode">
 
 ``` r
 cv.ncc_indi(
@@ -28,95 +38,107 @@ cv.ncc_indi(
 )
 ```
 
+</div>
+
+</div>
+
+<div class="section level2">
+
 ## Arguments
 
-- y_int:
+-   y\_int:
 
-  Numeric vector of binary outcomes for the internal dataset (0 =
-  control, 1 = case).
+    Numeric vector of binary outcomes for the internal dataset (0 =
+    control, 1 = case).
 
-- z_int:
+-   z\_int:
 
-  Numeric matrix of covariates for the internal dataset.
+    Numeric matrix of covariates for the internal dataset.
 
-- stratum_int:
+-   stratum\_int:
 
-  Numeric or factor vector defining the internal matched sets.
-  **Required**.
+    Numeric or factor vector defining the internal matched sets.
+    **Required**.
 
-- y_ext:
+-   y\_ext:
 
-  Numeric vector of binary outcomes for the external dataset (0 =
-  control, 1 = case).
+    Numeric vector of binary outcomes for the external dataset (0 =
+    control, 1 = case).
 
-- z_ext:
+-   z\_ext:
 
-  Numeric matrix of covariates for the external dataset.
+    Numeric matrix of covariates for the external dataset.
 
-- stratum_ext:
+-   stratum\_ext:
 
-  Numeric or factor vector defining the external matched sets.
-  **Required**.
+    Numeric or factor vector defining the external matched sets.
+    **Required**.
 
-- etas:
+-   etas:
 
-  Numeric vector of candidate tuning values for \\\eta\\. **Required**.
+    Numeric vector of candidate tuning values for \\(\\eta\\).
+    **Required**.
 
-- nfolds:
+-   nfolds:
 
-  Number of cross-validation folds. Default `5`.
+    Number of cross-validation folds. Default `5`.
 
-- cv.criteria:
+-   cv.criteria:
 
-  Character string specifying the CV performance criterion. One of
-  `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
+    Character string specifying the CV performance criterion. One of
+    `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
 
-- max_iter:
+-   max\_iter:
 
-  Maximum number of Newton-Raphson iterations passed to
-  [`ncc_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md).
-  Default `100`.
+    Maximum number of Newton-Raphson iterations passed to `ncc_indi`.
+    Default `100`.
 
-- tol:
+-   tol:
 
-  Convergence tolerance passed to
-  [`ncc_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md).
-  Default `1e-7`.
+    Convergence tolerance passed to `ncc_indi`. Default `1e-7`.
 
-- message:
+-   message:
 
-  Logical. If `TRUE`, prints progress messages. Default `FALSE`.
+    Logical. If `TRUE`, prints progress messages. Default `FALSE`.
 
-- seed:
+-   seed:
 
-  Optional integer seed for reproducible fold assignment. Default
-  `NULL`.
+    Optional integer seed for reproducible fold assignment. Default
+    `NULL`.
+
+</div>
+
+<div class="section level2">
 
 ## Value
 
 A list of class `"cv.ncc_indi"` containing:
 
-- `internal_stat`:
+-   `internal_stat`:
 
-  A `data.frame` with one row per `eta` and the CV metric for the chosen
-  `cv.criteria`.
+    A `data.frame` with one row per `eta` and the CV metric for the
+    chosen `cv.criteria`.
 
-- `beta_full`:
+-   `beta_full`:
 
-  Matrix of coefficients from the full-data fit (columns correspond to
-  `etas`).
+    Matrix of coefficients from the full-data fit (columns correspond to
+    `etas`).
 
-- `best`:
+-   `best`:
 
-  A list with `best_eta`, `best_beta`, and `criteria`.
+    A list with `best_eta`, `best_beta`, and `criteria`.
 
-- `criteria`:
+-   `criteria`:
 
-  The criterion used for selection.
+    The criterion used for selection.
 
-- `nfolds`:
+-   `nfolds`:
 
-  The number of folds used.
+    The number of folds used.
+
+</div>
+
+<div class="section level2">
 
 ## Details
 
@@ -127,22 +149,35 @@ full during every training fold.
 
 The `cv.criteria` argument controls the CV performance metric:
 
-- `"loss"`: Average negative conditional log-likelihood on held-out
-  strata.
+-   `"loss"`: Average negative conditional log-likelihood on held-out
+    strata.
 
-- `"AUC"`: Matched-set AUC based on within-stratum comparisons.
+-   `"AUC"`: Matched-set AUC based on within-stratum comparisons.
 
-- `"CIndex"`: Alias for `"AUC"` in the 1:m matched setting.
+-   `"CIndex"`: Alias for `"AUC"` in the 1:m matched setting.
 
-- `"Brier"`: Conditional Brier score based on within-stratum softmax
-  probabilities.
+-   `"Brier"`: Conditional Brier score based on within-stratum softmax
+    probabilities.
+
+</div>
+
+<div class="section level2">
 
 ## See also
 
-[`ncc_indi`](https://um-kevinhe.github.io/SurvBregDiv/reference/ncc_indi.md),
-[`cv.ncckl`](https://um-kevinhe.github.io/SurvBregDiv/reference/cv.ncckl.md)
+<div class="dont-index">
+
+`ncc_indi`, `cv.ncckl`
+
+</div>
+
+</div>
+
+<div class="section level2">
 
 ## Examples
+
+<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -177,3 +212,9 @@ cv_fit <- cv.ncc_indi(
 cv_fit$best$best_eta
 } # }
 ```
+
+</div>
+
+</div>
+
+</div>
