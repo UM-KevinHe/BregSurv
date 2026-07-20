@@ -7,6 +7,20 @@ user's machine without round-tripping through hand-written R code.
 > **End users — start here:** [`INSTALL.md`](./INSTALL.md). The rest of
 > this document is for people editing the server.
 
+## Which document do I want?
+
+| I want to… | Read |
+|---|---|
+| Install the packaged agent into Claude Desktop (`.mcpb`) | [`INSTALL.md`](./INSTALL.md) |
+| Self-host the agent with Docker (local Qwen 7B, GPU) | [`DEPLOY.md`](./DEPLOY.md) |
+| Configure or redeploy the public HuggingFace Space | [`HF_SPACE_DEPLOY.md`](./HF_SPACE_DEPLOY.md) |
+| Edit this MCP server's code | this file (below) |
+| Private maintenance log / design decisions | `../CLAUDE.md` (local-only, uncommitted) |
+
+The Space's own landing page is `../hf_space_README.md`; HuggingFace requires it
+to be named `README.md` on the Space itself, which is why it sits at the repo
+root rather than here.
+
 ## Directory layout
 
 ```

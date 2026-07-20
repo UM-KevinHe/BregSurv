@@ -6,3 +6,11 @@ README.md
 INSTALL.md
 .mcpbignore
 *.mcpb
+
+# Maintainer-only operational docs — MUST NOT ship to end users.
+# HF_SPACE_DEPLOY.md contains the demo's login credentials; DEPLOY.md and
+# entrypoint.sh are for the Docker self-host, which is a different
+# distribution path and irrelevant inside a Claude Desktop bundle.
+HF_SPACE_DEPLOY.md
+DEPLOY.md
+entrypoint.sh

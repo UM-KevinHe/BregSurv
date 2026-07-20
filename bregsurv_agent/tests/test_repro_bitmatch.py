@@ -1,7 +1,7 @@
 """Verify ``repro.R`` from a real agent trace produces bit-identical
 output when run via Rscript.
 
-This is the "verification-backed inference" pillar #3 — the audit trail
+This is the "verification-scaffolded inference" pillar #3 — the audit trail
 plus the standalone reproducer let a reviewer rerun the agent's
 computation without the LLM in the loop.
 """

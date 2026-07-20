@@ -1,6 +1,6 @@
 """Audit-trail container for one agent run.
 
-The trace is one of the three "verification-backed" pillars: every
+The trace is one of the three "verification-scaffolded" pillars: every
 tool call (script invoked, args, status, latency, result-summary) is
 recorded so a future reader can verify what the agent actually did
 without rerunning the LLM.

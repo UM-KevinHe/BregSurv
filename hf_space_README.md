@@ -22,7 +22,7 @@ Describe your analysis in plain English. The agent picks the correct estimator f
 - **`repro.R`** — a standalone R script that bit-matches the agent's coefficients without any LLM in the loop,
 - **`trace.json`** — a per-tool-call audit trail recording every step the agent took.
 
-## How this is "verification-backed"
+## How this is "verification-scaffolded"
 
 The agent only ever chooses from a fixed catalogue of estimators whose Bregman/KL/Mahalanobis form is derived in the accompanying paper. The LLM acts as a router, not a numerical solver — every coefficient you see comes from R. The two artifacts above (`repro.R` + `trace.json`) let a reviewer reproduce and audit the run without trusting the LLM.
 

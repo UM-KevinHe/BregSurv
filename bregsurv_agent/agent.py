@@ -131,6 +131,9 @@ class BregSurvAgent:
         deployment_mode: str = "local",
         max_turns: int = 12,
         client: Optional[Any] = None,
+        temperature: float = 0.0,
+        max_tokens: int = 2048,
+        scaffold: Optional[Dict[str, bool]] = None,
     ) -> None:
         self.model_endpoint = model_endpoint
         self.model_name = model_name
@@ -139,8 +142,19 @@ class BregSurvAgent:
         self.deployment_mode = deployment_mode
         self.max_turns = max_turns
         self._client = client
+        # Evaluation hooks (backward-compatible: omitting all three leaves
+        # the deployed behaviour unchanged). temperature/max_tokens let the
+        # pass^k harness sample at t>0; scaffold switches layers off (keys:
+        # all, subset_tools, dispatch_guard; each defaults to True = on).
+        self.temperature = temperature
+        self.max_tokens = max_tokens
+        self._scaffold = dict(scaffold or {})
         # Cache schemas once per instance.
         self._tool_schemas = _tools.load_schemas()
+
+    def _scaffold_on(self, key):
+        # True if scaffolding layer `key` is enabled (default: on).
+        return self._scaffold.get(key, True)
 
     # -- Lazy OpenAI client construction (defers import) --------------------
 
@@ -211,7 +225,12 @@ class BregSurvAgent:
         active_schemas = self._tool_schemas
 
         user_content = user_text
-        if data_path is not None:
+        if data_path is not None and not self._scaffold_on("all"):
+            # Ablation 'raw' cell: no auto-inspect, no DATA STRUCTURE / routing
+            # hint injection, no tool subsetting. The model sees only the path.
+            if not bound_context:
+                user_content += f"\n\n[The user's data file is at: {data_path}]"
+        elif data_path is not None:
             auto_inspect = _tools.dispatch("inspect_data",
                                            data_path=data_path)
             # Record the auto-inspect call in the trace for audit symmetry
@@ -244,11 +263,12 @@ class BregSurvAgent:
             # family (+ dimensionality when unambiguous). Cuts the ~18K
             # all-33-tools payload to ~5-12K and shrinks the routing
             # decision space. Recorded in the trace for audit.
-            active_schemas, exposed_meta = _tools.select_tool_schemas(
-                self._tool_schemas, auto_inspect,
-                family_override=family_override,
-                method_override=method_override)
-            trace.tools_exposed = exposed_meta
+            if self._scaffold_on("subset_tools"):
+                active_schemas, exposed_meta = _tools.select_tool_schemas(
+                    self._tool_schemas, auto_inspect,
+                    family_override=family_override,
+                    method_override=method_override)
+                trace.tools_exposed = exposed_meta
 
             # When the UI supplies bound_context (demo path), it already
             # lists the exact object/field/beta paths — the raw DATA
@@ -319,9 +339,9 @@ class BregSurvAgent:
                     # default → nondeterministic routing and intermittent
                     # "describe instead of call" turns (observed
                     # 2026-05-30, Cox highdim fit returned prose with no
-                    # tool call). The Stage 2 routing benchmark that hit
-                    # 83% used temperature=0.0; match it here.
-                    temperature=0.0,
+                    # tool call). Deterministic decoding also makes a run
+                    # reproducible from its trace.
+                    temperature=self.temperature,
                     # Stage 4k: cap per-turn generation. Without this,
                     # vLLM fills the entire remaining context window —
                     # 2026-05-29 trace had max_tokens=8274 (~4 min at
@@ -330,7 +350,7 @@ class BregSurvAgent:
                     # plenty for one tool call's arguments + brief
                     # reasoning text + tool calls list; the loop can
                     # take multiple turns if Qwen needs more thinking.
-                    max_tokens=2048,
+                    max_tokens=self.max_tokens,
                 )
                 # Best-effort token accounting.
                 usage = getattr(completion, "usage", None)
@@ -391,7 +411,7 @@ class BregSurvAgent:
                     # NCC-only subset, then run by dispatch and crashing
                     # R). Refuse it here and tell the model what IS
                     # available, forcing a retry within the family.
-                    if name not in active_names:
+                    if self._scaffold_on("dispatch_guard") and name not in active_names:
                         result = {
                             "status": "error",
                             "class": "ToolNotAvailable",

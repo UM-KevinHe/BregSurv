@@ -11,6 +11,29 @@ AGENT_NOTES.tex
 INTERNAL_NOTES.tex
 AGENT_NOTES.pdf
 INTERNAL_NOTES.pdf
+REPO_CLEANUP.md
+
+# GitHub Release body text — belongs in the Release, not in the repo.
+RELEASE_NOTES_*.md
+
+# ----------------------------------------------------------------------
+# Paper-experiment material — NOT part of the software library.
+#
+# This repository is the BregSurv code library (R package + MCP server +
+# agent + deployment). Manuscript experiments, their logs, traces and
+# result JSONs are a different artifact: they ship to the journal as
+# Supplementary Material, not here. Keeping them out is what makes this
+# a clean library repo rather than a paper appendix.
+#
+# Everything under paper_figures/ stays on disk; it is simply not
+# published. (generate_transcripts.py at the root IS tracked, because
+# both Dockerfiles COPY it into the image.)
+# ----------------------------------------------------------------------
+paper_figures/
+
+# Editor/test caches not covered above
+.pytest_cache/
+**/.DS_Store
 
 # MCP extension — source files (server.py, manifest.json, pyproject.toml,
 # r_scripts/, tests, INSTALL.md, README.md) ARE tracked. Only build

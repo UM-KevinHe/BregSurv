@@ -339,7 +339,7 @@ def main() -> int:
                     default=Path(__file__).parent / "data",
                     help="Directory holding the bundled .rda fixtures.")
     ap.add_argument("--out-dir", type=Path,
-                    default=Path(__file__).parent / "paper_figures" / "transcripts",
+                    default=Path(__file__).parent / "transcripts",
                     help="Where to write per-transcript subdirectories.")
     ap.add_argument("--prompt-file", type=Path, default=None,
                     help="Path to a text file containing the v2 system "

@@ -2,11 +2,9 @@
 
 ``SYSTEM_PROMPT_V2`` is the DEPLOYMENT prompt. It synthesises:
 
-  * the validated routing decision tree from canonical benchmark v2 —
-    the prompt that took stock Qwen 2.5-7B-AWQ from ~43% to ~83%
-    direct-routing accuracy on the 30-query benchmark (Stage 2). That
-    file is archived at ``paper_figures/benchmark_routing_v2.py`` for
-    the Section 5.2 reproducibility appendix.
+  * a routing decision tree validated against a natural-language query
+    benchmark, which is what makes a stock (un-fine-tuned) 7B model
+    route reliably;
   * the deployment-scaffolding rules the benchmark prompt could NOT
     contain because the benchmark was a pure single-turn routing task
     with no data files: the auto-injected ``[DATA STRUCTURE]`` block
@@ -18,8 +16,7 @@ benchmark queries describe data verbally (so its rule (1) says "never
 call inspect_data for verbal descriptions"), whereas the deployed app
 ALWAYS has a data file that the harness has already inspected (so the
 deployed rule is "the DATA STRUCTURE block is already in your message —
-do not call inspect_data"). The 83% figure characterises the benchmark
-configuration; the deployed agent is the scaffolded production system.
+do not call inspect_data").
 
 Stage 4l also narrows the exposed tool set to the admissible family
 (and dimensionality, when unambiguous) BEFORE the request, so several
