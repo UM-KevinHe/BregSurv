@@ -182,6 +182,7 @@ class BregSurvAgent:
         history: Optional[List] = None,
         family_override: Optional[str] = None,
         method_override: Optional[str] = None,
+        penalty_override: Optional[str] = None,
         bound_context: Optional[str] = None,
     ) -> AgentResponse:
         """Run one user turn end-to-end. Returns an :class:`AgentResponse`.
@@ -267,7 +268,8 @@ class BregSurvAgent:
                 active_schemas, exposed_meta = _tools.select_tool_schemas(
                     self._tool_schemas, auto_inspect,
                     family_override=family_override,
-                    method_override=method_override)
+                    method_override=method_override,
+                    penalty_override=penalty_override)
                 trace.tools_exposed = exposed_meta
 
             # When the UI supplies bound_context (demo path), it already

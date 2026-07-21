@@ -230,11 +230,21 @@ def classify_dimensionality(inspect_result: Any) -> "Optional[str]":
     return None
 
 
+def _tool_penalty(name: str) -> str:
+    """"none" | "ridge" | "enet" -- which penalty a tool actually applies."""
+    if name.endswith("_ridge"):
+        return "ridge"
+    if name.endswith("_enet"):
+        return "enet"
+    return "none"
+
+
 def select_tool_schemas(
     all_schemas: List[dict],
     inspect_result: Any,
     family_override: "Optional[str]" = None,
     method_override: "Optional[str]" = None,
+    penalty_override: "Optional[str]" = None,
 ) -> "Tuple[List[dict], Dict[str, Any]]":
     """Return (subset_of_schemas, decision_metadata) for one request.
 
@@ -250,6 +260,18 @@ def select_tool_schemas(
     vector → KL. Without it, a 7B model seeing a ``$train``/``$test``
     split mistakes ``$test`` for an external cohort and picks an
     ``_indi`` tool (observed 2026-05-30, NCC cv).
+
+    ``penalty_override`` ("none" / "ridge" / "enet") narrows to the tools
+    that actually apply that penalty. Supply it whenever the request fixes
+    the penalty, which the deployment UI always knows. Dimensionality
+    classification deliberately leaves both base and regularized tools
+    exposed in the borderline band (neither p<=10 nor p>=n), and in that
+    band nothing otherwise enforced the user's stated penalty: on real
+    registry data with p=60, n=4865, a request for ridge was answered by
+    the *unpenalized* estimator, and the model then reported in prose that
+    ridge had been applied (observed 2026-07-20, KP). Selecting the penalty
+    is a deterministic check on a stated requirement, so it belongs in the
+    harness rather than in the model's discretion.
 
     ``decision_metadata`` is recorded in the trace for audit. When the
     family is ambiguous (None and no override), the full 33-tool list is
@@ -281,12 +303,15 @@ def select_tool_schemas(
             continue
         if method_override == "kl" and "kl" not in name:
             continue
+        if penalty_override and _tool_penalty(name) != penalty_override:
+            continue
         keep.append(name)
 
     keep_set = set(keep)
     subset = [s for s in all_schemas if s["function"]["name"] in keep_set]
     return subset, {
         "family": family, "dimensionality": dim, "method": method_override,
+        "penalty": penalty_override,
         "n_exposed": len(subset), "n_total": len(all_schemas),
         "names": [s["function"]["name"] for s in subset],
     }
