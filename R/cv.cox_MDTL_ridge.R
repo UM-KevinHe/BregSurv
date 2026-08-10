@@ -15,9 +15,11 @@
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
 #'   all subjects are assumed to be in the same stratum.
 #' @param beta A numeric vector of external coefficients (length p).
-#' @param vcov Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-#'   for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-#'   defaults to the identity matrix.
+#' @param Q Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
+#'   for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
+#'   \emph{precision} matrix (typically the inverse covariance / information matrix of
+#'   the external estimator). If named, it is reordered and zero-padded to
+#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
 #' @param etas A numeric vector of candidate \code{eta} values to be evaluated.
 #' @param lambda Optional user-supplied lambda sequence. If \code{NULL}, the function
 #'   computes its own sequence based on \code{nlambda}.
@@ -69,14 +71,14 @@
 #'   time = train_dat_highdim$time,
 #'   stratum = train_dat_highdim$stratum,
 #'   beta = beta_external_highdim,
-#'   vcov = NULL,
+#'   Q = NULL,
 #'   etas = eta_list,
 #'   cv.criteria = "CIndex_pooled"
 #' )
 #' }
 #'
 #' @export
-cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, vcov = NULL, etas,
+cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL, etas,
                               lambda = NULL, nlambda = 100, lambda.min.ratio = ifelse(n_obs < n_vars, 0.01, 1e-04), nfolds = 5,
                               cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                               c_index_stratum = NULL,
@@ -84,21 +86,13 @@ cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, vcov 
   
   ## Input checks & data preparation
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
-  
-  if (length(beta) != ncol(z)) {
-    stop("Error: The dimension of external beta does not match the number of columns in z.")
-  }
-  
-  if (is.null(vcov)) {
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("Error: The dimension of external variance-covariance does not match the number of columns in z.")
-    }
-    Q <- vcov
-  }
+
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
   
   
   if (is.null(stratum)) {
@@ -145,14 +139,14 @@ cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, vcov 
     
     if (is.null(lambda)) {
       fit0 <- cox_MDTL_ridge(z = z, delta = delta, time = time, stratum = stratum,
-                             beta = beta_ext, vcov = Q, eta = eta, lambda = NULL,
+                             beta = beta_ext, Q = Q, eta = eta, lambda = NULL,
                              nlambda = nlambda, lambda.min.ratio = lambda.min.ratio,
                              data_sorted = TRUE, message = FALSE, ...)
       lambda_seq <- as.vector(fit0$lambda)
     } else {
       lambda_seq <- sort(lambda, decreasing = TRUE)
       fit0 <- cox_MDTL_ridge(z = z, delta = delta, time = time, stratum = stratum,
-                             beta = beta_ext, vcov = Q, eta = eta, lambda = lambda_seq,
+                             beta = beta_ext, Q = Q, eta = eta, lambda = lambda_seq,
                              nlambda = nlambda, lambda.min.ratio = lambda.min.ratio,
                              data_sorted = TRUE, message = FALSE, ...)
     }
@@ -183,7 +177,7 @@ cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, vcov 
                               delta = delta[train_idx],
                               time = time[train_idx],
                               stratum = stratum[train_idx],
-                              beta = beta_ext, vcov = Q,
+                              beta = beta_ext, Q = Q,
                               eta = eta, lambda = lambda_seq,
                               data_sorted = TRUE, message = FALSE,
                               beta_initial = beta_initial, ...)

@@ -48,7 +48,7 @@ cox_MDTL_est <- cox_MDTL(z = train_dat_lowdim$z,
                          delta = train_dat_lowdim$status,
                          time = train_dat_lowdim$time,
                          beta = beta_external_lowdim,
-                         vcov = NULL,
+                         Q = NULL,
                          etas = eta_list)
 
 plot.cox_MDTL(cox_MDTL_est,

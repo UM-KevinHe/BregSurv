@@ -1,27 +1,17 @@
-<div id="main" class="col-md-9" role="main">
-
 # NA
-
-<div id="cb1" class="sourceCode">
 
 ``` R
                 GNU GENERAL PUBLIC LICENSE
                    Version 3, 29 June 2007
 ```
 
-</div>
-
 Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
 Everyone is permitted to copy and distribute verbatim copies of this
 license document, but changing it is not allowed.
 
-<div id="cb2" class="sourceCode">
-
 ``` R
                         Preamble
 ```
-
-</div>
 
 The GNU General Public License is a free, copyleft license for software
 and other kinds of works.
@@ -84,13 +74,9 @@ patents cannot be used to render the program non-free.
 The precise terms and conditions for copying, distribution and
 modification follow.
 
-<div id="cb3" class="sourceCode">
-
 ``` R
                    TERMS AND CONDITIONS
 ```
-
-</div>
 
 0.  Definitions.
 
@@ -231,8 +217,6 @@ You may convey a work based on the Program, or the modifications to
 produce it from the Program, in the form of source code under the terms
 of section 4, provided that you also meet all of these conditions:
 
-<div id="cb4" class="sourceCode">
-
 ``` R
 a) The work must carry prominent notices stating that you modified
 it, and giving a relevant date.
@@ -256,8 +240,6 @@ interfaces that do not display Appropriate Legal Notices, your
 work need not make them do so.
 ```
 
-</div>
-
 A compilation of a covered work with other separate and independent
 works, which are not by their nature extensions of the covered work, and
 which are not combined with it such as to form a larger program, in or
@@ -274,8 +256,6 @@ You may convey a covered work in object code form under the terms of
 sections 4 and 5, provided that you also convey the machine-readable
 Corresponding Source under the terms of this License, in one of these
 ways:
-
-<div id="cb5" class="sourceCode">
 
 ``` R
 a) Convey the object code in, or embodied in, a physical product
@@ -319,8 +299,6 @@ you inform other peers where the object code and Corresponding
 Source of the work are being offered to the general public at no
 charge under subsection 6d.
 ```
-
-</div>
 
 A separable portion of the object code, whose source code is excluded
 from the Corresponding Source as a System Library, need not be included
@@ -395,8 +373,6 @@ Notwithstanding any other provision of this License, for material you
 add to a covered work, you may (if authorized by the copyright holders
 of that material) supplement the terms of this License with terms:
 
-<div id="cb6" class="sourceCode">
-
 ``` R
 a) Disclaiming warranty or limiting liability differently from the
 terms of sections 15 and 16 of this License; or
@@ -421,8 +397,6 @@ it) with contractual assumptions of liability to the recipient, for
 any liability that these contractual assumptions directly impose on
 those licensors and authors.
 ```
-
-</div>
 
 All other non-permissive additional terms are considered “further
 restrictions” within the meaning of section 10. If the Program as you
@@ -656,15 +630,11 @@ waiver of all civil liability in connection with the Program, unless a
 warranty or assumption of liability accompanies a copy of the Program in
 return for a fee.
 
-<div id="cb7" class="sourceCode">
-
 ``` R
                  END OF TERMS AND CONDITIONS
 
         How to Apply These Terms to Your New Programs
 ```
-
-</div>
 
 If you develop a new program, and you want it to be of the greatest
 possible use to the public, the best way to achieve this is to make it
@@ -675,8 +645,6 @@ To do so, attach the following notices to the program. It is safest to
 attach them to the start of each source file to most effectively state
 the exclusion of warranty; and each file should have at least the
 “copyright” line and a pointer to where the full notice is found.
-
-<div id="cb8" class="sourceCode">
 
 ``` R
 <one line to give the program's name and a brief idea of what it does.>
@@ -696,14 +664,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ```
 
-</div>
-
 Also add information on how to contact you by electronic and paper mail.
 
 If the program does terminal interaction, make it output a short notice
 like this when it starts in an interactive mode:
-
-<div id="cb9" class="sourceCode">
 
 ``` R
 <program>  Copyright (C) <year>  <name of author>
@@ -711,8 +675,6 @@ This program comes with ABSOLUTELY NO WARRANTY; for details type `show w'.
 This is free software, and you are welcome to redistribute it
 under certain conditions; type `show c' for details.
 ```
-
-</div>
 
 The hypothetical commands `show w' and`show c’ should show the
 appropriate parts of the General Public License. Of course, your
@@ -730,5 +692,3 @@ library, you may consider it more useful to permit linking proprietary
 applications with the library. If this is what you want to do, use the
 GNU Lesser General Public License instead of this License. But first,
 please read <https://www.gnu.org/licenses/why-not-lgpl.html>.
-
-</div>

@@ -18,8 +18,8 @@ with columns named \code{Z1}--\code{Z6}.}
 }
 \item{test}{A list with the same structure as \code{train}, used for external evaluation
 (500 unique strata in \code{test}).}
-\item{beta_external}{Numeric vector (length 6) of CLR coefficients estimated on a separate
-external dataset using all \code{Z1}--\code{Z6}.}
+\item{beta_external}{Numeric vector (length 6; named \code{Z1}--\code{Z6}) of CLR coefficients
+estimated on a separate external dataset using all \code{Z1}--\code{Z6}.}
 }
 }
 \usage{

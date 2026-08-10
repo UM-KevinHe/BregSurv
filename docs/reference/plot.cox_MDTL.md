@@ -1,20 +1,10 @@
-<div id="main" class="col-md-9" role="main">
-
-# Plot Validation Results for Cox\_MDTL Object
-
-<div class="ref-description section level2">
+# Plot Validation Results for Cox_MDTL Object
 
 Plots the validation performance against `eta` for MDTL estimates.
 Compares the "Integrated" estimator (solid line) against the "Internal"
 baseline (dotted line, eta=0).
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 # S3 method for class 'cox_MDTL'
@@ -29,57 +19,41 @@ plot(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   x:
+- x:
 
-    An object of class `"Cox_MDTL"`.
+  An object of class `"Cox_MDTL"`.
 
--   test\_z:
+- test_z:
 
-    Matrix of test covariates.
+  Matrix of test covariates.
 
--   test\_time:
+- test_time:
 
-    Vector of test survival times.
+  Vector of test survival times.
 
--   test\_delta:
+- test_delta:
 
-    Vector of test status indicators.
+  Vector of test status indicators.
 
--   test\_stratum:
+- test_stratum:
 
-    Vector of test strata.
+  Vector of test strata.
 
--   criteria:
+- criteria:
 
-    Metric to plot: `"loss"` or `"CIndex"`.
+  Metric to plot: `"loss"` or `"CIndex"`.
 
--   ...:
+- ...:
 
-    Additional arguments.
-
-</div>
-
-<div class="section level2">
+  Additional arguments.
 
 ## Value
 
 A `ggplot` object.
 
-</div>
-
-<div class="section level2">
-
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -93,7 +67,7 @@ cox_MDTL_est <- cox_MDTL(z = train_dat_lowdim$z,
                          delta = train_dat_lowdim$status,
                          time = train_dat_lowdim$time,
                          beta = beta_external_lowdim,
-                         vcov = NULL,
+                         Q = NULL,
                          etas = eta_list)
 
 plot.cox_MDTL(cox_MDTL_est,
@@ -104,9 +78,3 @@ plot.cox_MDTL(cox_MDTL_est,
               criteria = "CIndex")
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

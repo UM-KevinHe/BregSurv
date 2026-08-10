@@ -102,6 +102,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas   <- sort(as.numeric(etas))
+  check_etas(etas)
   n_eta  <- length(etas)
 
   if (missing(stratum_int) || is.null(stratum_int)) {

@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # Conditional Logistic Regression with KL Divergence and Elastic Net Penalty (CLR-KL-ENet)
-
-<div class="ref-description section level2">
 
 Fits a Conditional Logistic Regression model for matched case-control
 (1:M) data by mapping the problem to a Cox proportional hazards model
@@ -10,28 +6,22 @@ with fixed event time, while integrating external information via
 Kullback–Leibler (KL) divergence and applying an Elastic Net (Lasso +
 Ridge) penalty for variable selection and regularization.
 
-This function is a thin wrapper around `coxkl_enet`: it maps the CLR
-problem to a Cox model with \\(T = 1\\) and \\(\\delta = y\\) and then
-calls `coxkl_enet` as the core engine.
+This function is a thin wrapper around
+[`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md):
+it maps the CLR problem to a Cox model with \\T = 1\\ and \\\delta = y\\
+and then calls `coxkl_enet` as the core engine.
 
 External information can be provided either as:
 
--   `RS`: Precomputed external risk scores (aligned with the rows of
-    `z`).
+- `RS`: Precomputed external risk scores (aligned with the rows of `z`).
 
--   `beta`: Externally derived coefficients (which are converted to risk
-    scores internally).
+- `beta`: Externally derived coefficients (which are converted to risk
+  scores internally).
 
 The strength of integration is controlled by the tuning parameter `eta`,
 while `alpha` and `lambda` govern the Elastic Net penalty.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 ncckl_enet(
@@ -66,200 +56,189 @@ ncckl_enet(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   y:
+- y:
 
-    Numeric vector of binary outcomes (0 = control, 1 = case).
+  Numeric vector of binary outcomes (0 = control, 1 = case).
 
--   z:
+- z:
 
-    Numeric matrix of covariates (predictors). Rows are observations,
-    columns are variables.
+  Numeric matrix of covariates (predictors). Rows are observations,
+  columns are variables.
 
--   stratum:
+- stratum:
 
-    Numeric or factor vector defining the matched sets (strata). This is
-    required for conditional logistic regression.
+  Numeric or factor vector defining the matched sets (strata). This is
+  required for conditional logistic regression.
 
--   RS:
+- RS:
 
-    Optional numeric vector of external risk scores. Length must equal
-    `nrow(z)`. If not provided, `beta` must be supplied.
+  Optional numeric vector of external risk scores. Length must equal
+  `nrow(z)`. If not provided, `beta` must be supplied.
 
--   beta:
+- beta:
 
-    Optional numeric vector of external coefficients. Length must equal
-    `ncol(z)`. If provided, it is used to calculate risk scores. If not
-    provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients. Length must equal
+  `ncol(z)`. If provided, it is used to calculate risk scores. If not
+  provided, `RS` must be supplied.
 
--   eta:
+- eta:
 
-    Numeric scalar. The tuning parameter for KL divergence (integration
-    strength). Defaults to 0 (no external information).
+  Numeric scalar. The tuning parameter for KL divergence (integration
+  strength). Defaults to 0 (no external information).
 
--   alpha:
+- alpha:
 
-    The Elastic Net mixing parameter, with \\(0 &lt; \\alpha \\le 1\\).
-    `alpha = 1` is the Lasso penalty, and `alpha` close to 0 approaches
-    Ridge. If `NULL`, it is set to 1 with a warning inside `coxkl_enet`.
+  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
+  `alpha = 1` is the Lasso penalty, and `alpha` close to 0 approaches
+  Ridge. If `NULL`, it is set to 1 with a warning inside
+  [`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md).
 
--   lambda:
+- lambda:
 
-    Optional numeric vector of penalty parameters. If `NULL`, a path is
-    generated automatically.
+  Optional numeric vector of penalty parameters. If `NULL`, a path is
+  generated automatically.
 
--   nlambda:
+- nlambda:
 
-    Integer. Number of lambda values to generate when `lambda` is
-    `NULL`. Default is 100.
+  Integer. Number of lambda values to generate when `lambda` is `NULL`.
+  Default is 100.
 
--   lambda.min.ratio:
+- lambda.min.ratio:
 
-    Numeric. Ratio of the smallest to the largest lambda in the sequence
-    when `lambda` is `NULL`. Default is `1e-3`. Users may override this
-    to mimic the behavior in `coxkl_enet`.
+  Numeric. Ratio of the smallest to the largest lambda in the sequence
+  when `lambda` is `NULL`. Default is `1e-3`. Users may override this to
+  mimic the behavior in
+  [`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md).
 
--   lambda.early.stop:
+- lambda.early.stop:
 
-    Logical. If `TRUE`, stops the lambda path early if the loss
-    improvement is small.
+  Logical. If `TRUE`, stops the lambda path early if the loss
+  improvement is small.
 
--   tol:
+- tol:
 
-    Numeric. Convergence tolerance for the optimization. Default is
-    `1e-4`.
+  Numeric. Convergence tolerance for the optimization. Default is
+  `1e-4`.
 
--   Mstop:
+- Mstop:
 
-    Integer. Maximum iterations for the inner loop per lambda. Default
-    is `1000`.
+  Integer. Maximum iterations for the inner loop per lambda. Default is
+  `1000`.
 
--   max.total.iter:
+- max.total.iter:
 
-    Integer. Maximum total iterations across the entire lambda path.
-    Default is `Mstop * nlambda`.
+  Integer. Maximum total iterations across the entire lambda path.
+  Default is `Mstop * nlambda`.
 
--   group:
+- group:
 
-    Integer vector defining group membership for grouped penalties.
-    Default treats each variable as its own group (`1:ncol(z)`).
+  Integer vector defining group membership for grouped penalties.
+  Default treats each variable as its own group (`1:ncol(z)`).
 
--   group.multiplier:
+- group.multiplier:
 
-    Numeric vector. Multiplicative factors for penalties applied to each
-    group.
+  Numeric vector. Multiplicative factors for penalties applied to each
+  group.
 
--   standardize:
+- standardize:
 
-    Logical. If `TRUE`, `z` is standardized internally. Coefficients are
-    returned on the original scale. Default is `TRUE`.
+  Logical. If `TRUE`, `z` is standardized internally. Coefficients are
+  returned on the original scale. Default is `TRUE`.
 
--   nvar.max:
+- nvar.max:
 
-    Integer. Maximum number of active variables allowed. Default is
-    `ncol(z)`.
+  Integer. Maximum number of active variables allowed. Default is
+  `ncol(z)`.
 
--   group.max:
+- group.max:
 
-    Integer. Maximum number of active groups allowed. Default is the
-    total number of unique groups.
+  Integer. Maximum number of active groups allowed. Default is the total
+  number of unique groups.
 
--   stop.loss.ratio:
+- stop.loss.ratio:
 
-    Numeric. Threshold for early stopping based on loss ratio. Default
-    is `1e-2`.
+  Numeric. Threshold for early stopping based on loss ratio. Default is
+  `1e-2`.
 
--   actSet:
+- actSet:
 
-    Logical. If `TRUE`, uses an active-set strategy for optimization.
-    Default is `TRUE`.
+  Logical. If `TRUE`, uses an active-set strategy for optimization.
+  Default is `TRUE`.
 
--   actIter:
+- actIter:
 
-    Integer. Iterations for active set refinement. Default is `Mstop`.
+  Integer. Iterations for active set refinement. Default is `Mstop`.
 
--   actGroupNum:
+- actGroupNum:
 
-    Integer. Limit on active groups in the active-set strategy. Default
-    is `sum(unique(group) != 0)`.
+  Integer. Limit on active groups in the active-set strategy. Default is
+  `sum(unique(group) != 0)`.
 
--   actSetRemove:
+- actSetRemove:
 
-    Logical. Whether to allow removal of groups from the active set.
-    Default is `FALSE`.
+  Logical. Whether to allow removal of groups from the active set.
+  Default is `FALSE`.
 
--   returnX:
+- returnX:
 
-    Logical. If `TRUE`, returns the standardized design matrix and
-    processed data in the result. Default is `FALSE`.
+  Logical. If `TRUE`, returns the standardized design matrix and
+  processed data in the result. Default is `FALSE`.
 
--   trace.lambda:
+- trace.lambda:
 
-    Logical. If `TRUE`, prints the lambda sequence progress. Default is
-    `FALSE`.
+  Logical. If `TRUE`, prints the lambda sequence progress. Default is
+  `FALSE`.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, prints informative messages during fitting.
-    Default is `FALSE`.
+  Logical. If `TRUE`, prints informative messages during fitting.
+  Default is `FALSE`.
 
--   ...:
+- ...:
 
-    Additional arguments passed to `coxkl_enet`.
-
-</div>
-
-<div class="section level2">
+  Additional arguments passed to
+  [`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md).
 
 ## Value
 
 An object of class `"ncckl_enet"` and `"coxkl_enet"` containing:
 
--   `beta`:
+- `beta`:
 
-    Matrix of coefficient estimates (p x nlambda).
+  Matrix of coefficient estimates (p x nlambda).
 
--   `lambda`:
+- `lambda`:
 
-    Sequence of lambda values used.
+  Sequence of lambda values used.
 
--   `alpha`:
+- `alpha`:
 
-    Elastic Net mixing parameter used.
+  Elastic Net mixing parameter used.
 
--   `likelihood`:
+- `likelihood`:
 
-    Vector of negative log-partial likelihoods (loss) for each lambda.
+  Vector of negative log-partial likelihoods (loss) for each lambda.
 
--   `df`:
+- `df`:
 
-    Vector of degrees of freedom (number of non-zero coefficients) for
-    each lambda.
+  Vector of degrees of freedom (number of non-zero coefficients) for
+  each lambda.
 
--   `iter`:
+- `iter`:
 
-    Vector of iteration counts for each lambda.
+  Vector of iteration counts for each lambda.
 
--   `W`:
+- `W`:
 
-    Matrix of exponentiated linear predictors (risk scores) on the
-    original scale.
+  Matrix of exponentiated linear predictors (risk scores) on the
+  original scale.
 
--   `data`:
+- `data`:
 
-    List containing the input data used (including `y`, `z`, `stratum`,
-    and external information).
-
-</div>
-
-<div class="section level2">
+  List containing the input data used (including `y`, `z`, `stratum`,
+  and external information).
 
 ## Details
 
@@ -267,37 +246,25 @@ This function assumes a 1:M matched case-control design, where each
 stratum corresponds to a matched set containing one case (`y = 1`) and
 one or more controls (`y = 0`). The CLR likelihood is equivalent to a
 Cox partial likelihood with a common event time within each matched set.
-Thus, we define \\(\\delta\_i = y\_i\\) and \\(T\_i = 1\\) for all
-subjects and fit a stratified Cox model with KL divergence and Elastic
-Net penalty via `coxkl_enet`.
+Thus, we define \\\delta_i = y_i\\ and \\T_i = 1\\ for all subjects and
+fit a stratified Cox model with KL divergence and Elastic Net penalty
+via
+[`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md).
 
--   If `eta = 0`, the method reduces to a standard Elastic Net CLR
-    (ignoring external information).
+- If `eta = 0`, the method reduces to a standard Elastic Net CLR
+  (ignoring external information).
 
--   If `alpha = 1`, the penalty is Lasso.
+- If `alpha = 1`, the penalty is Lasso.
 
--   If `alpha` is close to 0, the penalty approaches Ridge.
-
-</div>
-
-<div class="section level2">
+- If `alpha` is close to 0, the penalty approaches Ridge.
 
 ## See also
 
-<div class="dont-index">
-
-`coxkl_enet` for the underlying Cox PH engine with KL divergence and
-Elastic Net regularization.
-
-</div>
-
-</div>
-
-<div class="section level2">
+[`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md)
+for the underlying Cox PH engine with KL divergence and Elastic Net
+regularization.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -320,9 +287,3 @@ ncckl_enet_fit <- ncckl_enet(
 )
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

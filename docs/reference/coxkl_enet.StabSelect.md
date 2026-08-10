@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # Stability Selection for KL-Integrated Cox Elastic-Net Models
-
-<div class="ref-description section level2">
 
 Performs stability selection for the KL-integrated Cox elastic-net model
 by repeatedly refitting the model on bootstrap or subsampled datasets
@@ -10,13 +6,7 @@ and aggregating variable selection frequencies across replicates. This
 procedure provides a robust measure of variable importance that is less
 sensitive to a single split of the data.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 coxkl_enet.StabSelect(
@@ -43,145 +33,129 @@ coxkl_enet.StabSelect(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    Numeric matrix of covariates. Rows represent individuals and columns
-    represent predictors.
+  Numeric matrix of covariates. Rows represent individuals and columns
+  represent predictors.
 
--   delta:
+- delta:
 
-    Numeric vector of event indicators (1 = event, 0 = censored).
+  Numeric vector of event indicators (1 = event, 0 = censored).
 
--   time:
+- time:
 
-    Numeric vector of observed times (event or censoring).
+  Numeric vector of observed times (event or censoring).
 
--   stratum:
+- stratum:
 
-    Optional numeric or factor vector indicating strata. If `NULL`, all
-    subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, all
+  subjects are assumed to be in the same stratum.
 
--   RS:
+- RS:
 
-    Optional numeric vector or matrix of external risk scores. If not
-    provided, `beta` must be supplied.
+  Optional numeric vector or matrix of external risk scores. If not
+  provided, `beta` must be supplied.
 
--   beta:
+- beta:
 
-    Optional numeric vector of external coefficients (length equal to
-    `ncol(z)`). If provided, it is used to compute external risk scores.
-    If not provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients (length equal to
+  `ncol(z)`). If provided, it is used to compute external risk scores.
+  If not provided, `RS` must be supplied.
 
--   etas:
+- etas:
 
-    Numeric vector of candidate `eta` values to be evaluated.
+  Numeric vector of candidate `eta` values to be evaluated.
 
--   alpha:
+- alpha:
 
-    Elastic-net mixing parameter in \\((0,1\]\\). Default is `1` (lasso
-    penalty).
+  Elastic-net mixing parameter in \\(0,1\]\\. Default is `1` (lasso
+  penalty).
 
--   lambda:
+- lambda:
 
-    Optional numeric vector of lambda values. If `NULL`, a path is
-    generated automatically.
+  Optional numeric vector of lambda values. If `NULL`, a path is
+  generated automatically.
 
--   nlambda:
+- nlambda:
 
-    Integer. Number of lambda values to generate if `lambda` is NULL.
-    Default is 100.
+  Integer. Number of lambda values to generate if `lambda` is NULL.
+  Default is 100.
 
--   lambda.min.ratio:
+- lambda.min.ratio:
 
-    Numeric. Ratio of min/max lambda. Default depends on sample size vs
-    dimension (0.05 if n &lt; p, else 1e-03).
+  Numeric. Ratio of min/max lambda. Default depends on sample size vs
+  dimension (0.05 if n \< p, else 1e-03).
 
--   nfolds:
+- nfolds:
 
-    Integer. Number of cross-validation folds. Default is `5`.
+  Integer. Number of cross-validation folds. Default is `5`.
 
--   cv.criteria:
+- cv.criteria:
 
-    Character string specifying the cross-validation criterion for
-    selecting both `eta` and `lambda`. Choices are:
+  Character string specifying the cross-validation criterion for
+  selecting both `eta` and `lambda`. Choices are:
 
-    -   `"V&VH"` (default): V&VH loss.
+  - `"V&VH"` (default): V&VH loss.
 
-    -   `"LinPred"`: Loss based on cross-validated linear predictors.
+  - `"LinPred"`: Loss based on cross-validated linear predictors.
 
-    -   `"CIndex_pooled"`: Pooled C-Index.
+  - `"CIndex_pooled"`: Pooled C-Index.
 
-    -   `"CIndex_foldaverage"`: Average C-Index across folds.
+  - `"CIndex_foldaverage"`: Average C-Index across folds.
 
--   c\_index\_stratum:
+- c_index_stratum:
 
-    Optional stratum vector. Required only when `cv.criteria` is set to
-    `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified
-    C-index needs to be computed while the fitted model is
-    non-stratified. Default is `NULL`.
+  Optional stratum vector. Required only when `cv.criteria` is set to
+  `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified C-index
+  needs to be computed while the fitted model is non-stratified. Default
+  is `NULL`.
 
--   message:
+- message:
 
-    Logical. Whether to print progress messages. Default is `FALSE`.
+  Logical. Whether to print progress messages. Default is `FALSE`.
 
--   seed:
+- seed:
 
-    Optional integer. Random seed for reproducible fold assignment.
+  Optional integer. Random seed for reproducible fold assignment.
 
--   B:
+- B:
 
-    Integer. Number of bootstrap/subsampling replicates used for
-    stability selection. Default is `50`.
+  Integer. Number of bootstrap/subsampling replicates used for stability
+  selection. Default is `50`.
 
--   fraction\_sample:
+- fraction_sample:
 
-    Numeric in `(0, 1]`. Fraction of the original sample size used in
-    each replicate (without replacement if subsampling is used). Default
-    is `0.5`.
+  Numeric in `(0, 1]`. Fraction of the original sample size used in each
+  replicate (without replacement if subsampling is used). Default is
+  `0.5`.
 
--   ncores:
+- ncores:
 
-    Integer. Number of parallel cores. Default 1 (sequential execution).
+  Integer. Number of parallel cores. Default 1 (sequential execution).
 
--   ...:
+- ...:
 
-    Additional arguments passed to the underlying fitting function
-    `coxkl_enet`.
-
-</div>
-
-<div class="section level2">
+  Additional arguments passed to the underlying fitting function
+  [`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md).
 
 ## Value
 
 An object of class `"StabSelect"`, which is a list containing:
 
--   stability\_path:
+- stability_path:
 
-    A numeric matrix of dimension `n_vars x n_lambda` giving, for each
-    variable (rows) and each value of `lambda` (columns), the empirical
-    selection probability across the `B` replicates.
+  A numeric matrix of dimension `n_vars x n_lambda` giving, for each
+  variable (rows) and each value of `lambda` (columns), the empirical
+  selection probability across the `B` replicates.
 
--   lambda:
+- lambda:
 
-    Numeric vector giving the global `lambda` sequence used for the
-    underlying elastic-net fits.
-
-</div>
-
-<div class="section level2">
+  Numeric vector giving the global `lambda` sequence used for the
+  underlying elastic-net fits.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -208,9 +182,3 @@ plot(coxkl.StabSelect, threshold = 0.6)
 plot(coxkl.StabSelect, threshold = 0.8)
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

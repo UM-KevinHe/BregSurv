@@ -138,6 +138,8 @@ reference:
   - title: "Utilities"
     contents:
       - generate_eta
+      - align_beta
+      - align_beta_Q
   - title: "Datasets"
     contents:
       - ExampleData_lowdim

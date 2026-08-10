@@ -172,6 +172,8 @@ ncckl_enet <- function(y,
     stop("Length of y must match the number of rows in z.", call. = FALSE)
   }
 
+  if (!is.null(eta)) check_etas(eta, scalar = TRUE)
+
   # Map CLR problem to Cox PH problem: time = 1, delta = y
   delta <- y
   time  <- rep(1, length(y))

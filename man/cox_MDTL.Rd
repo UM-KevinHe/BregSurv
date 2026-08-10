@@ -10,7 +10,7 @@ cox_MDTL(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas,
   tol = 1e-04,
   Mstop = 50,
@@ -30,15 +30,17 @@ cox_MDTL(
 \item{stratum}{Optional numeric or factor vector indicating strata. If \code{NULL},
 all subjects are assumed to be in the same stratum.}
 
-\item{beta}{A numeric vector of external coefficients (length p).}
+\item{beta}{A numeric vector of external coefficients. If named, the names are
+matched against \code{colnames(z)} and covariates absent from \code{beta} are
+zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.}
 
-\item{vcov}{Optional numeric matrix (p x p) acting as the weighting matrix \eqn{Q}
-in the Mahalanobis penalty.
-\strong{Note:} In standard Mahalanobis distance formulations, this should be the
-\emph{inverse} of the covariance matrix (precision matrix). If not provided,
-an identity matrix is used.}
+\item{Q}{Optional numeric matrix acting as the weighting matrix \eqn{Q} in the
+Mahalanobis penalty. This should be a symmetric positive-semidefinite
+\emph{precision} matrix (e.g. the inverse covariance / information matrix of
+the external estimator). If named, it is reordered and zero-padded to
+\code{colnames(z)}. If \code{NULL}, a masked identity is used.}
 
-\item{etas}{A numeric vector of tuning parameters (scalars) to evaluate.}
+\item{etas}{A numeric vector of non-negative tuning parameters (scalars) to evaluate.}
 
 \item{tol}{Convergence tolerance for the Newton-Raphson algorithm. Default is 1e-4.}
 
@@ -74,11 +76,12 @@ The objective function minimizes the negative log-partial likelihood plus a pena
 where:
 \itemize{
 \item \eqn{\beta_{ext}} is the vector of external coefficients.
-\item \eqn{Q} is the weighting matrix (derived from \code{vcov}).
+\item \eqn{Q} is the weighting (precision) matrix.
 \item \eqn{\eta} is the tuning parameter controlling the strength of the external information.
 }
-If \code{vcov} is \code{NULL}, \eqn{Q} defaults to the identity matrix, reducing the
-penalty to a standard Euclidean distance (Ridge-type shrinkage towards \code{beta}).
+If \code{Q} is \code{NULL}, it defaults to a masked identity (the identity on the
+covariates supplied by \code{beta}, and 0 on covariates the external source does not
+cover), reducing the penalty to a Ridge-type shrinkage towards \code{beta}.
 }
 \examples{
 \dontrun{
@@ -93,7 +96,7 @@ cox_MDTL_est <- cox_MDTL(
   delta = train_dat_lowdim$status,
   time = train_dat_lowdim$time,
   beta = beta_external_lowdim,
-  vcov = NULL,
+  Q = NULL,
   etas = eta_list
 )
 }

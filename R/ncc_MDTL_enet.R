@@ -19,14 +19,14 @@
 #'   \item If \code{eta = 0}, the method reduces to a standard Elastic Net CLR.
 #'   \item If \code{alpha = 1}, the penalty is Lasso.
 #'   \item If \code{alpha} is close to 0, the penalty approaches Ridge.
-#'   \item If \code{vcov = NULL}, \eqn{Q = I} (Euclidean distance shrinkage towards \code{beta}).
+#'   \item If \code{Q = NULL}, \eqn{Q = I} (Euclidean distance shrinkage towards \code{beta}).
 #' }
 #'
 #' @param y Numeric vector of binary outcomes (0 = control, 1 = case).
 #' @param z Numeric matrix of covariates (rows = observations, columns = variables).
 #' @param stratum Numeric or factor vector defining the matched sets (strata). \strong{Required}.
 #' @param beta Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.
-#' @param vcov Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
+#' @param Q Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
 #'   weighting matrix \eqn{Q}. Typically the precision matrix of the external estimator.
 #'   If \code{NULL}, defaults to the identity matrix.
 #' @param eta Numeric scalar. The transfer learning parameter (\eqn{\geq 0}). Controls
@@ -86,14 +86,14 @@
 #'   z       = z,
 #'   stratum = sets,
 #'   beta    = beta_ext,
-#'   vcov    = NULL,
+#'   Q       = NULL,
 #'   eta     = 0,
 #'   alpha   = 1
 #' )
 #' }
 #' @export
 ncc_MDTL_enet <- function(y, z, stratum,
-                              beta, vcov = NULL,
+                              beta, Q = NULL,
                               eta = NULL,
                               alpha = NULL,
                               lambda = NULL,
@@ -129,6 +129,8 @@ ncc_MDTL_enet <- function(y, z, stratum,
     stop("Length of y must match the number of rows in z.", call. = FALSE)
   }
 
+  if (!is.null(eta)) check_etas(eta, scalar = TRUE)
+
   # Map CLR problem to Cox PH problem: time = 1, delta = y
   delta <- y
   time  <- rep(1, length(y))
@@ -139,7 +141,7 @@ ncc_MDTL_enet <- function(y, z, stratum,
     time              = time,
     stratum           = stratum,
     beta              = beta,
-    vcov              = vcov,
+    Q                 = Q,
     eta               = eta,
     alpha             = alpha,
     lambda            = lambda,

@@ -1,16 +1,8 @@
-<div id="main" class="col-md-9" role="main">
-
 # Authors and Citation
-
-<div class="section level2">
 
 ## Authors
 
--   **Yubo Shao**. Author, maintainer.
-
-</div>
-
-<div class="section level2">
+- **Yubo Shao**. Author, maintainer.
 
 ## Citation
 
@@ -25,7 +17,3 @@ Divergence*. R package version 1.0.0,
       note = {R package version 1.0.0},
       url = {https://um-kevinhe.github.io/BregSurv/},
     }
-
-</div>
-
-</div>

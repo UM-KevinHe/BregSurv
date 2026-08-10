@@ -1,19 +1,9 @@
-<div id="main" class="col-md-9" role="main">
-
-# Plot Validation Results for cox\_MDTL\_enet Object
-
-<div class="ref-description section level2">
+# Plot Validation Results for cox_MDTL_enet Object
 
 Plots the validation performance against `lambda` for MDTL elastic net
 estimates.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 # S3 method for class 'cox_MDTL_enet'
@@ -28,57 +18,41 @@ plot(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   x:
+- x:
 
-    An object of class `"cox_MDTL_enet"`.
+  An object of class `"cox_MDTL_enet"`.
 
--   test\_z:
+- test_z:
 
-    Matrix of test covariates.
+  Matrix of test covariates.
 
--   test\_time:
+- test_time:
 
-    Vector of test survival times.
+  Vector of test survival times.
 
--   test\_delta:
+- test_delta:
 
-    Vector of test status indicators.
+  Vector of test status indicators.
 
--   test\_stratum:
+- test_stratum:
 
-    Vector of test strata.
+  Vector of test strata.
 
--   criteria:
+- criteria:
 
-    Metric to plot: `"loss"` or `"CIndex"`.
+  Metric to plot: `"loss"` or `"CIndex"`.
 
--   ...:
+- ...:
 
-    Additional arguments.
-
-</div>
-
-<div class="section level2">
+  Additional arguments.
 
 ## Value
 
 A `ggplot` object.
 
-</div>
-
-<div class="section level2">
-
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -91,7 +65,7 @@ cox_MDTL_enet_est <- cox_MDTL_enet(z = train_dat_highdim$z,
                                    delta = train_dat_highdim$status,
                                    time = train_dat_highdim$time,
                                    beta = beta_external_highdim,
-                                   vcov = NULL,
+                                   Q = NULL,
                                    eta = 0)
 
 plot.cox_MDTL_enet(cox_MDTL_enet_est,
@@ -102,9 +76,3 @@ plot.cox_MDTL_enet(cox_MDTL_enet_est,
                    criteria = "CIndex")
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

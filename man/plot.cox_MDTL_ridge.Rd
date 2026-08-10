@@ -46,7 +46,7 @@ mdtl_ridge_est <- cox_MDTL_ridge(z = train_dat_highdim$z,
                                  delta = train_dat_highdim$status,
                                  time = train_dat_highdim$time,
                                  beta = beta_external_highdim,
-                                 vcov = NULL,
+                                 Q = NULL,
                                  eta = 0)
 
 plot.cox_MDTL_ridge(mdtl_ridge_est,

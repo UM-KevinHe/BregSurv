@@ -51,7 +51,7 @@ Depending on the type of external data available, the package supports:
   $\widetilde{\boldsymbol{\beta}}$ or external risk scores $r(Z,\widetilde{\boldsymbol{\beta}})$
   are available, integration proceeds via Kullback–Leibler divergence penalization.
 - **Coefficient + curvature summaries**: when $\widetilde{\boldsymbol{\beta}}$ or $r(Z,\widetilde{\boldsymbol{\beta}})$ are available, with an additional positive semidefinite
-  matrix $\mathbf{A}$ (e.g., information matrix or variance–covariance matrix)
+  matrix $\mathbf{A}$ (e.g., the information / precision matrix of the external estimator)
   is provided, integration proceeds via Mahalanobis distance penalization.
   
   *Note: These three modes are not mutually exclusive. If individual-level external data are available, one may first fit an external model to obtain $\widetilde{\boldsymbol{\beta}}$ (and optionally $\mathbf{A}$), then proceed with KL or Mahalanobis integration. Conversely, if only $\widetilde{\boldsymbol{\beta}}$ is available without curvature information, setting $\mathbf{A} = \mathbf{I}$ reduces the Mahalanobis distance to the squared Euclidean distance, making the Mahalanobis framework applicable in this setting as well.*
@@ -134,7 +134,7 @@ Depending on the type of external data available, the framework supports three b
 
 2. [Summary-level External Coefficients / risk scores (via KL divergence)](#sec_coxkl) When only summary-level regression coefficients $\widetilde{\boldsymbol{\beta}}$ or external risk scores $r(\mathbf{Z}, \widetilde{\boldsymbol{\beta}})$ are available, the user can perform data integration via the Kullback–Leibler divergence.
 
-3. [Summary-level External Coefficients / risk scores + Curvature (via Mahalanobis distance)](#sec_coxmaha) When $\widetilde{\boldsymbol{\beta}}$ or $r(\mathbf{Z}, \widetilde{\boldsymbol{\beta}})$ are available along with a positive semidefinite matrix $\mathbf{A}$ (e.g., information or variance–covariance matrix), the user can perform data integration via the quadratic Mahalanobis distance.
+3. [Summary-level External Coefficients / risk scores + Curvature (via Mahalanobis distance)](#sec_coxmaha) When $\widetilde{\boldsymbol{\beta}}$ or $r(\mathbf{Z}, \widetilde{\boldsymbol{\beta}})$ are available along with a positive semidefinite matrix $\mathbf{A}$ (e.g., the information / precision matrix), the user can perform data integration via the quadratic Mahalanobis distance.
 
 *Note: These three settings are not mutually exclusive. If individual-level external data are available, one may first fit an external model to obtain $\widetilde{\boldsymbol{\beta}}$ (and optionally $\mathbf{A}$), then proceed with KL or Mahalanobis integration. Conversely, if only $\widetilde{\boldsymbol{\beta}}$ is available without curvature information, setting $\mathbf{A} = \mathbf{I}$ reduces the Mahalanobis distance to the squared Euclidean distance, making the Mahalanobis framework applicable in this setting as well.*
 
@@ -582,7 +582,7 @@ Each curve traces the performance of one external source across the $\eta$ grid,
 
 ### 2.3 Summary-level External Coefficients / risk scores + Curvature (via Mahalanobis distance){#sec_coxmaha}
 
-Compared with [Kullback--Leibler Divergence Data Integration](#sec_coxkl), the Mahalanobis distance approach is applicable when the user can also provide a positive semidefinite matrix $\mathbf{A}$ summarizing the curvature of the external objective function (e.g., an information matrix, a variance--covariance matrix, or variance information only). The minimal input required for this approach is $\widetilde{\boldsymbol{\beta}}$ and $\mathbf{A}$. If $\mathbf{A}$ is not supplied, the function defaults to using the identity matrix, which reduces the Mahalanobis distance penalty to the squared Euclidean distance.
+Compared with [Kullback--Leibler Divergence Data Integration](#sec_coxkl), the Mahalanobis distance approach is applicable when the user can also provide a positive semidefinite matrix $\mathbf{A}$ summarizing the curvature of the external objective function (e.g., an information / precision matrix, or curvature information only). The minimal input required for this approach is $\widetilde{\boldsymbol{\beta}}$ and $\mathbf{A}$. If $\mathbf{A}$ is not supplied, the function defaults to using the identity matrix, which reduces the Mahalanobis distance penalty to the squared Euclidean distance.
 
 We present the usage of the functions for [low-dimensional](#sec_coxMD_low) and [high-dimensional](#sec_coxMD_high) settings separately.
 
@@ -590,7 +590,7 @@ We present the usage of the functions for [low-dimensional](#sec_coxMD_low) and 
 
 We begin with **low-dimensional** settings, where the number of predictors is modest. The description of the built-in low-dimensional simulated dataset `ExampleData_lowdim`, as well as the example external $\widetilde{\boldsymbol{\beta}}$, is the same as in the [KL divergence section](#sec_coxkl_low).
 
-To fit the Mahalanobis distance--based integrated model, we first generate a suitable range of integration weights $\eta$ using the function `generate_eta()`. The user should rely on prior knowledge or problem-specific considerations to determine an appropriate range. We then use the function `cox_MDTL()` to fit the model. The external regression coefficient $\widetilde{\boldsymbol{\beta}}$ is supplied to the function through the argument `beta = `, and the external curvature matrix $\mathbf{A}$ through the argument `vcov = `. Below, we illustrate the usage when no external $\mathbf{A}$ matrix is provided by setting `vcov = NULL`.
+To fit the Mahalanobis distance--based integrated model, we first generate a suitable range of integration weights $\eta$ using the function `generate_eta()`. The user should rely on prior knowledge or problem-specific considerations to determine an appropriate range. We then use the function `cox_MDTL()` to fit the model. The external regression coefficient $\widetilde{\boldsymbol{\beta}}$ is supplied to the function through the argument `beta = `, and the external curvature (precision) matrix $\mathbf{A}$ through the argument `Q = `. Below, we illustrate the usage when no external $\mathbf{A}$ matrix is provided by setting `Q = NULL`.
  
 
 ```{r}
@@ -602,7 +602,7 @@ fit.cox_MDTL <- cox_MDTL(
   time = time,
   stratum = strat,
   beta = beta_ext,
-  vcov = NULL,
+  Q = NULL,
   etas = eta_list
 )
 ```
@@ -632,7 +632,7 @@ cvfit.cox_MDTL <- cv.cox_MDTL(
   stratum = strat,
   beta = beta_ext,
   etas = eta_list,
-  vcov = NULL,
+  Q = NULL,
   nfolds = 5,
   cv.criteria = "V&VH",
   seed = 1)
@@ -658,7 +658,7 @@ fit.cox_MDTL_ridge <- cox_MDTL_ridge(
   time     = time_hd,
   stratum  = strat_hd,
   beta     = beta_external_hd,
-  vcov     = NULL,
+  Q = NULL,
   eta      = 1                 
 )
 ```
@@ -682,7 +682,7 @@ fit.cox_MDTL_LASSO <-cox_MDTL_enet(
   time     = time_hd,
   stratum  = strat_hd,
   beta     = beta_external_hd,   
-  vcov     = NULL,
+  Q = NULL,
   eta      = 1,                 
   alpha    = 1                  # LASSO penalty
 )
@@ -739,7 +739,7 @@ cvfit.cox_MDTL_LASSO <- cv.cox_MDTL_enet(
   time = time_hd,
   stratum = strat_hd,
   beta = beta_external_hd,
-  vcov = NULL,
+  Q = NULL,
   etas = eta_grid_hd,
   alpha = 1, # LASSO
   nfolds = 5,
@@ -763,7 +763,7 @@ All three external-integration modes introduced in [Section 2](#sec_cox) -- indi
 
 - **KL divergence** (analog of [§2.2](#sec_coxkl)): `ncckl()` / `cv.ncckl()`, with `ncckl_enet()` / `cv.ncckl_enet()` for high-dimensional integration.
 - **Individual-level external data** (analog of [§2.1](#sec_indi)): `ncc_indi()` / `cv.ncc_indi()`, with `_enet` variants. The example dataset `ExampleData_cc_indi` plays the same role as `ExampleData_indi` does for `cox_indi()`.
-- **Mahalanobis distance with external curvature** (analog of [§2.3](#sec_coxmaha)): `ncc_MDTL()` / `cv.ncc_MDTL()`, with `_enet` variants. Takes the external $\widetilde{\boldsymbol{\beta}}$ plus its covariance/precision matrix `vcov`.
+- **Mahalanobis distance with external curvature** (analog of [§2.3](#sec_coxmaha)): `ncc_MDTL()` / `cv.ncc_MDTL()`, with `_enet` variants. Takes the external $\widetilde{\boldsymbol{\beta}}$ plus its precision (information) matrix `Q`.
 
 A few NCC-specific points are worth flagging before walking through the workflow:
 
@@ -803,7 +803,7 @@ To use the KL divergence--based integrated model, the user must at least provide
 eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 5)
 
 ncckl.fit_breslow <- ncckl(y = y.cc, z = z.cc, stratum = set.cc, 
-                           eta = eta_list, beta = beta_ext.cc,
+                           etas = eta_list, beta = beta_ext.cc,
                            method = "breslow")
 ```
 
@@ -848,7 +848,7 @@ The cross-validated performance curve can be visualized using `cv.plot()`:
 cv.plot(cv.ncckl.fit_breslow)
 ```
 
-The plot displays a purple curve tracing the cross-validated performance across the $\eta$ grid, a green dotted horizontal line representing the internal baseline at $eta$ = 0 (with a green point marking its value), and a vertical dashed orange line indicating the optimal $\eta$ at which the cross-validated loss is minimized.
+The plot displays a purple curve tracing the cross-validated performance across the $\eta$ grid, a green dotted horizontal line representing the internal baseline at $\eta$ = 0 (with a green point marking its value), and a vertical dashed orange line indicating the optimal $\eta$ at which the cross-validated loss is minimized.
 
 
 ### 3.2 High-Dimensional Integration {#sec_high_cc}

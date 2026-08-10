@@ -165,9 +165,7 @@ cv.ncckl_enet <- function(y, z, stratum,
     stop("Either RS or beta must be provided for cv.ncckl_enet.", call. = FALSE)
   }
   if (!is.null(beta)) {
-    if (length(beta) != ncol(z)) {
-      stop("The dimension of beta does not match the number of columns in z.", call. = FALSE)
-    }
+    beta <- align_beta(z, beta)
   }
 
   ## Check 1:m structure: one case per stratum
@@ -183,6 +181,7 @@ cv.ncckl_enet <- function(y, z, stratum,
   if (is.null(etas)) {
     stop("etas must be provided.", call. = FALSE)
   }
+  check_etas(etas)
   etas   <- sort(etas)
   n_eta  <- length(etas)
 

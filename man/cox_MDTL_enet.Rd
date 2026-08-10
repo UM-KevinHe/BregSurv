@@ -10,7 +10,7 @@ cox_MDTL_enet(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   eta = NULL,
   alpha = NULL,
   lambda = NULL,
@@ -46,9 +46,9 @@ cox_MDTL_enet(
 
 \item{stratum}{Vector indicating the stratum membership. If NULL, all observations are assumed to be in the same stratum.}
 
-\item{beta}{Vector of external coefficients (length p). This represents the prior knowledge or "source" model coefficients.}
+\item{beta}{Vector of external coefficients representing the prior knowledge or "source" model coefficients. If named, the names are matched against \code{colnames(z)} and covariates absent from \code{beta} are zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.}
 
-\item{vcov}{Optional weighting matrix (p x p) for the external information. Typically the inverse covariance matrix (precision matrix) of the external estimator. If NULL, defaults to the identity matrix.}
+\item{Q}{Optional weighting matrix (p x p) for the external information. Typically the inverse covariance (precision) matrix of the external estimator, which should be symmetric positive-semidefinite. If named, it is reordered and zero-padded to \code{colnames(z)}. If NULL, a masked identity is used.}
 
 \item{eta}{Scalar. The transfer learning parameter (>= 0). Controls the strength of the external information. \code{eta = 0} ignores external info.}
 
@@ -113,7 +113,7 @@ An object of class \code{"cox_MDTL_enet"} containing:
 \description{
 Fits a Cox Proportional Hazards model that integrates external information (Transfer Learning)
 using an Elastic Net regularization path. The method incorporates prior knowledge from
-external coefficients (\code{beta}) and an optional weight matrix (\code{vcov}), controlled
+external coefficients (\code{beta}) and an optional weight matrix (\code{Q}), controlled
 by the transfer learning parameter \code{eta}.
 
 The objective function minimizes the negative partial likelihood plus a transfer learning
@@ -132,7 +132,7 @@ cox_MDTL_enet_est <- cox_MDTL_enet(
   time = train_dat_highdim$time,
   stratum = train_dat_highdim$stratum,
   beta = beta_external_highdim,
-  vcov = NULL,
+  Q = NULL,
   eta = 0,
   alpha = 1
 )

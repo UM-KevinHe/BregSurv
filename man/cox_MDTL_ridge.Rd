@@ -10,7 +10,7 @@ cox_MDTL_ridge(
   time,
   stratum = NULL,
   beta = NULL,
-  vcov = NULL,
+  Q = NULL,
   eta = NULL,
   lambda = NULL,
   nlambda = 100,
@@ -34,11 +34,15 @@ cox_MDTL_ridge(
 \item{stratum}{Optional numeric or factor vector indicating strata. If \code{NULL},
 all subjects are assumed to be in the same stratum.}
 
-\item{beta}{A numeric vector of external coefficients (length p).}
+\item{beta}{A numeric vector of external coefficients. If named, the names are
+matched against \code{colnames(z)} and covariates absent from \code{beta} are
+zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.}
 
-\item{vcov}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-defaults to the identity matrix.}
+\item{Q}{Optional numeric matrix acting as the weighting matrix \eqn{Q} in the
+Mahalanobis penalty. This should be a symmetric positive-semidefinite
+\emph{precision} matrix (e.g. the inverse covariance / information matrix of
+the external estimator). If named, it is reordered and zero-padded to
+\code{colnames(z)}. If \code{NULL}, a masked identity is used.}
 
 \item{eta}{A single non-negative numeric value controlling the weight of the
 external information (Mahalanobis distance penalty). If \code{NULL}, defaults to 0 (no transfer learning).}
@@ -100,7 +104,7 @@ cox_MDTL_ridge_est <- cox_MDTL_ridge(
   time = train_dat_highdim$time,
   stratum = train_dat_highdim$stratum,
   beta = beta_external_highdim,
-  vcov = NULL,
+  Q = NULL,
   eta = 0.5
 )
 }

@@ -9,7 +9,7 @@ ncc_MDTL(
   z,
   stratum,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas,
   tol = 1e-04,
   Mstop = 50,
@@ -27,7 +27,7 @@ ncc_MDTL(
 
 \item{beta}{Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.}
 
-\item{vcov}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
+\item{Q}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
 weighting matrix \eqn{Q} in the Mahalanobis penalty. Typically the inverse of the
 external covariance (precision matrix). If \code{NULL}, defaults to the identity matrix.}
 
@@ -61,12 +61,12 @@ then calls \code{\link{cox_MDTL}} as the core engine.
 The objective function minimizes the negative conditional log-likelihood plus
 a Mahalanobis distance penalty:
 \deqn{P(\beta) = \frac{\eta}{2} (\beta - \beta_{ext})^T Q (\beta - \beta_{ext})}
-where \eqn{Q} is the weighting matrix (identity if \code{vcov} is \code{NULL}).
+where \eqn{Q} is the weighting matrix (identity if \code{Q} is \code{NULL}).
 
 \itemize{
 \item Setting \code{etas = 0} recovers the standard CLR (no external information).
 \item Larger \code{eta} enforces stronger agreement with \code{beta}.
-\item If \code{vcov = NULL}, \eqn{Q = I} (Euclidean/Ridge-type shrinkage towards \code{beta}).
+\item If \code{Q = NULL}, \eqn{Q = I} (Euclidean/Ridge-type shrinkage towards \code{beta}).
 }
 }
 \examples{
@@ -86,7 +86,7 @@ fit <- ncc_MDTL(
   z      = z,
   stratum = sets,
   beta   = beta_ext,
-  vcov   = NULL,
+  Q      = NULL,
   etas   = eta_list
 )
 }

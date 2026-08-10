@@ -1,21 +1,11 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cox Proportional Hazards Model Integrated with External Individual-level Data and Elastic Net Penalty
-
-<div class="ref-description section level2">
 
 Fits a series of penalized stratified Cox models that integrate an
 external individual-level dataset via a composite likelihood weight
 `eta`, while applying an Elastic Net (Lasso + Ridge) penalty for
 variable selection and regularization in high-dimensional settings.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cox_indi_enet(
@@ -53,259 +43,235 @@ cox_indi_enet(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z\_int:
+- z_int:
 
-    Numeric matrix of covariates for the internal dataset
-    (\\(n\_{\\text{int}} \\times p\\)).
+  Numeric matrix of covariates for the internal dataset
+  (\\n\_{\text{int}} \times p\\).
 
--   delta\_int:
+- delta_int:
 
-    Numeric vector of event indicators for the internal dataset (1 =
-    event, 0 = censored).
+  Numeric vector of event indicators for the internal dataset (1 =
+  event, 0 = censored).
 
--   time\_int:
+- time_int:
 
-    Numeric vector of survival times for the internal dataset.
+  Numeric vector of survival times for the internal dataset.
 
--   stratum\_int:
+- stratum_int:
 
-    Optional stratum identifiers for the internal dataset. Default
-    `NULL` assigns all internal observations to a single stratum.
+  Optional stratum identifiers for the internal dataset. Default `NULL`
+  assigns all internal observations to a single stratum.
 
--   z\_ext:
+- z_ext:
 
-    Numeric matrix of covariates for the external dataset
-    (\\(n\_{\\text{ext}} \\times p\\)). Must have the same number of
-    columns as `z_int`.
+  Numeric matrix of covariates for the external dataset
+  (\\n\_{\text{ext}} \times p\\). Must have the same number of columns
+  as `z_int`.
 
--   delta\_ext:
+- delta_ext:
 
-    Numeric vector of event indicators for the external dataset (1 =
-    event, 0 = censored).
+  Numeric vector of event indicators for the external dataset (1 =
+  event, 0 = censored).
 
--   time\_ext:
+- time_ext:
 
-    Numeric vector of survival times for the external dataset.
+  Numeric vector of survival times for the external dataset.
 
--   stratum\_ext:
+- stratum_ext:
 
-    Optional stratum identifiers for the external dataset. Default
-    `NULL` assigns all external observations to a single stratum.
+  Optional stratum identifiers for the external dataset. Default `NULL`
+  assigns all external observations to a single stratum.
 
--   etas:
+- etas:
 
-    Numeric vector of nonnegative external weights. `eta = 0` gives an
-    internal-only penalized fit. The vector is sorted internally in
-    ascending order.
+  Numeric vector of nonnegative external weights. `eta = 0` gives an
+  internal-only penalized fit. The vector is sorted internally in
+  ascending order.
 
--   alpha:
+- alpha:
 
-    The Elastic Net mixing parameter, with \\(0 &lt; \\alpha \\le 1\\).
-    `alpha = 1` is the lasso penalty, and `alpha` close to 0 approaches
-    ridge. Defaults to 1.
+  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
+  `alpha = 1` is the lasso penalty, and `alpha` close to 0 approaches
+  ridge. Defaults to 1.
 
--   lambda:
+- lambda:
 
-    Optional numeric vector of penalty parameters applied to all `eta`
-    values. If `NULL`, a lambda path is generated automatically for each
-    `eta`.
+  Optional numeric vector of penalty parameters applied to all `eta`
+  values. If `NULL`, a lambda path is generated automatically for each
+  `eta`.
 
--   nlambda:
+- nlambda:
 
-    Integer. The number of lambda values to generate per `eta`. Default
-    is 100.
+  Integer. The number of lambda values to generate per `eta`. Default is
+  100.
 
--   lambda.min.ratio:
+- lambda.min.ratio:
 
-    Numeric. The ratio of the smallest to the largest lambda in the
-    sequence. Default is 0.05 if \\(n\_{\\text{all}} &lt; p\\), and 1e-3
-    otherwise.
+  Numeric. The ratio of the smallest to the largest lambda in the
+  sequence. Default is 0.05 if \\n\_{\text{all}} \< p\\, and 1e-3
+  otherwise.
 
--   lambda.early.stop:
+- lambda.early.stop:
 
-    Logical. If `TRUE`, stops the lambda path early if the loss
-    improvement is small. Default `FALSE`.
+  Logical. If `TRUE`, stops the lambda path early if the loss
+  improvement is small. Default `FALSE`.
 
--   tol:
+- tol:
 
-    Numeric. Convergence tolerance for the coordinate descent
-    optimization. Default is 1e-4.
+  Numeric. Convergence tolerance for the coordinate descent
+  optimization. Default is 1e-4.
 
--   Mstop:
+- Mstop:
 
-    Integer. Maximum coordinate descent iterations per lambda. Default
-    is 1000.
+  Integer. Maximum coordinate descent iterations per lambda. Default is
+  1000.
 
--   max.total.iter:
+- max.total.iter:
 
-    Integer. Maximum total iterations across the entire lambda path.
-    Default is `Mstop * nlambda`.
+  Integer. Maximum total iterations across the entire lambda path.
+  Default is `Mstop * nlambda`.
 
--   group:
+- group:
 
-    Integer vector defining group membership for grouped penalties.
-    Default treats each variable as its own group (standard Elastic Net
-    / Lasso).
+  Integer vector defining group membership for grouped penalties.
+  Default treats each variable as its own group (standard Elastic Net /
+  Lasso).
 
--   group.multiplier:
+- group.multiplier:
 
-    Numeric vector. Multiplicative factors for penalties applied to each
-    group.
+  Numeric vector. Multiplicative factors for penalties applied to each
+  group.
 
--   standardize:
+- standardize:
 
-    Logical. If `TRUE`, the stacked design matrix `z_all` is
-    standardized internally. Coefficients are returned on the original
-    scale. Default `TRUE`.
+  Logical. If `TRUE`, the stacked design matrix `z_all` is standardized
+  internally. Coefficients are returned on the original scale. Default
+  `TRUE`.
 
--   nvar.max:
+- nvar.max:
 
-    Integer. Maximum number of active variables allowed. Defaults to
-    `p`.
+  Integer. Maximum number of active variables allowed. Defaults to `p`.
 
--   group.max:
+- group.max:
 
-    Integer. Maximum number of active groups allowed. Defaults to the
-    total number of unique groups.
+  Integer. Maximum number of active groups allowed. Defaults to the
+  total number of unique groups.
 
--   stop.loss.ratio:
+- stop.loss.ratio:
 
-    Numeric. Threshold for early stopping based on loss ratio. Default
-    is 1e-2.
+  Numeric. Threshold for early stopping based on loss ratio. Default is
+  1e-2.
 
--   actSet:
+- actSet:
 
-    Logical. If `TRUE`, uses an active-set strategy for coordinate
-    descent. Default `TRUE`.
+  Logical. If `TRUE`, uses an active-set strategy for coordinate
+  descent. Default `TRUE`.
 
--   actIter:
+- actIter:
 
-    Integer. Maximum iterations for active set refinement. Default is
-    `Mstop`.
+  Integer. Maximum iterations for active set refinement. Default is
+  `Mstop`.
 
--   actGroupNum:
+- actGroupNum:
 
-    Integer. Limit on active groups in the active set strategy.
+  Integer. Limit on active groups in the active set strategy.
 
--   actSetRemove:
+- actSetRemove:
 
-    Logical. Whether to allow removal from the active set. Default
-    `FALSE`.
+  Logical. Whether to allow removal from the active set. Default
+  `FALSE`.
 
--   returnX:
+- returnX:
 
-    Logical. If `TRUE`, the standardized design matrix object `std.Z` is
-    included in the returned result. Default `FALSE`.
+  Logical. If `TRUE`, the standardized design matrix object `std.Z` is
+  included in the returned result. Default `FALSE`.
 
--   trace.lambda:
+- trace.lambda:
 
-    Logical. If `TRUE`, prints the lambda sequence progress. Default
-    `FALSE`.
+  Logical. If `TRUE`, prints the lambda sequence progress. Default
+  `FALSE`.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, shows a progress bar over the `etas` loop.
-    Default `FALSE`.
+  Logical. If `TRUE`, shows a progress bar over the `etas` loop. Default
+  `FALSE`.
 
--   ...:
+- ...:
 
-    Additional arguments (currently unused).
-
-</div>
-
-<div class="section level2">
+  Additional arguments (currently unused).
 
 ## Value
 
 An object of class `"cox_indi_enet"` containing:
 
--   `eta`:
+- `eta`:
 
-    Sorted sequence of \\(\\eta\\) values used.
+  Sorted sequence of \\\eta\\ values used.
 
--   `beta`:
+- `beta`:
 
-    Named list of length `length(etas)`. Each element is a matrix of
-    estimated coefficients (\\(p \\times n\_\\lambda\\)) on the original
-    covariate scale, with columns named by the corresponding `lambda`
-    values.
+  Named list of length `length(etas)`. Each element is a matrix of
+  estimated coefficients (\\p \times n\_\lambda\\) on the original
+  covariate scale, with columns named by the corresponding `lambda`
+  values.
 
--   `lambda`:
+- `lambda`:
 
-    Named list of length `length(etas)`. Each element is the vector of
-    lambda values actually used for that `eta`.
+  Named list of length `length(etas)`. Each element is the vector of
+  lambda values actually used for that `eta`.
 
--   `alpha`:
+- `alpha`:
 
-    The Elastic Net mixing parameter used.
+  The Elastic Net mixing parameter used.
 
--   `linear.predictors_int`:
+- `linear.predictors_int`:
 
-    List of matrices (\\(n\_{\\text{int}} \\times n\_\\lambda\\)) of
-    internal linear predictors in the original observation order, one
-    per `eta`.
+  List of matrices (\\n\_{\text{int}} \times n\_\lambda\\) of internal
+  linear predictors in the original observation order, one per `eta`.
 
--   `linear.predictors_ext`:
+- `linear.predictors_ext`:
 
-    List of matrices (\\(n\_{\\text{ext}} \\times n\_\\lambda\\)) of
-    external linear predictors in the original observation order, one
-    per `eta`.
+  List of matrices (\\n\_{\text{ext}} \times n\_\lambda\\) of external
+  linear predictors in the original observation order, one per `eta`.
 
--   `group`:
+- `group`:
 
-    Factor vector of group assignments for each covariate.
+  Factor vector of group assignments for each covariate.
 
--   `group.multiplier`:
+- `group.multiplier`:
 
-    Numeric vector of group penalty multipliers used.
+  Numeric vector of group penalty multipliers used.
 
--   `data`:
+- `data`:
 
-    List of the original input data used.
-
-</div>
-
-<div class="section level2">
+  List of the original input data used.
 
 ## Details
 
-The fitted objective is $$\\ell\_{\\eta,\\lambda}(\\beta) =
-\\ell\_{\\text{int}}(\\beta) + \\eta \\, \\ell\_{\\text{ext}}(\\beta) -
-\\text{Pen}\_{\\lambda,\\alpha}(\\beta),$$ where
-\\(\\text{Pen}\_{\\lambda,\\alpha}\\) is the Elastic Net penalty. This
-is equivalent to fitting a penalized stratified Cox model on the stacked
+The fitted objective is \$\$\ell\_{\eta,\lambda}(\beta) =
+\ell\_{\text{int}}(\beta) + \eta \\ \ell\_{\text{ext}}(\beta) -
+\text{Pen}\_{\lambda,\alpha}(\beta),\$\$ where
+\\\text{Pen}\_{\lambda,\alpha}\\ is the Elastic Net penalty. This is
+equivalent to fitting a penalized stratified Cox model on the stacked
 data with observation weights 1 (internal) and `eta` (external), while
 keeping internal and external strata separated (no mixing of risk sets
 across cohorts).
 
--   If `alpha = 1`, the penalty is Lasso.
+- If `alpha = 1`, the penalty is Lasso.
 
--   If `alpha` is close to 0, the penalty approaches Ridge.
+- If `alpha` is close to 0, the penalty approaches Ridge.
 
--   If `eta = 0`, external data is effectively ignored and the model
-    reduces to a standard Elastic Net Cox model on internal data only.
+- If `eta = 0`, external data is effectively ignored and the model
+  reduces to a standard Elastic Net Cox model on internal data only.
 
 The function fits one full lambda path per `eta` value. Standardization
 is performed once on the stacked design matrix before the loop, so the
-lambda sequence is recomputed for each `eta` (since
-\\(\\lambda\_{\\max}\\) depends on the weighted score at \\(\\beta =
-0\\)).
-
-</div>
-
-<div class="section level2">
+lambda sequence is recomputed for each `eta` (since \\\lambda\_{\max}\\
+depends on the weighted score at \\\beta = 0\\).
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -344,9 +310,3 @@ fit.cox_indi_enet <- cox_indi_enet(
 fit.cox_indi_enet$beta[[1]]
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

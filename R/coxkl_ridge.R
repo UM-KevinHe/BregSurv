@@ -75,20 +75,15 @@ coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, 
     warning("eta is not provided. Setting eta = 0 (no external information used).", call. = FALSE)
     eta <- 0
   } else {
-    if (!is.finite(eta) || eta < 0 || length(eta) != 1) {
-      stop("eta must be a non-negative scalar.", call. = FALSE)
-    }
+    check_etas(eta, scalar = TRUE)
   }
   
   if (is.null(RS) && is.null(beta)) {
     stop("Error: No external information is provided. Either RS or beta must be provided.")
   } else if (is.null(RS) && !is.null(beta)) {
-    if (length(beta) == ncol(z)) {
-      if (message) message("External beta information is used.")
-      RS <- as.matrix(z) %*% as.matrix(beta)
-    } else {
-      stop("Error: The dimension of beta does not match the number of columns in z.")
-    }
+    beta <- align_beta(z, beta)
+    if (message) message("External beta information is used.")
+    RS <- as.matrix(z) %*% as.matrix(beta)
   } else if (!is.null(RS)) {
     RS <- as.matrix(RS)
     if (message) message("External Risk Score information is used.")

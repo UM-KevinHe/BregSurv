@@ -1,26 +1,16 @@
-<div id="main" class="col-md-9" role="main">
-
 # Fit Cox Model with Multi-Domain Transfer Learning and Elastic Net Penalty
-
-<div class="ref-description section level2">
 
 Fits a Cox Proportional Hazards model that integrates external
 information (Transfer Learning) using an Elastic Net regularization
 path. The method incorporates prior knowledge from external coefficients
-(`beta`) and an optional weight matrix (`vcov`), controlled by the
-transfer learning parameter `eta`.
+(`beta`) and an optional weight matrix (`Q`), controlled by the transfer
+learning parameter `eta`.
 
 The objective function minimizes the negative partial likelihood plus a
-transfer learning penalty term \\(\\eta (\\beta - \\beta\_{ext})^T Q
-(\\beta - \\beta\_{ext})\\) and the Elastic Net penalty.
-
-</div>
-
-<div class="section level2">
+transfer learning penalty term \\\eta (\beta - \beta\_{ext})^T Q
+(\beta - \beta\_{ext})\\ and the Elastic Net penalty.
 
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cox_MDTL_enet(
@@ -29,7 +19,7 @@ cox_MDTL_enet(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   eta = NULL,
   alpha = NULL,
   lambda = NULL,
@@ -57,176 +47,163 @@ cox_MDTL_enet(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    Matrix of predictors (n x p).
+  Matrix of predictors (n x p).
 
--   delta:
+- delta:
 
-    Vector of event indicators (1 for event, 0 for censored).
+  Vector of event indicators (1 for event, 0 for censored).
 
--   time:
+- time:
 
-    Vector of observed survival times.
+  Vector of observed survival times.
 
--   stratum:
+- stratum:
 
-    Vector indicating the stratum membership. If NULL, all observations
-    are assumed to be in the same stratum.
+  Vector indicating the stratum membership. If NULL, all observations
+  are assumed to be in the same stratum.
 
--   beta:
+- beta:
 
-    Vector of external coefficients (length p). This represents the
-    prior knowledge or "source" model coefficients.
+  Vector of external coefficients representing the prior knowledge or
+  "source" model coefficients. If named, the names are matched against
+  `colnames(z)` and covariates absent from `beta` are zero-padded; if
+  unnamed, `beta` must have length `ncol(z)`.
 
--   vcov:
+- Q:
 
-    Optional weighting matrix (p x p) for the external information.
-    Typically the inverse covariance matrix (precision matrix) of the
-    external estimator. If NULL, defaults to the identity matrix.
+  Optional weighting matrix (p x p) for the external information.
+  Typically the inverse covariance (precision) matrix of the external
+  estimator, which should be symmetric positive-semidefinite. If named,
+  it is reordered and zero-padded to `colnames(z)`. If NULL, a masked
+  identity is used.
 
--   eta:
+- eta:
 
-    Scalar. The transfer learning parameter (&gt;= 0). Controls the
-    strength of the external information. `eta = 0` ignores external
-    info.
+  Scalar. The transfer learning parameter (\>= 0). Controls the strength
+  of the external information. `eta = 0` ignores external info.
 
--   alpha:
+- alpha:
 
-    The Elastic Net mixing parameter, with \\(0 \\le \\alpha \\le 1\\).
-    `alpha=1` is the lasso penalty, and `alpha=0` the ridge penalty.
+  The Elastic Net mixing parameter, with \\0 \le \alpha \le 1\\.
+  `alpha=1` is the lasso penalty, and `alpha=0` the ridge penalty.
 
--   lambda:
+- lambda:
 
-    Optional user-supplied lambda sequence. If NULL, the algorithm
-    generates its own sequence.
+  Optional user-supplied lambda sequence. If NULL, the algorithm
+  generates its own sequence.
 
--   nlambda:
+- nlambda:
 
-    The number of lambda values. Default is 100.
+  The number of lambda values. Default is 100.
 
--   lambda.min.ratio:
+- lambda.min.ratio:
 
-    Smallest value for lambda, as a fraction of lambda.max. Default
-    depends on sample size relative to features.
+  Smallest value for lambda, as a fraction of lambda.max. Default
+  depends on sample size relative to features.
 
--   lambda.early.stop:
+- lambda.early.stop:
 
-    Logical. Whether to stop early if the deviance changes minimally.
+  Logical. Whether to stop early if the deviance changes minimally.
 
--   tol:
+- tol:
 
-    Convergence threshold for coordinate descent.
+  Convergence threshold for coordinate descent.
 
--   Mstop:
+- Mstop:
 
-    Maximum number of iterations per lambda step.
+  Maximum number of iterations per lambda step.
 
--   max.total.iter:
+- max.total.iter:
 
-    Maximum total iterations across all lambda values.
+  Maximum total iterations across all lambda values.
 
--   group:
+- group:
 
-    Vector describing the grouping of the coefficients. Default is
-    `1:ncol(z)` (no grouping).
+  Vector describing the grouping of the coefficients. Default is
+  `1:ncol(z)` (no grouping).
 
--   group.multiplier:
+- group.multiplier:
 
-    Vector of multipliers for each group size.
+  Vector of multipliers for each group size.
 
--   standardize:
+- standardize:
 
-    Logical. Should the predictors be standardized before fitting?
-    Default is TRUE.
+  Logical. Should the predictors be standardized before fitting? Default
+  is TRUE.
 
--   nvar.max:
+- nvar.max:
 
-    Maximum number of variables allowed in the model.
+  Maximum number of variables allowed in the model.
 
--   group.max:
+- group.max:
 
-    Maximum number of groups allowed in the model.
+  Maximum number of groups allowed in the model.
 
--   stop.loss.ratio:
+- stop.loss.ratio:
 
-    Ratio of loss change to stop the path early.
+  Ratio of loss change to stop the path early.
 
--   actSet:
+- actSet:
 
-    Logical. Whether to use active set convergence strategy.
+  Logical. Whether to use active set convergence strategy.
 
--   actIter:
+- actIter:
 
-    Number of iterations for active set.
+  Number of iterations for active set.
 
--   actGroupNum:
+- actGroupNum:
 
-    Number of active groups.
+  Number of active groups.
 
--   actSetRemove:
+- actSetRemove:
 
-    Logical. Whether to remove inactive groups from the active set.
+  Logical. Whether to remove inactive groups from the active set.
 
--   returnX:
+- returnX:
 
-    Logical. If TRUE, returns the standardized design matrix and other
-    data details.
+  Logical. If TRUE, returns the standardized design matrix and other
+  data details.
 
--   trace.lambda:
+- trace.lambda:
 
-    Logical. If TRUE, prints the current lambda during fitting.
+  Logical. If TRUE, prints the current lambda during fitting.
 
--   message:
+- message:
 
-    Logical. If TRUE, prints warnings and progress messages.
+  Logical. If TRUE, prints warnings and progress messages.
 
--   data\_sorted:
+- data_sorted:
 
-    Logical. Internal flag indicating if data is already sorted by
-    time/stratum.
+  Logical. Internal flag indicating if data is already sorted by
+  time/stratum.
 
--   ...:
+- ...:
 
-    Additional arguments.
-
-</div>
-
-<div class="section level2">
+  Additional arguments.
 
 ## Value
 
 An object of class `"cox_MDTL_enet"` containing:
 
--   `beta`: Matrix of estimated coefficients (p x nlambda).
+- `beta`: Matrix of estimated coefficients (p x nlambda).
 
--   `lambda`: The sequence of lambda values used.
+- `lambda`: The sequence of lambda values used.
 
--   `likelihood`: Vector of negative partial log-likelihood values.
+- `likelihood`: Vector of negative partial log-likelihood values.
 
--   `df`: Degrees of freedom for each lambda.
+- `df`: Degrees of freedom for each lambda.
 
--   `W`: Matrix of exponential linear predictors.
+- `W`: Matrix of exponential linear predictors.
 
--   `iter`: Number of iterations for each lambda.
+- `iter`: Number of iterations for each lambda.
 
--   `data`: List of input data.
-
-</div>
-
-<div class="section level2">
+- `data`: List of input data.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 # \donttest{
@@ -240,15 +217,9 @@ cox_MDTL_enet_est <- cox_MDTL_enet(
   time = train_dat_highdim$time,
   stratum = train_dat_highdim$stratum,
   beta = beta_external_highdim,
-  vcov = NULL,
+  Q = NULL,
   eta = 0,
   alpha = 1
 )
 # }
 ```
-
-</div>
-
-</div>
-
-</div>

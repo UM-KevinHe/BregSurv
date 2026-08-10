@@ -90,6 +90,8 @@ coxkl_enet_bagging <- function(z, delta, time, stratum = NULL, RS = NULL, beta =
     stop("No external information is provided. Either RS or beta must be provided.")
   }
 
+  check_etas(etas)
+
   if (!is.null(RS)) RS <- as.matrix(RS)
 
   if (is.null(stratum)) {

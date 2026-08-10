@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cross-Validation for Cox MDTL Model
-
-<div class="ref-description section level2">
 
 Performs k-fold cross-validation to tune the hyperparameter `eta` for
 the Cox Proportional Hazards Model with Mahalanobis Distance Transfer
@@ -13,13 +9,7 @@ values using specified cv.criteria (e.g., Verweij & Van Houwelingen
 loss, C-index) to select the optimal weight for the external
 information.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cv.cox_MDTL(
@@ -28,7 +18,7 @@ cv.cox_MDTL(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas = NULL,
   tol = 1e-04,
   Mstop = 100,
@@ -41,132 +31,118 @@ cv.cox_MDTL(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    A numeric matrix or data frame of covariates (n x p).
+  A numeric matrix or data frame of covariates (n x p).
 
--   delta:
+- delta:
 
-    A numeric vector of event indicators (1 = event, 0 = censored).
+  A numeric vector of event indicators (1 = event, 0 = censored).
 
--   time:
+- time:
 
-    A numeric vector of observed times.
+  A numeric vector of observed times.
 
--   stratum:
+- stratum:
 
-    Optional numeric or factor vector indicating strata. If `NULL`, all
-    subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, all
+  subjects are assumed to be in the same stratum.
 
--   beta:
+- beta:
 
-    A numeric vector of external coefficients (length p).
+  A numeric vector of external coefficients (length p).
 
--   vcov:
+- Q:
 
-    Optional numeric matrix (p x p) representing the weighting matrix
-    \\(Q\\) for the Mahalanobis penalty. Typically the inverse
-    covariance matrix. If `NULL`, defaults to the identity matrix.
+  Optional numeric matrix (p x p) representing the weighting matrix
+  \\Q\\ for the Mahalanobis penalty. This should be a symmetric
+  positive-semidefinite *precision* matrix (typically the inverse
+  covariance / information matrix of the external estimator). If named,
+  it is reordered and zero-padded to `colnames(z)`. If `NULL`, a masked
+  identity is used.
 
--   etas:
+- etas:
 
-    A numeric vector of candidate `eta` values to be evaluated.
+  A numeric vector of candidate `eta` values to be evaluated.
 
--   tol:
+- tol:
 
-    Convergence tolerance for the optimization algorithm. Default is
-    1e-4.
+  Convergence tolerance for the optimization algorithm. Default is 1e-4.
 
--   Mstop:
+- Mstop:
 
-    Maximum number of iterations for the optimization. Default is 100.
+  Maximum number of iterations for the optimization. Default is 100.
 
--   nfolds:
+- nfolds:
 
-    Integer. Number of cross-validation folds. Default is 5.
+  Integer. Number of cross-validation folds. Default is 5.
 
--   cv.criteria:
+- cv.criteria:
 
-    Character string specifying the cross-validation criterion. Choices
-    are:
+  Character string specifying the cross-validation criterion. Choices
+  are:
 
-    -   `"V&VH"` (default): Verweij & Van Houwelingen partial likelihood
-        loss.
+  - `"V&VH"` (default): Verweij & Van Houwelingen partial likelihood
+    loss.
 
-    -   `"LinPred"`: Loss based on the prognostic performance of the
-        linear predictor.
+  - `"LinPred"`: Loss based on the prognostic performance of the linear
+    predictor.
 
-    -   `"CIndex_pooled"`: Harrell's C-index computed by pooling
-        predictions across folds.
+  - `"CIndex_pooled"`: Harrell's C-index computed by pooling predictions
+    across folds.
 
-    -   `"CIndex_foldaverage"`: Harrell's C-index computed within each
-        fold and averaged.
+  - `"CIndex_foldaverage"`: Harrell's C-index computed within each fold
+    and averaged.
 
--   c\_index\_stratum:
+- c_index_stratum:
 
-    Optional stratum vector. Required only when `cv.criteria` involves
-    stratified C-index calculation but the model itself is unstratified.
+  Optional stratum vector. Required only when `cv.criteria` involves
+  stratified C-index calculation but the model itself is unstratified.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, progress messages are printed.
+  Logical. If `TRUE`, progress messages are printed.
 
--   seed:
+- seed:
 
-    Optional integer. Random seed for reproducible fold assignment.
+  Optional integer. Random seed for reproducible fold assignment.
 
--   ...:
+- ...:
 
-    Additional arguments passed to the underlying fitting function
-    `cox_MDTL`.
-
-</div>
-
-<div class="section level2">
+  Additional arguments passed to the underlying fitting function
+  [`cox_MDTL`](https://um-kevinhe.github.io/BregSurv/reference/cox_MDTL.md).
 
 ## Value
 
 An object of class `"cv.Cox_MDTL"` containing:
 
--   `internal_stat`:
+- `internal_stat`:
 
-    A `data.frame` summarizing the performance metric (loss or C-index)
-    for each candidate `eta`.
+  A `data.frame` summarizing the performance metric (loss or C-index)
+  for each candidate `eta`.
 
--   `best`:
+- `best`:
 
-    A list containing the optimal results:
+  A list containing the optimal results:
 
-    -   `best_eta`: The selected eta value.
+  - `best_eta`: The selected eta value.
 
-    -   `best_beta`: The coefficient vector corresponding to the optimal
-        eta (refitted on full data).
+  - `best_beta`: The coefficient vector corresponding to the optimal eta
+    (refitted on full data).
 
-    -   `criteria`: The criterion used for selection.
+  - `criteria`: The criterion used for selection.
 
--   `criteria`:
+- `criteria`:
 
-    The selection criterion used.
+  The selection criterion used.
 
--   `nfolds`:
+- `nfolds`:
 
-    The number of folds used.
-
-</div>
-
-<div class="section level2">
+  The number of folds used.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -181,15 +157,9 @@ cv.cox_MDTL_est <- cv.cox_MDTL(
   delta = train_dat_lowdim$status,
   time = train_dat_lowdim$time,
   beta = beta_external_lowdim,
-  vcov = NULL,
+  Q = NULL,
   etas = eta_list,
   cv.criteria = "V&VH"
 )
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

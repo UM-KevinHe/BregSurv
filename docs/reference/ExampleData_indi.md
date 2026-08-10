@@ -1,59 +1,40 @@
-<div id="main" class="col-md-9" role="main">
-
 # Example internal/external Cox individual-level data
 
-<div class="ref-description section level2">
-
-A simulated survival dataset for illustrating `cox_indi()` and
-`cv.cox_indi()`. The object contains one internal cohort and one
-external cohort, each stratified into multiple strata, along with the
-true coefficient vector used in simulation.
-
-</div>
-
-<div class="section level2">
+A simulated survival dataset for illustrating
+[`cox_indi()`](https://um-kevinhe.github.io/BregSurv/reference/cox_indi.md)
+and
+[`cv.cox_indi()`](https://um-kevinhe.github.io/BregSurv/reference/cv.cox_indi.md).
+The object contains one internal cohort and one external cohort, each
+stratified into multiple strata, along with the true coefficient vector
+used in simulation.
 
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 data(ExampleData_indi)
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Format
 
 A list containing:
 
--   internal:
+- internal:
 
-    List with elements `z`, `time`, `status`, `stratum`.
+  List with elements `z`, `time`, `status`, `stratum`.
 
--   external:
+- external:
 
-    List with elements `z`, `time`, `status`, `stratum`.
+  List with elements `z`, `time`, `status`, `stratum`.
 
--   beta\_true:
+- beta_true:
 
-    Numeric vector (length p) of true coefficients.
+  Numeric vector (length p) of true coefficients.
 
--   meta:
+- meta:
 
-    List of simulation settings for internal and external cohorts.
-
-</div>
-
-<div class="section level2">
+  List of simulation settings for internal and external cohorts.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 data(ExampleData_indi)
@@ -76,9 +57,3 @@ str(ExampleData_indi)
 #>   ..$ status : num [1:2000] 1 0 0 1 0 1 0 1 0 0 ...
 #>   ..$ stratum: int [1:2000] 1 1 1 1 1 1 1 1 1 1 ...
 ```
-
-</div>
-
-</div>
-
-</div>

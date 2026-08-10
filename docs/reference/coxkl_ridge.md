@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cox Proportional Hazards Model with Ridge Penalty and External Information
-
-<div class="ref-description section level2">
 
 Fits a Cox proportional hazards model using a Ridge (L2) penalty on all
 covariates, while integrating external information via Kullback–Leibler
@@ -12,13 +8,7 @@ This function is useful for high-dimensional data or situations with
 collinearity, allowing the incorporation of prior knowledge (external
 coefficients or risk scores) to improve estimation.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 coxkl_ridge(
@@ -42,130 +32,115 @@ coxkl_ridge(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    Numeric matrix of covariates. Rows represent individuals and columns
-    represent predictors.
+  Numeric matrix of covariates. Rows represent individuals and columns
+  represent predictors.
 
--   delta:
+- delta:
 
-    Numeric vector of event indicators (1 = event, 0 = censored).
+  Numeric vector of event indicators (1 = event, 0 = censored).
 
--   time:
+- time:
 
-    Numeric vector of observed times (event or censoring).
+  Numeric vector of observed times (event or censoring).
 
--   stratum:
+- stratum:
 
-    Optional numeric or factor vector specifying strata. If `NULL`, all
-    observations are in the same stratum.
+  Optional numeric or factor vector specifying strata. If `NULL`, all
+  observations are in the same stratum.
 
--   RS:
+- RS:
 
-    Optional numeric vector or matrix of external risk scores. If not
-    provided, `beta` must be supplied.
+  Optional numeric vector or matrix of external risk scores. If not
+  provided, `beta` must be supplied.
 
--   beta:
+- beta:
 
-    Optional numeric vector of externally derived coefficients (length
-    equal to `ncol(z)`). If provided, used to calculate risk scores. If
-    not provided, `RS` must be supplied.
+  Optional numeric vector of externally derived coefficients (length
+  equal to `ncol(z)`). If provided, used to calculate risk scores. If
+  not provided, `RS` must be supplied.
 
--   eta:
+- eta:
 
-    Non-negative scalar controlling the strength of external information
-    integration. `eta = 0` implies a standard Ridge Cox model.
+  Non-negative scalar controlling the strength of external information
+  integration. `eta = 0` implies a standard Ridge Cox model.
 
--   lambda:
+- lambda:
 
-    Optional numeric scalar or vector of penalty parameters. If `NULL`,
-    a sequence is generated automatically.
+  Optional numeric scalar or vector of penalty parameters. If `NULL`, a
+  sequence is generated automatically.
 
--   nlambda:
+- nlambda:
 
-    Integer. Number of lambda values to generate if `lambda` is `NULL`.
-    Default is 100.
+  Integer. Number of lambda values to generate if `lambda` is `NULL`.
+  Default is 100.
 
--   penalty.factor:
+- penalty.factor:
 
-    Numeric scalar in `[0, 1)`. Controls the internal mixing parameter
-    used to generate the lambda sequence when `lambda = NULL`. A value
-    close to 1 generates a sequence suitable for Ridge-like behavior.
+  Numeric scalar in `[0, 1)`. Controls the internal mixing parameter
+  used to generate the lambda sequence when `lambda = NULL`. A value
+  close to 1 generates a sequence suitable for Ridge-like behavior.
 
--   tol:
+- tol:
 
-    Convergence tolerance for the iterative estimation algorithm.
-    Default is 1e-4.
+  Convergence tolerance for the iterative estimation algorithm. Default
+  is 1e-4.
 
--   Mstop:
+- Mstop:
 
-    Integer. Maximum number of iterations for estimation. Default is 50.
+  Integer. Maximum number of iterations for estimation. Default is 50.
 
--   backtrack:
+- backtrack:
 
-    Logical. If `TRUE`, uses backtracking line search during
-    optimization.
+  Logical. If `TRUE`, uses backtracking line search during optimization.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, progress messages are printed during model
-    fitting.
+  Logical. If `TRUE`, progress messages are printed during model
+  fitting.
 
--   data\_sorted:
+- data_sorted:
 
-    Logical. Internal optimization. If `TRUE`, assumes input data is
-    already sorted by strata and time.
+  Logical. Internal optimization. If `TRUE`, assumes input data is
+  already sorted by strata and time.
 
--   beta\_initial:
+- beta_initial:
 
-    Optional numeric vector. Initial values for the coefficients.
-    Default is 0.
+  Optional numeric vector. Initial values for the coefficients. Default
+  is 0.
 
--   ...:
+- ...:
 
-    Additional arguments.
-
-</div>
-
-<div class="section level2">
+  Additional arguments.
 
 ## Value
 
 An object of class `"coxkl_ridge"` containing:
 
--   `lambda`:
+- `lambda`:
 
-    The sequence of lambda values used for estimation.
+  The sequence of lambda values used for estimation.
 
--   `beta`:
+- `beta`:
 
-    A matrix of estimated coefficients (p x nlambda).
+  A matrix of estimated coefficients (p x nlambda).
 
--   `linear.predictors`:
+- `linear.predictors`:
 
-    A matrix of linear predictors (n x nlambda), restored to the
-    original data order.
+  A matrix of linear predictors (n x nlambda), restored to the original
+  data order.
 
--   `likelihood`:
+- `likelihood`:
 
-    A vector of negative log-partial likelihoods for each lambda.
+  A vector of negative log-partial likelihoods for each lambda.
 
--   `data`:
+- `data`:
 
-    A list containing the input data used (`z`, `time`, `delta`,
-    `stratum`).
-
-</div>
-
-<div class="section level2">
+  A list containing the input data used (`z`, `time`, `delta`,
+  `stratum`).
 
 ## Details
 
@@ -182,13 +157,7 @@ Unlike Lasso, Ridge regression does not perform variable selection
 making it suitable for retaining all features while controlling
 overfitting.
 
-</div>
-
-<div class="section level2">
-
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -206,9 +175,3 @@ coxkl_ridge_est <- coxkl_ridge(
 )
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

@@ -166,8 +166,7 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   if (is.null(etas))
     stop("etas must be provided.", call. = FALSE)
   etas <- sort(as.numeric(etas))
-  if (any(!is.finite(etas)) || any(etas < 0))
-    stop("All etas must be finite and nonnegative.", call. = FALSE)
+  check_etas(etas)
 
   if (is.null(lambda.min.ratio))
     lambda.min.ratio <- ifelse(n_all < p, 0.05, 1e-03)

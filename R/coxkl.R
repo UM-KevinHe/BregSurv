@@ -71,32 +71,29 @@
 #' }
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' @importFrom Rcpp evalCpp
-#' 
+#'
 #' @export
 coxkl <- function(z, delta, time, stratum = NULL,
-                  RS = NULL, beta = NULL, 
+                  RS = NULL, beta = NULL,
                   etas, tol = 1.0e-4, Mstop = 100,
                   backtrack = FALSE,
                   message = FALSE,
                   data_sorted = FALSE,
                   beta_initial = NULL){
-  
+
   if (is.null(RS) && is.null(beta)) {
     stop("No external information is provided. Either RS or beta must be provided.")
   } else if (is.null(RS) && !is.null(beta)) {
-    if (length(beta) == ncol(z)) {
-      if (message) message("External beta information is used.")
-      RS <- as.matrix(z) %*% as.matrix(beta)
-    } else {
-      stop("The dimension of beta does not match the number of columns in z.")
-    }
+    beta <- align_beta(z, beta)
+    if (message) message("External beta information is used.")
+    RS <- as.matrix(z) %*% as.matrix(beta)
   } else if (!is.null(RS)) {
     RS <- as.matrix(RS)
     if (message) message("External Risk Score information is used.")
   }
-  
+
   input_data <- list(z = z, time = time, delta = delta, stratum = stratum, RS = RS)
-  
+
   if (!data_sorted) {
     ## ---- Sorting Section ----
     if (is.null(stratum)) {
@@ -118,57 +115,58 @@ coxkl <- function(z, delta, time, stratum = NULL,
     stratum <- as.numeric(stratum)
     RS <- as.numeric(RS)
   }
-  
+
+  check_etas(etas)
   etas <- sort(etas)
   n_eta <- length(etas)
   LP_mat <- matrix(NA, nrow = nrow(z_mat), ncol = n_eta)
   beta_mat <- matrix(NA, nrow = ncol(z_mat), ncol = n_eta)
   likelihood_mat <- rep(NA, n_eta)
-  
+
   eta_names <- round(etas, 4)
   colnames(LP_mat) <- eta_names
   colnames(beta_mat) <- eta_names
   names(likelihood_mat) <- eta_names
-  
+
   n.each_stratum <- as.numeric(table(stratum))
   delta_tilde <- calculateDeltaTilde(delta, time, RS, n.each_stratum)
-  
+
   N <- nrow(z_mat)
-  
+
   if (is.null(beta_initial)){
     beta_initial <- rep(0, ncol(z_mat))
   }
-  
+
   if (message) {
     cat("Cross-validation over eta sequence:\n")
     pb <- txtProgressBar(min = 0, max = n_eta, style = 3, width = 30)
   }
-  
+
   for (i in seq_along(etas)){  #"etas" already in ascending order
     eta <- etas[i]
     delta_eta <- (eta * delta_tilde + delta)/(1 + eta)
-    
+
     beta_est <- KL_Cox_Estimate_cpp(N = N, z_mat, delta, delta_eta, n.each_stratum, eta, beta_initial,
                                     tol, Mstop, lambda = 0, backtrack = backtrack, message = message)
     LP <- z_mat %*% as.matrix(beta_est)
     LP_mat[, i] <- LP
     beta_mat[, i] <- beta_est
     likelihood_mat[i] <- pl_cal_theta(LP, delta, n.each_stratum)
-    
+
     beta_initial <- beta_est  # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   if (message) close(pb)
-  
+
   if (data_sorted == FALSE){
     LinPred_original <- matrix(NA_real_, nrow = length(time_order), ncol = n_eta)
     LinPred_original[time_order, ] <- LP_mat
   } else {
     LinPred_original <- LP_mat
   }
-  
+
   if (is.null(input_data$stratum)) input_data$stratum <- rep(1, nrow(z))
-  
+
   structure(list(
     eta = etas,
     beta = beta_mat,

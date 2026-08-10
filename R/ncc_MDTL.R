@@ -13,19 +13,19 @@
 #' The objective function minimizes the negative conditional log-likelihood plus
 #' a Mahalanobis distance penalty:
 #' \deqn{P(\beta) = \frac{\eta}{2} (\beta - \beta_{ext})^T Q (\beta - \beta_{ext})}
-#' where \eqn{Q} is the weighting matrix (identity if \code{vcov} is \code{NULL}).
+#' where \eqn{Q} is the weighting matrix (identity if \code{Q} is \code{NULL}).
 #'
 #' \itemize{
 #'   \item Setting \code{etas = 0} recovers the standard CLR (no external information).
 #'   \item Larger \code{eta} enforces stronger agreement with \code{beta}.
-#'   \item If \code{vcov = NULL}, \eqn{Q = I} (Euclidean/Ridge-type shrinkage towards \code{beta}).
+#'   \item If \code{Q = NULL}, \eqn{Q = I} (Euclidean/Ridge-type shrinkage towards \code{beta}).
 #' }
 #'
 #' @param y Numeric vector of binary outcomes (0 = control, 1 = case).
 #' @param z Numeric matrix of covariates.
 #' @param stratum Numeric or factor vector defining the matched sets (strata). \strong{Required}.
 #' @param beta Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.
-#' @param vcov Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
+#' @param Q Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
 #'   weighting matrix \eqn{Q} in the Mahalanobis penalty. Typically the inverse of the
 #'   external covariance (precision matrix). If \code{NULL}, defaults to the identity matrix.
 #' @param etas Numeric vector of tuning parameters to evaluate. \strong{Required}.
@@ -58,13 +58,13 @@
 #'   z      = z,
 #'   stratum = sets,
 #'   beta   = beta_ext,
-#'   vcov   = NULL,
+#'   Q      = NULL,
 #'   etas   = eta_list
 #' )
 #' }
 #' @export
 ncc_MDTL <- function(y, z, stratum,
-                         beta, vcov = NULL, etas,
+                         beta, Q = NULL, etas,
                          tol = 1.0e-4, Mstop = 50,
                          backtrack = FALSE,
                          message = FALSE,
@@ -72,6 +72,8 @@ ncc_MDTL <- function(y, z, stratum,
 
   z <- as.matrix(z)
   y <- as.numeric(y)
+
+  check_etas(etas)
 
   if (missing(stratum) || is.null(stratum)) {
     stop("stratum must be provided for ncc_MDTL in 1:m matched settings.", call. = FALSE)
@@ -87,7 +89,7 @@ ncc_MDTL <- function(y, z, stratum,
     time         = time,
     stratum      = stratum,
     beta         = beta,
-    vcov         = vcov,
+    Q            = Q,
     etas         = etas,
     tol          = tol,
     Mstop        = Mstop,

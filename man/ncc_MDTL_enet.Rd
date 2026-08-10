@@ -9,7 +9,7 @@ ncc_MDTL_enet(
   z,
   stratum,
   beta,
-  vcov = NULL,
+  Q = NULL,
   eta = NULL,
   alpha = NULL,
   lambda = NULL,
@@ -44,7 +44,7 @@ ncc_MDTL_enet(
 
 \item{beta}{Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.}
 
-\item{vcov}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
+\item{Q}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
 weighting matrix \eqn{Q}. Typically the precision matrix of the external estimator.
 If \code{NULL}, defaults to the identity matrix.}
 
@@ -130,7 +130,7 @@ Elastic Net penalty.
 \item If \code{eta = 0}, the method reduces to a standard Elastic Net CLR.
 \item If \code{alpha = 1}, the penalty is Lasso.
 \item If \code{alpha} is close to 0, the penalty approaches Ridge.
-\item If \code{vcov = NULL}, \eqn{Q = I} (Euclidean distance shrinkage towards \code{beta}).
+\item If \code{Q = NULL}, \eqn{Q = I} (Euclidean distance shrinkage towards \code{beta}).
 }
 }
 \examples{
@@ -148,7 +148,7 @@ fit <- ncc_MDTL_enet(
   z       = z,
   stratum = sets,
   beta    = beta_ext,
-  vcov    = NULL,
+  Q       = NULL,
   eta     = 0,
   alpha   = 1
 )

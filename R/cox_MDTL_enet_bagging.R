@@ -7,7 +7,7 @@
 #' sampling variability and improves robustness relative to a single data split.
 #'
 #' External information is supplied via a fixed coefficient vector (\code{beta})
-#' and, optionally, a weighting matrix (\code{vcov}). Both represent external
+#' and, optionally, a weighting matrix (\code{Q}). Both represent external
 #' prior information and are \strong{not} resampled across replicates.
 #'
 #' @param z Matrix of predictors of dimension \code{n x p}.
@@ -16,7 +16,7 @@
 #' @param stratum Optional stratum indicator vector for stratified Cox modeling.
 #' @param beta External coefficient vector of length \code{p}. Treated as fixed
 #'   prior information and not resampled across bootstrap replicates.
-#' @param vcov Optional weighting matrix (\code{p x p}) used in the Mahalanobis
+#' @param Q Optional weighting matrix (\code{p x p}) used in the Mahalanobis
 #'   distance formulation.
 #' @param etas Vector of \code{eta} values for transfer-learning shrinkage.
 #' @param alpha Elastic-net mixing parameter between \code{0} and \code{1}.
@@ -61,7 +61,7 @@
 #'   time         = train_dat_highdim$time,
 #'   stratum      = train_dat_highdim$stratum,
 #'   beta         = beta_external_highdim,
-#'   vcov         = NULL,
+#'   Q            = NULL,
 #'   etas         = etas,
 #'   alpha        = 0.5,
 #'   B            = 5,
@@ -72,7 +72,7 @@
 #' }
 #'
 #' @export
-cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, vcov = NULL,
+cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL,
                                   etas, alpha = 1.0, B = 100, lambda = NULL, nlambda = 100,
                                   lambda.min.ratio = ifelse(nrow(z) < ncol(z), 0.01, 1e-04),
                                   nfolds = 5,
@@ -94,6 +94,9 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, v
     stop("Length of external beta must match number of columns in z.")
   }
 
+  if (missing(etas) || is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
+
   if (is.null(stratum)) {
     stratum_full <- rep(1, n)
   } else {
@@ -106,7 +109,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, v
   dots <- list(...)
 
   # Define worker function
-  boot_one <- function(i, z, delta, time, stratum_full, beta, vcov, etas, alpha,
+  boot_one <- function(i, z, delta, time, stratum_full, beta, Q, etas, alpha,
                        lambda, nlambda, lambda.min.ratio, nfolds, cv.criteria,
                        c_index_stratum, p, seed, dots) {
     if (!is.null(seed)) set.seed(seed + i)
@@ -118,7 +121,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, v
     time_b    <- time[boot_idx]
     stratum_b <- stratum_full[boot_idx]
 
-    # Note: 'beta' and 'vcov' are EXTERNAL information, so they are fixed and NOT resampled.
+    # Note: 'beta' and 'Q' are EXTERNAL information, so they are fixed and NOT resampled.
 
     c_idx_strat_b <- NULL
     if (!is.null(c_index_stratum)) {
@@ -133,7 +136,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, v
           time = time_b,
           stratum = stratum_b,
           beta = beta,
-          vcov = vcov,
+          Q = Q,
           etas = etas,
           alpha = alpha,
           lambda = lambda,
@@ -165,7 +168,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, v
     res_list <- vector("list", B)
     for (i in seq_len(B)) {
       if (!is.null(seed)) set.seed(seed + i)
-      res_list[[i]] <- boot_one(i, z, delta, time, stratum_full, beta, vcov, etas, alpha,
+      res_list[[i]] <- boot_one(i, z, delta, time, stratum_full, beta, Q, etas, alpha,
                                 lambda, nlambda, lambda.min.ratio, nfolds, cv.criteria,
                                 c_index_stratum, p, seed, dots)
       if (message) setTxtProgressBar(pb, i)
@@ -186,7 +189,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, v
     res_list <- parallel::parLapply(
       cl, seq_len(B), boot_one,
       z = z, delta = delta, time = time, stratum_full = stratum_full,
-      beta = beta, vcov = vcov, etas = etas, alpha = alpha,
+      beta = beta, Q = Q, etas = etas, alpha = alpha,
       lambda = lambda, nlambda = nlambda, lambda.min.ratio = lambda.min.ratio,
       nfolds = nfolds, cv.criteria = cv.criteria,
       c_index_stratum = c_index_stratum, p = p, seed = seed, dots = dots

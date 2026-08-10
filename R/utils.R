@@ -44,6 +44,186 @@ generate_eta <- function(method = "exponential", n = 10, max_eta = 5, min_eta = 
 }
 
 
+#' Validate an integration-weight argument (internal)
+#'
+#' Checks that a tuning weight (\code{eta}/\code{etas}) is numeric, finite, and
+#' non-negative. \code{eta}/\code{etas} is the external-borrowing weight and is
+#' only meaningful for non-negative values. Callers handle the \code{NULL} case
+#' according to their own convention (required vs. default) before calling this.
+#'
+#' @param etas Numeric vector (or scalar) of weights to validate.
+#' @param scalar Logical; if \code{TRUE}, also require a single value.
+#' @param arg Name used for \code{etas} in error messages.
+#' @return \code{etas}, invisibly.
+#' @keywords internal
+#' @noRd
+check_etas <- function(etas, scalar = FALSE, arg = "etas") {
+  if (!is.numeric(etas)) {
+    stop(sprintf("'%s' must be numeric.", arg), call. = FALSE)
+  }
+  if (scalar && length(etas) != 1L) {
+    stop(sprintf("'%s' must be a single non-negative scalar.", arg), call. = FALSE)
+  }
+  if (length(etas) == 0L || any(!is.finite(etas)) || any(etas < 0)) {
+    stop(sprintf("'%s' must be finite and non-negative.", arg), call. = FALSE)
+  }
+  invisible(etas)
+}
+
+
+# Internal worker shared by align_beta() and align_beta_Q().
+# Returns list(beta = <length-ncol(z), ordered to colnames(z)>, provided = <logical>).
+.align_beta <- function(z, beta, arg = "beta") {
+  p <- ncol(z)
+  if (is.null(p)) {
+    stop("z must be a matrix or data frame with columns.", call. = FALSE)
+  }
+  znames <- colnames(z)
+
+  # Accept a one-column matrix carrying row names as a named vector.
+  if (is.matrix(beta) && ncol(beta) == 1L) {
+    bn <- rownames(beta)
+    beta <- beta[, 1]
+    if (is.null(names(beta))) names(beta) <- bn
+  }
+  bnames <- names(beta)
+  beta <- as.numeric(beta)
+
+  if (!is.null(bnames) && !is.null(znames)) {
+    if (anyDuplicated(bnames)) {
+      stop(sprintf("'%s' has duplicated names.", arg), call. = FALSE)
+    }
+    unknown <- setdiff(bnames, znames)
+    if (length(unknown)) {
+      stop(sprintf("Names in '%s' do not match any covariate in z: %s.",
+                   arg, paste(unknown, collapse = ", ")), call. = FALSE)
+    }
+    beta_full <- rep(0, p)
+    names(beta_full) <- znames
+    beta_full[bnames] <- beta
+    provided <- znames %in% bnames
+    if (!all(provided)) {
+      message(sprintf(
+        "%d covariate(s) absent from external '%s' were set to 0: %s.",
+        sum(!provided), arg, paste(znames[!provided], collapse = ", ")))
+    }
+  } else {
+    if (length(beta) != p) {
+      stop(sprintf(
+        paste0("Length of '%s' (%d) does not match the number of covariates in z (%d). ",
+               "Provide a named '%s' (names matching colnames(z)) to auto-align a partial ",
+               "external vector, or pad it to length %d."),
+        arg, length(beta), p, arg, p), call. = FALSE)
+    }
+    beta_full <- beta
+    if (!is.null(znames)) names(beta_full) <- znames
+    provided <- rep(TRUE, p)
+  }
+  list(beta = beta_full, provided = provided)
+}
+
+
+#' Align an external coefficient vector to the internal covariate space
+#'
+#' @description
+#' Reconciles an external coefficient vector \code{beta} with the covariates of
+#' the internal design matrix \code{z}, so that external information supplied on a
+#' subset (or a differently ordered set) of covariates is placed correctly. When
+#' \code{beta} carries names, they are matched against \code{colnames(z)} and any
+#' covariate absent from \code{beta} is filled with 0 (the external source is
+#' treated as providing no information for that covariate). When \code{beta} is
+#' unnamed (or \code{z} has no column names), it is aligned positionally and must
+#' already have length \code{ncol(z)}.
+#'
+#' @param z Internal covariate matrix or data frame. Its columns define the
+#'   target coefficient space; column names, when present, are used for matching.
+#' @param beta External coefficient vector (optionally named).
+#' @param arg Name used for \code{beta} in error messages.
+#'
+#' @return A numeric vector of length \code{ncol(z)}, ordered to \code{colnames(z)}.
+#' @seealso \code{\link{align_beta_Q}} for the Mahalanobis-distance setting.
+#' @export
+align_beta <- function(z, beta, arg = "beta") {
+  .align_beta(z, beta, arg = arg)$beta
+}
+
+
+#' Align an external coefficient vector and weighting matrix for MDTL
+#'
+#' @description
+#' Extends \code{\link{align_beta}} to the Mahalanobis-distance transfer-learning
+#' (MDTL) setting, where the external information is a coefficient vector
+#' \code{beta} together with a symmetric positive-semidefinite weighting
+#' (precision) matrix \code{Q}. \code{beta} is aligned to \code{colnames(z)}
+#' exactly as in \code{\link{align_beta}}. \code{Q}, when supplied, is checked for
+#' symmetry and positive-semidefiniteness and, if named, reordered and
+#' zero-padded to the same covariate space; rows and columns for covariates the
+#' external source did not estimate are set to 0 so those coordinates are left
+#' unpenalized. When \code{Q} is \code{NULL}, a \emph{masked identity} is
+#' returned: a diagonal matrix with 1 on covariates actually supplied by
+#' \code{beta} and 0 on padded positions. This ensures that padded-zero
+#' coefficients are not penalized as if they were genuine external information.
+#'
+#' @param z Internal covariate matrix or data frame.
+#' @param beta External coefficient vector (optionally named).
+#' @param Q Optional weighting/precision matrix (optionally with dimnames). If
+#'   \code{NULL}, a masked identity is used.
+#' @param arg_beta,arg_Q Names used for \code{beta} and \code{Q} in error messages.
+#'
+#' @return A list with components \code{beta} (numeric, length \code{ncol(z)}),
+#'   \code{Q} (\code{ncol(z)} by \code{ncol(z)} matrix), and \code{provided}
+#'   (logical mask of covariates supplied by the external source).
+#' @seealso \code{\link{align_beta}}
+#' @export
+align_beta_Q <- function(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q") {
+  al <- .align_beta(z, beta, arg = arg_beta)
+  p <- length(al$beta)
+  znames <- colnames(z)
+
+  if (is.null(Q)) {
+    Q_full <- diag(as.numeric(al$provided), nrow = p)
+  } else {
+    Q <- as.matrix(Q)
+    if (!isSymmetric(unname(Q), tol = 1e-8)) {
+      stop(sprintf("'%s' must be symmetric.", arg_Q), call. = FALSE)
+    }
+    qnames <- rownames(Q)
+    if (!is.null(qnames) && !is.null(znames)) {
+      if (anyDuplicated(qnames)) {
+        stop(sprintf("'%s' has duplicated names.", arg_Q), call. = FALSE)
+      }
+      unknown <- setdiff(qnames, znames)
+      if (length(unknown)) {
+        stop(sprintf("Names of '%s' do not match any covariate in z: %s.",
+                     arg_Q, paste(unknown, collapse = ", ")), call. = FALSE)
+      }
+      if (!is.null(colnames(Q)) && !setequal(colnames(Q), qnames)) {
+        stop(sprintf("Row and column names of '%s' must match.", arg_Q), call. = FALSE)
+      }
+      if (!is.null(colnames(Q))) {
+        Q <- Q[qnames, qnames, drop = FALSE]
+      }
+      Q_full <- matrix(0, p, p)
+      idx <- match(qnames, znames)
+      Q_full[idx, idx] <- Q
+    } else {
+      if (nrow(Q) != p || ncol(Q) != p) {
+        stop(sprintf("'%s' must be a %d by %d matrix (or carry names matching colnames(z)).",
+                     arg_Q, p, p), call. = FALSE)
+      }
+      Q_full <- Q
+    }
+    ev <- eigen(Q_full, symmetric = TRUE, only.values = TRUE)$values
+    if (min(ev) < -1e-8) {
+      stop(sprintf("'%s' must be positive semi-definite.", arg_Q), call. = FALSE)
+    }
+  }
+  if (!is.null(znames)) {
+    dimnames(Q_full) <- list(znames, znames)
+  }
+  list(beta = al$beta, Q = Q_full, provided = al$provided)
+}
+
 
 c_stat_stratcox <- function(time, xbeta, stratum, delta) {
   stratum <- factor(stratum)
@@ -612,7 +792,7 @@ loss.coxkl_highdim <- function(delta, y.hat, stratum, total = TRUE){
 #' Setup Lambda Sequence for Cox–MDTL Model
 #' @keywords internal
 #' @noRd
-setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, vcov, Qbeta_ext,
+setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, Q, Qbeta_ext,
                              group, group.multiplier, n.each_stratum, alpha,
                              eta, nlambda, lambda.min.ratio) {
   n <- nrow(Z)
@@ -623,9 +803,9 @@ setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, vcov,
 
   if (K1[1]!=0) {
     nullFit <- cox_MDTL(Z[, group == 0, drop = FALSE], delta, time, stratum,
-                        beta = beta_ext, vcov = vcov, etas = eta)
+                        beta = beta_ext, Q = Q, etas = eta)
     beta_U_star <- as.numeric(nullFit$beta)  #low-dim unpenalized beta estimate
-    Qbeta_Ustar <- as.vector(vcov[, group == 0, drop = FALSE] %*% beta_U_star) #for calculate lambda_max
+    Qbeta_Ustar <- as.vector(Q[, group == 0, drop = FALSE] %*% beta_U_star) #for calculate lambda_max
 
     LinPred <- as.numeric(nullFit$linear.predictors)
     beta.init <- c(beta_U_star, rep(0, length(beta.init) - length(beta_U_star)))

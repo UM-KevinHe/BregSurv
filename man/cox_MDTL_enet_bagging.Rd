@@ -10,7 +10,7 @@ cox_MDTL_enet_bagging(
   time,
   stratum = NULL,
   beta = NULL,
-  vcov = NULL,
+  Q = NULL,
   etas,
   alpha = 1,
   B = 100,
@@ -38,7 +38,7 @@ cox_MDTL_enet_bagging(
 \item{beta}{External coefficient vector of length \code{p}. Treated as fixed
 prior information and not resampled across bootstrap replicates.}
 
-\item{vcov}{Optional weighting matrix (\code{p x p}) used in the Mahalanobis
+\item{Q}{Optional weighting matrix (\code{p x p}) used in the Mahalanobis
 distance formulation.}
 
 \item{etas}{Vector of \code{eta} values for transfer-learning shrinkage.}
@@ -91,7 +91,7 @@ sampling variability and improves robustness relative to a single data split.
 }
 \details{
 External information is supplied via a fixed coefficient vector (\code{beta})
-and, optionally, a weighting matrix (\code{vcov}). Both represent external
+and, optionally, a weighting matrix (\code{Q}). Both represent external
 prior information and are \strong{not} resampled across replicates.
 }
 \examples{
@@ -108,7 +108,7 @@ bag.out <- cox_MDTL_enet_bagging(
   time         = train_dat_highdim$time,
   stratum      = train_dat_highdim$stratum,
   beta         = beta_external_highdim,
-  vcov         = NULL,
+  Q            = NULL,
   etas         = etas,
   alpha        = 0.5,
   B            = 5,

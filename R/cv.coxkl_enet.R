@@ -104,15 +104,16 @@ cv.coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL
   
   ## Input check & data preparation
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
-  
+
   if (alpha > 1 | alpha <= 0) stop("alpha must be in (0,1]", call. = FALSE)
-  
+
   if (is.null(RS) && is.null(beta)) {
     stop("No external information is provided. Either RS or beta must be provided.")
   } else if (is.null(RS) && !is.null(beta)) {
-    if (length(beta) != ncol(z)) stop("beta dimension mismatch with z.", call. = FALSE)
+    beta <- align_beta(z, beta)
     RS <- as.matrix(z) %*% as.matrix(beta)
   } else {
     RS <- as.matrix(RS)

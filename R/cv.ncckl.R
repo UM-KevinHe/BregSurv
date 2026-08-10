@@ -143,7 +143,7 @@ cv.ncckl <- function(y, z, stratum,
                         ...) {
 
   cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
-  method   <- match.arg(tolower(method), c("exact", "breslow"))
+  method   <- match.arg(tolower(method), c("breslow", "exact"))
 
   y <- as.numeric(y)
   z <- as.matrix(z)
@@ -151,12 +151,11 @@ cv.ncckl <- function(y, z, stratum,
   if (is.null(beta)) {
     stop("The 'beta' (external coefficients) must be provided for cv.ncckl.", call. = FALSE)
   }
-  if (length(beta) != ncol(z)) {
-    stop("The dimension of beta does not match the number of columns in z.")
-  }
+  beta <- align_beta(z, beta)
   if (is.null(etas)) {
     stop("etas must be provided.", call. = FALSE)
   }
+  check_etas(etas)
   etas   <- sort(etas)
   n_eta  <- length(etas)
 

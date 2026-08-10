@@ -10,7 +10,7 @@ cox_MDTL_enet.StabSelect(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas = NULL,
   alpha = 1,
   lambda = NULL,
@@ -39,9 +39,11 @@ all subjects are assumed to be in the same stratum.}
 
 \item{beta}{A numeric vector of external coefficients (length p).}
 
-\item{vcov}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-defaults to the identity matrix.}
+\item{Q}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
+for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
+\emph{precision} matrix (typically the inverse covariance / information matrix of
+the external estimator). If named, it is reordered and zero-padded to
+\code{colnames(z)}. If \code{NULL}, a masked identity is used.}
 
 \item{etas}{A numeric vector of candidate \code{eta} values to be evaluated.}
 
@@ -115,7 +117,7 @@ mdtl.StabSelect <- cox_MDTL_enet.StabSelect(
   time         = train_dat_highdim$time,
   stratum      = train_dat_highdim$stratum,
   beta         = beta_external_highdim,
-  vcov         = NULL,
+  Q            = NULL,
   etas         = eta_list,
   cv.criteria  = "CIndex_pooled",
   B            = 20,

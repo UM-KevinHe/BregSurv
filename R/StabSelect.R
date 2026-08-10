@@ -64,6 +64,7 @@ coxkl_enet.StabSelect <- function(z, delta, time, stratum = NULL, RS = NULL, bet
 
   if (!is.null(seed)) set.seed(seed)
   cv.criteria <- match.arg(cv.criteria)
+  check_etas(etas)
 
   z <- as.matrix(z)
   n_full <- nrow(z)
@@ -249,7 +250,7 @@ coxkl_enet.StabSelect <- function(z, delta, time, stratum = NULL, RS = NULL, bet
 #'   time         = train_dat_highdim$time,
 #'   stratum      = train_dat_highdim$stratum,
 #'   beta         = beta_external_highdim,
-#'   vcov         = NULL,
+#'   Q            = NULL,
 #'   etas         = eta_list,
 #'   cv.criteria  = "CIndex_pooled",
 #'   B            = 20,
@@ -262,7 +263,7 @@ coxkl_enet.StabSelect <- function(z, delta, time, stratum = NULL, RS = NULL, bet
 #'
 #' @export
 cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
-                                     beta, vcov = NULL,
+                                     beta, Q = NULL,
                                      etas = NULL, alpha = 1.0,
                                      lambda = NULL, nlambda = 100, lambda.min.ratio = 0.1,
                                      nfolds = 5,
@@ -276,6 +277,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
 
   if (!is.null(seed)) set.seed(seed)
   cv.criteria <- match.arg(cv.criteria)
+  if (!is.null(etas)) check_etas(etas)
 
   z <- as.matrix(z)
   n_full <- nrow(z)
@@ -292,7 +294,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
     lambda_max_candidates <- numeric(length(etas))
     for(i in seq_along(etas)) {
       fit_tmp <- cox_MDTL_enet(z = z, delta = delta, time = time, stratum = stratum,
-                               beta = beta, vcov = vcov,
+                               beta = beta, Q = Q,
                                eta = etas[i], alpha = alpha,
                                nlambda = 5, lambda.min.ratio = lambda.min.ratio, ...)
       if(!is.null(fit_tmp$lambda)) lambda_max_candidates[i] <- max(fit_tmp$lambda)
@@ -309,7 +311,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
   dots <- list(...)
 
   # Define worker function
-  stab_one <- function(b, z, delta, time, stratum, beta, vcov, etas, alpha, lambda,
+  stab_one <- function(b, z, delta, time, stratum, beta, Q, etas, alpha, lambda,
                        nfolds, cv.criteria, n_full, p_vars, n_lambda_seq,
                        fraction_sample, seed, dots) {
     if (!is.null(seed)) set.seed(seed + b)
@@ -324,7 +326,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
       cv_fit <- do.call(cv.cox_MDTL_enet, c(
         list(
           z = z_sub, delta = delta_sub, time = time_sub, stratum = stratum_sub,
-          beta = beta, vcov = vcov,
+          beta = beta, Q = Q,
           etas = etas, alpha = alpha,
           lambda = lambda,
           nfolds = nfolds,
@@ -339,7 +341,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
       fit_best <- do.call(cox_MDTL_enet, c(
         list(
           z = z_sub, delta = delta_sub, time = time_sub, stratum = stratum_sub,
-          beta = beta, vcov = vcov,
+          beta = beta, Q = Q,
           eta = best_eta,
           alpha = alpha,
           lambda = lambda
@@ -374,7 +376,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
     if(message) pb <- txtProgressBar(min = 0, max = B, style = 3)
     res_list <- vector("list", B)
     for (b in 1:B) {
-      res_list[[b]] <- stab_one(b, z, delta, time, stratum, beta, vcov, etas, alpha, lambda,
+      res_list[[b]] <- stab_one(b, z, delta, time, stratum, beta, Q, etas, alpha, lambda,
                                 nfolds, cv.criteria, n_full, p_vars, n_lambda_seq,
                                 fraction_sample, seed, dots)
       if(message) setTxtProgressBar(pb, b)
@@ -395,7 +397,7 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
     res_list <- parallel::parLapply(
       cl, seq_len(B), stab_one,
       z = z, delta = delta, time = time, stratum = stratum,
-      beta = beta, vcov = vcov, etas = etas, alpha = alpha, lambda = lambda,
+      beta = beta, Q = Q, etas = etas, alpha = alpha, lambda = lambda,
       nfolds = nfolds, cv.criteria = cv.criteria,
       n_full = n_full, p_vars = p_vars, n_lambda_seq = n_lambda_seq,
       fraction_sample = fraction_sample, seed = seed, dots = dots

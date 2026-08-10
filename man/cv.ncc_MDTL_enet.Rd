@@ -9,7 +9,7 @@ cv.ncc_MDTL_enet(
   z,
   stratum,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas = NULL,
   alpha = NULL,
   lambda = NULL,
@@ -31,7 +31,7 @@ cv.ncc_MDTL_enet(
 
 \item{beta}{Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.}
 
-\item{vcov}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
+\item{Q}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
 matrix \eqn{Q}. If \code{NULL}, defaults to the identity matrix.}
 
 \item{etas}{Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.}
@@ -120,7 +120,7 @@ cv_fit <- cv.ncc_MDTL_enet(
   z        = z,
   stratum  = sets,
   beta     = beta_ext,
-  vcov     = NULL,
+  Q        = NULL,
   etas     = eta_list,
   alpha    = 1,
   nfolds   = 5,

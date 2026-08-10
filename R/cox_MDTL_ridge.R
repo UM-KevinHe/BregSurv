@@ -14,10 +14,14 @@
 #' @param time A numeric vector of observed times.
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
 #'   all subjects are assumed to be in the same stratum.
-#' @param beta A numeric vector of external coefficients (length p).
-#' @param vcov Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-#'   for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-#'   defaults to the identity matrix.
+#' @param beta A numeric vector of external coefficients. If named, the names are
+#'   matched against \code{colnames(z)} and covariates absent from \code{beta} are
+#'   zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.
+#' @param Q Optional numeric matrix acting as the weighting matrix \eqn{Q} in the
+#'   Mahalanobis penalty. This should be a symmetric positive-semidefinite
+#'   \emph{precision} matrix (e.g. the inverse covariance / information matrix of
+#'   the external estimator). If named, it is reordered and zero-padded to
+#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
 #' @param eta A single non-negative numeric value controlling the weight of the
 #'   external information (Mahalanobis distance penalty). If \code{NULL}, defaults to 0 (no transfer learning).
 #' @param lambda Optional numeric vector of regularization parameters. If \code{NULL},
@@ -56,13 +60,13 @@
 #'   time = train_dat_highdim$time,
 #'   stratum = train_dat_highdim$stratum,
 #'   beta = beta_external_highdim,
-#'   vcov = NULL,
+#'   Q = NULL,
 #'   eta = 0.5
 #' )
 #' }
 #'
 #' @export
-cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, vcov = NULL, eta = NULL,
+cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL, eta = NULL,
                            lambda = NULL, nlambda = 100, penalty.factor = 0.999,
                            tol = 1.0e-4, Mstop = 50, backtrack = FALSE, message = FALSE, data_sorted = FALSE,
                            beta_initial = NULL, ...) {
@@ -70,24 +74,18 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, vcov = N
     warning("eta is not provided. Setting eta = 0 (no external information used).", call. = FALSE)
     eta <- 0
   } else {
-    if (!is.finite(eta) || eta < 0 || length(eta) != 1) {
-      stop("eta must be a non-negative scalar.", call. = FALSE)
-    }
+    check_etas(eta, scalar = TRUE)
   }
-  
-  if (length(beta) != ncol(z)) {
-    stop("Error: The dimension of external beta does not match the number of columns in z.")
-  }
-  
-  if (is.null(vcov)) {
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("Error: The dimension of external variance-covariance does not match the number of columns in z.")
-    }
-    Q <- vcov
-  }
-  
+
+  if (is.null(beta)) stop("External beta must be provided.", call. = FALSE)
+
+  ## Align external beta and Q to the covariates of z (named -> matched to
+  ## colnames(z) and zero-padded; Q validated symmetric/PSD; NULL Q -> masked
+  ## identity). For a full-length, in-order beta and full Q this is a no-op.
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
+
   z <- as.matrix(z)
   delta <- as.numeric(delta)
   time <- as.numeric(time)

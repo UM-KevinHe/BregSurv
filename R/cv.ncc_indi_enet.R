@@ -111,6 +111,7 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas   <- sort(as.numeric(etas))
+  check_etas(etas)
   n_eta  <- length(etas)
 
   n <- length(y_int)

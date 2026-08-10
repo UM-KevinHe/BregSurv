@@ -54,8 +54,8 @@
 #' external_beta <- ExampleData_cc_lowdim$beta_external
 #' 
 #' # Fit CLR-KL using the Breslow approximation
-#' ncckl.fit_breslow <- ncckl(y = y, z = z, stratum = sets, 
-#'                                  eta = eta_list, beta = external_beta,
+#' ncckl.fit_breslow <- ncckl(y = y, z = z, stratum = sets,
+#'                                  etas = eta_list, beta = external_beta,
 #'                                  method = "breslow")
 #' }
 #' @export
@@ -67,7 +67,10 @@ ncckl <- function(y, z, stratum, etas, beta,
   
   z <- as.matrix(z)
   y <- as.numeric(y)
-  
+  method <- match.arg(method)
+
+  check_etas(etas)
+
   if (missing(stratum)) {
     warning("Stratum not provided; all data assumed in one stratum", call. = FALSE)
     stratum <- rep(1, length(y))

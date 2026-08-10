@@ -1,62 +1,41 @@
-<div id="main" class="col-md-9" role="main">
-
 # Predict Survival Probabilities From a Baseline-Hazard Object
 
-<div class="ref-description section level2">
-
 Given a per-subject linear predictor (risk score) and a baseline
-cumulative hazard object as returned by `get_baseline_hazard`, returns
-the predicted survival probability matrix at the supplied evaluation
-times. Used internally by `test_eval` for IBS computation.
-
-</div>
-
-<div class="section level2">
+cumulative hazard object as returned by
+[`get_baseline_hazard`](https://um-kevinhe.github.io/BregSurv/reference/get_baseline_hazard.md),
+returns the predicted survival probability matrix at the supplied
+evaluation times. Used internally by
+[`test_eval`](https://um-kevinhe.github.io/BregSurv/reference/test_eval.md)
+for IBS computation.
 
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 predict_surv_prob(test_RS, eval_times, train_baseline_obj, test_stratum = NULL)
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   test\_RS:
+- test_RS:
 
-    Numeric vector of risk scores (\\(Z\\beta\\)) for the test subjects.
+  Numeric vector of risk scores (\\Z\beta\\) for the test subjects.
 
--   eval\_times:
+- eval_times:
 
-    Numeric vector of times at which to evaluate \\(S(t)\\).
+  Numeric vector of times at which to evaluate \\S(t)\\.
 
--   train\_baseline\_obj:
+- train_baseline_obj:
 
-    A list with element `predict_baseline`, as returned by
-    `get_baseline_hazard`.
+  A list with element `predict_baseline`, as returned by
+  [`get_baseline_hazard`](https://um-kevinhe.github.io/BregSurv/reference/get_baseline_hazard.md).
 
--   test\_stratum:
+- test_stratum:
 
-    Optional stratum vector for the test subjects. Defaults to a single
-    stratum.
-
-</div>
-
-<div class="section level2">
+  Optional stratum vector for the test subjects. Defaults to a single
+  stratum.
 
 ## Value
 
 A numeric matrix of dimension `length(test_RS) x length(eval_times)` of
 predicted survival probabilities
-\\(\\exp(-e^{Z\\beta}\\,\\hat\\Lambda\_0(t))\\).
-
-</div>
-
-</div>
+\\\exp(-e^{Z\beta}\\\hat\Lambda_0(t))\\.

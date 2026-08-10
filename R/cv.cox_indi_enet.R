@@ -157,8 +157,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas <- sort(as.numeric(etas))
-  if (any(!is.finite(etas)) || any(etas < 0))
-    stop("All etas must be finite and nonnegative.", call. = FALSE)
+  check_etas(etas)
 
   if (alpha <= 0 || alpha > 1)
     stop("alpha must be in (0, 1].", call. = FALSE)

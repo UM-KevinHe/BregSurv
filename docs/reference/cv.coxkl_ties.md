@@ -1,21 +1,11 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cross-Validated Cox–KL with Ties Handling to Tune the Integration Parameter (eta)
-
-<div class="ref-description section level2">
 
 Performs K-fold cross-validation (CV) to select the optimal integration
 parameter `eta` for the Cox Proportional Hazards model with
 Kullback–Leibler (KL) divergence data integration, using the Breslow or
 Exact partial likelihood for tied event times.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cv.coxkl_ties(
@@ -38,115 +28,101 @@ cv.coxkl_ties(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    Numeric matrix of covariates (rows = observations, columns =
-    variables).
+  Numeric matrix of covariates (rows = observations, columns =
+  variables).
 
--   delta:
+- delta:
 
-    Numeric vector of event indicators (1 = event, 0 = censored).
+  Numeric vector of event indicators (1 = event, 0 = censored).
 
--   time:
+- time:
 
-    Numeric vector of observed event or censoring times.
+  Numeric vector of observed event or censoring times.
 
--   stratum:
+- stratum:
 
-    Optional numeric or factor vector defining strata.
+  Optional numeric or factor vector defining strata.
 
--   beta:
+- beta:
 
-    Numeric vector of external coefficients. **Required**.
+  Numeric vector of external coefficients. **Required**.
 
--   etas:
+- etas:
 
-    Numeric vector of candidate tuning values to be cross-validated.
+  Numeric vector of candidate tuning values to be cross-validated.
 
--   ties:
+- ties:
 
-    Character string specifying the method for handling ties. Must be
-    one of `"breslow"` (default) or `"exact"`.
+  Character string specifying the method for handling ties. Must be one
+  of `"breslow"` (default) or `"exact"`.
 
--   tol:
+- tol:
 
-    Convergence tolerance for the optimizer used inside `coxkl_ties`.
-    Default `1e-4`.
+  Convergence tolerance for the optimizer used inside `coxkl_ties`.
+  Default `1e-4`.
 
--   Mstop:
+- Mstop:
 
-    Maximum number of Newton iterations used inside `coxkl_ties`.
-    Default `100`.
+  Maximum number of Newton iterations used inside `coxkl_ties`. Default
+  `100`.
 
--   nfolds:
+- nfolds:
 
-    Number of cross-validation folds. Default `5`.
+  Number of cross-validation folds. Default `5`.
 
--   cv.criteria:
+- cv.criteria:
 
-    Character string specifying the performance criterion. Choices are
-    `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
-    Default `"CIndex_pooled"`.
+  Character string specifying the performance criterion. Choices are
+  `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
+  Default `"CIndex_pooled"`.
 
--   c\_index\_stratum:
+- c_index_stratum:
 
-    Optional stratum vector. Used for C-index calculation on test sets.
+  Optional stratum vector. Used for C-index calculation on test sets.
 
--   message:
+- message:
 
-    Logical; if `TRUE`, prints progress messages. Default `FALSE`.
+  Logical; if `TRUE`, prints progress messages. Default `FALSE`.
 
--   seed:
+- seed:
 
-    Optional integer seed for reproducible fold assignment. Default
-    `NULL`.
+  Optional integer seed for reproducible fold assignment. Default
+  `NULL`.
 
--   comb\_max:
+- comb_max:
 
-    Integer. Maximum number of combinations for the **Exact** partial
-    likelihood calculation. Only relevant if `ties = "exact"`. Default
-    `1e7`.
+  Integer. Maximum number of combinations for the **Exact** partial
+  likelihood calculation. Only relevant if `ties = "exact"`. Default
+  `1e7`.
 
--   ...:
+- ...:
 
-    Additional arguments (currently ignored).
-
-</div>
-
-<div class="section level2">
+  Additional arguments (currently ignored).
 
 ## Value
 
 A `list` of class `"cv.coxkl"` containing:
 
--   `internal_stat`:
+- `internal_stat`:
 
-    A `data.frame` with one row per `eta` and the CV metric results.
+  A `data.frame` with one row per `eta` and the CV metric results.
 
--   `best`:
+- `best`:
 
-    A list containing the `best_eta`, the corresponding `best_beta` from
-    the full model fit, and the `criteria` used.
+  A list containing the `best_eta`, the corresponding `best_beta` from
+  the full model fit, and the `criteria` used.
 
--   `criteria`:
+- `criteria`:
 
-    The criterion used for selection.
+  The criterion used for selection.
 
--   `nfolds`:
+- `nfolds`:
 
-    The number of folds used.
-
-</div>
-
-<div class="section level2">
+  The number of folds used.
 
 ## Details
 
@@ -156,13 +132,7 @@ models. The `ties` argument controls which form of the partial
 likelihood (PL) is used for both model fitting and CV criterion
 calculation.
 
-</div>
-
-<div class="section level2">
-
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -186,9 +156,3 @@ coxkl_ties.fit_breslow <- cv.coxkl_ties(
 )
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

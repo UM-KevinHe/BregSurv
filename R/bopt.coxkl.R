@@ -77,6 +77,9 @@ bopt.coxkl <- function(z, delta, time, stratum = NULL,
 
   target_criteria <- match.arg(criteria)
 
+  if (!is.null(bounds_list$eta) && bounds_list$eta[1] < 0) stop("Lower bound of eta must be non-negative.", call. = FALSE)
+  if (!is.null(init_grid_dt) && !is.null(init_grid_dt$eta) && any(init_grid_dt$eta < 0)) stop("init_grid_dt eta values must be non-negative.", call. = FALSE)
+
   if (is.null(seed)) {
     seed <- sample.int(1e6, 1)
   }

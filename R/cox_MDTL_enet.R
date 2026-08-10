@@ -3,7 +3,7 @@
 #' @description
 #' Fits a Cox Proportional Hazards model that integrates external information (Transfer Learning)
 #' using an Elastic Net regularization path. The method incorporates prior knowledge from
-#' external coefficients (\code{beta}) and an optional weight matrix (\code{vcov}), controlled
+#' external coefficients (\code{beta}) and an optional weight matrix (\code{Q}), controlled
 #' by the transfer learning parameter \code{eta}.
 #'
 #' The objective function minimizes the negative partial likelihood plus a transfer learning
@@ -14,8 +14,8 @@
 #' @param delta Vector of event indicators (1 for event, 0 for censored).
 #' @param time Vector of observed survival times.
 #' @param stratum Vector indicating the stratum membership. If NULL, all observations are assumed to be in the same stratum.
-#' @param beta Vector of external coefficients (length p). This represents the prior knowledge or "source" model coefficients.
-#' @param vcov Optional weighting matrix (p x p) for the external information. Typically the inverse covariance matrix (precision matrix) of the external estimator. If NULL, defaults to the identity matrix.
+#' @param beta Vector of external coefficients representing the prior knowledge or "source" model coefficients. If named, the names are matched against \code{colnames(z)} and covariates absent from \code{beta} are zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.
+#' @param Q Optional weighting matrix (p x p) for the external information. Typically the inverse covariance (precision) matrix of the external estimator, which should be symmetric positive-semidefinite. If named, it is reordered and zero-padded to \code{colnames(z)}. If NULL, a masked identity is used.
 #' @param eta Scalar. The transfer learning parameter (>= 0). Controls the strength of the external information. \code{eta = 0} ignores external info.
 #' @param alpha The Elastic Net mixing parameter, with \eqn{0 \le \alpha \le 1}. \code{alpha=1} is the lasso penalty, and \code{alpha=0} the ridge penalty.
 #' @param lambda Optional user-supplied lambda sequence. If NULL, the algorithm generates its own sequence.
@@ -64,14 +64,14 @@
 #'   time = train_dat_highdim$time,
 #'   stratum = train_dat_highdim$stratum,
 #'   beta = beta_external_highdim,
-#'   vcov = NULL,
+#'   Q = NULL,
 #'   eta = 0,
 #'   alpha = 1
 #' )
 #' }
 #' @export
 cox_MDTL_enet <- function(z, delta, time, stratum = NULL, 
-                          beta, vcov = NULL, 
+                          beta, Q = NULL,
                           eta = NULL, 
                           alpha = NULL, lambda = NULL, nlambda = 100, lambda.min.ratio = ifelse(n < p, 0.05, 1e-03), 
                           lambda.early.stop = FALSE, tol = 1.0e-4, Mstop = 1000, max.total.iter = (Mstop * nlambda), 
@@ -91,23 +91,15 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     warning("eta is not provided. Setting eta = 0 (no external information used).", call. = FALSE)
     eta <- 0
   } else {
-    if (!is.finite(eta) || eta < 0 || length(eta) != 1) {
-      stop("eta must be a non-negative scalar.", call.=FALSE)
-    }
+    check_etas(eta, scalar = TRUE)
   }
 
-  if (length(beta) != ncol(z)) {
-    stop("Error: The dimension of external beta does not match the number of columns in z.")
-  }
-  
-  if (is.null(vcov)){
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("Error: The dimension of external variance-covariance does not match the number of columns in z.")
-    }
-    Q <- vcov
-  }
+  ## Align external beta and Q to the covariates of z (named -> matched to
+  ## colnames(z) and zero-padded; Q validated symmetric/PSD; NULL Q -> masked
+  ## identity). Must precede z coercion/standardization and the ord reordering.
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
 
   z <- as.matrix(z)
   delta <- as.numeric(delta)

@@ -15,9 +15,11 @@
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
 #'   all subjects are assumed to be in the same stratum.
 #' @param beta A numeric vector of external coefficients (length p).
-#' @param vcov Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-#'   for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-#'   defaults to the identity matrix.
+#' @param Q Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
+#'   for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
+#'   \emph{precision} matrix (typically the inverse covariance / information matrix of
+#'   the external estimator). If named, it is reordered and zero-padded to
+#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
 #' @param etas A numeric vector of candidate \code{eta} values to be evaluated.
 #' @param alpha The Elastic Net mixing parameter, with \eqn{0 \le \alpha \le 1}.
 #'   \code{alpha = 1} is the Lasso penalty, and \code{alpha = 0} is the Ridge penalty.
@@ -74,7 +76,7 @@
 #'   time = train_dat_highdim$time,
 #'   stratum = train_dat_highdim$stratum,
 #'   beta = beta_external_highdim,
-#'   vcov = NULL,
+#'   Q = NULL,
 #'   etas = eta_list,
 #'   alpha = 1,
 #'   cv.criteria = "CIndex_pooled",
@@ -84,7 +86,7 @@
 #'
 #' @export
 cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
-                             beta, vcov = NULL,
+                             beta, Q = NULL,
                              etas = NULL, alpha = NULL,
                              lambda = NULL, nlambda = 100, lambda.min.ratio = ifelse(n < p, 0.05, 1e-03),
                              nfolds = 5,
@@ -103,21 +105,13 @@ cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   }
   
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
-  
-  if (length(beta) != ncol(z)) {
-    stop("Error: The dimension of external beta does not match the number of columns in z.")
-  }
-  
-  if (is.null(vcov)) {
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("Error: The dimension of external variance-covariance does not match the number of columns in z.")
-    }
-    Q <- vcov
-  }
+
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
   
   if (is.null(stratum)) {
     warning("Stratum not provided. Treating all data as one stratum.", call. = FALSE)
@@ -128,9 +122,7 @@ cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     }
     stratum <- match(stratum, unique(stratum))
   }
-  
-  RS <- as.matrix(z) %*% as.matrix(beta)
-  
+
   ## Sort data
   time_order <- order(stratum, time)
   
@@ -138,7 +130,6 @@ cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   stratum <- as.numeric(stratum[time_order])
   z <- as.matrix(z)[time_order, , drop = FALSE]
   delta <- as.numeric(delta[time_order])
-  RS <- as.numeric(RS[time_order])
   
   n.each_stratum_full <- as.numeric(table(stratum))
   
@@ -165,7 +156,7 @@ cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     if (is.null(lambda)) {
       fit0 <- cox_MDTL_enet(
         z = z, delta = delta, time = time, stratum = stratum,
-        beta = beta, vcov = Q,
+        beta = beta, Q = Q,
         eta = eta, alpha = alpha,
         lambda = NULL, nlambda = nlambda, lambda.min.ratio = lambda.min.ratio,
         message = FALSE, data_sorted = TRUE, ...
@@ -175,7 +166,7 @@ cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
       lambda_seq <- sort(lambda, decreasing = TRUE)
       fit0 <- cox_MDTL_enet(
         z = z, delta = delta, time = time, stratum = stratum,
-        beta = beta, vcov = Q,
+        beta = beta, Q = Q,
         eta = eta, alpha = alpha,
         lambda = lambda_seq,
         message = FALSE, data_sorted = TRUE, ...
@@ -209,7 +200,7 @@ cv.cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
         delta = delta[train_idx],
         time = time[train_idx],
         stratum = stratum[train_idx],
-        beta = beta, vcov = Q,
+        beta = beta, Q = Q,
         eta = eta, alpha = alpha,
         lambda = lambda_seq,
         message = FALSE, data_sorted = TRUE, ...

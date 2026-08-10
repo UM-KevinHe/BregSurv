@@ -71,17 +71,15 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
 
   ## Check and prepare external risk score
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
 
   if (is.null(RS) && is.null(beta)) {
     stop("No external information is provided. Either RS or beta must be provided.")
   } else if (is.null(RS) && !is.null(beta)) {
-    if (length(beta) == ncol(z)) {
-      if (message) message("External beta information is used.")
-      RS <- as.matrix(z) %*% as.matrix(beta)
-    } else {
-      stop("The dimension of beta does not match the number of columns in z.")
-    }
+    beta <- align_beta(z, beta)
+    if (message) message("External beta information is used.")
+    RS <- as.matrix(z) %*% as.matrix(beta)
   } else {
     RS <- as.matrix(RS)
     if (message) message("External Risk Score information is used.")

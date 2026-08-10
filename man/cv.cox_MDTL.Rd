@@ -10,7 +10,7 @@ cv.cox_MDTL(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas = NULL,
   tol = 1e-04,
   Mstop = 100,
@@ -34,9 +34,11 @@ all subjects are assumed to be in the same stratum.}
 
 \item{beta}{A numeric vector of external coefficients (length p).}
 
-\item{vcov}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-defaults to the identity matrix.}
+\item{Q}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
+for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
+\emph{precision} matrix (typically the inverse covariance / information matrix of
+the external estimator). If named, it is reordered and zero-padded to
+\code{colnames(z)}. If \code{NULL}, a masked identity is used.}
 
 \item{etas}{A numeric vector of candidate \code{eta} values to be evaluated.}
 
@@ -100,7 +102,7 @@ cv.cox_MDTL_est <- cv.cox_MDTL(
   delta = train_dat_lowdim$status,
   time = train_dat_lowdim$time,
   beta = beta_external_lowdim,
-  vcov = NULL,
+  Q = NULL,
   etas = eta_list,
   cv.criteria = "V&VH"
 )

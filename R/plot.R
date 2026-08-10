@@ -415,7 +415,7 @@ plot.coxkl_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = NUL
 #'                          delta = train_dat_lowdim$status,
 #'                          time = train_dat_lowdim$time,
 #'                          beta = beta_external_lowdim,
-#'                          vcov = NULL,
+#'                          Q = NULL,
 #'                          etas = eta_list)
 #'
 #' plot.cox_MDTL(cox_MDTL_est,
@@ -552,7 +552,7 @@ plot.cox_MDTL <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
 #'                                  delta = train_dat_highdim$status,
 #'                                  time = train_dat_highdim$time,
 #'                                  beta = beta_external_highdim,
-#'                                  vcov = NULL,
+#'                                  Q = NULL,
 #'                                  eta = 0)
 #'
 #' plot.cox_MDTL_ridge(mdtl_ridge_est,
@@ -673,7 +673,7 @@ plot.cox_MDTL_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta =
 #'                                    delta = train_dat_highdim$status,
 #'                                    time = train_dat_highdim$time,
 #'                                    beta = beta_external_highdim,
-#'                                    vcov = NULL,
+#'                                    Q = NULL,
 #'                                    eta = 0)
 #'
 #' plot.cox_MDTL_enet(cox_MDTL_enet_est,

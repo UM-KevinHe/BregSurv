@@ -1,20 +1,10 @@
-<div id="main" class="col-md-9" role="main">
-
 # Plot Validation Results for coxkl Object
-
-<div class="ref-description section level2">
 
 Plots the validation performance (Loss or C-Index) against the tuning
 parameter `eta`. Compares the "Integrated" estimator (solid line)
 against the "Internal" baseline (dotted line, eta=0).
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 # S3 method for class 'coxkl'
@@ -29,57 +19,41 @@ plot(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   x:
+- x:
 
-    An object of class `"coxkl"`.
+  An object of class `"coxkl"`.
 
--   test\_z:
+- test_z:
 
-    Matrix of test covariates. If NULL, training data is used.
+  Matrix of test covariates. If NULL, training data is used.
 
--   test\_time:
+- test_time:
 
-    Vector of test survival times.
+  Vector of test survival times.
 
--   test\_delta:
+- test_delta:
 
-    Vector of test status indicators.
+  Vector of test status indicators.
 
--   test\_stratum:
+- test_stratum:
 
-    Vector of test strata (optional).
+  Vector of test strata (optional).
 
--   criteria:
+- criteria:
 
-    Metric to plot: `"loss"` or `"CIndex"`.
+  Metric to plot: `"loss"` or `"CIndex"`.
 
--   ...:
+- ...:
 
-    Additional arguments.
-
-</div>
-
-<div class="section level2">
+  Additional arguments.
 
 ## Value
 
 A `ggplot` object.
 
-</div>
-
-<div class="section level2">
-
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -104,9 +78,3 @@ plot.coxkl(coxkl_est,
            criteria = "CIndex")
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

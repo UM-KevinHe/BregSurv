@@ -1,13 +1,13 @@
-pandoc: '2.12'
+pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
   BregSurv: BregSurv.html
-  coxkl_ties: coxkl_ties.html
   coxkl: coxkl.html
+  coxkl_ties: coxkl_ties.html
   CV_Criteria: CV_Criteria.html
   ncc: ncc.html
-last_built: 2026-07-20T13:14Z
+last_built: 2026-08-10T14:26Z
 urls:
   reference: https://um-kevinhe.github.io/BregSurv/reference
   article: https://um-kevinhe.github.io/BregSurv/articles

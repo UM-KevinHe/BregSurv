@@ -29,7 +29,7 @@
 #' @param z Numeric matrix of covariates.
 #' @param stratum Numeric or factor vector defining the matched sets. \strong{Required}.
 #' @param beta Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.
-#' @param vcov Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
+#' @param Q Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
 #'   matrix \eqn{Q}. Typically the precision matrix of the external estimator. If \code{NULL},
 #'   defaults to the identity matrix.
 #' @param etas Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.
@@ -73,7 +73,7 @@
 #'   z        = z,
 #'   stratum  = sets,
 #'   beta     = beta_ext,
-#'   vcov     = NULL,
+#'   Q        = NULL,
 #'   etas     = eta_list,
 #'   nfolds   = 5,
 #'   cv.criteria = "loss",
@@ -83,7 +83,7 @@
 #' }
 #' @export
 cv.ncc_MDTL <- function(y, z, stratum,
-                            beta, vcov = NULL,
+                            beta, Q = NULL,
                             etas = NULL,
                             tol = 1.0e-4, Mstop = 100,
                             nfolds = 5,
@@ -99,6 +99,7 @@ cv.ncc_MDTL <- function(y, z, stratum,
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas   <- sort(as.numeric(etas))
+  check_etas(etas)
   n_eta  <- length(etas)
 
   if (missing(stratum) || is.null(stratum)) {
@@ -106,18 +107,9 @@ cv.ncc_MDTL <- function(y, z, stratum,
   }
   stratum <- as.factor(stratum)
 
-  if (length(beta) != ncol(z)) {
-    stop("The dimension of beta does not match the number of columns in z.", call. = FALSE)
-  }
-
-  if (is.null(vcov)) {
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("The dimension of vcov does not match the number of columns in z.", call. = FALSE)
-    }
-    Q <- vcov
-  }
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
 
   events_per_stratum <- tapply(y, stratum, function(x) sum(x == 1))
   if (any(is.na(events_per_stratum)) || any(events_per_stratum != 1)) {
@@ -135,7 +127,7 @@ cv.ncc_MDTL <- function(y, z, stratum,
     z       = z,
     stratum = stratum,
     beta    = beta,
-    vcov    = Q,
+    Q       = Q,
     etas    = etas,
     tol     = tol,
     Mstop   = Mstop,
@@ -185,7 +177,7 @@ cv.ncc_MDTL <- function(y, z, stratum,
       z       = z_train,
       stratum = stratum_train,
       beta    = beta,
-      vcov    = Q,
+      Q       = Q,
       etas    = etas,
       tol     = tol,
       Mstop   = Mstop,

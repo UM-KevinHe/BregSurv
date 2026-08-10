@@ -18,10 +18,5 @@ Useful links:
 \author{
 \strong{Maintainer}: Yubo Shao \email{ybshao@umich.edu}
 
-Authors:
-\itemize{
-  \item Yubo Shao \email{ybshao@umich.edu}
-}
-
 }
 \keyword{internal}

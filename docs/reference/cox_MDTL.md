@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cox Proportional Hazards Model with Mahalanobis Distance Transfer Learning
-
-<div class="ref-description section level2">
 
 Fits a Cox proportional hazards model incorporating external information
 via a Mahalanobis distance penalty. This approach penalizes the
@@ -10,13 +6,7 @@ deviation of the estimated coefficients from external reference
 coefficients (`beta`), weighted by a specified matrix (typically the
 inverse covariance matrix).
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cox_MDTL(
@@ -25,7 +15,7 @@ cox_MDTL(
   time,
   stratum = NULL,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas,
   tol = 1e-04,
   Mstop = 50,
@@ -36,130 +26,113 @@ cox_MDTL(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    A numeric matrix or data frame of covariates (n x p).
+  A numeric matrix or data frame of covariates (n x p).
 
--   delta:
+- delta:
 
-    A numeric vector of event indicators (1 = event, 0 = censored).
+  A numeric vector of event indicators (1 = event, 0 = censored).
 
--   time:
+- time:
 
-    A numeric vector of observed times.
+  A numeric vector of observed times.
 
--   stratum:
+- stratum:
 
-    Optional numeric or factor vector indicating strata. If `NULL`, all
-    subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, all
+  subjects are assumed to be in the same stratum.
 
--   beta:
+- beta:
 
-    A numeric vector of external coefficients (length p).
+  A numeric vector of external coefficients. If named, the names are
+  matched against `colnames(z)` and covariates absent from `beta` are
+  zero-padded; if unnamed, `beta` must have length `ncol(z)`.
 
--   vcov:
+- Q:
 
-    Optional numeric matrix (p x p) acting as the weighting matrix
-    \\(Q\\) in the Mahalanobis penalty. **Note:** In standard
-    Mahalanobis distance formulations, this should be the *inverse* of
-    the covariance matrix (precision matrix). If not provided, an
-    identity matrix is used.
+  Optional numeric matrix acting as the weighting matrix \\Q\\ in the
+  Mahalanobis penalty. This should be a symmetric positive-semidefinite
+  *precision* matrix (e.g. the inverse covariance / information matrix
+  of the external estimator). If named, it is reordered and zero-padded
+  to `colnames(z)`. If `NULL`, a masked identity is used.
 
--   etas:
+- etas:
 
-    A numeric vector of tuning parameters (scalars) to evaluate.
+  A numeric vector of non-negative tuning parameters (scalars) to
+  evaluate.
 
--   tol:
+- tol:
 
-    Convergence tolerance for the Newton-Raphson algorithm. Default is
-    1e-4.
+  Convergence tolerance for the Newton-Raphson algorithm. Default is
+  1e-4.
 
--   Mstop:
+- Mstop:
 
-    Maximum number of iterations for Newton-Raphson. Default is 50.
+  Maximum number of iterations for Newton-Raphson. Default is 50.
 
--   backtrack:
+- backtrack:
 
-    Logical. If `TRUE`, uses backtracking line search. Default is
-    `FALSE`.
+  Logical. If `TRUE`, uses backtracking line search. Default is `FALSE`.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, progress messages are printed.
+  Logical. If `TRUE`, progress messages are printed.
 
--   data\_sorted:
+- data_sorted:
 
-    Logical. If `TRUE`, assumes input data is already sorted by stratum
-    and time.
+  Logical. If `TRUE`, assumes input data is already sorted by stratum
+  and time.
 
--   beta\_initial:
+- beta_initial:
 
-    Optional initial coefficient vector for warm start.
-
-</div>
-
-<div class="section level2">
+  Optional initial coefficient vector for warm start.
 
 ## Value
 
 An object of class `"Cox_MDTL"` containing:
 
--   `eta`:
+- `eta`:
 
-    The vector of eta values evaluated.
+  The vector of eta values evaluated.
 
--   `beta`:
+- `beta`:
 
-    A matrix of estimated coefficients (p x n\_eta).
+  A matrix of estimated coefficients (p x n_eta).
 
--   `linear.predictors`:
+- `linear.predictors`:
 
-    A matrix of linear predictors (n x n\_eta).
+  A matrix of linear predictors (n x n_eta).
 
--   `likelihood`:
+- `likelihood`:
 
-    A vector of log-partial likelihoods for each eta.
+  A vector of log-partial likelihoods for each eta.
 
--   `data`:
+- `data`:
 
-    A list containing the input data used.
-
-</div>
-
-<div class="section level2">
+  A list containing the input data used.
 
 ## Details
 
 The objective function minimizes the negative log-partial likelihood
-plus a penalty term: $$P(\\beta) = \\frac{\\eta}{2} (\\beta -
-\\beta\_{ext})^T Q (\\beta - \\beta\_{ext})$$ where:
+plus a penalty term: \$\$P(\beta) = \frac{\eta}{2} (\beta -
+\beta\_{ext})^T Q (\beta - \beta\_{ext})\$\$ where:
 
--   \\(\\beta\_{ext}\\) is the vector of external coefficients.
+- \\\beta\_{ext}\\ is the vector of external coefficients.
 
--   \\(Q\\) is the weighting matrix (derived from `vcov`).
+- \\Q\\ is the weighting (precision) matrix.
 
--   \\(\\eta\\) is the tuning parameter controlling the strength of the
-    external information.
+- \\\eta\\ is the tuning parameter controlling the strength of the
+  external information.
 
-If `vcov` is `NULL`, \\(Q\\) defaults to the identity matrix, reducing
-the penalty to a standard Euclidean distance (Ridge-type shrinkage
-towards `beta`).
-
-</div>
-
-<div class="section level2">
+If `Q` is `NULL`, it defaults to a masked identity (the identity on the
+covariates supplied by `beta`, and 0 on covariates the external source
+does not cover), reducing the penalty to a Ridge-type shrinkage towards
+`beta`.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -174,14 +147,8 @@ cox_MDTL_est <- cox_MDTL(
   delta = train_dat_lowdim$status,
   time = train_dat_lowdim$time,
   beta = beta_external_lowdim,
-  vcov = NULL,
+  Q = NULL,
   etas = eta_list
 )
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

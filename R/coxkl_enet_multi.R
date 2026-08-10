@@ -64,6 +64,8 @@ coxkl_enet.multi <- function(
   if (length(time) != n) stop("time length must match nrow(z).", call. = FALSE)
   if (!is.null(stratum) && length(stratum) != n) stop("stratum length must match nrow(z).", call. = FALSE)
 
+  check_etas(etas)
+
   if (!is.null(RS_list)) {
     if (!is.list(RS_list) || length(RS_list) < 1) stop("RS_list must be a non-empty list.", call. = FALSE)
     K <- length(RS_list)
@@ -71,7 +73,7 @@ coxkl_enet.multi <- function(
     if (!is.list(beta_list) || length(beta_list) < 1) stop("beta_list must be a non-empty list.", call. = FALSE)
     K <- length(beta_list)
     for (k in seq_len(K)) {
-      if (length(beta_list[[k]]) != p) stop("beta_list element dimension mismatch with z.", call. = FALSE)
+      beta_list[[k]] <- align_beta(z, beta_list[[k]], arg = paste0("beta_list[[", k, "]]"))
     }
   }
 

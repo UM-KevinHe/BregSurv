@@ -88,13 +88,14 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
   
   ## ---- Input Check & Preparation ----
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
-  
+
   if (is.null(RS) && is.null(beta)) {
     stop("No external information is provided. Either RS or beta must be provided.")
   } else if (is.null(RS) && !is.null(beta)) {
-    if (length(beta) != ncol(z)) stop("beta dimension mismatch with z.", call. = FALSE)
+    beta <- align_beta(z, beta)
     RS <- as.matrix(z) %*% as.matrix(beta)
   } else {
     RS <- as.matrix(RS)

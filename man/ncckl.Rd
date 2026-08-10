@@ -79,8 +79,8 @@ eta_list <- generate_eta(method = "exponential", n = 50, max_eta = 50)
 external_beta <- ExampleData_cc_lowdim$beta_external
 
 # Fit CLR-KL using the Breslow approximation
-ncckl.fit_breslow <- ncckl(y = y, z = z, stratum = sets, 
-                                 eta = eta_list, beta = external_beta,
+ncckl.fit_breslow <- ncckl(y = y, z = z, stratum = sets,
+                                 etas = eta_list, beta = external_beta,
                                  method = "breslow")
 }
 }

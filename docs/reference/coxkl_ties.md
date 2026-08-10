@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cox Proportional Hazards Model with KL Divergence for Data Integration (Ties Handling)
-
-<div class="ref-description section level2">
 
 Fits a series of Cox proportional hazards models that integrate external
 information, specified as external coefficients (`beta`), using
@@ -14,13 +10,7 @@ The strength of integration is controlled by a sequence of tuning
 parameters (`etas`). The function fits a model for each `eta` value
 provided.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 coxkl_ties(
@@ -40,112 +30,97 @@ coxkl_ties(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   z:
+- z:
 
-    Numeric matrix of covariates. Rows represent observations, columns
-    represent predictor variables.
+  Numeric matrix of covariates. Rows represent observations, columns
+  represent predictor variables.
 
--   delta:
+- delta:
 
-    Numeric vector of event indicators (1 = event, 0 = censored).
+  Numeric vector of event indicators (1 = event, 0 = censored).
 
--   time:
+- time:
 
-    Numeric vector of observed event or censoring times.
+  Numeric vector of observed event or censoring times.
 
--   stratum:
+- stratum:
 
-    Optional numeric or factor vector defining strata.
+  Optional numeric or factor vector defining strata.
 
--   beta:
+- beta:
 
-    Numeric vector of external coefficients. Length must equal the
-    number of columns in `z`. These are used to compute the external
-    risk scores and the KL divergence term.
+  Numeric vector of external coefficients. Length must equal the number
+  of columns in `z`. These are used to compute the external risk scores
+  and the KL divergence term.
 
--   etas:
+- etas:
 
-    Numeric vector of tuning parameters. Controls the reliance on
-    external information. The function will sort these values and fit a
-    model for each.
+  Numeric vector of tuning parameters. Controls the reliance on external
+  information. The function will sort these values and fit a model for
+  each.
 
--   ties:
+- ties:
 
-    Character string specifying the method for handling ties. Must be
-    one of `"breslow"` (default) or `"exact"`.
+  Character string specifying the method for handling ties. Must be one
+  of `"breslow"` (default) or `"exact"`.
 
--   tol:
+- tol:
 
-    Numeric. Convergence tolerance for the optimization algorithm
-    (Newton-Raphson). Default is `1e-4`.
+  Numeric. Convergence tolerance for the optimization algorithm
+  (Newton-Raphson). Default is `1e-4`.
 
--   Mstop:
+- Mstop:
 
-    Integer. Maximum number of iterations for the optimization. Default
-    is `100`.
+  Integer. Maximum number of iterations for the optimization. Default is
+  `100`.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, prints progress messages (e.g., progress bar)
-    during fitting. Default is `FALSE`.
+  Logical. If `TRUE`, prints progress messages (e.g., progress bar)
+  during fitting. Default is `FALSE`.
 
--   data\_sorted:
+- data_sorted:
 
-    Logical. Internal use. If `TRUE`, assumes data is already sorted by
-    stratum and time.
+  Logical. Internal use. If `TRUE`, assumes data is already sorted by
+  stratum and time.
 
--   beta\_initial:
+- beta_initial:
 
-    Optional numeric vector. Initial values for the coefficients for the
-    first `eta`. Default is zero vector.
+  Optional numeric vector. Initial values for the coefficients for the
+  first `eta`. Default is zero vector.
 
--   comb\_max:
+- comb_max:
 
-    Integer. Maximum number of combinations to check for the **Exact**
-    partial likelihood calculation, preventing excessive computation
-    time. Default is `1e7`. Only relevant if `ties = "exact"`.
-
-</div>
-
-<div class="section level2">
+  Integer. Maximum number of combinations to check for the **Exact**
+  partial likelihood calculation, preventing excessive computation time.
+  Default is `1e7`. Only relevant if `ties = "exact"`.
 
 ## Value
 
 An object of class `"coxkl"` containing:
 
--   `eta`:
+- `eta`:
 
-    The sorted sequence of \\(\\eta\\) values used.
+  The sorted sequence of \\\eta\\ values used.
 
--   `beta`:
+- `beta`:
 
-    Matrix of estimated coefficients (\\(p \\times n\_{etas}\\)).
-    Columns correspond to `eta` values.
+  Matrix of estimated coefficients (\\p \times n\_{etas}\\). Columns
+  correspond to `eta` values.
 
--   `linear.predictors`:
+- `linear.predictors`:
 
-    Matrix of linear predictors (risk scores) for each `eta`.
+  Matrix of linear predictors (risk scores) for each `eta`.
 
--   `likelihood`:
+- `likelihood`:
 
-    Vector of negative log-partial likelihoods for each `eta`.
+  Vector of negative log-partial likelihoods for each `eta`.
 
--   `data`:
+- `data`:
 
-    List containing the input data used (`z`, `time`, `delta`,
-    `stratum`).
-
-</div>
-
-<div class="section level2">
+  List containing the input data used (`z`, `time`, `delta`, `stratum`).
 
 ## Details
 
@@ -153,29 +128,23 @@ The objective function is a weighted combination of the internal partial
 likelihood and the KL divergence from the external information derived
 from `beta`.
 
--   **KL Divergence and Weighting**: Larger values of `eta` place more
-    weight on matching the risk set behavior implied by the external
-    coefficients.
+- **KL Divergence and Weighting**: Larger values of `eta` place more
+  weight on matching the risk set behavior implied by the external
+  coefficients.
 
--   **Standard Cox**: `eta = 0` corresponds to the standard Cox model,
-    relying solely on the internal partial likelihood.
+- **Standard Cox**: `eta = 0` corresponds to the standard Cox model,
+  relying solely on the internal partial likelihood.
 
--   **Ties Handling**: The calculation of the partial likelihood uses
-    the method specified by the `ties` argument ("breslow" or "exact").
-    The exact method may be computationally intensive for datasets with
-    many tied events.
+- **Ties Handling**: The calculation of the partial likelihood uses the
+  method specified by the `ties` argument ("breslow" or "exact"). The
+  exact method may be computationally intensive for datasets with many
+  tied events.
 
 The function uses a "warm start" strategy where the solution for the
 current `eta` is used as the initial value for the next `eta` in the
 sorted sequence.
 
-</div>
-
-<div class="section level2">
-
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -210,9 +179,3 @@ coxkl_ties.fit_Exact <- coxkl_ties(
 )
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

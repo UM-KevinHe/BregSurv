@@ -74,8 +74,8 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
                           seed = NULL,
                           comb_max = 1e7, ...) {
   
-  cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
-  ties <- match.arg(tolower(ties), c("exact","breslow"))
+  cv.criteria <- match.arg(cv.criteria, choices = c("CIndex_pooled", "V&VH", "LinPred", "CIndex_foldaverage"))
+  ties <- match.arg(tolower(ties), c("breslow","exact"))
   
   ## --- Internal wrapper function to handle comb_max argument ---
   pl_cal_wrapper <- function(lp, delta, time, n_each_stratum, ties, comb_max) {
@@ -90,8 +90,9 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   
   ## Check and prepare external coefficients
   if (is.null(beta)) stop("The 'beta' (external coefficients) must be provided for cv.coxkl_ties.", call. = FALSE)
-  if (length(beta) != ncol(z)) stop("The dimension of beta does not match the number of columns in z.")
+  beta <- align_beta(z, beta)
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
   
   ## Process stratum

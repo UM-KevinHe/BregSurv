@@ -1,20 +1,10 @@
-<div id="main" class="col-md-9" role="main">
-
 # Simulate Low-Dimensional Survival Data for Integration
-
-<div class="ref-description section level2">
 
 Internal function. Generates simulated low-dimensional survival datasets
 for internal (training/testing) and external cohorts with varying
 heterogeneity levels via latent groups.
 
-</div>
-
-<div class="section level2">
-
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 sim_integration(
@@ -31,59 +21,45 @@ sim_integration(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   n\_int:
+- n_int:
 
-    Number of subjects in the internal training set.
+  Number of subjects in the internal training set.
 
--   n\_test:
+- n_test:
 
-    Number of subjects in the internal test set.
+  Number of subjects in the internal test set.
 
--   n\_ext:
+- n_ext:
 
-    Number of subjects in the external dataset.
+  Number of subjects in the external dataset.
 
--   beta\_true:
+- beta_true:
 
-    True regression coefficients.
+  True regression coefficients.
 
--   int\_cens\_target:
+- int_cens_target:
 
-    Target censoring rate for internal data.
+  Target censoring rate for internal data.
 
--   ext\_cens\_target:
+- ext_cens_target:
 
-    Target censoring rate for external data.
+  Target censoring rate for external data.
 
--   lambda0, nu0:
+- lambda0, nu0:
 
-    Weibull baseline hazard parameters.
+  Weibull baseline hazard parameters.
 
--   heterogeneity:
+- heterogeneity:
 
-    Numeric. Controls the mixture difference between cohorts.
+  Numeric. Controls the mixture difference between cohorts.
 
--   seed:
+- seed:
 
-    Random seed.
-
-</div>
-
-<div class="section level2">
+  Random seed.
 
 ## Value
 
 A list containing `external`, `internal_train`, and `internal_test`
 datasets.
-
-</div>
-
-</div>

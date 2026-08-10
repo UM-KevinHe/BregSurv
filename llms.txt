@@ -26,8 +26,9 @@ This is the **primary** axis of the package. Pick the integration method first:
 
 Notes that avoid common AI mistakes:
 - **The three modes are not mutually exclusive.** If the user has individual-level external data but wants to use KL / Mahalanobis, they can fit an external model first to get `beta_ext` (and optionally `A`) and then switch modes.
-- **Mahalanobis with `vcov = NULL` ≠ KL.** When no `A` is supplied, Mahalanobis defaults to the identity matrix (i.e., squared Euclidean distance / ridge-style shrinkage toward `beta_ext`). It is still *not* the same as KL divergence.
+- **Mahalanobis with `Q = NULL` ≠ KL.** When no `A` is supplied, Mahalanobis defaults to a (masked) identity matrix (i.e., squared Euclidean distance / ridge-style shrinkage toward `beta_ext`). It is still *not* the same as KL divergence.
 - **`coxkl` accepts either `beta` OR `RS`, not both required.** If `beta` is supplied, the function internally computes `RS = Z %*% beta`.
+- **External `beta` (and Mahalanobis `Q`) may be *named* and *partial*.** If a named `beta` covers only some of `colnames(z)`, the missing covariates are zero-padded automatically (and, for Mahalanobis, the matching `Q` rows/columns are left unpenalized); an unnamed `beta` must have length `p`. `align_beta(z, beta)` / `align_beta_Q(z, beta, Q)` expose this alignment directly. **`eta` / `etas` must be non-negative** (now enforced).
 
 ### Q2. What is the internal study design?
 
@@ -97,9 +98,9 @@ Most fit objects have `plot()` methods; CV objects have companion `cv.plot()` ca
 | `delta` | Event indicator for internal data (1 = event, 0 = censored). **NCC functions use `y` instead.** |
 | `time` | Observed times for internal data. **Not used in NCC functions.** |
 | `stratum` | Stratum / matched-set ID. For Cox: optional (default = single stratum). For NCC: required — defines the matched sets. |
-| `beta` | External coefficient vector (length p). Drives KL, Mahalanobis, and `*_indi` (via the risk-score path). |
+| `beta` | External coefficient vector: length `p`, or a **named** subset of `colnames(z)` (missing covariates auto zero-padded). Drives KL and Mahalanobis. |
 | `RS` | Pre-computed external risk score `= Z %*% beta_ext`. Alternative to `beta` in `coxkl` / `coxkl_ties`. |
-| `vcov` | External p×p curvature matrix (typically the inverse covariance / observed information) for Mahalanobis mode. `NULL` → identity. |
+| `Q` | External p×p **precision / information** matrix (curvature of the external objective; must be symmetric positive-semidefinite) for Mahalanobis mode. May be named (matched to `colnames(z)`). `NULL` → (masked) identity. |
 | `etas` | Vector of integration weights (grid). `eta = 0` recovers internal-only fit. |
 | `eta` | Single integration weight (for penalized variants where `eta` is fixed while `lambda` is tuned). |
 | `lambda` | Regularization strength for `_ridge` / `_enet`. Auto-generated path if omitted. |
@@ -188,12 +189,12 @@ cv.plot(cvfit)
 ### Example 2 — Low-dim Cox + external coefficients + curvature (Mahalanobis)
 
 ```r
-# Minimum input: beta; optionally supply A = vcov (precision / information matrix).
-# vcov = NULL is valid and reduces the penalty to squared Euclidean.
+# Minimum input: beta; optionally supply A = Q (precision / information matrix).
+# Q = NULL is valid and reduces the penalty to squared Euclidean.
 fit <- cox_MDTL(
   z = train$z, delta = train$status, time = train$time,
   stratum = train$stratum,
-  beta = beta_ext, vcov = NULL,
+  beta = beta_ext, Q = NULL,
   etas = eta_list
 )
 ```
@@ -316,7 +317,7 @@ Bagging objects return `$best_beta` (the aggregated coefficient vector, usable d
 4. **`coxkl_ties` is only for full-cohort Cox with tied event times.** Do not suggest it for NCC. NCC functions have **no ties argument by construction** because each matched set contains exactly one event — tied event times are impossible by design. Do not invent a `ncckl_ties` function (it does not exist) and do not search for a ties option on `ncckl` / `ncc_indi` / `ncc_MDTL`. The `method = c("breslow", "exact")` argument that *does* appear on `ncckl` controls 1:m vs n:m matching likelihood form, not ties handling. See the dedicated `coxkl_ties` subsection above for the `ties` parameter (`"breslow"` / `"exact"`) and the `comb_max` safety cap; note also that `coxkl_ties` has no `_ridge` / `_enet` companion.
 5. **`eta` and `lambda` are different things.** `eta` controls **external borrowing**. `lambda` controls **regularization** (only present in `_ridge` / `_enet`). Both can be tuned, but they play different roles.
 6. **`alpha = 0` in `_enet` is ridge**, but the package provides a dedicated `_ridge` function that is preferred for pure-ridge use cases.
-7. **For Mahalanobis without a curvature matrix**, pass `vcov = NULL` (not `vcov = diag(p)` — both work, but `NULL` is canonical).
+7. **For Mahalanobis without a curvature matrix**, pass `Q = NULL` (not `Q = diag(p)` — both work, but `NULL` is canonical).
 8. **`cv.*` functions use `cv.criteria`; non-CV helpers use `criteria`.** This mirrors the function-name prefix: any `cv.*` function takes `cv.criteria = ...`. `test_eval`, `test_eval_ncc`, `plot.*`, and `bopt.coxkl` take `criteria = ...`. Do not mix them — passing the wrong name triggers `unused argument`.
 9. **`generate_eta` does not auto-pick a sensible `max_eta`.** The user must choose based on the problem. If the CV optimum sits at the boundary, extend the grid and re-run.
 10. **Stratified analysis is the default.** If `stratum` is omitted, the package silently assigns everyone to one stratum and fits a non-stratified model. This is fine for many problems but should be made explicit in output to users.
@@ -341,7 +342,7 @@ The integrated objective functions have closed-form interpretations as **weighte
 
 - **KL (Cox)**: `Q_eta(beta) = -loglik_internal(beta) + eta * D_KL(P_ext || P_int)` reduces to a weighted internal log-likelihood with a pseudo-event weight `(delta + eta * delta_tilde) / (1 + eta)` per subject, where `delta_tilde` is an externally-induced weight derived from `beta_ext`.
 - **KL (NCC)**: analogous construction on matched sets; the pseudo-event weight is `(xi + eta * p_tilde) / (1 + eta)`.
-- **Mahalanobis**: `Q_eta(beta) = -loglik_internal(beta) + (eta/2) (beta - beta_ext)' Q (beta - beta_ext)`. With `Q = vcov` (or identity if `NULL`).
+- **Mahalanobis**: `Q_eta(beta) = -loglik_internal(beta) + (eta/2) (beta - beta_ext)' Q (beta - beta_ext)`. `Q` is the supplied precision matrix (or a masked identity if `NULL`).
 - **Composite likelihood (individual-level)**: `loglik_int(beta) + eta * loglik_ext(beta)` — equivalent to stacking cohorts with observation weights `1` (internal) and `eta` (external), with strata kept separate so risk sets do not mix.
 
 Full derivations are in the package vignettes (`vignette("coxkl")`, `vignette("ncc")`, `vignette("CV_Criteria")`, `vignette("BregSurv")`).

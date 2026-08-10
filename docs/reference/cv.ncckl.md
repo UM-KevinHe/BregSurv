@@ -1,25 +1,14 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cross-Validated Conditional Logistic Regression with KL Integration
-
-<div class="ref-description section level2">
 
 Performs K-fold cross-validation (CV) to select the integration
 parameter `eta` for Conditional Logistic Regression with
 Kullback–Leibler (KL) divergence data integration, implemented via
-`ncckl`.
+[`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md).
 
 This function is designed for 1:m matched case–control settings where
-each stratum (matched set) contains exactly one case and \\(m\\)
-controls.
-
-</div>
-
-<div class="section level2">
+each stratum (matched set) contains exactly one case and \\m\\ controls.
 
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cv.ncckl(
@@ -40,142 +29,139 @@ cv.ncckl(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   y:
+- y:
 
-    Numeric vector of binary outcomes (0 = control, 1 = case). In the
-    1:m matched case–control setting, each stratum must contain exactly
-    one case.
+  Numeric vector of binary outcomes (0 = control, 1 = case). In the 1:m
+  matched case–control setting, each stratum must contain exactly one
+  case.
 
--   z:
+- z:
 
-    Numeric matrix of covariates (rows = observations, columns =
-    variables).
+  Numeric matrix of covariates (rows = observations, columns =
+  variables).
 
--   stratum:
+- stratum:
 
-    Numeric or factor vector defining the matched sets (strata). Each
-    unique value identifies one matched set.
+  Numeric or factor vector defining the matched sets (strata). Each
+  unique value identifies one matched set.
 
--   beta:
+- beta:
 
-    Numeric vector of external coefficients. **Required**. Length must
-    equal the number of columns in `z`. These are used by `ncckl` /
-    `coxkl_ties` to construct the KL divergence penalty.
+  Numeric vector of external coefficients. **Required**. Length must
+  equal the number of columns in `z`. These are used by
+  [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md) /
+  [`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md)
+  to construct the KL divergence penalty.
 
--   etas:
+- etas:
 
-    Numeric vector of candidate tuning values for the integration
-    parameter \\(\\eta\\) to be cross-validated. The values will be
-    sorted in ascending order.
+  Numeric vector of candidate tuning values for the integration
+  parameter \\\eta\\ to be cross-validated. The values will be sorted in
+  ascending order.
 
--   method:
+- method:
 
-    Character string specifying the tie-handling method used in the
-    underlying Cox partial likelihood. Must be one of `"breslow"` or
-    `"exact"`. For 1:m matched sets, these yield identical parameter
-    estimates, but `"exact"` is theoretically preferable.
+  Character string specifying the tie-handling method used in the
+  underlying Cox partial likelihood. Must be one of `"breslow"` or
+  `"exact"`. For 1:m matched sets, these yield identical parameter
+  estimates, but `"exact"` is theoretically preferable.
 
--   tol:
+- tol:
 
-    Convergence tolerance for the optimizer used inside `ncckl` /
-    `coxkl_ties`. Default `1e-4`.
+  Convergence tolerance for the optimizer used inside
+  [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md) /
+  [`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md).
+  Default `1e-4`.
 
--   Mstop:
+- Mstop:
 
-    Maximum number of Newton iterations used inside `ncckl` /
-    `coxkl_ties`. Default `100`.
+  Maximum number of Newton iterations used inside
+  [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md) /
+  [`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md).
+  Default `100`.
 
--   nfolds:
+- nfolds:
 
-    Number of cross-validation folds. Default `5`.
+  Number of cross-validation folds. Default `5`.
 
--   cv.criteria:
+- cv.criteria:
 
-    Character string specifying the CV performance criterion. Choices
-    are:
+  Character string specifying the CV performance criterion. Choices are:
 
-    -   `"loss"`: Average negative conditional log-likelihood (lower is
-        better).
+  - `"loss"`: Average negative conditional log-likelihood (lower is
+    better).
 
-    -   `"AUC"`: Matched-set AUC based on within-stratum comparisons
-        (higher is better).
+  - `"AUC"`: Matched-set AUC based on within-stratum comparisons (higher
+    is better).
 
-    -   `"CIndex"`: Concordance index in the matched-set setting,
-        implemented via the same matched-set AUC calculation as `"AUC"`
-        (higher is better).
+  - `"CIndex"`: Concordance index in the matched-set setting,
+    implemented via the same matched-set AUC calculation as `"AUC"`
+    (higher is better).
 
-    -   `"Brier"`: Conditional Brier score using within-stratum softmax
-        probabilities (lower is better).
+  - `"Brier"`: Conditional Brier score using within-stratum softmax
+    probabilities (lower is better).
 
-    Default is `"loss"`.
+  Default is `"loss"`.
 
--   message:
+- message:
 
-    Logical; if `TRUE`, prints progress messages and fold-wise
-    evaluation progress bars. Default `FALSE`.
+  Logical; if `TRUE`, prints progress messages and fold-wise evaluation
+  progress bars. Default `FALSE`.
 
--   seed:
+- seed:
 
-    Optional integer seed for reproducible fold assignment. Default
-    `NULL`.
+  Optional integer seed for reproducible fold assignment. Default
+  `NULL`.
 
--   comb\_max:
+- comb_max:
 
-    Integer. Maximum number of combinations for the `method = "exact"`
-    calculation, passed down to `ncckl` / `coxkl_ties`. Default `1e7`.
+  Integer. Maximum number of combinations for the `method = "exact"`
+  calculation, passed down to
+  [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md) /
+  [`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md).
+  Default `1e7`.
 
--   ...:
+- ...:
 
-    Additional arguments (currently ignored).
-
-</div>
-
-<div class="section level2">
+  Additional arguments (currently ignored).
 
 ## Value
 
 A `list` of class `"cv.ncckl"` containing:
 
--   `internal_stat`:
+- `internal_stat`:
 
-    A `data.frame` with one row per `eta` and the CV metric results for
-    the chosen `cv.criteria`.
+  A `data.frame` with one row per `eta` and the CV metric results for
+  the chosen `cv.criteria`.
 
--   `beta_full`:
+- `beta_full`:
 
-    The matrix of coefficients from the full-data fit (columns
-    correspond to `etas`).
+  The matrix of coefficients from the full-data fit (columns correspond
+  to `etas`).
 
--   `best`:
+- `best`:
 
-    A list containing the `best_eta`, the corresponding `best_beta` from
-    the full-data fit, and the `cv.criteria` used.
+  A list containing the `best_eta`, the corresponding `best_beta` from
+  the full-data fit, and the `cv.criteria` used.
 
--   `criteria`:
+- `criteria`:
 
-    The criterion used for selection.
+  The criterion used for selection.
 
--   `nfolds`:
+- `nfolds`:
 
-    The number of folds used.
-
-</div>
-
-<div class="section level2">
+  The number of folds used.
 
 ## Details
 
-The matched case–control problem is handled via `ncckl`, which maps
-Conditional Logistic Regression to a Cox model with fixed event time and
-uses `coxkl_ties` as the core engine.
+The matched case–control problem is handled via
+[`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md),
+which maps Conditional Logistic Regression to a Cox model with fixed
+event time and uses
+[`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md)
+as the core engine.
 
 Cross-validation is performed at the stratum level: each matched set is
 treated as an indivisible unit and assigned to a single fold using
@@ -184,38 +170,32 @@ well-defined within each training and test split.
 
 The `cv.criteria` argument controls the CV performance metric:
 
--   `"loss"`: Average negative conditional log-likelihood on held-out
-    strata. For each fold, the conditional log-likelihood is computed
-    over the test matched sets using the fitted \\(\\hat\\beta\\) from
-    the corresponding training data; the fold-wise losses are then
-    averaged.
+- `"loss"`: Average negative conditional log-likelihood on held-out
+  strata. For each fold, the conditional log-likelihood is computed over
+  the test matched sets using the fitted \\\hat\beta\\ from the
+  corresponding training data; the fold-wise losses are then averaged.
 
--   `"AUC"`: A matched-set AUC based on within-stratum comparisons. For
-    each stratum, the case score is compared to the control scores,
-    counting concordant/discordant/tied pairs and aggregating across all
-    strata. Higher AUC indicates better discrimination.
+- `"AUC"`: A matched-set AUC based on within-stratum comparisons. For
+  each stratum, the case score is compared to the control scores,
+  counting concordant/discordant/tied pairs and aggregating across all
+  strata. Higher AUC indicates better discrimination.
 
--   `"CIndex"`: Alias for `"AUC"`. In the 1:m matched case–control
-    setting, the matched-set AUC is equivalent to the conditional
-    concordance index, and is computed using the same path as `"AUC"`.
+- `"CIndex"`: Alias for `"AUC"`. In the 1:m matched case–control
+  setting, the matched-set AUC is equivalent to the conditional
+  concordance index, and is computed using the same path as `"AUC"`.
 
--   `"Brier"`: A conditional Brier score based on within-stratum softmax
-    probabilities. For each stratum, a probability is assigned to each
-    member via \\(\\hat p\_{si} = \\exp(\\eta\_{si}) / \\sum\_{j \\in
-    S\_s} \\exp(\\eta\_{sj})\\), and the Brier score is the mean squared
-    error \\((Y\_{si} - \\hat p\_{si})^2\\) across all observations.
-    Lower Brier indicates better conditional calibration and sharpness.
+- `"Brier"`: A conditional Brier score based on within-stratum softmax
+  probabilities. For each stratum, a probability is assigned to each
+  member via \\\hat p\_{si} = \exp(\eta\_{si}) / \sum\_{j \in S_s}
+  \exp(\eta\_{sj})\\, and the Brier score is the mean squared error
+  \\(Y\_{si} - \hat p\_{si})^2\\ across all observations. Lower Brier
+  indicates better conditional calibration and sharpness.
 
 The returned object has the same structure as `"cv.coxkl"` objects from
-`cv.coxkl_ties`, facilitating downstream code reuse.
-
-</div>
-
-<div class="section level2">
+[`cv.coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl_ties.md),
+facilitating downstream code reuse.
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -244,9 +224,3 @@ cv_clr_kl <- cv.ncckl(
 cv_clr_kl$best$best_eta
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

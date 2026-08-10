@@ -1,25 +1,15 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cross-Validated CLR with Individual-Level External Data and Elastic Net Penalty
-
-<div class="ref-description section level2">
 
 Performs K-fold cross-validation (CV) to jointly select the integration
 parameter `eta` and the Elastic Net penalty parameter `lambda` for
 Conditional Logistic Regression with individual-level external data
-integration and Elastic Net penalty, implemented via `ncc_indi_enet`.
+integration and Elastic Net penalty, implemented via
+[`ncc_indi_enet`](https://um-kevinhe.github.io/BregSurv/reference/ncc_indi_enet.md).
 
 This function is designed for 1:m matched case-control settings where
-each stratum (matched set) contains exactly one case and \\(m\\)
-controls.
-
-</div>
-
-<div class="section level2">
+each stratum (matched set) contains exactly one case and \\m\\ controls.
 
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cv.ncc_indi_enet(
@@ -42,130 +32,114 @@ cv.ncc_indi_enet(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   y\_int:
+- y_int:
 
-    Numeric vector of binary outcomes for the internal dataset (0 =
-    control, 1 = case).
+  Numeric vector of binary outcomes for the internal dataset (0 =
+  control, 1 = case).
 
--   z\_int:
+- z_int:
 
-    Numeric matrix of covariates for the internal dataset.
+  Numeric matrix of covariates for the internal dataset.
 
--   stratum\_int:
+- stratum_int:
 
-    Numeric or factor vector defining the internal matched sets.
-    **Required**.
+  Numeric or factor vector defining the internal matched sets.
+  **Required**.
 
--   y\_ext:
+- y_ext:
 
-    Numeric vector of binary outcomes for the external dataset (0 =
-    control, 1 = case).
+  Numeric vector of binary outcomes for the external dataset (0 =
+  control, 1 = case).
 
--   z\_ext:
+- z_ext:
 
-    Numeric matrix of covariates for the external dataset.
+  Numeric matrix of covariates for the external dataset.
 
--   stratum\_ext:
+- stratum_ext:
 
-    Numeric or factor vector defining the external matched sets.
-    **Required**.
+  Numeric or factor vector defining the external matched sets.
+  **Required**.
 
--   etas:
+- etas:
 
-    Numeric vector of candidate tuning values for \\(\\eta\\).
-    **Required**.
+  Numeric vector of candidate tuning values for \\\eta\\. **Required**.
 
--   alpha:
+- alpha:
 
-    Elastic Net mixing parameter in \\((0,1\]\\). Default `1` (Lasso).
+  Elastic Net mixing parameter in \\(0,1\]\\. Default `1` (Lasso).
 
--   lambda:
+- lambda:
 
-    Optional numeric vector of lambda values. If `NULL`, a lambda path
-    is generated automatically for each `eta`.
+  Optional numeric vector of lambda values. If `NULL`, a lambda path is
+  generated automatically for each `eta`.
 
--   nlambda:
+- nlambda:
 
-    Integer. Number of lambda values to generate. Default `100`.
+  Integer. Number of lambda values to generate. Default `100`.
 
--   lambda.min.ratio:
+- lambda.min.ratio:
 
-    Numeric in \\((0,1)\\). Ratio of minimum to maximum lambda. If
-    `NULL`, set internally based on sample size vs. number of
-    covariates.
+  Numeric in \\(0,1)\\. Ratio of minimum to maximum lambda. If `NULL`,
+  set internally based on sample size vs. number of covariates.
 
--   nfolds:
+- nfolds:
 
-    Number of cross-validation folds. Default `5`.
+  Number of cross-validation folds. Default `5`.
 
--   cv.criteria:
+- cv.criteria:
 
-    Character string specifying the CV performance criterion. One of
-    `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
+  Character string specifying the CV performance criterion. One of
+  `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, prints progress messages. Default `FALSE`.
+  Logical. If `TRUE`, prints progress messages. Default `FALSE`.
 
--   seed:
+- seed:
 
-    Optional integer seed for reproducible fold assignment. Default
-    `NULL`.
+  Optional integer seed for reproducible fold assignment. Default
+  `NULL`.
 
--   ...:
+- ...:
 
-    Additional arguments passed to `ncc_indi_enet`.
-
-</div>
-
-<div class="section level2">
+  Additional arguments passed to
+  [`ncc_indi_enet`](https://um-kevinhe.github.io/BregSurv/reference/ncc_indi_enet.md).
 
 ## Value
 
 A list of class `"cv.ncc_indi_enet"` containing:
 
--   `best`:
+- `best`:
 
-    A list with the global best \\((\\eta, \\lambda)\\): `best_eta`,
-    `best_lambda`, `best_beta`, `cv.criteria`.
+  A list with the global best \\(\eta, \lambda)\\: `best_eta`,
+  `best_lambda`, `best_beta`, `cv.criteria`.
 
--   `integrated_stat.full_results`:
+- `integrated_stat.full_results`:
 
-    A `data.frame` with the CV score for every \\((\\eta, \\lambda)\\)
-    combination.
+  A `data.frame` with the CV score for every \\(\eta, \lambda)\\
+  combination.
 
--   `integrated_stat.best_per_eta`:
+- `integrated_stat.best_per_eta`:
 
-    A `data.frame` with the best `lambda` and score for each `eta`.
+  A `data.frame` with the best `lambda` and score for each `eta`.
 
--   `integrated_stat.betahat_best`:
+- `integrated_stat.betahat_best`:
 
-    Matrix of full-data coefficients at the best `lambda` for each
-    `eta`.
+  Matrix of full-data coefficients at the best `lambda` for each `eta`.
 
--   `criteria`:
+- `criteria`:
 
-    The CV criterion used.
+  The CV criterion used.
 
--   `alpha`:
+- `alpha`:
 
-    The Elastic Net mixing parameter.
+  The Elastic Net mixing parameter.
 
--   `nfolds`:
+- `nfolds`:
 
-    The number of folds used.
-
-</div>
-
-<div class="section level2">
+  The number of folds used.
 
 ## Details
 
@@ -177,33 +151,22 @@ full during every training fold.
 For each candidate `eta`, a full `lambda` path is fit on the complete
 internal + external data, and then K-fold CV is used to evaluate each
 `lambda` along this path. The function performs a 2D search over
-\\((\\eta, \\lambda)\\).
+\\(\eta, \lambda)\\.
 
 The `cv.criteria` argument controls the CV performance metric:
 
--   `"loss"`: Average negative conditional log-likelihood on held-out
-    strata (lower is better).
+- `"loss"`: Average negative conditional log-likelihood on held-out
+  strata (lower is better).
 
--   `"AUC"`: Matched-set AUC based on within-stratum comparisons (higher
-    is better).
+- `"AUC"`: Matched-set AUC based on within-stratum comparisons (higher
+  is better).
 
--   `"CIndex"`: Alias for `"AUC"` in the 1:m matched setting.
+- `"CIndex"`: Alias for `"AUC"` in the 1:m matched setting.
 
--   `"Brier"`: Conditional Brier score based on within-stratum softmax
-    probabilities (lower is better).
-
-</div>
-
-<div class="section level2">
+- `"Brier"`: Conditional Brier score based on within-stratum softmax
+  probabilities (lower is better).
 
 ## See also
 
-<div class="dont-index">
-
-`ncc_indi_enet`, `cv.ncckl_enet`
-
-</div>
-
-</div>
-
-</div>
+[`ncc_indi_enet`](https://um-kevinhe.github.io/BregSurv/reference/ncc_indi_enet.md),
+[`cv.ncckl_enet`](https://um-kevinhe.github.io/BregSurv/reference/cv.ncckl_enet.md)

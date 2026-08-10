@@ -9,7 +9,7 @@ cv.ncc_MDTL(
   z,
   stratum,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas = NULL,
   tol = 1e-04,
   Mstop = 100,
@@ -29,7 +29,7 @@ cv.ncc_MDTL(
 
 \item{beta}{Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.}
 
-\item{vcov}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
+\item{Q}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
 matrix \eqn{Q}. Typically the precision matrix of the external estimator. If \code{NULL},
 defaults to the identity matrix.}
 
@@ -105,7 +105,7 @@ cv_fit <- cv.ncc_MDTL(
   z        = z,
   stratum  = sets,
   beta     = beta_ext,
-  vcov     = NULL,
+  Q        = NULL,
   etas     = eta_list,
   nfolds   = 5,
   cv.criteria = "loss",

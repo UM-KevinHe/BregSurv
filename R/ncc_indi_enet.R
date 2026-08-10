@@ -106,6 +106,8 @@ ncc_indi_enet <- function(y_int, z_int, stratum_int,
     stop("Length of y_ext must match the number of rows in z_ext.", call. = FALSE)
   }
 
+  check_etas(etas)
+
   # Map CLR problem to Cox PH problem: time = 1, delta = y
   time_int <- rep(1, length(y_int))
   time_ext <- rep(1, length(y_ext))

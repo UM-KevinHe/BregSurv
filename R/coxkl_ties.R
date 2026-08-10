@@ -98,9 +98,8 @@ coxkl_ties <- function(z, delta, time, stratum = NULL, beta,
   
   if (is.null(beta)) {
     stop("No external information is provided.")
-  } else if (length(beta) != ncol(z)) {
-    stop("The dimension of beta does not match the number of columns in z.")
   }
+  beta <- align_beta(z, beta)
   
   input_data <- list(z = z, time = time, delta = delta, stratum = stratum)
   
@@ -123,6 +122,7 @@ coxkl_ties <- function(z, delta, time, stratum = NULL, beta,
     stratum <- as.numeric(stratum)
   }
   
+  check_etas(etas)
   etas <- sort(etas)
   n_eta <- length(etas)
   LP_mat <- matrix(NA, nrow = nrow(z_mat), ncol = n_eta)

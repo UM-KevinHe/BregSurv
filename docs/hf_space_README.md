@@ -1,8 +1,4 @@
-<div id="main" class="col-md-9" role="main">
-
 # BregSurv Agent
-
-<div id="bregsurv-agent" class="section level1">
 
 A natural-language interface to
 **[BregSurv](https://github.com/UM-KevinHe/BregSurv)** — a
@@ -14,15 +10,13 @@ Describe your analysis in plain English. The agent picks the correct
 estimator from a fixed library of 33 statistically-derived tools, runs
 it on the supplied data, and returns:
 
--   a natural-language summary of the results,
--   the coefficient table,
--   a CV-path plot (when applicable),
--   **`repro.R`** — a standalone R script that bit-matches the agent’s
-    coefficients without any LLM in the loop,
--   **`trace.json`** — a per-tool-call audit trail recording every step
-    the agent took.
-
-<div class="section level2">
+- a natural-language summary of the results,
+- the coefficient table,
+- a CV-path plot (when applicable),
+- **`repro.R`** — a standalone R script that bit-matches the agent’s
+  coefficients without any LLM in the loop,
+- **`trace.json`** — a per-tool-call audit trail recording every step
+  the agent took.
 
 ## How this is “verification-scaffolded”
 
@@ -31,10 +25,6 @@ Bregman/KL/Mahalanobis form is derived in the accompanying paper. The
 LLM acts as a router, not a numerical solver — every coefficient you see
 comes from R. The two artifacts above (`repro.R` + `trace.json`) let a
 reviewer reproduce and audit the run without trusting the LLM.
-
-</div>
-
-<div class="section level2">
 
 ## Try it
 
@@ -55,10 +45,6 @@ For a cross-validation example:
 > *Cross-validate Cox KL on the lowdim sample with 20 exponential etas
 > from 0 to 5 using the good external beta and C-index criterion.*
 
-</div>
-
-<div class="section level2">
-
 ## Privacy
 
 In demo mode (this Space), file uploads are disabled — you can only run
@@ -73,30 +59,16 @@ the model is local. See
 <https://github.com/UM-KevinHe/BregSurv/blob/main/mcp/DEPLOY.md> for the
 self-host recipe.
 
-</div>
-
-<div class="section level2">
-
 ## Tech
 
--   **Statistical engine:**
-    [BregSurv](https://github.com/UM-KevinHe/BregSurv) R package
-    (Bregman / KL / Mahalanobis penalties; Cox PH, NCC, ties,
-    high-dimensional enet/ridge).
--   **Agent loop:** Python; OpenAI-compatible Chat Completions API with
-    tool use, served by vLLM (`Qwen/Qwen2.5-7B-Instruct-AWQ`).
--   **UI:** Gradio.
-
-</div>
-
-<div class="section level2">
+- **Statistical engine:**
+  [BregSurv](https://github.com/UM-KevinHe/BregSurv) R package (Bregman
+  / KL / Mahalanobis penalties; Cox PH, NCC, ties, high-dimensional
+  enet/ridge).
+- **Agent loop:** Python; OpenAI-compatible Chat Completions API with
+  tool use, served by vLLM (`Qwen/Qwen2.5-7B-Instruct-AWQ`).
+- **UI:** Gradio.
 
 ## License
 
 GPL-3.0, matching the BregSurv R package.
-
-</div>
-
-</div>
-
-</div>

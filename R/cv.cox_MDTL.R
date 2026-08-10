@@ -14,9 +14,11 @@
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
 #'   all subjects are assumed to be in the same stratum.
 #' @param beta A numeric vector of external coefficients (length p).
-#' @param vcov Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-#'   for the Mahalanobis penalty. Typically the inverse covariance matrix. If \code{NULL},
-#'   defaults to the identity matrix.
+#' @param Q Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
+#'   for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
+#'   \emph{precision} matrix (typically the inverse covariance / information matrix of
+#'   the external estimator). If named, it is reordered and zero-padded to
+#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
 #' @param etas A numeric vector of candidate \code{eta} values to be evaluated.
 #' @param tol Convergence tolerance for the optimization algorithm. Default is 1e-4.
 #' @param Mstop Maximum number of iterations for the optimization. Default is 100.
@@ -62,7 +64,7 @@
 #'   delta = train_dat_lowdim$status,
 #'   time = train_dat_lowdim$time,
 #'   beta = beta_external_lowdim,
-#'   vcov = NULL,
+#'   Q = NULL,
 #'   etas = eta_list,
 #'   cv.criteria = "V&VH"
 #' )
@@ -70,7 +72,7 @@
 #'
 #' @export
 cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
-                        beta, vcov = NULL,
+                        beta, Q = NULL,
                         etas = NULL,
                         tol = 1.0e-4, Mstop = 100,
                         nfolds = 5,
@@ -82,20 +84,12 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
   etas <- sort(etas)
 
-  if (length(beta) != ncol(z)) {
-    stop("Error: The dimension of external beta does not match the number of columns in z.")
-  }
-
-  if (is.null(vcov)) {
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("Error: The dimension of external variance-covariance does not match the number of columns in z.")
-    }
-    Q <- vcov
-  }
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
 
 
   ## Process stratum
@@ -129,7 +123,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
                             time = time,
                             stratum = stratum,
                             beta = beta,
-                            vcov = Q,
+                            Q = Q,
                             etas = etas,
                             tol = tol,
                             Mstop = Mstop,
@@ -176,7 +170,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
                                time = time_train,
                                stratum = stratum_train,
                                beta = beta,
-                               vcov = Q,
+                               Q = Q,
                                etas = eta,
                                tol = tol,
                                Mstop = Mstop,

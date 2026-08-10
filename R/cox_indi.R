@@ -94,7 +94,7 @@ cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas <- sort(as.numeric(etas))
-  if (any(!is.finite(etas)) || any(etas < 0)) stop("All etas must be finite and nonnegative.", call. = FALSE)
+  check_etas(etas)
 
   if (is.null(stratum_int)) stratum_int <- rep(1, n_int)
   if (is.null(stratum_ext)) stratum_ext <- rep(1, n_ext)

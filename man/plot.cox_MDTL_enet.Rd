@@ -46,7 +46,7 @@ cox_MDTL_enet_est <- cox_MDTL_enet(z = train_dat_highdim$z,
                                    delta = train_dat_highdim$status,
                                    time = train_dat_highdim$time,
                                    beta = beta_external_highdim,
-                                   vcov = NULL,
+                                   Q = NULL,
                                    eta = 0)
 
 plot.cox_MDTL_enet(cox_MDTL_enet_est,

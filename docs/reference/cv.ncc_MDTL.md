@@ -1,24 +1,14 @@
-<div id="main" class="col-md-9" role="main">
-
 # Cross-Validated CLR with Mahalanobis Distance Transfer Learning
-
-<div class="ref-description section level2">
 
 Performs K-fold cross-validation (CV) to select the integration
 parameter `eta` for Conditional Logistic Regression with Mahalanobis
-distance transfer learning, implemented via `ncc_MDTL`.
+distance transfer learning, implemented via
+[`ncc_MDTL`](https://um-kevinhe.github.io/BregSurv/reference/ncc_MDTL.md).
 
 This function is designed for 1:m matched case-control settings where
-each stratum (matched set) contains exactly one case and \\(m\\)
-controls.
-
-</div>
-
-<div class="section level2">
+each stratum (matched set) contains exactly one case and \\m\\ controls.
 
 ## Usage
-
-<div class="sourceCode">
 
 ``` r
 cv.ncc_MDTL(
@@ -26,7 +16,7 @@ cv.ncc_MDTL(
   z,
   stratum,
   beta,
-  vcov = NULL,
+  Q = NULL,
   etas = NULL,
   tol = 1e-04,
   Mstop = 100,
@@ -38,106 +28,95 @@ cv.ncc_MDTL(
 )
 ```
 
-</div>
-
-</div>
-
-<div class="section level2">
-
 ## Arguments
 
--   y:
+- y:
 
-    Numeric vector of binary outcomes (0 = control, 1 = case).
+  Numeric vector of binary outcomes (0 = control, 1 = case).
 
--   z:
+- z:
 
-    Numeric matrix of covariates.
+  Numeric matrix of covariates.
 
--   stratum:
+- stratum:
 
-    Numeric or factor vector defining the matched sets. **Required**.
+  Numeric or factor vector defining the matched sets. **Required**.
 
--   beta:
+- beta:
 
-    Numeric vector of external coefficients (length `ncol(z)`).
-    **Required**.
+  Numeric vector of external coefficients (length `ncol(z)`).
+  **Required**.
 
--   vcov:
+- Q:
 
-    Optional numeric matrix (`ncol(z)` x `ncol(z)`) as the weighting
-    matrix \\(Q\\). Typically the precision matrix of the external
-    estimator. If `NULL`, defaults to the identity matrix.
+  Optional numeric matrix (`ncol(z)` x `ncol(z)`) as the weighting
+  matrix \\Q\\. Typically the precision matrix of the external
+  estimator. If `NULL`, defaults to the identity matrix.
 
--   etas:
+- etas:
 
-    Numeric vector of candidate tuning values for \\(\\eta\\).
-    **Required**.
+  Numeric vector of candidate tuning values for \\\eta\\. **Required**.
 
--   tol:
+- tol:
 
-    Convergence tolerance passed to `ncc_MDTL`. Default `1e-4`.
+  Convergence tolerance passed to
+  [`ncc_MDTL`](https://um-kevinhe.github.io/BregSurv/reference/ncc_MDTL.md).
+  Default `1e-4`.
 
--   Mstop:
+- Mstop:
 
-    Maximum Newton-Raphson iterations passed to `ncc_MDTL`. Default
-    `100`.
+  Maximum Newton-Raphson iterations passed to
+  [`ncc_MDTL`](https://um-kevinhe.github.io/BregSurv/reference/ncc_MDTL.md).
+  Default `100`.
 
--   nfolds:
+- nfolds:
 
-    Number of cross-validation folds. Default `5`.
+  Number of cross-validation folds. Default `5`.
 
--   cv.criteria:
+- cv.criteria:
 
-    Character string specifying the CV performance criterion. One of
-    `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
+  Character string specifying the CV performance criterion. One of
+  `"loss"` (default), `"AUC"`, `"CIndex"`, or `"Brier"`.
 
--   message:
+- message:
 
-    Logical. If `TRUE`, prints progress messages. Default `FALSE`.
+  Logical. If `TRUE`, prints progress messages. Default `FALSE`.
 
--   seed:
+- seed:
 
-    Optional integer seed for reproducible fold assignment. Default
-    `NULL`.
+  Optional integer seed for reproducible fold assignment. Default
+  `NULL`.
 
--   ...:
+- ...:
 
-    Additional arguments passed to `ncc_MDTL`.
-
-</div>
-
-<div class="section level2">
+  Additional arguments passed to
+  [`ncc_MDTL`](https://um-kevinhe.github.io/BregSurv/reference/ncc_MDTL.md).
 
 ## Value
 
 A list of class `"cv.ncc_MDTL"` containing:
 
--   `internal_stat`:
+- `internal_stat`:
 
-    A `data.frame` with one row per `eta` and the CV metric for the
-    chosen `cv.criteria`.
+  A `data.frame` with one row per `eta` and the CV metric for the chosen
+  `cv.criteria`.
 
--   `beta_full`:
+- `beta_full`:
 
-    Matrix of coefficients from the full-data fit (columns correspond to
-    `etas`).
+  Matrix of coefficients from the full-data fit (columns correspond to
+  `etas`).
 
--   `best`:
+- `best`:
 
-    A list with `best_eta`, `best_beta`, and `criteria`.
+  A list with `best_eta`, `best_beta`, and `criteria`.
 
--   `criteria`:
+- `criteria`:
 
-    The criterion used for selection.
+  The criterion used for selection.
 
--   `nfolds`:
+- `nfolds`:
 
-    The number of folds used.
-
-</div>
-
-<div class="section level2">
+  The number of folds used.
 
 ## Details
 
@@ -148,36 +127,23 @@ well-defined within each training and test split.
 
 The `cv.criteria` argument controls the CV performance metric:
 
--   `"loss"`: Average negative conditional log-likelihood on held-out
-    strata (lower is better).
+- `"loss"`: Average negative conditional log-likelihood on held-out
+  strata (lower is better).
 
--   `"AUC"`: Matched-set AUC based on within-stratum comparisons (higher
-    is better).
+- `"AUC"`: Matched-set AUC based on within-stratum comparisons (higher
+  is better).
 
--   `"CIndex"`: Alias for `"AUC"` in the 1:m matched setting.
+- `"CIndex"`: Alias for `"AUC"` in the 1:m matched setting.
 
--   `"Brier"`: Conditional Brier score based on within-stratum softmax
-    probabilities (lower is better).
-
-</div>
-
-<div class="section level2">
+- `"Brier"`: Conditional Brier score based on within-stratum softmax
+  probabilities (lower is better).
 
 ## See also
 
-<div class="dont-index">
-
-`ncc_MDTL`, `cv.ncckl`
-
-</div>
-
-</div>
-
-<div class="section level2">
+[`ncc_MDTL`](https://um-kevinhe.github.io/BregSurv/reference/ncc_MDTL.md),
+[`cv.ncckl`](https://um-kevinhe.github.io/BregSurv/reference/cv.ncckl.md)
 
 ## Examples
-
-<div class="sourceCode">
 
 ``` r
 if (FALSE) { # \dontrun{
@@ -196,7 +162,7 @@ cv_fit <- cv.ncc_MDTL(
   z        = z,
   stratum  = sets,
   beta     = beta_ext,
-  vcov     = NULL,
+  Q        = NULL,
   etas     = eta_list,
   nfolds   = 5,
   cv.criteria = "loss",
@@ -205,9 +171,3 @@ cv_fit <- cv.ncc_MDTL(
 cv_fit$best$best_eta
 } # }
 ```
-
-</div>
-
-</div>
-
-</div>

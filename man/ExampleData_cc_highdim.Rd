@@ -7,10 +7,11 @@
 \format{
 A list containing:
 \describe{
-\item{train}{List with elements \code{y}, \code{z}, and \code{stratum}.}
+\item{train}{List with elements \code{y}, \code{z}, \code{stratum}, and
+\code{beta_true} (numeric, length 20, named \code{Z1}--\code{Z20}).}
 \item{test}{Same structure as \code{train}.}
-\item{beta_true}{Numeric vector (length 50) of true coefficients.}
-\item{beta_external}{Numeric vector (length 50) representing external coefficients.}
+\item{beta_external}{Numeric vector (length 20; named \code{Z1}--\code{Z20})
+representing external coefficients.}
 }
 }
 \usage{

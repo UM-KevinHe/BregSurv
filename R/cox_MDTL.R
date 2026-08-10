@@ -12,24 +12,27 @@
 #' where:
 #' \itemize{
 #'   \item \eqn{\beta_{ext}} is the vector of external coefficients.
-#'   \item \eqn{Q} is the weighting matrix (derived from \code{vcov}).
+#'   \item \eqn{Q} is the weighting (precision) matrix.
 #'   \item \eqn{\eta} is the tuning parameter controlling the strength of the external information.
 #' }
-#' If \code{vcov} is \code{NULL}, \eqn{Q} defaults to the identity matrix, reducing the
-#' penalty to a standard Euclidean distance (Ridge-type shrinkage towards \code{beta}).
+#' If \code{Q} is \code{NULL}, it defaults to a masked identity (the identity on the
+#' covariates supplied by \code{beta}, and 0 on covariates the external source does not
+#' cover), reducing the penalty to a Ridge-type shrinkage towards \code{beta}.
 #'
 #' @param z A numeric matrix or data frame of covariates (n x p).
 #' @param delta A numeric vector of event indicators (1 = event, 0 = censored).
 #' @param time A numeric vector of observed times.
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
 #'   all subjects are assumed to be in the same stratum.
-#' @param beta A numeric vector of external coefficients (length p).
-#' @param vcov Optional numeric matrix (p x p) acting as the weighting matrix \eqn{Q}
-#'   in the Mahalanobis penalty.
-#'   \strong{Note:} In standard Mahalanobis distance formulations, this should be the
-#'   \emph{inverse} of the covariance matrix (precision matrix). If not provided,
-#'   an identity matrix is used.
-#' @param etas A numeric vector of tuning parameters (scalars) to evaluate.
+#' @param beta A numeric vector of external coefficients. If named, the names are
+#'   matched against \code{colnames(z)} and covariates absent from \code{beta} are
+#'   zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.
+#' @param Q Optional numeric matrix acting as the weighting matrix \eqn{Q} in the
+#'   Mahalanobis penalty. This should be a symmetric positive-semidefinite
+#'   \emph{precision} matrix (e.g. the inverse covariance / information matrix of
+#'   the external estimator). If named, it is reordered and zero-padded to
+#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
+#' @param etas A numeric vector of non-negative tuning parameters (scalars) to evaluate.
 #' @param tol Convergence tolerance for the Newton-Raphson algorithm. Default is 1e-4.
 #' @param Mstop Maximum number of iterations for Newton-Raphson. Default is 50.
 #' @param backtrack Logical. If \code{TRUE}, uses backtracking line search. Default is \code{FALSE}.
@@ -59,37 +62,33 @@
 #'   delta = train_dat_lowdim$status,
 #'   time = train_dat_lowdim$time,
 #'   beta = beta_external_lowdim,
-#'   vcov = NULL,
+#'   Q = NULL,
 #'   etas = eta_list
 #' )
 #' }
 #'
 #' @export
 cox_MDTL <- function(z, delta, time, stratum = NULL,
-                     beta, vcov = NULL, etas,
+                     beta, Q = NULL, etas,
                      tol = 1.0e-4, Mstop = 50,
                      backtrack = FALSE,
                      message = FALSE,
                      data_sorted = FALSE,
                      beta_initial = NULL) {
-  
+
   ## ---- Input Checks ----
   if (missing(beta)) stop("External beta must be provided.", call. = FALSE)
   if (missing(etas) || is.null(etas)) stop("etas must be provided.", call. = FALSE)
-  
-  if (length(beta) != ncol(z)) {
-    stop("Error: The dimension of external beta does not match the number of columns in z.")
-  }
-  
-  if (is.null(vcov)) {
-    Q <- diag(ncol(z))
-  } else {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop("Error: The dimension of external vcov matrix does not match the number of columns in z.")
-    }
-    Q <- vcov
-  }
-  
+  check_etas(etas)
+
+  ## Align external beta and Q to the covariates of z: a named beta/Q is matched
+  ## to colnames(z) and zero-padded where the external source is silent; Q is
+  ## validated (symmetric, positive-semidefinite) and defaults to a masked
+  ## identity when NULL so padded coefficients are left unpenalized.
+  aligned <- align_beta_Q(z, beta, Q)
+  beta <- aligned$beta
+  Q <- aligned$Q
+
   ## ---- Data Preparation ----
   z <- as.matrix(z)
   delta <- as.numeric(delta)
