@@ -2,11 +2,34 @@
 #'
 #' @param z_ncc Matrix of covariates for NCC data (rows = subjects).
 #' @param case Integer or logical vector (0/1) indicating cases.
-#' @param set_id Vector of matched set identifiers.
-#' @param betahat Numeric vector of estimated coefficients.
-#' @param criteria "loss", "CIndex", or "Brier".
+#' @param set_id Vector of matched set identifiers. Every matched set must contain
+#'   exactly one case; a set with zero or more than one case is an error
+#'   ("Each matched set must contain exactly one case.").
+#' @param betahat Numeric vector of estimated coefficients. \strong{This argument is
+#'   strictly positional}: the linear predictor is formed as the matrix product of
+#'   \code{z_ncc} and \code{betahat}, with no name matching, so
+#'   \code{length(betahat)} must equal \code{ncol(z_ncc)} and any names it carries
+#'   are ignored. This is a
+#'   deliberate asymmetry with the model-fitting and cross-validation functions of
+#'   the package, which align a named \code{beta} to \code{colnames(z)} via
+#'   \code{\link{align_beta}}; align the vector yourself before calling this
+#'   function if it may be partial or differently ordered.
+#' @param criteria "loss", "CIndex", or "Brier". Default is "loss".
 #'
 #' @return Numeric performance metric.
+#' \itemize{
+#'   \item \code{"loss"}: \eqn{-2} times the conditional log-partial likelihood
+#'     divided by the \strong{number of matched sets}. Note that the Cox counterpart
+#'     \code{\link{test_eval}} divides its \code{"loss"} by the number of
+#'     \strong{subjects}, so the two losses are on different scales and must not be
+#'     compared directly.
+#'   \item \code{"CIndex"}: despite the name, this is the matched-set AUC (the
+#'     pair-weighted average of within-set case-versus-control rank comparisons).
+#'     For 1:M matched sets the matched-set concordance index and the matched-set
+#'     AUC coincide, which is why the two names are used interchangeably here.
+#'   \item \code{"Brier"}: mean squared difference between the case indicator and
+#'     the within-set multinomial probability implied by the linear predictor.
+#' }
 #'
 #' @keywords internal
 #' @export

@@ -39,19 +39,36 @@ ncc_MDTL(
 
 - beta:
 
-  Numeric vector of external coefficients (length `ncol(z)`).
-  **Required**.
+  Numeric vector of external coefficients. **Required**. If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
+  The bundled external beta `ExampleData_cc_lowdim$beta_external` is
+  named `Z1`–`Z6`, so the examples below already exercise the
+  name-matching path.
 
 - Q:
 
-  Optional numeric matrix (`ncol(z)` x `ncol(z)`) acting as the
-  weighting matrix \\Q\\ in the Mahalanobis penalty. Typically the
-  inverse of the external covariance (precision matrix). If `NULL`,
-  defaults to the identity matrix.
+  Optional weighting (precision) matrix for the Mahalanobis penalty,
+  typically the inverse of the external covariance. Must be symmetric
+  and positive semi-definite (both checked to a tolerance of 1e-8). If
+  named, it is reordered and zero-padded to `colnames(z)`; only an
+  unnamed `Q` must be exactly `ncol(z)` by `ncol(z)`. If `NULL`, a
+  *masked identity* is used: 1 on covariates actually supplied by `beta`
+  and 0 on zero-padded positions, so padded coefficients are left
+  unpenalized. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  Numeric vector of tuning parameters to evaluate. **Required**.
+  Numeric vector of non-negative tuning parameters to evaluate.
+  **Required**. Must be finite and \\\ge 0\\. The values are sorted in
+  ascending order internally, and the columns of the returned
+  coefficient matrix follow that sorted order.
 
 - tol:
 
@@ -92,15 +109,18 @@ as the core engine.
 The objective function minimizes the negative conditional log-likelihood
 plus a Mahalanobis distance penalty: \$\$P(\beta) = \frac{\eta}{2}
 (\beta - \beta\_{ext})^T Q (\beta - \beta\_{ext})\$\$ where \\Q\\ is the
-weighting matrix (identity if `Q` is `NULL`).
+weighting matrix (a *masked* identity when `Q` is `NULL`; see the `Q`
+argument).
 
 - Setting `etas = 0` recovers the standard CLR (no external
   information).
 
 - Larger `eta` enforces stronger agreement with `beta`.
 
-- If `Q = NULL`, \\Q = I\\ (Euclidean/Ridge-type shrinkage towards
-  `beta`).
+- If `Q = NULL`, a *masked identity* is used: 1 on the covariates
+  actually supplied by `beta` and 0 on zero-padded positions. This gives
+  Euclidean/Ridge-type shrinkage towards `beta` on the covariates the
+  external source covers, while leaving padded coefficients unpenalized.
 
 ## See also
 

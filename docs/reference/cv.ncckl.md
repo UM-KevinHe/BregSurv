@@ -49,24 +49,38 @@ cv.ncckl(
 
 - beta:
 
-  Numeric vector of external coefficients. **Required**. Length must
-  equal the number of columns in `z`. These are used by
-  [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md) /
+  Numeric vector of external coefficients. **Required**. These are used
+  by [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md)
+  /
   [`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md)
-  to construct the KL divergence penalty.
+  to construct the KL divergence penalty. If `beta` is named, names are
+  matched against `colnames(z)`: covariates absent from `beta` are set
+  to 0 (with a message) and the vector is reordered, so an external
+  source covering only a subset of the internal covariates may be
+  supplied directly. An unnamed `beta` is aligned positionally and must
+  have length `ncol(z)`. A one-column matrix with row names is accepted
+  as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  The bundled fixture `ExampleData_cc_lowdim$beta_external` is named
+  `Z1`–`Z6` and therefore takes the name-matching path.
 
 - etas:
 
-  Numeric vector of candidate tuning values for the integration
-  parameter \\\eta\\ to be cross-validated. The values will be sorted in
-  ascending order.
+  Numeric vector of non-negative integration weights for the parameter
+  \\\eta\\ to be cross-validated. **Required**; the function stops if
+  `etas` is `NULL`. Must be finite and \\\ge 0\\. The values are sorted
+  in ascending order internally, and the rows of `internal_stat` /
+  columns of `beta_full` follow that sorted order.
 
 - method:
 
   Character string specifying the tie-handling method used in the
-  underlying Cox partial likelihood. Must be one of `"breslow"` or
-  `"exact"`. For 1:m matched sets, these yield identical parameter
-  estimates, but `"exact"` is theoretically preferable.
+  underlying Cox partial likelihood. Must be one of `"breslow"` (the
+  default) or `"exact"`. The value is passed through
+  [`tolower()`](https://rdrr.io/r/base/chartr.html) before matching, so
+  `"Breslow"` / `"EXACT"` are also accepted. For 1:m matched sets, these
+  yield identical parameter estimates, but `"exact"` is theoretically
+  preferable.
 
 - tol:
 
@@ -144,7 +158,7 @@ A `list` of class `"cv.ncckl"` containing:
 - `best`:
 
   A list containing the `best_eta`, the corresponding `best_beta` from
-  the full-data fit, and the `cv.criteria` used.
+  the full-data fit, and `criteria` (the CV criterion used).
 
 - `criteria`:
 
@@ -170,10 +184,12 @@ well-defined within each training and test split.
 
 The `cv.criteria` argument controls the CV performance metric:
 
-- `"loss"`: Average negative conditional log-likelihood on held-out
-  strata. For each fold, the conditional log-likelihood is computed over
-  the test matched sets using the fitted \\\hat\beta\\ from the
-  corresponding training data; the fold-wise losses are then averaged.
+- `"loss"`: Average negative conditional log-likelihood on the held-out
+  data, normalized per observation. For each fold, the conditional
+  log-likelihood is computed over the test matched sets using the fitted
+  \\\hat\beta\\ from the corresponding training data and divided by the
+  number of held-out *observations* in that fold; the resulting
+  fold-wise losses are then averaged (unweighted) across folds.
 
 - `"AUC"`: A matched-set AUC based on within-stratum comparisons. For
   each stratum, the case score is compared to the control scores,

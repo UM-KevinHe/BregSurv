@@ -105,19 +105,33 @@ Each unique value identifies one matched set.</p></dd>
 
 
 <dt id="arg-rs">RS<a class="anchor" aria-label="anchor" href="#arg-rs"></a></dt>
-<dd><p>Optional numeric vector or matrix of external risk scores.
-If not provided, <code>beta</code> must be supplied.</p></dd>
+<dd><p>Optional numeric vector or matrix of external risk scores, with one
+entry per row of <code>z</code>. A vector is coerced to a one-column matrix
+internally so that it can be subset fold-wise. If not provided, <code>beta</code>
+must be supplied.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Optional numeric vector of external coefficients. If provided,
-length must equal the number of columns in <code>z</code>. Either <code>RS</code> or
-<code>beta</code> must be non-<code>NULL</code>.</p></dd>
+<dd><p>Optional numeric vector of external coefficients. If <code>beta</code>
+is named, names are matched against <code>colnames(z)</code>: covariates absent
+from <code>beta</code> are set to 0 (with a message) and the vector is reordered,
+so an external source covering only a subset of the internal covariates may
+be supplied directly. An unnamed <code>beta</code> is aligned positionally and
+must have length <code>ncol(z)</code>. A one-column matrix with row names is
+accepted as a named vector. See <code><a href="align_beta.html">align_beta</a></code>. Either <code>RS</code>
+or <code>beta</code> must be non-<code>NULL</code>. The bundled fixture
+<code>ExampleData_cc_highdim$beta_external</code> is named <code>Z1</code>–<code>Z20</code>
+and therefore takes the name-matching path.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate tuning values for the integration
-parameter \(\eta\). The values will be sorted in ascending order.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights for the
+parameter \(\eta\). <strong>Required</strong>; the function stops if <code>etas</code>
+is <code>NULL</code>. Must be finite and \(\ge 0\). The values are sorted in
+ascending order internally, and the rows of
+<code>integrated_stat.full_results</code> /
+<code>integrated_stat.best_per_eta</code> and the columns of
+<code>integrated_stat.betahat_best</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -221,8 +235,9 @@ complete data (via <code><a href="ncckl_enet.html">ncckl_enet</a></code>), and t
 to evaluate each <code>lambda</code> along this path according to the chosen
 <code>cv.criteria</code>. The function therefore performs a 2D search over
 \((\eta, \lambda)\).</p>
-<p>The <code>cv.criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on held-out
-strata (lower is better).</p></li>
+<p>The <code>cv.criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Negative conditional log-likelihood pooled across the
+held-out folds and divided by the total number of held-out
+<em>observations</em> (lower is better).</p></li>
 <li><p><code>"AUC"</code>: Matched-set AUC based on within-stratum comparisons
 (higher is better).</p></li>
 <li><p><code>"CIndex"</code>: Alias for <code>"AUC"</code> in the 1:m matched setting

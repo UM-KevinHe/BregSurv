@@ -40,7 +40,7 @@
 #' @param data_sorted Logical. If \code{TRUE}, assumes input data is already sorted by stratum and time.
 #' @param beta_initial Optional initial coefficient vector for warm start.
 #'
-#' @return An object of class \code{"Cox_MDTL"} containing:
+#' @return An object of class \code{"cox_MDTL"} containing:
 #' \describe{
 #'   \item{\code{eta}}{The vector of eta values evaluated.}
 #'   \item{\code{beta}}{A matrix of estimated coefficients (p x n_eta).}

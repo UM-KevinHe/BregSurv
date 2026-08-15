@@ -101,7 +101,15 @@ with probability proportional to \(\exp(\theta_i + Z^\top \beta)\).</p></li>
 separate simulated dataset with a slightly different true coefficient vector
 \(\beta_{\mathrm{ext}} = (0.8, -0.8, \dots)\) and correlation \(\rho = 0.3\),
 using the <code>"breslow"</code> tie approximation.</p></li>
-</ul></div>
+</ul><p><strong>External coefficients: name present-and-zero vs. name absent.</strong>
+<code>beta_external</code> is fully populated and fully named over <code>Z1</code>–<code>Z6</code>,
+so <code><a href="align_beta.html">align_beta</a></code> never zero-pads it and <code><a href="align_beta_Q.html">align_beta_Q</a></code> with
+<code>Q = NULL</code> returns the full identity rather than a masked identity. In
+general, a covariate whose name is <em>present</em> with value 0 asserts an external
+estimate of exactly zero and is penalized toward zero, whereas a covariate whose
+name is <em>absent</em> is treated as carrying no external information – it is
+zero-padded and, under the Mahalanobis penalty, left unpenalized.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

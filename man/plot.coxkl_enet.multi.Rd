@@ -18,20 +18,18 @@
 \item{x}{An object of class \code{"coxkl_enet.multi"}, as returned by
 \code{\link{coxkl_enet.multi}}.}
 
-\item{test_z}{Optional numeric matrix of test predictors of dimension
-\code{n_test x p}. If \code{NULL} (default), training data stored inside
-each source fit are used for evaluation.}
+\item{test_z}{Numeric matrix of test predictors of dimension
+\code{n_test x p}. Required: evaluation is always carried out on test data.}
 
-\item{test_time}{Optional numeric vector of test survival times of length
-\code{n_test}. Must be provided together with \code{test_z} and
-\code{test_delta} when evaluating on external test data.}
+\item{test_time}{Numeric vector of test survival times of length
+\code{n_test}. Required, together with \code{test_z} and \code{test_delta}.}
 
-\item{test_delta}{Optional numeric vector of test event indicators of length
-\code{n_test}. Must be provided together with \code{test_z} and
-\code{test_time} when evaluating on external test data.}
+\item{test_delta}{Numeric vector of test event indicators of length
+\code{n_test}. Required, together with \code{test_z} and \code{test_time}.}
 
 \item{test_stratum}{Optional vector of stratum indicators of length
-\code{n_test} for stratified Cox models. Ignored if \code{NULL} (default).}
+\code{n_test} for stratified Cox models. When \code{NULL} (default), the test
+set is evaluated as a single stratum.}
 
 \item{criteria}{Character string specifying the performance metric to plot.
 Either \code{"loss"} (default, negative log partial likelihood scaled by
@@ -57,12 +55,6 @@ value of \eqn{\eta}. It then calls \code{test_eval()} on every column to
 compute the chosen performance metric, and overlays the resulting curves on
 a single \pkg{ggplot2} figure.
 
-If all four test arguments (\code{test_z}, \code{test_time},
-\code{test_delta}, \code{test_stratum}) are \code{NULL}, evaluation is
-performed on the training data embedded in each source fit object. This is
-useful for a quick in-sample diagnostic but may give optimistic estimates of
-performance.
-
 Colors are assigned automatically via \code{\link[scales]{hue_pal}} and
 linetypes cycle through \code{"solid"}, \code{"dashed"}, \code{"dotdash"},
 \code{"longdash"}, and \code{"twodash"} to remain distinguishable when
@@ -77,9 +69,6 @@ fit <- coxkl_enet.multi(
   beta_list = list(beta_ext1, beta_ext2, beta_ext3),
   etas      = seq(0, 1, by = 0.1)
 )
-
-# In-sample diagnostic (uses training data stored in each source fit)
-plot(fit, criteria = "CIndex")
 
 # Out-of-sample evaluation on a held-out test set
 plot(fit,

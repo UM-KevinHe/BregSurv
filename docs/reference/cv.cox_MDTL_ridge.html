@@ -76,7 +76,6 @@ focusing purely on Ridge regression to handle multicollinearity and overfitting.
 <span>  <span class="va">etas</span>,</span>
 <span>  lambda <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nlambda <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>  lambda.min.ratio <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">n_obs</span> <span class="op">&lt;</span> <span class="va">n_vars</span>, <span class="fl">0.01</span>, <span class="fl">1e-04</span><span class="op">)</span>,</span>
 <span>  nfolds <span class="op">=</span> <span class="fl">5</span>,</span>
 <span>  cv.criteria <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"V&amp;VH"</span>, <span class="st">"LinPred"</span>, <span class="st">"CIndex_pooled"</span>, <span class="st">"CIndex_foldaverage"</span><span class="op">)</span>,</span>
 <span>  c_index_stratum <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -104,23 +103,36 @@ focusing purely on Ridge regression to handle multicollinearity and overfitting.
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
 <dd><p>Optional numeric or factor vector indicating strata. If <code>NULL</code>,
-all subjects are assumed to be in the same stratum.</p></dd>
+a warning is issued and all subjects are assumed to be in the same stratum.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>A numeric vector of external coefficients (length p).</p></dd>
+<dd><p>A numeric vector of external coefficients. If <code>beta</code> is named,
+names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed <code>beta</code> is aligned positionally and must have
+length <code>ncol(z)</code>. A one-column matrix with row names is accepted as a
+named vector. See <code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>Optional numeric matrix (p x p) representing the weighting matrix \(Q\)
-for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-<em>precision</em> matrix (typically the inverse covariance / information matrix of
-the external estimator). If named, it is reordered and zero-padded to
-<code>colnames(z)</code>. If <code>NULL</code>, a masked identity is used.</p></dd>
+<dd><p>Optional weighting (precision) matrix for the Mahalanobis penalty
+(typically the inverse covariance / information matrix of the external
+estimator). Must be symmetric and positive semi-definite; both are checked to a
+tolerance of 1e-8 and violations are errors. If named, it is reordered and
+zero-padded to <code>colnames(z)</code>; only an unnamed <code>Q</code> must be exactly
+<code>ncol(z)</code> by <code>ncol(z)</code>. If <code>NULL</code>, a <em>masked identity</em> is
+used: 1 on covariates actually supplied by <code>beta</code> and 0 on zero-padded
+positions, so padded coefficients are left unpenalized. See
+<code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>A numeric vector of candidate <code>eta</code> values to be evaluated.</p></dd>
+<dd><p>A numeric vector of non-negative candidate <code>eta</code> values to be
+evaluated. Must be finite and \(\ge 0\). The values are sorted in ascending
+order internally, and the rows of <code>integrated_stat.best_per_eta</code> /
+columns of <code>integrated_stat.betahat_best</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-lambda">lambda<a class="anchor" aria-label="anchor" href="#arg-lambda"></a></dt>
@@ -130,11 +142,6 @@ computes its own sequence based on <code>nlambda</code>.</p></dd>
 
 <dt id="arg-nlambda">nlambda<a class="anchor" aria-label="anchor" href="#arg-nlambda"></a></dt>
 <dd><p>The number of <code>lambda</code> values. Default is 100.</p></dd>
-
-
-<dt id="arg-lambda-min-ratio">lambda.min.ratio<a class="anchor" aria-label="anchor" href="#arg-lambda-min-ratio"></a></dt>
-<dd><p>Smallest value for <code>lambda</code>, as a fraction of <code>lambda.max</code>.
-Default depends on the sample size relative to the number of predictors.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
@@ -151,7 +158,9 @@ Default depends on the sample size relative to the number of predictors.</p></dd
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
 <dd><p>Optional stratum vector. Required only when <code>cv.criteria</code> involves
-stratified C-index calculation but the model itself is unstratified.</p></dd>
+stratified C-index calculation but the model itself is unstratified. That use case is
+therefore only reachable when <code>stratum = NULL</code>: if <code>stratum</code> is supplied and
+<code>c_index_stratum</code> is not identical to it, the function stops with an error.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>
@@ -176,10 +185,14 @@ stratified C-index calculation but the model itself is unstratified.</p></dd>
 </ul></dd>
 
 <dt><code>integrated_stat.full_results</code></dt>
-<dd><p>A data frame of performance metrics for all combinations of eta and lambda.</p></dd>
+<dd><p>A data frame of performance metrics for all combinations of eta and lambda.
+Besides <code>eta</code> and <code>lambda</code> it carries a single metric column named after the
+selected criterion: <code>Loss</code> for <code>"V&amp;VH"</code> and <code>"LinPred"</code>, otherwise
+<code>CIndex_pooled</code> or <code>CIndex_foldaverage</code>.</p></dd>
 
 <dt><code>integrated_stat.best_per_eta</code></dt>
-<dd><p>A data frame summarizing the best lambda and performance metric for each eta.</p></dd>
+<dd><p>A data frame summarizing the best lambda and performance metric for each eta,
+with the same criterion-named metric column.</p></dd>
 
 <dt><code>integrated_stat.betahat_best</code></dt>
 <dd><p>A matrix of coefficients for the best lambda at each eta.</p></dd>
@@ -192,6 +205,16 @@ stratified C-index calculation but the model itself is unstratified.</p></dd>
 
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>When <code>lambda</code> is not supplied, the Ridge lambda sequence is generated
+internally by <code><a href="cox_MDTL_ridge.html">cox_MDTL_ridge</a></code> and always spans from
+<code>lambda.max</code> down to an exact <code>0</code>, i.e. the last element of the path
+is the unpenalized solution. This behaviour is fixed for the Ridge path and is
+therefore <em>not</em> configurable through a minimum-ratio argument; only the
+number of grid points (<code>nlambda</code>), or an explicit <code>lambda</code> vector, is
+under user control.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

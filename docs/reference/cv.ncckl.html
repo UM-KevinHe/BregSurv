@@ -101,23 +101,34 @@ Each unique value identifies one matched set.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Numeric vector of external coefficients. <strong>Required</strong>.
-Length must equal the number of columns in <code>z</code>. These are used by
-<code><a href="ncckl.html">ncckl</a></code> / <code><a href="coxkl_ties.html">coxkl_ties</a></code> to construct the KL
-divergence penalty.</p></dd>
+<dd><p>Numeric vector of external coefficients. <strong>Required</strong>. These
+are used by <code><a href="ncckl.html">ncckl</a></code> / <code><a href="coxkl_ties.html">coxkl_ties</a></code> to construct the
+KL divergence penalty. If <code>beta</code> is named, names are matched against
+<code>colnames(z)</code>: covariates absent from <code>beta</code> are set to 0 (with a
+message) and the vector is reordered, so an external source covering only a
+subset of the internal covariates may be supplied directly. An unnamed
+<code>beta</code> is aligned positionally and must have length <code>ncol(z)</code>. A
+one-column matrix with row names is accepted as a named vector. See
+<code><a href="align_beta.html">align_beta</a></code>. The bundled fixture
+<code>ExampleData_cc_lowdim$beta_external</code> is named <code>Z1</code>–<code>Z6</code> and
+therefore takes the name-matching path.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate tuning values for the integration
-parameter \(\eta\) to be cross-validated. The values will be sorted in
-ascending order.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights for the
+parameter \(\eta\) to be cross-validated. <strong>Required</strong>; the function
+stops if <code>etas</code> is <code>NULL</code>. Must be finite and \(\ge 0\). The
+values are sorted in ascending order internally, and the rows of
+<code>internal_stat</code> / columns of <code>beta_full</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>Character string specifying the tie-handling method used in the
-underlying Cox partial likelihood. Must be one of <code>"breslow"</code> or
-<code>"exact"</code>. For 1:m matched sets, these yield identical parameter
-estimates, but <code>"exact"</code> is theoretically preferable.</p></dd>
+underlying Cox partial likelihood. Must be one of <code>"breslow"</code> (the
+default) or <code>"exact"</code>. The value is passed through <code><a href="https://rdrr.io/r/base/chartr.html" class="external-link">tolower()</a></code>
+before matching, so <code>"Breslow"</code> / <code>"EXACT"</code> are also accepted. For
+1:m matched sets, these yield identical parameter estimates, but
+<code>"exact"</code> is theoretically preferable.</p></dd>
 
 
 <dt id="arg-tol">tol<a class="anchor" aria-label="anchor" href="#arg-tol"></a></dt>
@@ -180,7 +191,8 @@ and the CV metric results for the chosen <code>cv.criteria</code>.</p></dd>
 
 <dt><code>best</code></dt>
 <dd><p>A list containing the <code>best_eta</code>, the corresponding
-<code>best_beta</code> from the full-data fit, and the <code>cv.criteria</code> used.</p></dd>
+<code>best_beta</code> from the full-data fit, and <code>criteria</code> (the CV
+criterion used).</p></dd>
 
 <dt><code>criteria</code></dt>
 <dd><p>The criterion used for selection.</p></dd>
@@ -199,10 +211,12 @@ uses <code><a href="coxkl_ties.html">coxkl_ties</a></code> as the core engine.</
 treated as an indivisible unit and assigned to a single fold using
 <code>get_fold_cc</code>. This ensures that the conditional likelihood is
 well-defined within each training and test split.</p>
-<p>The <code>cv.criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on held-out
-strata. For each fold, the conditional log-likelihood is computed over
-the test matched sets using the fitted \(\hat\beta\) from the
-corresponding training data; the fold-wise losses are then averaged.</p></li>
+<p>The <code>cv.criteria</code> argument controls the CV performance metric:</p><ul><li><p><code>"loss"</code>: Average negative conditional log-likelihood on the
+held-out data, normalized per observation. For each fold, the conditional
+log-likelihood is computed over the test matched sets using the fitted
+\(\hat\beta\) from the corresponding training data and divided by the
+number of held-out <em>observations</em> in that fold; the resulting
+fold-wise losses are then averaged (unweighted) across folds.</p></li>
 <li><p><code>"AUC"</code>: A matched-set AUC based on within-stratum comparisons.
 For each stratum, the case score is compared to the control scores,
 counting concordant/discordant/tied pairs and aggregating across all

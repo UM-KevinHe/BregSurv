@@ -122,7 +122,10 @@ variable selection and regularization in high-dimensional settings.</p>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of nonnegative external weights. <code>eta = 0</code> gives internal-only fit.</p></dd>
+<dd><p>Numeric vector of nonnegative external weights. Must be finite and
+\(\ge 0\); <code>eta = 0</code> gives an internal-only fit. The values are sorted in
+ascending order internally, and the per-<code>eta</code> elements of the returned
+<code>beta</code> and <code>lambda</code> lists follow that sorted order.</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -163,8 +166,9 @@ Default <code>Mstop * nlambda</code>.</p></dd>
 
 
 <dt id="arg-group">group<a class="anchor" aria-label="anchor" href="#arg-group"></a></dt>
-<dd><p>Integer vector defining group membership for grouped penalties.
-Default treats each variable as its own group.</p></dd>
+<dd><p>Integer vector defining group membership for grouped penalties. The
+formal default is <code>NULL</code>, which <code><a href="cox_indi_enet.html">cox_indi_enet</a></code> resolves to
+<code>seq_len(ncol(z_int))</code>, i.e. each variable is treated as its own group.</p></dd>
 
 
 <dt id="arg-group-multiplier">group.multiplier<a class="anchor" aria-label="anchor" href="#arg-group-multiplier"></a></dt>
@@ -177,11 +181,14 @@ Coefficients are returned on the original scale. Default <code>TRUE</code>.</p><
 
 
 <dt id="arg-nvar-max">nvar.max<a class="anchor" aria-label="anchor" href="#arg-nvar-max"></a></dt>
-<dd><p>Integer. Maximum number of active variables. Default <code>ncol(z_int)</code>.</p></dd>
+<dd><p>Integer. Maximum number of active variables. The formal default is
+<code>NULL</code>, resolved downstream to <code>ncol(z_int)</code>.</p></dd>
 
 
 <dt id="arg-group-max">group.max<a class="anchor" aria-label="anchor" href="#arg-group-max"></a></dt>
-<dd><p>Integer. Maximum number of active groups.</p></dd>
+<dd><p>Integer. Maximum number of active groups. The formal default is
+<code>NULL</code>, resolved downstream to <code>length(unique(group))</code> (after <code>group</code>
+itself has been resolved).</p></dd>
 
 
 <dt id="arg-stop-loss-ratio">stop.loss.ratio<a class="anchor" aria-label="anchor" href="#arg-stop-loss-ratio"></a></dt>
@@ -197,7 +204,9 @@ Coefficients are returned on the original scale. Default <code>TRUE</code>.</p><
 
 
 <dt id="arg-actgroupnum">actGroupNum<a class="anchor" aria-label="anchor" href="#arg-actgroupnum"></a></dt>
-<dd><p>Integer. Limit on active groups.</p></dd>
+<dd><p>Integer. Limit on active groups in the active-set strategy. The
+formal default is <code>NULL</code>, resolved downstream to
+<code>sum(unique(group) != 0)</code>.</p></dd>
 
 
 <dt id="arg-actsetremove">actSetRemove<a class="anchor" aria-label="anchor" href="#arg-actsetremove"></a></dt>
@@ -240,6 +249,41 @@ a standard Elastic Net CLR on internal data only.</p></li>
     <div class="dont-index"><p><code><a href="cox_indi_enet.html">cox_indi_enet</a></code>, <code><a href="ncc_indi.html">ncc_indi</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co">## Load the matched case-control individual-level example data</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc_indi</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">y_int</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">internal</span><span class="op">$</span><span class="va">y</span></span></span>
+<span class="r-in"><span><span class="va">z_int</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">internal</span><span class="op">$</span><span class="va">z</span></span></span>
+<span class="r-in"><span><span class="va">stratum_int</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">internal</span><span class="op">$</span><span class="va">stratum</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">y_ext</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span><span class="op">$</span><span class="va">y</span></span></span>
+<span class="r-in"><span><span class="va">z_ext</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span><span class="op">$</span><span class="va">z</span></span></span>
+<span class="r-in"><span><span class="va">stratum_ext</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span><span class="op">$</span><span class="va">stratum</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Generate a sequence of eta values</span></span></span>
+<span class="r-in"><span><span class="va">eta_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_eta.html">generate_eta</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"exponential"</span>, n <span class="op">=</span> <span class="fl">10</span>, max_eta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Fit the penalized composite-likelihood CLR path (alpha = 1 gives the Lasso)</span></span></span>
+<span class="r-in"><span><span class="va">fit_enet</span> <span class="op">&lt;-</span> <span class="fu">ncc_indi_enet</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  y_int       <span class="op">=</span> <span class="va">y_int</span>,</span></span>
+<span class="r-in"><span>  z_int       <span class="op">=</span> <span class="va">z_int</span>,</span></span>
+<span class="r-in"><span>  stratum_int <span class="op">=</span> <span class="va">stratum_int</span>,</span></span>
+<span class="r-in"><span>  y_ext       <span class="op">=</span> <span class="va">y_ext</span>,</span></span>
+<span class="r-in"><span>  z_ext       <span class="op">=</span> <span class="va">z_ext</span>,</span></span>
+<span class="r-in"><span>  stratum_ext <span class="op">=</span> <span class="va">stratum_ext</span>,</span></span>
+<span class="r-in"><span>  etas        <span class="op">=</span> <span class="va">eta_list</span>,</span></span>
+<span class="r-in"><span>  alpha       <span class="op">=</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## The eta grid actually used, in ascending order; the returned beta and lambda</span></span></span>
+<span class="r-in"><span><span class="co">## are lists with one element per eta, in this same order.</span></span></span>
+<span class="r-in"><span><span class="va">fit_enet</span><span class="op">$</span><span class="va">eta</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

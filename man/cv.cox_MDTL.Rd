@@ -30,17 +30,31 @@ cv.cox_MDTL(
 \item{time}{A numeric vector of observed times.}
 
 \item{stratum}{Optional numeric or factor vector indicating strata. If \code{NULL},
-all subjects are assumed to be in the same stratum.}
+a warning is issued and all subjects are assumed to be in the same stratum.}
 
-\item{beta}{A numeric vector of external coefficients (length p).}
+\item{beta}{A numeric vector of external coefficients. \strong{Required}. If \code{beta}
+is named, names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be supplied
+directly. An unnamed \code{beta} is aligned positionally and must have length
+\code{ncol(z)}. A one-column matrix with row names is accepted as a named vector.
+See \code{\link{align_beta_Q}}.}
 
-\item{Q}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-\emph{precision} matrix (typically the inverse covariance / information matrix of
-the external estimator). If named, it is reordered and zero-padded to
-\code{colnames(z)}. If \code{NULL}, a masked identity is used.}
+\item{Q}{Optional weighting (precision) matrix for the Mahalanobis penalty
+(typically the inverse covariance / information matrix of the external
+estimator). Must be symmetric and positive semi-definite; both are checked to a
+tolerance of 1e-8 and violations are errors. If named, it is reordered and
+zero-padded to \code{colnames(z)}; only an unnamed \code{Q} must be exactly
+\code{ncol(z)} by \code{ncol(z)}. If \code{NULL}, a \emph{masked identity} is
+used: 1 on covariates actually supplied by \code{beta} and 0 on zero-padded
+positions, so padded coefficients are left unpenalized. See
+\code{\link{align_beta_Q}}.}
 
-\item{etas}{A numeric vector of candidate \code{eta} values to be evaluated.}
+\item{etas}{A numeric vector of non-negative candidate \code{eta} values to be
+evaluated. Must be finite and \eqn{\ge 0}. This argument is \strong{required}: leaving
+it at its \code{NULL} default is an error. The values are sorted in ascending
+order internally, and the rows of \code{internal_stat} / columns of
+\code{beta_full} follow that sorted order.}
 
 \item{tol}{Convergence tolerance for the optimization algorithm. Default is 1e-4.}
 
@@ -57,7 +71,9 @@ the external estimator). If named, it is reordered and zero-padded to
 }}
 
 \item{c_index_stratum}{Optional stratum vector. Required only when \code{cv.criteria} involves
-stratified C-index calculation but the model itself is unstratified.}
+stratified C-index calculation but the model itself is unstratified. That use case is
+therefore only reachable when \code{stratum = NULL}: if \code{stratum} is supplied and
+\code{c_index_stratum} is not identical to it, the function stops with an error.}
 
 \item{message}{Logical. If \code{TRUE}, progress messages are printed.}
 
@@ -66,10 +82,16 @@ stratified C-index calculation but the model itself is unstratified.}
 \item{...}{Additional arguments passed to the underlying fitting function \code{\link{cox_MDTL}}.}
 }
 \value{
-An object of class \code{"cv.Cox_MDTL"} containing:
+An object of class \code{"cv.cox_MDTL"} containing:
 \describe{
-\item{\code{internal_stat}}{A \code{data.frame} summarizing the performance metric (loss or C-index)
-for each candidate \code{eta}.}
+\item{\code{internal_stat}}{A \code{data.frame} with one row per candidate \code{eta},
+in ascending \code{eta} order. It has a column \code{eta} plus \emph{exactly one}
+metric column, whose name is determined by \code{cv.criteria}: \code{VVH_Loss} for
+\code{"V&VH"}, \code{LinPred_Loss} for \code{"LinPred"}, \code{CIndex_pooled} for
+\code{"CIndex_pooled"}, or \code{CIndex_foldaverage} for
+\code{"CIndex_foldaverage"}. The other three metrics are never computed.}
+\item{\code{beta_full}}{A \code{ncol(z)} by \code{length(etas)} matrix of coefficients
+from the full-data fit, one column per candidate \code{eta}.}
 \item{\code{best}}{A list containing the optimal results:
 \itemize{
 \item \code{best_eta}: The selected eta value.

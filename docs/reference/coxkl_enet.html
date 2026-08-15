@@ -128,13 +128,21 @@ If not provided, <code>beta</code> must be supplied.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Optional numeric vector of external coefficients. Length must equal <code>ncol(z)</code>.
+<dd><p>Optional numeric vector of external coefficients. If <code>beta</code> is
+named, names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed <code>beta</code> is aligned positionally and must
+have length <code>ncol(z)</code>. A one-column matrix with row names is accepted
+as a named vector. See <code><a href="align_beta.html">align_beta</a></code>.
 If provided, it is used to calculate risk scores. If not provided, <code>RS</code> must be supplied.</p></dd>
 
 
 <dt id="arg-eta">eta<a class="anchor" aria-label="anchor" href="#arg-eta"></a></dt>
-<dd><p>Numeric scalar. The tuning parameter for KL divergence (integration strength).
-Defaults to 0 (no external information).</p></dd>
+<dd><p>Single finite non-negative integration weight for the KL divergence
+(integration strength). The formal default is <code>NULL</code>, which resolves to
+<code>eta = 0</code> (no external information used) with the warning
+"eta is not provided. Setting eta = 0 (no external information used)."</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -239,6 +247,9 @@ Coefficients are returned on the original scale.</p></dd>
     <p>An object of class <code>"coxkl_enet"</code>. A list containing:</p><dl><dt><code>beta</code></dt>
 <dd><p>Matrix of coefficient estimates (p x nlambda).</p></dd>
 
+<dt><code>group</code></dt>
+<dd><p>Factor recording the group membership originally supplied in <code>group</code>.</p></dd>
+
 <dt><code>lambda</code></dt>
 <dd><p>The sequence of lambda values used.</p></dd>
 
@@ -246,7 +257,13 @@ Coefficients are returned on the original scale.</p></dd>
 <dd><p>The elastic-net mixing parameter used.</p></dd>
 
 <dt><code>likelihood</code></dt>
-<dd><p>Vector of negative log-partial likelihoods (loss) for each lambda.</p></dd>
+<dd><p>Vector of KL-weighted log-partial likelihoods, one per lambda
+(larger values indicate better fit; this is <em>not</em> a loss). The contribution of each
+observation is weighted by \((\delta + \eta \tilde{\delta}) / (1 + \eta)\), so this is
+not the same quantity as the unweighted log-partial likelihood reported by <code><a href="coxkl.html">coxkl</a></code>.</p></dd>
+
+<dt><code>n</code></dt>
+<dd><p>Number of observations used in the fit.</p></dd>
 
 <dt><code>df</code></dt>
 <dd><p>Vector of degrees of freedom (number of non-zero coefficients) for each lambda.</p></dd>
@@ -257,11 +274,19 @@ Coefficients are returned on the original scale.</p></dd>
 <dt><code>W</code></dt>
 <dd><p>Matrix of exponentiated linear predictors (risk scores) on the original scale.</p></dd>
 
+<dt><code>group.multiplier</code></dt>
+<dd><p>Numeric vector of the group-level penalty multipliers actually used.</p></dd>
+
 <dt><code>data</code></dt>
-<dd><p>List containing the input data used.</p></dd>
+<dd><p>List containing the input data used (<code>z</code>, <code>time</code>, <code>delta</code>,
+<code>stratum</code>, <code>RS</code>), in the original row order supplied by the caller.</p></dd>
 
 
-</dl></div>
+</dl><p>When <code>returnX = TRUE</code>, the object additionally contains a <code>returnX</code> component: a list
+with elements <code>XX</code> (the standardized design object), <code>time</code>, <code>delta</code>,
+<code>stratum</code> and <code>RS</code>, all in the internal sorted (<code>stratum</code>, <code>time</code>) order
+rather than the original row order.</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The objective function optimizes the partial likelihood penalized by the KL divergence

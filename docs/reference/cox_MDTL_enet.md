@@ -1,4 +1,4 @@
-# Fit Cox Model with Multi-Domain Transfer Learning and Elastic Net Penalty
+# Fit Cox Model with Mahalanobis Distance Transfer Learning and Elastic Net Penalty
 
 Fits a Cox Proportional Hazards model that integrates external
 information (Transfer Learning) using an Elastic Net regularization
@@ -7,8 +7,8 @@ path. The method incorporates prior knowledge from external coefficients
 learning parameter `eta`.
 
 The objective function minimizes the negative partial likelihood plus a
-transfer learning penalty term \\\eta (\beta - \beta\_{ext})^T Q
-(\beta - \beta\_{ext})\\ and the Elastic Net penalty.
+transfer learning penalty term \\\frac{\eta}{2} (\beta - \beta\_{ext})^T
+Q (\beta - \beta\_{ext})\\ and the Elastic Net penalty.
 
 ## Usage
 
@@ -42,8 +42,7 @@ cox_MDTL_enet(
   returnX = FALSE,
   trace.lambda = FALSE,
   message = FALSE,
-  data_sorted = FALSE,
-  ...
+  data_sorted = FALSE
 )
 ```
 
@@ -75,21 +74,28 @@ cox_MDTL_enet(
 
 - Q:
 
-  Optional weighting matrix (p x p) for the external information.
-  Typically the inverse covariance (precision) matrix of the external
-  estimator, which should be symmetric positive-semidefinite. If named,
-  it is reordered and zero-padded to `colnames(z)`. If NULL, a masked
-  identity is used.
+  Optional weighting (precision) matrix for the Mahalanobis penalty.
+  Must be symmetric and positive semi-definite (both checked to a
+  tolerance of 1e-8). If named, it is reordered and zero-padded to
+  `colnames(z)`; only an unnamed `Q` must be exactly `ncol(z)` by
+  `ncol(z)`. If `NULL`, a *masked identity* is used: 1 on covariates
+  actually supplied by `beta` and 0 on zero-padded positions, so padded
+  coefficients are left unpenalized. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - eta:
 
   Scalar. The transfer learning parameter (\>= 0). Controls the strength
-  of the external information. `eta = 0` ignores external info.
+  of the external information. `eta = 0` ignores external info. The
+  formal default is `NULL`, which resolves to `eta = 0` with the warning
+  "eta is not provided. Setting eta = 0 (no external information used)."
 
 - alpha:
 
-  The Elastic Net mixing parameter, with \\0 \le \alpha \le 1\\.
-  `alpha=1` is the lasso penalty, and `alpha=0` the ridge penalty.
+  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
+  `alpha=1` is the lasso penalty, and values close to 0 approach ridge.
+  The formal default is `NULL`, which resolves to `alpha = 1` with the
+  warning "alpha is not provided. Setting alpha = 1 (lasso penalty)."
 
 - lambda:
 
@@ -102,8 +108,8 @@ cox_MDTL_enet(
 
 - lambda.min.ratio:
 
-  Smallest value for lambda, as a fraction of lambda.max. Default
-  depends on sample size relative to features.
+  Smallest value for lambda, as a fraction of lambda.max. Default is
+  `ifelse(n < p, 0.05, 1e-03)`.
 
 - lambda.early.stop:
 
@@ -115,11 +121,12 @@ cox_MDTL_enet(
 
 - Mstop:
 
-  Maximum number of iterations per lambda step.
+  Maximum number of iterations per lambda step. Default is 1000.
 
 - max.total.iter:
 
-  Maximum total iterations across all lambda values.
+  Maximum total iterations across all lambda values. Default is
+  `Mstop * nlambda`.
 
 - group:
 
@@ -128,7 +135,7 @@ cox_MDTL_enet(
 
 - group.multiplier:
 
-  Vector of multipliers for each group size.
+  Vector of multipliers for each group size. Default is `NULL`.
 
 - standardize:
 
@@ -137,15 +144,17 @@ cox_MDTL_enet(
 
 - nvar.max:
 
-  Maximum number of variables allowed in the model.
+  Maximum number of variables allowed in the model. Default is
+  `ncol(z)`.
 
 - group.max:
 
-  Maximum number of groups allowed in the model.
+  Maximum number of groups allowed in the model. Default is
+  `length(unique(group))`.
 
 - stop.loss.ratio:
 
-  Ratio of loss change to stop the path early.
+  Ratio of loss change to stop the path early. Default is 1e-2.
 
 - actSet:
 
@@ -153,24 +162,26 @@ cox_MDTL_enet(
 
 - actIter:
 
-  Number of iterations for active set.
+  Number of iterations for active set. Default is `Mstop`.
 
 - actGroupNum:
 
-  Number of active groups.
+  Number of active groups. Default is `sum(unique(group) != 0)`.
 
 - actSetRemove:
 
   Logical. Whether to remove inactive groups from the active set.
+  Default is `FALSE`.
 
 - returnX:
 
   Logical. If TRUE, returns the standardized design matrix and other
-  data details.
+  data details. Default is `FALSE`.
 
 - trace.lambda:
 
-  Logical. If TRUE, prints the current lambda during fitting.
+  Logical. If TRUE, prints the current lambda during fitting. Default is
+  `FALSE`.
 
 - message:
 
@@ -179,11 +190,7 @@ cox_MDTL_enet(
 - data_sorted:
 
   Logical. Internal flag indicating if data is already sorted by
-  time/stratum.
-
-- ...:
-
-  Additional arguments.
+  time/stratum. Default is `FALSE`.
 
 ## Value
 
@@ -191,17 +198,32 @@ An object of class `"cox_MDTL_enet"` containing:
 
 - `beta`: Matrix of estimated coefficients (p x nlambda).
 
+- `group`: Factor vector of the group assignments supplied for each
+  covariate.
+
 - `lambda`: The sequence of lambda values used.
 
-- `likelihood`: Vector of negative partial log-likelihood values.
+- `alpha`: The Elastic Net mixing parameter used.
+
+- `likelihood`: Vector of log-partial likelihoods, one per lambda
+  (larger values indicate better fit; this is *not* a loss). Unlike the
+  Kullback-Leibler variants, this value is unweighted.
+
+- `n`: Number of observations used in the fit.
 
 - `df`: Degrees of freedom for each lambda.
 
-- `W`: Matrix of exponential linear predictors.
-
 - `iter`: Number of iterations for each lambda.
 
+- `W`: Matrix of exponential linear predictors.
+
+- `group.multiplier`: Numeric vector of group penalty multipliers used.
+
 - `data`: List of input data.
+
+When `returnX = TRUE`, an additional component `returnX` is attached, a
+list with the standardized design object `XX` and the sorted `time`,
+`delta` and `stratum` vectors.
 
 ## Examples
 

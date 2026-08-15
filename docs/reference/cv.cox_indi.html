@@ -82,7 +82,9 @@ then evaluated on the held-out internal fold.</p>
 
 
 <dl><dt id="arg-z-int-delta-int-time-int-stratum-int">z_int, delta_int, time_int, stratum_int<a class="anchor" aria-label="anchor" href="#arg-z-int-delta-int-time-int-stratum-int"></a></dt>
-<dd><p>Internal data.</p></dd>
+<dd><p>Internal data. If <code>stratum_int</code> is
+<code>NULL</code>, all internal observations are treated as a single stratum; unlike the
+other cross-validation functions in the package, no warning is issued in that case.</p></dd>
 
 
 <dt id="arg-z-ext-delta-ext-time-ext-stratum-ext">z_ext, delta_ext, time_ext, stratum_ext<a class="anchor" aria-label="anchor" href="#arg-z-ext-delta-ext-time-ext-stratum-ext"></a></dt>
@@ -90,7 +92,10 @@ then evaluated on the held-out internal fold.</p>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate eta values (must be provided).</p></dd>
+<dd><p>Numeric vector of non-negative candidate eta values (must be provided;
+omitting it is an error). Must be finite and \(\ge 0\). The values are sorted in
+ascending order internally, and the rows of <code>internal_stat</code> / columns of
+<code>beta_full</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
@@ -98,15 +103,19 @@ then evaluated on the held-out internal fold.</p>
 
 
 <dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
-<dd><p>Performance criterion.</p></dd>
+<dd><p>Performance criterion. One of <code>"V&amp;VH"</code> (default),
+<code>"LinPred"</code>, <code>"CIndex_pooled"</code>, or <code>"CIndex_foldaverage"</code>.</p></dd>
 
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
-<dd><p>Optional stratum vector used for C-index evaluation on internal data.</p></dd>
+<dd><p>Optional stratum vector used for C-index evaluation on internal data.
+When supplied it must have the same length as the internal data.</p></dd>
 
 
 <dt id="arg-max-iter-tol">max_iter, tol<a class="anchor" aria-label="anchor" href="#arg-max-iter-tol"></a></dt>
-<dd><p>Passed to <code>cox_indi</code>.</p></dd>
+<dd><p>Passed to <code>cox_indi</code>. Defaults are <code>max_iter = 100</code> and
+<code>tol = 1.0e-7</code>; note that this <code>tol</code> is an order of magnitude tighter than
+the <code>1e-4</code> used elsewhere in the package.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>
@@ -119,9 +128,16 @@ then evaluated on the held-out internal fold.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of class <code>"cv.cox_indi"</code> with components:</p><ul><li><p><code>internal_stat</code>: data.frame of CV stats by eta</p></li>
+    <p>An object of class <code>"cv.cox_indi"</code> with components:</p><ul><li><p><code>internal_stat</code>: data.frame of CV stats by eta, one row per candidate
+<code>eta</code> in ascending order. It has a column <code>eta</code> plus <em>exactly one</em>
+metric column, whose name is determined by <code>cv.criteria</code>: <code>VVH_Loss</code> for
+<code>"V&amp;VH"</code>, <code>LinPred_Loss</code> for <code>"LinPred"</code>, <code>CIndex_pooled</code> for
+<code>"CIndex_pooled"</code>, or <code>CIndex_foldaverage</code> for
+<code>"CIndex_foldaverage"</code>. The other three metrics are never computed.</p></li>
 <li><p><code>beta_full</code>: matrix of full-data estimates (p x length(etas))</p></li>
 <li><p><code>best</code>: list with <code>best_eta</code>, <code>best_beta</code>, <code>criteria</code></p></li>
+<li><p><code>criteria</code>: the criterion used for selection</p></li>
+<li><p><code>nfolds</code>: the number of folds used</p></li>
 </ul></div>
 
     <div class="section level2">

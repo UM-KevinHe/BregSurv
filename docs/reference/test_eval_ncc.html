@@ -73,21 +73,41 @@
 
 
 <dt id="arg-set-id">set_id<a class="anchor" aria-label="anchor" href="#arg-set-id"></a></dt>
-<dd><p>Vector of matched set identifiers.</p></dd>
+<dd><p>Vector of matched set identifiers. Every matched set must contain
+exactly one case; a set with zero or more than one case is an error
+("Each matched set must contain exactly one case.").</p></dd>
 
 
 <dt id="arg-betahat">betahat<a class="anchor" aria-label="anchor" href="#arg-betahat"></a></dt>
-<dd><p>Numeric vector of estimated coefficients.</p></dd>
+<dd><p>Numeric vector of estimated coefficients. <strong>This argument is
+strictly positional</strong>: the linear predictor is formed as the matrix product of
+<code>z_ncc</code> and <code>betahat</code>, with no name matching, so
+<code>length(betahat)</code> must equal <code>ncol(z_ncc)</code> and any names it carries
+are ignored. This is a
+deliberate asymmetry with the model-fitting and cross-validation functions of
+the package, which align a named <code>beta</code> to <code>colnames(z)</code> via
+<code><a href="align_beta.html">align_beta</a></code>; align the vector yourself before calling this
+function if it may be partial or differently ordered.</p></dd>
 
 
 <dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
-<dd><p>"loss", "CIndex", or "Brier".</p></dd>
+<dd><p>"loss", "CIndex", or "Brier". Default is "loss".</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Numeric performance metric.</p>
-    </div>
+    <p>Numeric performance metric.</p><ul><li><p><code>"loss"</code>: \(-2\) times the conditional log-partial likelihood
+divided by the <strong>number of matched sets</strong>. Note that the Cox counterpart
+<code><a href="test_eval.html">test_eval</a></code> divides its <code>"loss"</code> by the number of
+<strong>subjects</strong>, so the two losses are on different scales and must not be
+compared directly.</p></li>
+<li><p><code>"CIndex"</code>: despite the name, this is the matched-set AUC (the
+pair-weighted average of within-set case-versus-control rank comparisons).
+For 1:M matched sets the matched-set concordance index and the matched-set
+AUC coincide, which is why the two names are used interchangeably here.</p></li>
+<li><p><code>"Brier"</code>: mean squared difference between the case indicator and
+the within-set multinomial probability implied by the linear predictor.</p></li>
+</ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

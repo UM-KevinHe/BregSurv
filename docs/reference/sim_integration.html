@@ -73,39 +73,51 @@
 
 
 <dl><dt id="arg-n-int">n_int<a class="anchor" aria-label="anchor" href="#arg-n-int"></a></dt>
-<dd><p>Number of subjects in the internal training set.</p></dd>
+<dd><p>Number of subjects in the internal training set. Default is 200.</p></dd>
 
 
 <dt id="arg-n-test">n_test<a class="anchor" aria-label="anchor" href="#arg-n-test"></a></dt>
-<dd><p>Number of subjects in the internal test set.</p></dd>
+<dd><p>Number of subjects in the internal test set. Default is 1000.</p></dd>
 
 
 <dt id="arg-n-ext">n_ext<a class="anchor" aria-label="anchor" href="#arg-n-ext"></a></dt>
-<dd><p>Number of subjects in the external dataset.</p></dd>
+<dd><p>Number of subjects in the external dataset. Default is 1000.</p></dd>
 
 
 <dt id="arg-beta-true">beta_true<a class="anchor" aria-label="anchor" href="#arg-beta-true"></a></dt>
-<dd><p>True regression coefficients.</p></dd>
+<dd><p>True regression coefficients. <strong>Must have length 6.</strong> The
+simulator names the vector <code>Z1</code>–<code>Z6</code> unconditionally and its internal
+generator hard-codes exactly six covariates, so any other length fails with
+<code>"'names' attribute [6] must be the same length as the vector"</code>. Default is
+<code>c(0.3, -0.3, 0.3, -0.3, 0.3, -0.3)</code>.</p></dd>
 
 
 <dt id="arg-int-cens-target">int_cens_target<a class="anchor" aria-label="anchor" href="#arg-int-cens-target"></a></dt>
-<dd><p>Target censoring rate for internal data.</p></dd>
+<dd><p>Target censoring rate for internal data. Default is 0.3.</p></dd>
 
 
 <dt id="arg-ext-cens-target">ext_cens_target<a class="anchor" aria-label="anchor" href="#arg-ext-cens-target"></a></dt>
-<dd><p>Target censoring rate for external data.</p></dd>
+<dd><p>Target censoring rate for external data. Default is 0.5.</p></dd>
 
 
 <dt id="arg-lambda-nu-">lambda0, nu0<a class="anchor" aria-label="anchor" href="#arg-lambda-nu-"></a></dt>
-<dd><p>Weibull baseline hazard parameters.</p></dd>
+<dd><p>Weibull baseline hazard parameters. Defaults are 1 and 2.</p></dd>
 
 
 <dt id="arg-heterogeneity">heterogeneity<a class="anchor" aria-label="anchor" href="#arg-heterogeneity"></a></dt>
-<dd><p>Numeric. Controls the mixture difference between cohorts.</p></dd>
+<dd><p>Numeric in \([0, 1]\), used as a Bernoulli probability.
+Default is 1.0. <strong>Note the direction, which is the opposite of what the
+name suggests:</strong> the internal cohorts are always generated with probability 1.0,
+so <code>heterogeneity = 1.0</code> makes the external cohort distributionally
+<em>identical</em> to the internal ones – that is, the default corresponds to
+<em>zero</em> heterogeneity. <em>Smaller</em> values produce <em>more</em> divergence
+between the external and internal cohorts, with <code>heterogeneity = 0</code> the
+most divergent. Values outside \([0, 1]\) are invalid (they are passed
+straight to <code>rbinom</code>) but are not validated.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Random seed.</p></dd>
+<dd><p>Random seed. Default <code>NULL</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

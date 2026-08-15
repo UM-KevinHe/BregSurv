@@ -22,9 +22,13 @@ cox(
 
 \item{time}{A numeric vector of observed times (length n).}
 
-\item{stratum}{A vector indicating strata for a stratified Cox model. If missing, all data is assumed to belong to a single stratum.}
+\item{stratum}{A vector indicating strata for a stratified Cox model. If missing,
+a \code{warning} ("Stratum information not provided...") is issued and all data
+is assumed to belong to a single stratum.}
 
-\item{ties}{A character string specifying the method for tie handling. Options are "breslow" (default), "efron", or "exact".}
+\item{ties}{A character string specifying the method for tie handling. Options are
+"breslow", "efron", or "exact". The formal default is \code{NULL}, which the
+function resolves to "breslow", so omitting \code{ties} gives Breslow handling.}
 
 \item{max_iter}{Maximum number of Newton-Raphson iterations (default = 100).}
 
@@ -33,10 +37,9 @@ cox(
 \item{comb_max}{Maximum number of combinations allowed for the "exact" method (default = 1e7).}
 }
 \value{
-A list containing:
-\item{beta}{Estimated coefficient vector (length p).}
+A list with exactly two components:
+\item{beta}{Estimated coefficient vector (length p), named with \code{colnames(z)}.}
 \item{loglik}{The log-partial likelihood at convergence.}
-\item{...}{Additional outputs returned by the underlying Rcpp function.}
 }
 \description{
 Estimates the coefficients of a Cox Proportional Hazards model using the Newton-Raphson method

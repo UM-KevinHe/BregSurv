@@ -35,36 +35,53 @@ cox_MDTL_enet_bagging(
 
 \item{stratum}{Optional stratum indicator vector for stratified Cox modeling.}
 
-\item{beta}{External coefficient vector of length \code{p}. Treated as fixed
+\item{beta}{Numeric vector of external coefficients. If \code{beta} is named,
+names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed \code{beta} is aligned positionally and must
+have length \code{ncol(z)}. See \code{\link{align_beta_Q}}. Treated as fixed
 prior information and not resampled across bootstrap replicates.}
 
-\item{Q}{Optional weighting matrix (\code{p x p}) used in the Mahalanobis
-distance formulation.}
+\item{Q}{Optional weighting (precision) matrix for the Mahalanobis penalty.
+Must be symmetric and positive semi-definite (both checked to a tolerance of
+1e-8). If named, it is reordered and zero-padded to \code{colnames(z)}; only
+an unnamed \code{Q} must be exactly \code{ncol(z)} by \code{ncol(z)}. If
+\code{NULL}, a \emph{masked identity} is used: 1 on covariates actually
+supplied by \code{beta} and 0 on zero-padded positions, so padded
+coefficients are left unpenalized. See \code{\link{align_beta_Q}}.}
 
-\item{etas}{Vector of \code{eta} values for transfer-learning shrinkage.}
+\item{etas}{Numeric vector of non-negative integration weights. Must be finite
+and \eqn{\ge 0}.}
 
-\item{alpha}{Elastic-net mixing parameter between \code{0} and \code{1}.
-\code{alpha = 1} corresponds to lasso; \code{alpha = 0} to ridge. Default is \code{1.0}.}
+\item{alpha}{Elastic-net mixing parameter, with \eqn{0 < \alpha \le 1}.
+\code{alpha = 1} corresponds to lasso; values close to 0 approach ridge.
+Default is \code{1.0}.}
 
 \item{B}{Number of bootstrap replicates. Default is \code{100}.}
 
 \item{lambda}{Optional user-specified \code{lambda} sequence.}
 
-\item{nlambda}{Number of \code{lambda} values to generate if \code{lambda} is not supplied.}
+\item{nlambda}{Number of \code{lambda} values to generate if \code{lambda} is not supplied.
+Default is \code{100}.}
 
-\item{lambda.min.ratio}{Ratio of the smallest to the largest \code{lambda} when generating a sequence.}
+\item{lambda.min.ratio}{Ratio of the smallest to the largest \code{lambda} when generating a sequence.
+Default is \code{ifelse(nrow(z) < ncol(z), 0.01, 1e-04)}.}
 
-\item{nfolds}{Number of folds for inner cross-validation via \code{cv.cox_MDTL_enet}.}
+\item{nfolds}{Number of folds for inner cross-validation via \code{cv.cox_MDTL_enet}.
+Default is \code{5}.}
 
 \item{cv.criteria}{Cross-validation criterion used for selecting the optimal
-\code{(eta, lambda)} pair.}
+\code{(eta, lambda)} pair. One of \code{"V&VH"}, \code{"LinPred"},
+\code{"CIndex_pooled"} or \code{"CIndex_foldaverage"}; the default is
+\code{"V&VH"}.}
 
 \item{c_index_stratum}{Optional stratum assignment for stratified C-index
 evaluation (may differ from model stratification).}
 
 \item{message}{Logical indicating whether to print progress. Default is \code{FALSE}.}
 
-\item{seed}{Optional integer seed for reproducibility.}
+\item{seed}{Optional integer seed for reproducibility. Default is \code{NULL}.}
 
 \item{ncores}{Integer. Number of parallel cores. Default 1 (sequential execution).}
 

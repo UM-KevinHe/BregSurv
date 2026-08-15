@@ -17,13 +17,13 @@
 \arguments{
 \item{x}{An object of class \code{"cox_MDTL_ridge"}.}
 
-\item{test_z}{Matrix of test covariates.}
+\item{test_z}{Matrix of test covariates. Optional; see Details.}
 
-\item{test_time}{Vector of test survival times.}
+\item{test_time}{Vector of test survival times. Optional; see Details.}
 
-\item{test_delta}{Vector of test status indicators.}
+\item{test_delta}{Vector of test status indicators. Optional; see Details.}
 
-\item{test_stratum}{Vector of test strata.}
+\item{test_stratum}{Vector of test strata. Optional; see Details.}
 
 \item{criteria}{Metric to plot: \code{"loss"} or \code{"CIndex"}.}
 
@@ -34,6 +34,16 @@ A \code{ggplot} object.
 }
 \description{
 Plots the validation performance against \code{lambda} for MDTL ridge estimates.
+}
+\details{
+The four \code{test_*} arguments act as a single unit. The training data stored
+in the fitted object are used for evaluation only when \emph{all four} of
+\code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+\code{NULL}. Supplying any one of them selects the external-test path, so
+leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+back to the training data -- it produces an error. The one exception is
+\code{test_time}: on the external-test path, if it alone is omitted all test
+times are set to 1.
 }
 \examples{
 \dontrun{
@@ -49,10 +59,10 @@ mdtl_ridge_est <- cox_MDTL_ridge(z = train_dat_highdim$z,
                                  Q = NULL,
                                  eta = 0)
 
-plot.cox_MDTL_ridge(mdtl_ridge_est,
-                    test_z = test_dat_highdim$z,
-                    test_time = test_dat_highdim$time,
-                    test_delta = test_dat_highdim$status,
-                    criteria = "CIndex")
+plot(mdtl_ridge_est,
+     test_z = test_dat_highdim$z,
+     test_time = test_dat_highdim$time,
+     test_delta = test_dat_highdim$status,
+     criteria = "CIndex")
 }
 }

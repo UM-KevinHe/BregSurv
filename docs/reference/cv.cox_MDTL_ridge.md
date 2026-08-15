@@ -23,7 +23,6 @@ cv.cox_MDTL_ridge(
   etas,
   lambda = NULL,
   nlambda = 100,
-  lambda.min.ratio = ifelse(n_obs < n_vars, 0.01, 1e-04),
   nfolds = 5,
   cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
@@ -49,25 +48,41 @@ cv.cox_MDTL_ridge(
 
 - stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, a
+  warning is issued and all subjects are assumed to be in the same
+  stratum.
 
 - beta:
 
-  A numeric vector of external coefficients (length p).
+  A numeric vector of external coefficients. If `beta` is named, names
+  are matched against `colnames(z)`: covariates absent from `beta` are
+  set to 0 (with a message) and the vector is reordered, so an external
+  source covering only a subset of the internal covariates may be
+  supplied directly. An unnamed `beta` is aligned positionally and must
+  have length `ncol(z)`. A one-column matrix with row names is accepted
+  as a named vector. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - Q:
 
-  Optional numeric matrix (p x p) representing the weighting matrix
-  \\Q\\ for the Mahalanobis penalty. This should be a symmetric
-  positive-semidefinite *precision* matrix (typically the inverse
-  covariance / information matrix of the external estimator). If named,
-  it is reordered and zero-padded to `colnames(z)`. If `NULL`, a masked
-  identity is used.
+  Optional weighting (precision) matrix for the Mahalanobis penalty
+  (typically the inverse covariance / information matrix of the external
+  estimator). Must be symmetric and positive semi-definite; both are
+  checked to a tolerance of 1e-8 and violations are errors. If named, it
+  is reordered and zero-padded to `colnames(z)`; only an unnamed `Q`
+  must be exactly `ncol(z)` by `ncol(z)`. If `NULL`, a *masked identity*
+  is used: 1 on covariates actually supplied by `beta` and 0 on
+  zero-padded positions, so padded coefficients are left unpenalized.
+  See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  A numeric vector of candidate `eta` values to be evaluated.
+  A numeric vector of non-negative candidate `eta` values to be
+  evaluated. Must be finite and \\\ge 0\\. The values are sorted in
+  ascending order internally, and the rows of
+  `integrated_stat.best_per_eta` / columns of
+  `integrated_stat.betahat_best` follow that sorted order.
 
 - lambda:
 
@@ -77,11 +92,6 @@ cv.cox_MDTL_ridge(
 - nlambda:
 
   The number of `lambda` values. Default is 100.
-
-- lambda.min.ratio:
-
-  Smallest value for `lambda`, as a fraction of `lambda.max`. Default
-  depends on the sample size relative to the number of predictors.
 
 - nfolds:
 
@@ -108,6 +118,9 @@ cv.cox_MDTL_ridge(
 
   Optional stratum vector. Required only when `cv.criteria` involves
   stratified C-index calculation but the model itself is unstratified.
+  That use case is therefore only reachable when `stratum = NULL`: if
+  `stratum` is supplied and `c_index_stratum` is not identical to it,
+  the function stops with an error.
 
 - message:
 
@@ -141,12 +154,14 @@ An object of class `"cv.cox_MDTL_ridge"` containing:
 - `integrated_stat.full_results`:
 
   A data frame of performance metrics for all combinations of eta and
-  lambda.
+  lambda. Besides `eta` and `lambda` it carries a single metric column
+  named after the selected criterion: `Loss` for `"V&VH"` and
+  `"LinPred"`, otherwise `CIndex_pooled` or `CIndex_foldaverage`.
 
 - `integrated_stat.best_per_eta`:
 
   A data frame summarizing the best lambda and performance metric for
-  each eta.
+  each eta, with the same criterion-named metric column.
 
 - `integrated_stat.betahat_best`:
 
@@ -159,6 +174,17 @@ An object of class `"cv.cox_MDTL_ridge"` containing:
 - `nfolds`:
 
   The number of folds used.
+
+## Details
+
+When `lambda` is not supplied, the Ridge lambda sequence is generated
+internally by
+[`cox_MDTL_ridge`](https://um-kevinhe.github.io/BregSurv/reference/cox_MDTL_ridge.md)
+and always spans from `lambda.max` down to an exact `0`, i.e. the last
+element of the path is the unpenalized solution. This behaviour is fixed
+for the Ridge path and is therefore *not* configurable through a
+minimum-ratio argument; only the number of grid points (`nlambda`), or
+an explicit `lambda` vector, is under user control.
 
 ## Examples
 

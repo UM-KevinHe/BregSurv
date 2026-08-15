@@ -111,6 +111,18 @@ sim.cox.highdim(
   If `NULL`, a zero vector is used. For indices in `binary_idx`, `mu_Z`
   is ignored.
 
+- sd_Z:
+
+  Numeric or `NULL`. Standard deviations of the continuous covariates.
+  Four shapes are accepted: `NULL` (the default; all standard deviations
+  set to 1), a scalar (recycled to all `n.beta` covariates), a vector of
+  length `n.beta` (used as-is), or a vector of length equal to the
+  number of continuous covariates (i.e.
+  `length(setdiff(1:n.beta, binary_idx))`, applied to those positions
+  with 1 elsewhere). All values must be positive and finite. Standard
+  deviations at `binary_idx` positions have no effect, since binary
+  covariates are generated from a latent threshold model.
+
 - stratum_size:
 
   Integer or numeric vector. Stratum sample sizes. If a scalar, it is
@@ -213,8 +225,14 @@ A list with components:
 Continuous covariates (those not in `binary_idx`) are generated
 independently within each stratum from a multivariate normal
 distribution with mean given by `mu_Z` (restricted to the continuous
-indices) and an equicorrelation covariance matrix with diagonal 1 and
-off-diagonal `rho`.
+indices) and covariance \\D R D\\, where \\R\\ is the equicorrelation
+matrix with diagonal 1 and off-diagonal `rho` and \\D\\ is the diagonal
+matrix of the standard deviations in `sd_Z`. With the default
+`sd_Z = NULL` all standard deviations equal 1, so the covariance reduces
+to \\R\\ itself – diagonal 1 and off-diagonal `rho`. When `sd_Z` is
+supplied the diagonal becomes \\\sigma_j^2\\ and the off-diagonals
+\\\rho \sigma_i \sigma_j\\; the *correlation* remains `rho` in either
+case.
 
 Stratum-specific scaling factors are sampled as \\\gamma_s \sim
 \mathrm{Unif}(0,2)\\ and applied multiplicatively to the hazard.

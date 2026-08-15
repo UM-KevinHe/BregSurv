@@ -122,8 +122,9 @@ An object of class \code{"cox_indi_enet"} containing:
 \item{\code{beta}}{Named list of length \code{length(etas)}. Each element is a matrix of
 estimated coefficients (\eqn{p \times n_\lambda}) on the original covariate scale,
 with columns named by the corresponding \code{lambda} values.}
-\item{\code{lambda}}{Named list of length \code{length(etas)}. Each element is the
-vector of lambda values actually used for that \code{eta}.}
+\item{\code{lambda}}{Unnamed list of length \code{length(etas)}, parallel to
+\code{beta}. Each element is the vector of lambda values actually used for
+that \code{eta}.}
 \item{\code{alpha}}{The Elastic Net mixing parameter used.}
 \item{\code{linear.predictors_int}}{List of matrices (\eqn{n_{\text{int}} \times n_\lambda})
 of internal linear predictors in the original observation order, one per \code{eta}.}
@@ -133,6 +134,8 @@ of external linear predictors in the original observation order, one per \code{e
 \item{\code{group.multiplier}}{Numeric vector of group penalty multipliers used.}
 \item{\code{data}}{List of the original input data used.}
 }
+When \code{returnX = TRUE}, an additional component \code{std.Z} is attached,
+the standardized design object built from the stacked covariate matrix.
 }
 \description{
 Fits a series of penalized stratified Cox models that integrate an external

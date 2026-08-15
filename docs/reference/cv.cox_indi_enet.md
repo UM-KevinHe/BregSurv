@@ -50,7 +50,8 @@ cv.cox_indi_enet(
 - stratum_int:
 
   Optional stratum identifiers for the internal dataset. Default `NULL`
-  assigns all internal observations to a single stratum.
+  assigns all internal observations to a single stratum and issues a
+  warning to that effect.
 
 - z_ext:
 
@@ -113,10 +114,12 @@ cv.cox_indi_enet(
 
 - c_index_stratum:
 
-  Optional stratum vector for the internal dataset. Only needed when
-  `cv.criteria` is `"CIndex_pooled"` or `"CIndex_foldaverage"` and a
-  stratified C-index is desired while the fitted model uses a different
-  (or no) stratification. Default `NULL`.
+  Optional stratum vector for the internal dataset, used when
+  `cv.criteria` is `"CIndex_pooled"` or `"CIndex_foldaverage"`. When
+  supplied it must be identical to `stratum_int`, otherwise the function
+  stops with an error. Because `stratum_int` is defaulted to a single
+  stratum before this check, a `c_index_stratum` that differs from the
+  stratification used for fitting is never accepted. Default `NULL`.
 
 - message:
 
@@ -151,12 +154,15 @@ An object of class `"cv.cox_indi_enet"`. A list containing:
 - `integrated_stat.full_results`:
 
   A `data.frame` with the cross-validation score for every (`eta`,
-  `lambda`) combination evaluated.
+  `lambda`) combination evaluated. Besides `eta` and `lambda` it carries
+  a single metric column named after the selected criterion: `Loss` for
+  `"V&VH"` and `"LinPred"`, otherwise `CIndex_pooled` or
+  `CIndex_foldaverage`.
 
 - `integrated_stat.best_per_eta`:
 
   A `data.frame` with the best `lambda` and corresponding score for each
-  candidate `eta`.
+  candidate `eta`, with the same criterion-named metric column.
 
 - `integrated_stat.betahat_best`:
 

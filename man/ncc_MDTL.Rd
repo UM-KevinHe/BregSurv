@@ -25,13 +25,28 @@ ncc_MDTL(
 
 \item{stratum}{Numeric or factor vector defining the matched sets (strata). \strong{Required}.}
 
-\item{beta}{Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.}
+\item{beta}{Numeric vector of external coefficients. \strong{Required}. If \code{beta}
+is named, names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be supplied
+directly. An unnamed \code{beta} is aligned positionally and must have length
+\code{ncol(z)}. A one-column matrix with row names is accepted as a named vector.
+See \code{\link{align_beta_Q}}. The bundled external beta
+\code{ExampleData_cc_lowdim$beta_external} is named \code{Z1}--\code{Z6}, so the
+examples below already exercise the name-matching path.}
 
-\item{Q}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
-weighting matrix \eqn{Q} in the Mahalanobis penalty. Typically the inverse of the
-external covariance (precision matrix). If \code{NULL}, defaults to the identity matrix.}
+\item{Q}{Optional weighting (precision) matrix for the Mahalanobis penalty, typically
+the inverse of the external covariance. Must be symmetric and positive semi-definite
+(both checked to a tolerance of 1e-8). If named, it is reordered and zero-padded to
+\code{colnames(z)}; only an unnamed \code{Q} must be exactly \code{ncol(z)} by
+\code{ncol(z)}. If \code{NULL}, a \emph{masked identity} is used: 1 on covariates
+actually supplied by \code{beta} and 0 on zero-padded positions, so padded
+coefficients are left unpenalized. See \code{\link{align_beta_Q}}.}
 
-\item{etas}{Numeric vector of tuning parameters to evaluate. \strong{Required}.}
+\item{etas}{Numeric vector of non-negative tuning parameters to evaluate.
+\strong{Required}. Must be finite and \eqn{\ge 0}. The values are sorted in ascending
+order internally, and the columns of the returned coefficient matrix follow that
+sorted order.}
 
 \item{tol}{Convergence tolerance for the Newton-Raphson algorithm. Default \code{1e-4}.}
 
@@ -61,12 +76,16 @@ then calls \code{\link{cox_MDTL}} as the core engine.
 The objective function minimizes the negative conditional log-likelihood plus
 a Mahalanobis distance penalty:
 \deqn{P(\beta) = \frac{\eta}{2} (\beta - \beta_{ext})^T Q (\beta - \beta_{ext})}
-where \eqn{Q} is the weighting matrix (identity if \code{Q} is \code{NULL}).
+where \eqn{Q} is the weighting matrix (a \emph{masked} identity when \code{Q} is
+\code{NULL}; see the \code{Q} argument).
 
 \itemize{
 \item Setting \code{etas = 0} recovers the standard CLR (no external information).
 \item Larger \code{eta} enforces stronger agreement with \code{beta}.
-\item If \code{Q = NULL}, \eqn{Q = I} (Euclidean/Ridge-type shrinkage towards \code{beta}).
+\item If \code{Q = NULL}, a \emph{masked identity} is used: 1 on the covariates
+actually supplied by \code{beta} and 0 on zero-padded positions. This gives
+Euclidean/Ridge-type shrinkage towards \code{beta} on the covariates the external
+source covers, while leaving padded coefficients unpenalized.
 }
 }
 \examples{

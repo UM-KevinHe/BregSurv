@@ -55,7 +55,7 @@ the external estimator). If named, it is reordered and zero-padded to
 \item{beta_initial}{Optional initial coefficient vector for warm start.}
 }
 \value{
-An object of class \code{"Cox_MDTL"} containing:
+An object of class \code{"cox_MDTL"} containing:
 \describe{
 \item{\code{eta}}{The vector of eta values evaluated.}
 \item{\code{beta}}{A matrix of estimated coefficients (p x n_eta).}

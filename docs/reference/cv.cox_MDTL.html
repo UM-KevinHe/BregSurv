@@ -100,23 +100,37 @@ the optimal weight for the external information.</p>
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
 <dd><p>Optional numeric or factor vector indicating strata. If <code>NULL</code>,
-all subjects are assumed to be in the same stratum.</p></dd>
+a warning is issued and all subjects are assumed to be in the same stratum.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>A numeric vector of external coefficients (length p).</p></dd>
+<dd><p>A numeric vector of external coefficients. <strong>Required</strong>. If <code>beta</code>
+is named, names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be supplied
+directly. An unnamed <code>beta</code> is aligned positionally and must have length
+<code>ncol(z)</code>. A one-column matrix with row names is accepted as a named vector.
+See <code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>Optional numeric matrix (p x p) representing the weighting matrix \(Q\)
-for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-<em>precision</em> matrix (typically the inverse covariance / information matrix of
-the external estimator). If named, it is reordered and zero-padded to
-<code>colnames(z)</code>. If <code>NULL</code>, a masked identity is used.</p></dd>
+<dd><p>Optional weighting (precision) matrix for the Mahalanobis penalty
+(typically the inverse covariance / information matrix of the external
+estimator). Must be symmetric and positive semi-definite; both are checked to a
+tolerance of 1e-8 and violations are errors. If named, it is reordered and
+zero-padded to <code>colnames(z)</code>; only an unnamed <code>Q</code> must be exactly
+<code>ncol(z)</code> by <code>ncol(z)</code>. If <code>NULL</code>, a <em>masked identity</em> is
+used: 1 on covariates actually supplied by <code>beta</code> and 0 on zero-padded
+positions, so padded coefficients are left unpenalized. See
+<code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>A numeric vector of candidate <code>eta</code> values to be evaluated.</p></dd>
+<dd><p>A numeric vector of non-negative candidate <code>eta</code> values to be
+evaluated. Must be finite and \(\ge 0\). This argument is <strong>required</strong>: leaving
+it at its <code>NULL</code> default is an error. The values are sorted in ascending
+order internally, and the rows of <code>internal_stat</code> / columns of
+<code>beta_full</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-tol">tol<a class="anchor" aria-label="anchor" href="#arg-tol"></a></dt>
@@ -141,7 +155,9 @@ the external estimator). If named, it is reordered and zero-padded to
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
 <dd><p>Optional stratum vector. Required only when <code>cv.criteria</code> involves
-stratified C-index calculation but the model itself is unstratified.</p></dd>
+stratified C-index calculation but the model itself is unstratified. That use case is
+therefore only reachable when <code>stratum = NULL</code>: if <code>stratum</code> is supplied and
+<code>c_index_stratum</code> is not identical to it, the function stops with an error.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>
@@ -158,9 +174,17 @@ stratified C-index calculation but the model itself is unstratified.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of class <code>"cv.Cox_MDTL"</code> containing:</p><dl><dt><code>internal_stat</code></dt>
-<dd><p>A <code>data.frame</code> summarizing the performance metric (loss or C-index)
-for each candidate <code>eta</code>.</p></dd>
+    <p>An object of class <code>"cv.cox_MDTL"</code> containing:</p><dl><dt><code>internal_stat</code></dt>
+<dd><p>A <code>data.frame</code> with one row per candidate <code>eta</code>,
+in ascending <code>eta</code> order. It has a column <code>eta</code> plus <em>exactly one</em>
+metric column, whose name is determined by <code>cv.criteria</code>: <code>VVH_Loss</code> for
+<code>"V&amp;VH"</code>, <code>LinPred_Loss</code> for <code>"LinPred"</code>, <code>CIndex_pooled</code> for
+<code>"CIndex_pooled"</code>, or <code>CIndex_foldaverage</code> for
+<code>"CIndex_foldaverage"</code>. The other three metrics are never computed.</p></dd>
+
+<dt><code>beta_full</code></dt>
+<dd><p>A <code>ncol(z)</code> by <code>length(etas)</code> matrix of coefficients
+from the full-data fit, one column per candidate <code>eta</code>.</p></dd>
 
 <dt><code>best</code></dt>
 <dd><p>A list containing the optimal results:</p><ul><li><p><code>best_eta</code>: The selected eta value.</p></li>

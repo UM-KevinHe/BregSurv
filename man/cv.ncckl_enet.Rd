@@ -32,15 +32,29 @@ one case.}
 \item{stratum}{Numeric or factor vector defining the matched sets (strata).
 Each unique value identifies one matched set.}
 
-\item{RS}{Optional numeric vector or matrix of external risk scores.
-If not provided, \code{beta} must be supplied.}
+\item{RS}{Optional numeric vector or matrix of external risk scores, with one
+entry per row of \code{z}. A vector is coerced to a one-column matrix
+internally so that it can be subset fold-wise. If not provided, \code{beta}
+must be supplied.}
 
-\item{beta}{Optional numeric vector of external coefficients. If provided,
-length must equal the number of columns in \code{z}. Either \code{RS} or
-\code{beta} must be non-\code{NULL}.}
+\item{beta}{Optional numeric vector of external coefficients. If \code{beta}
+is named, names are matched against \code{colnames(z)}: covariates absent
+from \code{beta} are set to 0 (with a message) and the vector is reordered,
+so an external source covering only a subset of the internal covariates may
+be supplied directly. An unnamed \code{beta} is aligned positionally and
+must have length \code{ncol(z)}. A one-column matrix with row names is
+accepted as a named vector. See \code{\link{align_beta}}. Either \code{RS}
+or \code{beta} must be non-\code{NULL}. The bundled fixture
+\code{ExampleData_cc_highdim$beta_external} is named \code{Z1}--\code{Z20}
+and therefore takes the name-matching path.}
 
-\item{etas}{Numeric vector of candidate tuning values for the integration
-parameter \eqn{\eta}. The values will be sorted in ascending order.}
+\item{etas}{Numeric vector of non-negative integration weights for the
+parameter \eqn{\eta}. \strong{Required}; the function stops if \code{etas}
+is \code{NULL}. Must be finite and \eqn{\ge 0}. The values are sorted in
+ascending order internally, and the rows of
+\code{integrated_stat.full_results} /
+\code{integrated_stat.best_per_eta} and the columns of
+\code{integrated_stat.betahat_best} follow that sorted order.}
 
 \item{alpha}{Elastic Net mixing parameter in \eqn{(0,1]}. Default is
 \code{1} (lasso penalty).}
@@ -120,7 +134,7 @@ time and uses \code{\link{coxkl_enet}} as the core engine.
 
 Cross-validation is performed at the stratum level: each matched set is
 treated as an indivisible unit and assigned to a single fold using
-\code{\link{get_fold_cc}}. This ensures that the conditional likelihood is
+\code{get_fold_cc}. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
 For each candidate \code{eta}, a full \code{lambda} path is fit on the
@@ -131,8 +145,9 @@ to evaluate each \code{lambda} along this path according to the chosen
 
 The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
-\item \code{"loss"}: Average negative conditional log-likelihood on held-out
-strata (lower is better).
+\item \code{"loss"}: Negative conditional log-likelihood pooled across the
+held-out folds and divided by the total number of held-out
+\emph{observations} (lower is better).
 \item \code{"AUC"}: Matched-set AUC based on within-stratum comparisons
 (higher is better).
 \item \code{"CIndex"}: Alias for \code{"AUC"} in the 1:m matched setting

@@ -4,12 +4,22 @@ parameter eta and the Elastic Net penalty parameter lambda
 for Conditional Logistic Regression with individual-level external data
 integration and Elastic Net penalty, implemented via ncc_indi_enet.
 This function is designed for 1:m matched case-control settings where each
-stratum (matched set) contains exactly one case and \(m\) controls."><meta property="og:description" content="Performs K-fold cross-validation (CV) to jointly select the integration
+stratum (matched set) contains exactly one case and \(m\) controls. Note
+that this precondition is enforced only on the internal cohort (and on
+each internal training and test fold): stratum_ext is not coerced to a
+factor and the external cohort's matched-set structure is never checked, so
+supplying a correctly matched external dataset is the caller's
+responsibility."><meta property="og:description" content="Performs K-fold cross-validation (CV) to jointly select the integration
 parameter eta and the Elastic Net penalty parameter lambda
 for Conditional Logistic Regression with individual-level external data
 integration and Elastic Net penalty, implemented via ncc_indi_enet.
 This function is designed for 1:m matched case-control settings where each
-stratum (matched set) contains exactly one case and \(m\) controls."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
+stratum (matched set) contains exactly one case and \(m\) controls. Note
+that this precondition is enforced only on the internal cohort (and on
+each internal training and test fold): stratum_ext is not coerced to a
+factor and the external cohort's matched-set structure is never checked, so
+supplying a correctly matched external dataset is the caller's
+responsibility."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -61,7 +71,12 @@ parameter <code>eta</code> and the Elastic Net penalty parameter <code>lambda</c
 for Conditional Logistic Regression with individual-level external data
 integration and Elastic Net penalty, implemented via <code><a href="ncc_indi_enet.html">ncc_indi_enet</a></code>.</p>
 <p>This function is designed for 1:m matched case-control settings where each
-stratum (matched set) contains exactly one case and \(m\) controls.</p>
+stratum (matched set) contains exactly one case and \(m\) controls. Note
+that this precondition is <em>enforced</em> only on the internal cohort (and on
+each internal training and test fold): <code>stratum_ext</code> is not coerced to a
+factor and the external cohort's matched-set structure is never checked, so
+supplying a correctly matched external dataset is the caller's
+responsibility.</p>
     </div>
 
     <div class="section level2">
@@ -111,11 +126,19 @@ stratum (matched set) contains exactly one case and \(m\) controls.</p>
 
 
 <dt id="arg-stratum-ext">stratum_ext<a class="anchor" aria-label="anchor" href="#arg-stratum-ext"></a></dt>
-<dd><p>Numeric or factor vector defining the external matched sets. <strong>Required</strong>.</p></dd>
+<dd><p>Numeric or factor vector defining the external matched sets. <strong>Required</strong>.
+Unlike <code>stratum_int</code> it is passed on unchanged (not coerced to a factor)
+and its 1:m structure is not validated.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate tuning values for \(\eta\). <strong>Required</strong>.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights for
+\(\eta\). <strong>Required</strong>; the function stops if <code>etas</code> is
+<code>NULL</code>. Must be finite and \(\ge 0\). The values are sorted in
+ascending order internally, and the rows of
+<code>integrated_stat.full_results</code> /
+<code>integrated_stat.best_per_eta</code> and the columns of
+<code>integrated_stat.betahat_best</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -133,7 +156,10 @@ is generated automatically for each <code>eta</code>.</p></dd>
 
 <dt id="arg-lambda-min-ratio">lambda.min.ratio<a class="anchor" aria-label="anchor" href="#arg-lambda-min-ratio"></a></dt>
 <dd><p>Numeric in \((0,1)\). Ratio of minimum to maximum lambda.
-If <code>NULL</code>, set internally based on sample size vs. number of covariates.</p></dd>
+If <code>NULL</code>, it is set internally to <code>0.05</code> when <code>n &lt; p</code> and to
+<code>1e-3</code> otherwise, where <code>p</code> is <code>ncol(z_int)</code> and <code>n</code> is
+the <em>internal</em> sample size <code>length(y_int)</code> only: the external
+cohort is used in full at every fit but does not enter <code>n</code>.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
@@ -161,7 +187,7 @@ One of <code>"loss"</code> (default), <code>"AUC"</code>, <code>"CIndex"</code>,
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>"cv.ncc_indi_enet"</code> containing:</p><dl><dt><code>best</code></dt>
 <dd><p>A list with the global best \((\eta, \lambda)\):
-<code>best_eta</code>, <code>best_lambda</code>, <code>best_beta</code>, <code>cv.criteria</code>.</p></dd>
+<code>best_eta</code>, <code>best_lambda</code>, <code>best_beta</code>, <code>criteria</code>.</p></dd>
 
 <dt><code>integrated_stat.full_results</code></dt>
 <dd><p>A <code>data.frame</code> with the CV score
@@ -208,6 +234,43 @@ probabilities (lower is better).</p></li>
     <div class="dont-index"><p><code><a href="ncc_indi_enet.html">ncc_indi_enet</a></code>, <code><a href="cv.ncckl_enet.html">cv.ncckl_enet</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co">## Load the matched case-control individual-level example data</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc_indi</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">y_int</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">internal</span><span class="op">$</span><span class="va">y</span></span></span>
+<span class="r-in"><span><span class="va">z_int</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">internal</span><span class="op">$</span><span class="va">z</span></span></span>
+<span class="r-in"><span><span class="va">stratum_int</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">internal</span><span class="op">$</span><span class="va">stratum</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">y_ext</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span><span class="op">$</span><span class="va">y</span></span></span>
+<span class="r-in"><span><span class="va">z_ext</span>       <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span><span class="op">$</span><span class="va">z</span></span></span>
+<span class="r-in"><span><span class="va">stratum_ext</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span><span class="op">$</span><span class="va">stratum</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Generate candidate eta values</span></span></span>
+<span class="r-in"><span><span class="va">eta_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="generate_eta.html">generate_eta</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"exponential"</span>, n <span class="op">=</span> <span class="fl">20</span>, max_eta <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Joint cross-validated tuning of (eta, lambda)</span></span></span>
+<span class="r-in"><span><span class="va">cv_fit</span> <span class="op">&lt;-</span> <span class="fu">cv.ncc_indi_enet</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  y_int       <span class="op">=</span> <span class="va">y_int</span>,</span></span>
+<span class="r-in"><span>  z_int       <span class="op">=</span> <span class="va">z_int</span>,</span></span>
+<span class="r-in"><span>  stratum_int <span class="op">=</span> <span class="va">stratum_int</span>,</span></span>
+<span class="r-in"><span>  y_ext       <span class="op">=</span> <span class="va">y_ext</span>,</span></span>
+<span class="r-in"><span>  z_ext       <span class="op">=</span> <span class="va">z_ext</span>,</span></span>
+<span class="r-in"><span>  stratum_ext <span class="op">=</span> <span class="va">stratum_ext</span>,</span></span>
+<span class="r-in"><span>  etas        <span class="op">=</span> <span class="va">eta_list</span>,</span></span>
+<span class="r-in"><span>  alpha       <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>  nfolds      <span class="op">=</span> <span class="fl">5</span>,</span></span>
+<span class="r-in"><span>  cv.criteria <span class="op">=</span> <span class="st">"loss"</span>,</span></span>
+<span class="r-in"><span>  seed        <span class="op">=</span> <span class="fl">42</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">cv_fit</span><span class="op">$</span><span class="va">best</span><span class="op">$</span><span class="va">best_eta</span></span></span>
+<span class="r-in"><span><span class="va">cv_fit</span><span class="op">$</span><span class="va">best</span><span class="op">$</span><span class="va">best_lambda</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

@@ -40,17 +40,30 @@ ncckl_enet(
 
 \item{z}{Numeric matrix of covariates (predictors). Rows are observations, columns are variables.}
 
-\item{stratum}{Numeric or factor vector defining the matched sets (strata).
-This is required for conditional logistic regression.}
+\item{stratum}{Numeric or factor vector defining the matched sets (strata). Strongly
+recommended for conditional logistic regression: if omitted, a warning is issued and
+all observations are assumed to lie in a single stratum, which defeats the purpose
+of matching.}
 
 \item{RS}{Optional numeric vector of external risk scores. Length must equal \code{nrow(z)}.
 If not provided, \code{beta} must be supplied.}
 
-\item{beta}{Optional numeric vector of external coefficients. Length must equal \code{ncol(z)}.
-If provided, it is used to calculate risk scores. If not provided, \code{RS} must be supplied.}
+\item{beta}{Optional numeric vector of external coefficients; if provided, it is used to
+calculate risk scores, and if not provided, \code{RS} must be supplied. If \code{beta}
+is named, names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an external
+source covering only a subset of the internal covariates may be supplied directly. An
+unnamed \code{beta} is aligned positionally and must have length \code{ncol(z)}. A
+one-column matrix with row names is accepted as a named vector. See
+\code{\link{align_beta}}. The bundled external beta
+\code{ExampleData_cc_lowdim$beta_external} is named \code{Z1}--\code{Z6}, so the
+examples below already exercise the name-matching path.}
 
 \item{eta}{Numeric scalar. The tuning parameter for KL divergence (integration strength).
-Defaults to 0 (no external information).}
+Must be a single finite non-negative value. The formal default is \code{NULL}; a
+\code{NULL} \code{eta} is resolved to 0 (no external information) inside
+\code{\link{coxkl_enet}}, which emits the warning
+\code{"eta is not provided. Setting eta = 0 (no external information used)."}}
 
 \item{alpha}{The Elastic Net mixing parameter, with \eqn{0 < \alpha \le 1}.
 \code{alpha = 1} is the Lasso penalty, and \code{alpha} close to 0 approaches Ridge.
@@ -121,18 +134,30 @@ Default is \code{FALSE}.}
 An object of class \code{"ncckl_enet"} and \code{"coxkl_enet"} containing:
 \describe{
 \item{\code{beta}}{Matrix of coefficient estimates (p x nlambda).}
-\item{\code{lambda}}{Sequence of lambda values used.}
+\item{\code{group}}{Factor recording the group membership supplied in \code{group}.}
+\item{\code{lambda}}{Sequence of lambda values used, after saturated values are dropped.}
 \item{\code{alpha}}{Elastic Net mixing parameter used.}
-\item{\code{likelihood}}{Vector of negative log-partial likelihoods (loss)
-for each lambda.}
+\item{\code{likelihood}}{Vector of KL-weighted log-partial likelihoods, one per lambda
+(larger values indicate better fit; this is \emph{not} a loss). The contribution of
+each matched set is weighted by \eqn{(\delta + \eta \tilde{\delta}) / (1 + \eta)},
+so this is not the same quantity as the unweighted log-partial likelihood reported
+by \code{\link{ncckl}}.}
+\item{\code{n}}{Number of observations used in the fit.}
 \item{\code{df}}{Vector of degrees of freedom (number of non-zero coefficients)
 for each lambda.}
 \item{\code{iter}}{Vector of iteration counts for each lambda.}
 \item{\code{W}}{Matrix of exponentiated linear predictors (risk scores)
 on the original scale.}
-\item{\code{data}}{List containing the input data used (including \code{y},
-\code{z}, \code{stratum}, and external information).}
+\item{\code{group.multiplier}}{Numeric vector of group penalty multipliers used.}
+\item{\code{data}}{List containing the input data used, with the CLR-to-Cox mapping
+already applied: \code{z}, \code{stratum}, the external risk scores \code{RS},
+the outcome stored under \code{delta}, and \code{time} (a vector of 1s).
+There is no \code{y} component: \code{fit$data$y} is \code{NULL}, and the
+outcome must be read from \code{fit$data$delta}.}
 }
+If \code{returnX = TRUE}, the object additionally carries a \code{returnX} component
+holding the standardized design matrix together with the sorted \code{time},
+\code{delta}, \code{stratum} and \code{RS}.
 }
 \description{
 Fits a Conditional Logistic Regression model for matched case-control (1:M) data

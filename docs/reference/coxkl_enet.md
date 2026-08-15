@@ -77,14 +77,23 @@ coxkl_enet(
 
 - beta:
 
-  Optional numeric vector of external coefficients. Length must equal
-  `ncol(z)`. If provided, it is used to calculate risk scores. If not
-  provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients. If `beta` is named,
+  names are matched against `colnames(z)`: covariates absent from `beta`
+  are set to 0 (with a message) and the vector is reordered, so an
+  external source covering only a subset of the internal covariates may
+  be supplied directly. An unnamed `beta` is aligned positionally and
+  must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  If provided, it is used to calculate risk scores. If not provided,
+  `RS` must be supplied.
 
 - eta:
 
-  Numeric scalar. The tuning parameter for KL divergence (integration
-  strength). Defaults to 0 (no external information).
+  Single finite non-negative integration weight for the KL divergence
+  (integration strength). The formal default is `NULL`, which resolves
+  to `eta = 0` (no external information used) with the warning "eta is
+  not provided. Setting eta = 0 (no external information used)."
 
 - alpha:
 
@@ -198,6 +207,10 @@ An object of class `"coxkl_enet"`. A list containing:
 
   Matrix of coefficient estimates (p x nlambda).
 
+- `group`:
+
+  Factor recording the group membership originally supplied in `group`.
+
 - `lambda`:
 
   The sequence of lambda values used.
@@ -208,7 +221,16 @@ An object of class `"coxkl_enet"`. A list containing:
 
 - `likelihood`:
 
-  Vector of negative log-partial likelihoods (loss) for each lambda.
+  Vector of KL-weighted log-partial likelihoods, one per lambda (larger
+  values indicate better fit; this is *not* a loss). The contribution of
+  each observation is weighted by \\(\delta + \eta \tilde{\delta}) /
+  (1 + \eta)\\, so this is not the same quantity as the unweighted
+  log-partial likelihood reported by
+  [`coxkl`](https://um-kevinhe.github.io/BregSurv/reference/coxkl.md).
+
+- `n`:
+
+  Number of observations used in the fit.
 
 - `df`:
 
@@ -224,9 +246,19 @@ An object of class `"coxkl_enet"`. A list containing:
   Matrix of exponentiated linear predictors (risk scores) on the
   original scale.
 
+- `group.multiplier`:
+
+  Numeric vector of the group-level penalty multipliers actually used.
+
 - `data`:
 
-  List containing the input data used.
+  List containing the input data used (`z`, `time`, `delta`, `stratum`,
+  `RS`), in the original row order supplied by the caller.
+
+When `returnX = TRUE`, the object additionally contains a `returnX`
+component: a list with elements `XX` (the standardized design object),
+`time`, `delta`, `stratum` and `RS`, all in the internal sorted
+(`stratum`, `time`) order rather than the original row order.
 
 ## Details
 

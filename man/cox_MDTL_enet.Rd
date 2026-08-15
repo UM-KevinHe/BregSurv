@@ -2,7 +2,7 @@
 % Please edit documentation in R/cox_MDTL_enet.R
 \name{cox_MDTL_enet}
 \alias{cox_MDTL_enet}
-\title{Fit Cox Model with Multi-Domain Transfer Learning and Elastic Net Penalty}
+\title{Fit Cox Model with Mahalanobis Distance Transfer Learning and Elastic Net Penalty}
 \usage{
 cox_MDTL_enet(
   z,
@@ -33,8 +33,7 @@ cox_MDTL_enet(
   returnX = FALSE,
   trace.lambda = FALSE,
   message = FALSE,
-  data_sorted = FALSE,
-  ...
+  data_sorted = FALSE
 )
 }
 \arguments{
@@ -48,67 +47,80 @@ cox_MDTL_enet(
 
 \item{beta}{Vector of external coefficients representing the prior knowledge or "source" model coefficients. If named, the names are matched against \code{colnames(z)} and covariates absent from \code{beta} are zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.}
 
-\item{Q}{Optional weighting matrix (p x p) for the external information. Typically the inverse covariance (precision) matrix of the external estimator, which should be symmetric positive-semidefinite. If named, it is reordered and zero-padded to \code{colnames(z)}. If NULL, a masked identity is used.}
+\item{Q}{Optional weighting (precision) matrix for the Mahalanobis penalty.
+Must be symmetric and positive semi-definite (both checked to a tolerance of
+1e-8). If named, it is reordered and zero-padded to \code{colnames(z)}; only
+an unnamed \code{Q} must be exactly \code{ncol(z)} by \code{ncol(z)}. If
+\code{NULL}, a \emph{masked identity} is used: 1 on covariates actually
+supplied by \code{beta} and 0 on zero-padded positions, so padded
+coefficients are left unpenalized. See \code{\link{align_beta_Q}}.}
 
-\item{eta}{Scalar. The transfer learning parameter (>= 0). Controls the strength of the external information. \code{eta = 0} ignores external info.}
+\item{eta}{Scalar. The transfer learning parameter (>= 0). Controls the strength of the external information. \code{eta = 0} ignores external info. The formal default is \code{NULL}, which resolves to \code{eta = 0} with the warning "eta is not provided. Setting eta = 0 (no external information used)."}
 
-\item{alpha}{The Elastic Net mixing parameter, with \eqn{0 \le \alpha \le 1}. \code{alpha=1} is the lasso penalty, and \code{alpha=0} the ridge penalty.}
+\item{alpha}{The Elastic Net mixing parameter, with \eqn{0 < \alpha \le 1}. \code{alpha=1} is the lasso penalty, and values close to 0 approach ridge. The formal default is \code{NULL}, which resolves to \code{alpha = 1} with the warning "alpha is not provided. Setting alpha = 1 (lasso penalty)."}
 
 \item{lambda}{Optional user-supplied lambda sequence. If NULL, the algorithm generates its own sequence.}
 
 \item{nlambda}{The number of lambda values. Default is 100.}
 
-\item{lambda.min.ratio}{Smallest value for lambda, as a fraction of lambda.max. Default depends on sample size relative to features.}
+\item{lambda.min.ratio}{Smallest value for lambda, as a fraction of lambda.max. Default is \code{ifelse(n < p, 0.05, 1e-03)}.}
 
 \item{lambda.early.stop}{Logical. Whether to stop early if the deviance changes minimally.}
 
 \item{tol}{Convergence threshold for coordinate descent.}
 
-\item{Mstop}{Maximum number of iterations per lambda step.}
+\item{Mstop}{Maximum number of iterations per lambda step. Default is 1000.}
 
-\item{max.total.iter}{Maximum total iterations across all lambda values.}
+\item{max.total.iter}{Maximum total iterations across all lambda values. Default is \code{Mstop * nlambda}.}
 
 \item{group}{Vector describing the grouping of the coefficients. Default is \code{1:ncol(z)} (no grouping).}
 
-\item{group.multiplier}{Vector of multipliers for each group size.}
+\item{group.multiplier}{Vector of multipliers for each group size. Default is \code{NULL}.}
 
 \item{standardize}{Logical. Should the predictors be standardized before fitting? Default is TRUE.}
 
-\item{nvar.max}{Maximum number of variables allowed in the model.}
+\item{nvar.max}{Maximum number of variables allowed in the model. Default is \code{ncol(z)}.}
 
-\item{group.max}{Maximum number of groups allowed in the model.}
+\item{group.max}{Maximum number of groups allowed in the model. Default is \code{length(unique(group))}.}
 
-\item{stop.loss.ratio}{Ratio of loss change to stop the path early.}
+\item{stop.loss.ratio}{Ratio of loss change to stop the path early. Default is 1e-2.}
 
 \item{actSet}{Logical. Whether to use active set convergence strategy.}
 
-\item{actIter}{Number of iterations for active set.}
+\item{actIter}{Number of iterations for active set. Default is \code{Mstop}.}
 
-\item{actGroupNum}{Number of active groups.}
+\item{actGroupNum}{Number of active groups. Default is \code{sum(unique(group) != 0)}.}
 
-\item{actSetRemove}{Logical. Whether to remove inactive groups from the active set.}
+\item{actSetRemove}{Logical. Whether to remove inactive groups from the active set. Default is \code{FALSE}.}
 
-\item{returnX}{Logical. If TRUE, returns the standardized design matrix and other data details.}
+\item{returnX}{Logical. If TRUE, returns the standardized design matrix and other data details. Default is \code{FALSE}.}
 
-\item{trace.lambda}{Logical. If TRUE, prints the current lambda during fitting.}
+\item{trace.lambda}{Logical. If TRUE, prints the current lambda during fitting. Default is \code{FALSE}.}
 
 \item{message}{Logical. If TRUE, prints warnings and progress messages.}
 
-\item{data_sorted}{Logical. Internal flag indicating if data is already sorted by time/stratum.}
-
-\item{...}{Additional arguments.}
+\item{data_sorted}{Logical. Internal flag indicating if data is already sorted by time/stratum. Default is \code{FALSE}.}
 }
 \value{
 An object of class \code{"cox_MDTL_enet"} containing:
 \itemize{
 \item \code{beta}: Matrix of estimated coefficients (p x nlambda).
+\item \code{group}: Factor vector of the group assignments supplied for each covariate.
 \item \code{lambda}: The sequence of lambda values used.
-\item \code{likelihood}: Vector of negative partial log-likelihood values.
+\item \code{alpha}: The Elastic Net mixing parameter used.
+\item \code{likelihood}: Vector of log-partial likelihoods, one per lambda
+(larger values indicate better fit; this is \emph{not} a loss). Unlike the
+Kullback-Leibler variants, this value is unweighted.
+\item \code{n}: Number of observations used in the fit.
 \item \code{df}: Degrees of freedom for each lambda.
-\item \code{W}: Matrix of exponential linear predictors.
 \item \code{iter}: Number of iterations for each lambda.
+\item \code{W}: Matrix of exponential linear predictors.
+\item \code{group.multiplier}: Numeric vector of group penalty multipliers used.
 \item \code{data}: List of input data.
 }
+When \code{returnX = TRUE}, an additional component \code{returnX} is attached, a
+list with the standardized design object \code{XX} and the sorted \code{time},
+\code{delta} and \code{stratum} vectors.
 }
 \description{
 Fits a Cox Proportional Hazards model that integrates external information (Transfer Learning)
@@ -117,7 +129,7 @@ external coefficients (\code{beta}) and an optional weight matrix (\code{Q}), co
 by the transfer learning parameter \code{eta}.
 
 The objective function minimizes the negative partial likelihood plus a transfer learning
-penalty term \eqn{\eta (\beta - \beta_{ext})^T Q (\beta - \beta_{ext})} and the
+penalty term \eqn{\frac{\eta}{2} (\beta - \beta_{ext})^T Q (\beta - \beta_{ext})} and the
 Elastic Net penalty.
 }
 \examples{

@@ -1,8 +1,8 @@
 # Plot Stability Selection Path
 
-Generates a visualization of the stability paths. Variables that exceed
-the specified probability threshold at any point in the path are
-highlighted.
+Generates a visualization of the stability paths. Variables that reach
+or exceed the specified probability threshold at any point in the path
+are highlighted.
 
 ## Usage
 
@@ -39,3 +39,7 @@ plot(
 - ...:
 
   Additional arguments passed to methods.
+
+## Value
+
+A `ggplot` object.

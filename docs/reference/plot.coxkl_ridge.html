@@ -75,19 +75,19 @@ The optimal lambda is marked with a dashed orange line.</p>
 
 
 <dt id="arg-test-z">test_z<a class="anchor" aria-label="anchor" href="#arg-test-z"></a></dt>
-<dd><p>Matrix of test covariates.</p></dd>
+<dd><p>Matrix of test covariates. Optional; see Details.</p></dd>
 
 
 <dt id="arg-test-time">test_time<a class="anchor" aria-label="anchor" href="#arg-test-time"></a></dt>
-<dd><p>Vector of test survival times.</p></dd>
+<dd><p>Vector of test survival times. Optional; see Details.</p></dd>
 
 
 <dt id="arg-test-delta">test_delta<a class="anchor" aria-label="anchor" href="#arg-test-delta"></a></dt>
-<dd><p>Vector of test status indicators.</p></dd>
+<dd><p>Vector of test status indicators. Optional; see Details.</p></dd>
 
 
 <dt id="arg-test-stratum">test_stratum<a class="anchor" aria-label="anchor" href="#arg-test-stratum"></a></dt>
-<dd><p>Vector of test strata.</p></dd>
+<dd><p>Vector of test strata. Optional; see Details.</p></dd>
 
 
 <dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
@@ -101,6 +101,17 @@ The optimal lambda is marked with a dashed orange line.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>ggplot</code> object.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The four <code>test_*</code> arguments act as a single unit. The training data stored
+in the fitted object are used for evaluation only when <em>all four</em> of
+<code>test_z</code>, <code>test_time</code>, <code>test_delta</code> and <code>test_stratum</code> are
+<code>NULL</code>. Supplying any one of them selects the external-test path, so
+leaving <code>test_z</code> <code>NULL</code> while passing any of the others does not fall
+back to the training data – it produces an error. The one exception is
+<code>test_time</code>: on the external-test path, if it alone is omitted all test
+times are set to 1.</p>
     </div>
 
     <div class="section level2">
@@ -118,12 +129,12 @@ The optimal lambda is marked with a dashed orange line.</p>
 <span class="r-in"><span>                               beta <span class="op">=</span> <span class="va">beta_external_highdim</span>,</span></span>
 <span class="r-in"><span>                               eta <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">plot.coxkl_ridge</span><span class="op">(</span><span class="va">coxkl_ridge_est</span>,</span></span>
-<span class="r-in"><span>                 test_z <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">z</span>,</span></span>
-<span class="r-in"><span>                 test_time <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">time</span>,</span></span>
-<span class="r-in"><span>                 test_delta <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">status</span>,</span></span>
-<span class="r-in"><span>                 test_stratum <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">stratum</span>,</span></span>
-<span class="r-in"><span>                 criteria <span class="op">=</span> <span class="st">"CIndex"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">coxkl_ridge_est</span>,</span></span>
+<span class="r-in"><span>     test_z <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">z</span>,</span></span>
+<span class="r-in"><span>     test_time <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">time</span>,</span></span>
+<span class="r-in"><span>     test_delta <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">status</span>,</span></span>
+<span class="r-in"><span>     test_stratum <span class="op">=</span> <span class="va">test_dat_highdim</span><span class="op">$</span><span class="va">stratum</span>,</span></span>
+<span class="r-in"><span>     criteria <span class="op">=</span> <span class="st">"CIndex"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

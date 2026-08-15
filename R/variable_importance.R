@@ -10,9 +10,15 @@
 #' @param time Numeric vector of observed times.
 #' @param stratum Optional stratum vector. Default NULL.
 #' @param RS Optional external risk scores. Default NULL.
-#' @param beta Optional external coefficients. Default NULL.
-#' @param etas Numeric vector of candidate eta values.
-#' @param B Integer. Number of bootstrap replications.
+#' @param beta Optional numeric vector of external coefficients. Default NULL. It is
+#'   forwarded to \code{\link{cv.coxkl_enet}}, which aligns it: if \code{beta} is
+#'   named, names are matched against \code{colnames(z)}, covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered. An
+#'   unnamed \code{beta} is aligned positionally and must have length
+#'   \code{ncol(z)}. See \code{\link{align_beta}}.
+#' @param etas Numeric vector of non-negative candidate eta values. Must be finite
+#'   and \eqn{\ge 0}; this is validated by \code{\link{cv.coxkl_enet}}.
+#' @param B Integer. Number of bootstrap replications. Default is 10.
 #' @param nonzero_tol Numeric tolerance for defining "selected". Default 1e-10.
 #' @param seed Optional integer seed for reproducibility.
 #' @param message Logical. Whether to print progress messages. Default FALSE.
@@ -26,6 +32,7 @@
 #'   \item{freq}{Named numeric vector of selection frequencies (length p).}
 #'   \item{count}{Named integer vector of selection counts (length p).}
 #'   \item{B}{Number of bootstrap replications.}
+#'   \item{nonzero_tol}{The tolerance used to define "selected".}
 #'   \item{call}{Matched call.}
 #' }
 #'
@@ -156,7 +163,10 @@ variable_importance <- function(
 #' @param title Character. Plot title. Default "Top variables by selection frequency".
 #' @param ... Unused.
 #'
+#' @return A \code{ggplot} object.
+#'
 #' @importFrom rlang .data
+#' @method plot variable_importance
 #' @export
 plot.variable_importance <- function(
     x,

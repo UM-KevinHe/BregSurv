@@ -56,6 +56,20 @@ Observed time is \eqn{\min(T,C)}, status is \eqn{\mathbf{1}\{T \le C\}}.
 using the specified covariate subset; place estimates into a length-6 vector named \code{Z1}–\code{Z6}
 with zeros for variables not included.
 }
+
+\strong{External coefficients: name present-and-zero vs. name absent.} All three
+external vectors are fully populated and fully named over \code{Z1}--\code{Z6}.
+Consequently \code{\link{align_beta}} never zero-pads them, and
+\code{\link{align_beta_Q}} with \code{Q = NULL} returns the full identity rather
+than a masked identity. The distinction is semantic: a covariate whose name is
+\emph{present} with value 0 asserts an external estimate of exactly zero and is
+penalized toward zero like any other external coefficient, whereas a covariate
+whose name is \emph{absent} is treated as carrying no external information -- it
+is zero-padded and, under the Mahalanobis penalty, left unpenalized. The zeros
+here are of the first kind: the \code{Z2} and \code{Z4} entries of
+\code{beta_external_fair}, and the \code{Z2}, \code{Z3}, \code{Z4} and \code{Z6}
+entries of \code{beta_external_poor}, are borrowed as genuine external estimates
+of zero rather than treated as "not estimated externally".
 }
 \examples{
 data(ExampleData_lowdim)

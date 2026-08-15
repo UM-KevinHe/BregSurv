@@ -5,12 +5,13 @@
 \alias{ExampleData_indi}
 \title{Example internal/external Cox individual-level data}
 \format{
-A list containing:
+A list with exactly two components:
 \describe{
-\item{internal}{List with elements \code{z}, \code{time}, \code{status}, \code{stratum}.}
-\item{external}{List with elements \code{z}, \code{time}, \code{status}, \code{stratum}.}
-\item{beta_true}{Numeric vector (length p) of true coefficients.}
-\item{meta}{List of simulation settings for internal and external cohorts.}
+\item{internal}{List with elements \code{z} (a \eqn{500 \times 10} numeric
+matrix with columns named \code{Z1}--\code{Z10}), \code{time},
+\code{status}, and \code{stratum} (10 strata of 50 subjects each).}
+\item{external}{List with the same four elements, with \code{z} of dimension
+\eqn{2000 \times 10} and 10 strata of 200 subjects each.}
 }
 }
 \usage{
@@ -19,8 +20,7 @@ data(ExampleData_indi)
 \description{
 A simulated survival dataset for illustrating \code{cox_indi()} and
 \code{cv.cox_indi()}. The object contains one internal cohort and one external
-cohort, each stratified into multiple strata, along with the true coefficient
-vector used in simulation.
+cohort, each stratified into multiple strata.
 }
 \examples{
 data(ExampleData_indi)

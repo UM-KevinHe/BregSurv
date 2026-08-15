@@ -10,12 +10,16 @@ align_beta(z, beta, arg = "beta")
 \item{z}{Internal covariate matrix or data frame. Its columns define the
 target coefficient space; column names, when present, are used for matching.}
 
-\item{beta}{External coefficient vector (optionally named).}
+\item{beta}{External coefficient vector (optionally named). A one-column matrix is
+also accepted -- the shape in which a \code{coef()} result or a stored
+external-model artifact typically arrives -- and its row names are promoted to
+the names of the resulting vector.}
 
 \item{arg}{Name used for \code{beta} in error messages.}
 }
 \value{
-A numeric vector of length \code{ncol(z)}, ordered to \code{colnames(z)}.
+A numeric vector of length \code{ncol(z)}, ordered to \code{colnames(z)}
+and named with \code{colnames(z)} whenever \code{z} carries column names.
 }
 \description{
 Reconciles an external coefficient vector \code{beta} with the covariates of
@@ -26,6 +30,30 @@ covariate absent from \code{beta} is filled with 0 (the external source is
 treated as providing no information for that covariate). When \code{beta} is
 unnamed (or \code{z} has no column names), it is aligned positionally and must
 already have length \code{ncol(z)}.
+
+Name-based alignment signals an error if \code{beta} has duplicated names, or if
+any name in \code{beta} is not one of \code{colnames(z)} (covariates that exist
+only in the external source must be dropped by the caller). Whenever at least one
+covariate is zero-padded, a \code{message()} listing the padded covariates is
+emitted.
+}
+\examples{
+# Six internal covariates; the external source estimated only four of them.
+z <- matrix(seq_len(30), nrow = 5, ncol = 6,
+            dimnames = list(NULL, paste0("Z", 1:6)))
+beta_ext <- c(Z1 = 0.30, Z3 = 0.25, Z5 = -0.10, Z6 = 0.05)
+
+# Z2 and Z4 are absent from the external vector and are zero-padded.
+align_beta(z, beta_ext)
+
+# A one-column matrix is accepted; its row names are used as the names.
+beta_mat <- matrix(c(0.30, 0.25, -0.10, 0.05), ncol = 1,
+                   dimnames = list(c("Z1", "Z3", "Z5", "Z6"), "coef"))
+align_beta(z, beta_mat)
+
+# An unnamed beta is aligned positionally and must have length ncol(z).
+align_beta(z, c(0.30, 0, 0.25, 0, -0.10, 0.05))
+
 }
 \seealso{
 \code{\link{align_beta_Q}} for the Mahalanobis-distance setting.

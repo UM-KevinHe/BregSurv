@@ -37,13 +37,16 @@ cox(
 
 - stratum:
 
-  A vector indicating strata for a stratified Cox model. If missing, all
+  A vector indicating strata for a stratified Cox model. If missing, a
+  `warning` ("Stratum information not provided...") is issued and all
   data is assumed to belong to a single stratum.
 
 - ties:
 
   A character string specifying the method for tie handling. Options are
-  "breslow" (default), "efron", or "exact".
+  "breslow", "efron", or "exact". The formal default is `NULL`, which
+  the function resolves to "breslow", so omitting `ties` gives Breslow
+  handling.
 
 - max_iter:
 
@@ -60,19 +63,15 @@ cox(
 
 ## Value
 
-A list containing:
+A list with exactly two components:
 
 - beta:
 
-  Estimated coefficient vector (length p).
+  Estimated coefficient vector (length p), named with `colnames(z)`.
 
 - loglik:
 
   The log-partial likelihood at convergence.
-
-- ...:
-
-  Additional outputs returned by the underlying Rcpp function.
 
 ## Examples
 

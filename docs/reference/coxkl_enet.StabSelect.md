@@ -50,8 +50,9 @@ coxkl_enet.StabSelect(
 
 - stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, a
+  warning is issued and all subjects are assumed to be in the same
+  stratum.
 
 - RS:
 
@@ -60,13 +61,16 @@ coxkl_enet.StabSelect(
 
 - beta:
 
-  Optional numeric vector of external coefficients (length equal to
-  `ncol(z)`). If provided, it is used to compute external risk scores.
-  If not provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients. If `beta` is named,
+  names are matched against `colnames(z)`: covariates absent from `beta`
+  are set to 0 (with a message) and the vector is reordered. An unnamed
+  `beta` is aligned positionally and must have length `ncol(z)`. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - etas:
 
-  Numeric vector of candidate `eta` values to be evaluated.
+  Numeric vector of non-negative integration weights. Must be finite and
+  \\\ge 0\\.
 
 - alpha:
 
@@ -85,8 +89,10 @@ coxkl_enet.StabSelect(
 
 - lambda.min.ratio:
 
-  Numeric. Ratio of min/max lambda. Default depends on sample size vs
-  dimension (0.05 if n \< p, else 1e-03).
+  Numeric. Smallest value for `lambda`, as a fraction of `lambda.max`.
+  Default is `0.1` for this function. Only if it is explicitly set to
+  `NULL` does the sample-size-dependent fallback apply (`0.05` when \\n
+  \< p\\, `1e-03` otherwise).
 
 - nfolds:
 
@@ -109,8 +115,10 @@ coxkl_enet.StabSelect(
 
   Optional stratum vector. Required only when `cv.criteria` is set to
   `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified C-index
-  needs to be computed while the fitted model is non-stratified. Default
-  is `NULL`.
+  needs to be computed while the fitted model is non-stratified. That
+  use case is therefore only reachable when `stratum = NULL`: if
+  `stratum` is supplied and `c_index_stratum` is not identical to it,
+  the function stops with an error. Default is `NULL`.
 
 - message:
 

@@ -43,7 +43,8 @@
 #'   (1 = event, 0 = censored).
 #' @param time_int Numeric vector of survival times for the internal dataset.
 #' @param stratum_int Optional stratum identifiers for the internal dataset.
-#'   Default \code{NULL} assigns all internal observations to a single stratum.
+#'   Default \code{NULL} assigns all internal observations to a single stratum and
+#'   issues a warning to that effect.
 #' @param z_ext Numeric matrix of covariates for the external dataset
 #'   (\eqn{n_{\text{ext}} \times p}). Must have the same number of columns as \code{z_int}.
 #' @param delta_ext Numeric vector of event indicators for the external dataset
@@ -69,10 +70,13 @@
 #' @param cv.criteria Character string specifying the cross-validation criterion.
 #'   One of \code{"V&VH"} (default), \code{"LinPred"}, \code{"CIndex_pooled"}, or
 #'   \code{"CIndex_foldaverage"}.
-#' @param c_index_stratum Optional stratum vector for the internal dataset.
-#'   Only needed when \code{cv.criteria} is \code{"CIndex_pooled"} or
-#'   \code{"CIndex_foldaverage"} and a stratified C-index is desired while the
-#'   fitted model uses a different (or no) stratification. Default \code{NULL}.
+#' @param c_index_stratum Optional stratum vector for the internal dataset,
+#'   used when \code{cv.criteria} is \code{"CIndex_pooled"} or
+#'   \code{"CIndex_foldaverage"}. When supplied it must be identical to
+#'   \code{stratum_int}, otherwise the function stops with an error. Because
+#'   \code{stratum_int} is defaulted to a single stratum before this check, a
+#'   \code{c_index_stratum} that differs from the stratification used for fitting
+#'   is never accepted. Default \code{NULL}.
 #' @param message Logical. If \code{TRUE}, shows a progress bar over the \code{etas} loop.
 #'   Default \code{FALSE}.
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
@@ -90,9 +94,13 @@
 #'     }
 #'   }
 #'   \item{\code{integrated_stat.full_results}}{A \code{data.frame} with the cross-validation
-#'     score for every (\code{eta}, \code{lambda}) combination evaluated.}
+#'     score for every (\code{eta}, \code{lambda}) combination evaluated. Besides
+#'     \code{eta} and \code{lambda} it carries a single metric column named after the
+#'     selected criterion: \code{Loss} for \code{"V&VH"} and \code{"LinPred"}, otherwise
+#'     \code{CIndex_pooled} or \code{CIndex_foldaverage}.}
 #'   \item{\code{integrated_stat.best_per_eta}}{A \code{data.frame} with the best
-#'     \code{lambda} and corresponding score for each candidate \code{eta}.}
+#'     \code{lambda} and corresponding score for each candidate \code{eta}, with the
+#'     same criterion-named metric column.}
 #'   \item{\code{integrated_stat.betahat_best}}{A coefficient matrix
 #'     (\eqn{p \times n_{\text{eta}}}) where each column is the optimal-\code{lambda}
 #'     coefficient vector for a given \code{eta}, estimated on the full data.}

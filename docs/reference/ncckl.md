@@ -33,23 +33,38 @@ ncckl(
 
 - stratum:
 
-  Numeric or factor vector defining the matched sets (strata). This is
-  **required** for CLR.
+  Numeric or factor vector defining the matched sets (strata). Strongly
+  recommended for CLR: if omitted, a warning is issued and all
+  observations are assumed to lie in a single stratum, which defeats the
+  purpose of matching.
 
 - etas:
 
-  Numeric vector of tuning parameters. Controls the strength of external
-  information integration.
+  Numeric vector of non-negative integration weights, controlling the
+  strength of external information integration. Must be finite and \\\ge
+  0\\. The values are sorted in ascending order internally, and the
+  columns of the returned coefficient matrix follow that sorted order.
 
 - beta:
 
-  Numeric vector of external coefficients. Used to compute the KL
-  divergence penalty.
+  Numeric vector of external coefficients, used to compute the KL
+  divergence penalty. Required. If `beta` is named, names are matched
+  against `colnames(z)`: covariates absent from `beta` are set to 0
+  (with a message) and the vector is reordered, so an external source
+  covering only a subset of the internal covariates may be supplied
+  directly. An unnamed `beta` is aligned positionally and must have
+  length `ncol(z)`. A one-column matrix with row names is accepted as a
+  named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  The bundled external beta `ExampleData_cc_lowdim$beta_external` is
+  named `Z1`–`Z6`, so the examples below already exercise the
+  name-matching path.
 
 - method:
 
-  Character string specifying the tie-handling method ("breslow" or
-  "exact").
+  Character string specifying the tie-handling method, resolved by
+  [`match.arg`](https://rdrr.io/r/base/match.arg.html). One of
+  `"breslow"` (the default) or `"exact"`.
 
 - Mstop:
 
@@ -70,10 +85,34 @@ ncckl(
 
 ## Value
 
-An object of class `"coxkl"` (inherited from
-[`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md))
-containing the estimation results for each `eta` value, including
-estimated coefficients, linear predictors, and log-partial likelihoods.
+An object of class `"coxkl"`, returned unchanged from
+[`coxkl_ties`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ties.md),
+containing the estimation results for each `eta` value:
+
+- `eta`:
+
+  The sorted sequence of \\\eta\\ values used. Because `etas` is sorted
+  internally, this is the only way to recover which column of `beta`
+  corresponds to which weight.
+
+- `beta`:
+
+  Matrix of estimated coefficients (\\p \times n\_{etas}\\); columns
+  follow the sorted `eta` values.
+
+- `linear.predictors`:
+
+  Matrix of linear predictors, in the original row order.
+
+- `likelihood`:
+
+  Vector of log-partial likelihoods, one per `eta`.
+
+- `data`:
+
+  List of the input data used (`z`, `time`, `delta`, `stratum`). Note
+  the CLR-to-Cox mapping: the outcome `y` is stored under `delta`, and
+  `time` is a vector of 1s.
 
 ## Details
 

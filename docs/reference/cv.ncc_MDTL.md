@@ -44,18 +44,36 @@ cv.ncc_MDTL(
 
 - beta:
 
-  Numeric vector of external coefficients (length `ncol(z)`).
-  **Required**.
+  Numeric vector of external coefficients. **Required**. If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
+  The bundled fixture `ExampleData_cc_lowdim$beta_external` is named
+  `Z1`–`Z6` and therefore takes the name-matching path.
 
 - Q:
 
-  Optional numeric matrix (`ncol(z)` x `ncol(z)`) as the weighting
-  matrix \\Q\\. Typically the precision matrix of the external
-  estimator. If `NULL`, defaults to the identity matrix.
+  Optional weighting (precision) matrix for the Mahalanobis penalty,
+  typically the precision matrix of the external estimator. Must be
+  symmetric and positive semi-definite (both checked to a tolerance of
+  1e-8). If named, it is reordered and zero-padded to `colnames(z)`;
+  only an unnamed `Q` must be exactly `ncol(z)` by `ncol(z)`. If `NULL`,
+  a *masked identity* is used: 1 on covariates actually supplied by
+  `beta` and 0 on zero-padded positions, so padded coefficients are left
+  unpenalized. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  Numeric vector of candidate tuning values for \\\eta\\. **Required**.
+  Numeric vector of non-negative integration weights for \\\eta\\.
+  **Required**; the function stops if `etas` is `NULL`. Must be finite
+  and \\\ge 0\\. The values are sorted in ascending order internally,
+  and the rows of `internal_stat` / columns of `beta_full` follow that
+  sorted order.
 
 - tol:
 

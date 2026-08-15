@@ -51,15 +51,23 @@ coxkl_ties(
 
 - beta:
 
-  Numeric vector of external coefficients. Length must equal the number
-  of columns in `z`. These are used to compute the external risk scores
-  and the KL divergence term.
+  Numeric vector of external coefficients (required). If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  These are used to compute the external risk scores and the KL
+  divergence term.
 
 - etas:
 
-  Numeric vector of tuning parameters. Controls the reliance on external
-  information. The function will sort these values and fit a model for
-  each.
+  Numeric vector of non-negative integration weights. Must be finite and
+  \\\ge 0\\. The values are sorted in ascending order internally, and
+  the columns of the returned coefficient matrix follow that sorted
+  order.
 
 - ties:
 
@@ -116,7 +124,8 @@ An object of class `"coxkl"` containing:
 
 - `likelihood`:
 
-  Vector of negative log-partial likelihoods for each `eta`.
+  Vector of log-partial likelihoods, one per `eta` (larger values
+  indicate better fit; this is *not* a loss).
 
 - `data`:
 

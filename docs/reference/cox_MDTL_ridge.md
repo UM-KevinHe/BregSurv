@@ -32,8 +32,7 @@ cox_MDTL_ridge(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL,
-  ...
+  beta_initial = NULL
 )
 ```
 
@@ -58,9 +57,12 @@ cox_MDTL_ridge(
 
 - beta:
 
-  A numeric vector of external coefficients. If named, the names are
-  matched against `colnames(z)` and covariates absent from `beta` are
-  zero-padded; if unnamed, `beta` must have length `ncol(z)`.
+  A numeric vector of external coefficients. The formal default is
+  `NULL`, but the argument is in practice mandatory: if it is not
+  supplied the function stops with the message "External beta must be
+  provided." If named, the names are matched against `colnames(z)` and
+  covariates absent from `beta` are zero-padded; if unnamed, `beta` must
+  have length `ncol(z)`.
 
 - Q:
 
@@ -117,10 +119,6 @@ cox_MDTL_ridge(
 - beta_initial:
 
   Optional initial coefficient vector for warm start.
-
-- ...:
-
-  Additional arguments passed to internal functions.
 
 ## Value
 

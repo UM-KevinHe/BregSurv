@@ -103,8 +103,10 @@ external dataset. <strong>Required</strong>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of nonnegative external weights. <code>eta = 0</code> gives
-an internal-only fit.</p></dd>
+<dd><p>Numeric vector of nonnegative external weights. Must be finite and
+\(\ge 0\); <code>eta = 0</code> gives an internal-only fit. The values are sorted in
+ascending order internally, and the columns of the returned coefficient matrix
+follow that sorted order.</p></dd>
 
 
 <dt id="arg-max-iter">max_iter<a class="anchor" aria-label="anchor" href="#arg-max-iter"></a></dt>

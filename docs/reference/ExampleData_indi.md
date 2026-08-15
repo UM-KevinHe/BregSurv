@@ -5,8 +5,7 @@ A simulated survival dataset for illustrating
 and
 [`cv.cox_indi()`](https://um-kevinhe.github.io/BregSurv/reference/cv.cox_indi.md).
 The object contains one internal cohort and one external cohort, each
-stratified into multiple strata, along with the true coefficient vector
-used in simulation.
+stratified into multiple strata.
 
 ## Usage
 
@@ -16,23 +15,18 @@ data(ExampleData_indi)
 
 ## Format
 
-A list containing:
+A list with exactly two components:
 
 - internal:
 
-  List with elements `z`, `time`, `status`, `stratum`.
+  List with elements `z` (a \\500 \times 10\\ numeric matrix with
+  columns named `Z1`–`Z10`), `time`, `status`, and `stratum` (10 strata
+  of 50 subjects each).
 
 - external:
 
-  List with elements `z`, `time`, `status`, `stratum`.
-
-- beta_true:
-
-  Numeric vector (length p) of true coefficients.
-
-- meta:
-
-  List of simulation settings for internal and external cohorts.
+  List with the same four elements, with `z` of dimension \\2000 \times
+  10\\ and 10 strata of 200 subjects each.
 
 ## Examples
 

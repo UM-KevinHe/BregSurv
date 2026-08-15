@@ -45,7 +45,9 @@ cv.coxkl(
 
 - stratum:
 
-  Optional numeric or factor vector defining strata.
+  Optional numeric or factor vector defining strata. If `NULL`, a
+  warning is issued and all observations are treated as a single
+  stratum.
 
 - RS:
 
@@ -55,12 +57,21 @@ cv.coxkl(
 - beta:
 
   Optional numeric vector of external coefficients. If omitted, `RS`
-  must be supplied.
+  must be supplied. If `beta` is named, names are matched against
+  `colnames(z)`: covariates absent from `beta` are set to 0 (with a
+  message) and the vector is reordered, so an external source covering
+  only a subset of the internal covariates may be supplied directly. An
+  unnamed `beta` is aligned positionally and must have length `ncol(z)`.
+  A one-column matrix with row names is accepted as a named vector. See
+  [`align_beta()`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - etas:
 
-  Numeric vector of candidate tuning values to be cross-validated.
-  Default is `NULL`, which sets `etas = 0`.
+  Numeric vector of non-negative candidate tuning values to be
+  cross-validated. Must be finite and \\\ge 0\\. This argument is
+  **required**: leaving it at its `NULL` default is an error. The values
+  are sorted in ascending order internally, and the rows of
+  `internal_stat` / columns of `beta_full` follow that sorted order.
 
 - tol:
 
@@ -91,7 +102,10 @@ cv.coxkl(
 
   Optional stratum vector. Only required when `cv.criteria` is set to
   `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified C-index
-  is desired while the fitted model is non-stratified. Default `NULL`.
+  is desired while the fitted model is non-stratified. That use case is
+  therefore only reachable when `stratum = NULL`: if `stratum` is
+  supplied and `c_index_stratum` is not identical to it, the function
+  stops with an error. Default `NULL`.
 
 - message:
 
@@ -109,29 +123,41 @@ cv.coxkl(
 
 ## Value
 
-A `data.frame` with one row per candidate `eta` and columns:
+An object of class `"cv.coxkl"`: a list with the following five
+components.
 
-- `eta`:
+- `internal_stat`:
 
-  The candidate `eta` values.
+  A `data.frame` with one row per candidate `eta`, in ascending `eta`
+  order. It has a column `eta` plus *exactly one* metric column, whose
+  name is determined by `cv.criteria`: `VVH_Loss` for `"V&VH"`
+  (cross-validated V&VH loss), `LinPred_Loss` for `"LinPred"` (loss
+  based on the cross-validated linear predictors), `CIndex_pooled` for
+  `"CIndex_pooled"` (pooled cross-validated C-index), or
+  `CIndex_foldaverage` for `"CIndex_foldaverage"` (average fold-wise
+  C-index). The other three metrics are never computed, so only one of
+  them ever appears.
 
-- `VVH_Loss`:
+- `beta_full`:
 
-  If `cv.criteria = "V&VH"`, the cross-validated V&VH loss.
+  A `ncol(z)` by `length(etas)` matrix of coefficients from the
+  full-data fit, one column per candidate `eta` (in the same sorted
+  order as `internal_stat`).
 
-- `LinPred_Loss`:
+- `best`:
 
-  If `cv.criteria = "LinPred"`, the loss based on linear predictors.
+  A list with three components: `best_eta`, the selected `eta` (the loss
+  is minimized for `"V&VH"` / `"LinPred"`, the C-index is maximized
+  otherwise); `best_beta`, the corresponding column of `beta_full`; and
+  `criteria`, the criterion used.
 
-- `CIndex_pooled`:
+- `criteria`:
 
-  If `cv.criteria = "CIndex_pooled"`, the pooled cross-validated
-  C-index.
+  The criterion used for selection.
 
-- `CIndex_foldaverage`:
+- `nfolds`:
 
-  If `cv.criteria = "CIndex_foldaverage"`, the average fold-wise
-  C-index.
+  The number of cross-validation folds used.
 
 ## Examples
 

@@ -92,7 +92,7 @@ cox_MDTL(
 
 ## Value
 
-An object of class `"Cox_MDTL"` containing:
+An object of class `"cox_MDTL"` containing:
 
 - `eta`:
 

@@ -50,12 +50,23 @@ test_eval(
 
   Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex"
   (Concordance Index), "IBS" (Integrated Brier Score), or "tdAUC"
-  (Integrated Time-Dependent AUC).
+  (Integrated Time-Dependent AUC). Default is "loss".
 
 ## Value
 
 A numeric value representing the performance metric. Returns `NA` if the
-metric cannot be computed (e.g., no events in test set).
+metric cannot be computed (e.g., no events in test set). Two silent-`NA`
+paths are worth naming explicitly, because neither raises an error:
+
+- `criteria = "IBS"` returns `NA` immediately whenever
+  `train_baseline_obj` is `NULL`. Despite the wording of that argument's
+  description, omitting it is not an error – the result is simply
+  missing.
+
+- Both `"IBS"` and `"tdAUC"` return `NA` whenever the test set contains
+  fewer than two distinct event times, since neither quantity can be
+  integrated over a single time point. `"loss"` and `"CIndex"` are
+  returned before this check and are unaffected.
 
 ## Details
 

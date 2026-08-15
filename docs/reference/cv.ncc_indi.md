@@ -7,6 +7,11 @@ individual-level external data integration, implemented via
 
 This function is designed for 1:m matched case-control settings where
 each stratum (matched set) contains exactly one case and \\m\\ controls.
+Note that this precondition is *enforced* only on the internal cohort
+(and on each internal training and test fold): `stratum_ext` is not
+coerced to a factor and the external cohort's matched-set structure is
+never checked, so supplying a correctly matched external dataset is the
+caller's responsibility.
 
 ## Usage
 
@@ -56,11 +61,16 @@ cv.ncc_indi(
 - stratum_ext:
 
   Numeric or factor vector defining the external matched sets.
-  **Required**.
+  **Required**. Unlike `stratum_int` it is passed on unchanged (not
+  coerced to a factor) and its 1:m structure is not validated.
 
 - etas:
 
-  Numeric vector of candidate tuning values for \\\eta\\. **Required**.
+  Numeric vector of non-negative integration weights for \\\eta\\.
+  **Required**; the function stops if `etas` is `NULL`. Must be finite
+  and \\\ge 0\\. The values are sorted in ascending order internally,
+  and the rows of `internal_stat` / columns of `beta_full` follow that
+  sorted order.
 
 - nfolds:
 

@@ -93,8 +93,14 @@ produce a single aggregated estimate.</p>
 
 
 <dt id="arg-beta-list">beta_list<a class="anchor" aria-label="anchor" href="#arg-beta-list"></a></dt>
-<dd><p>A list of external coefficient vectors. Each element must have
-length <code>p</code>. If provided, <code>RS_list</code> should be <code>NULL</code>.</p></dd>
+<dd><p>A list of external coefficient vectors, one per external source.
+Each element is aligned to the internal covariate space independently: if the
+element is named, names are matched against <code>colnames(z)</code>, covariates absent
+from that element are set to 0 (with a message) and the vector is reordered, so
+different sources may cover different subsets of the internal covariates. An
+unnamed element is aligned positionally and must have length <code>p</code>. A
+one-column matrix with row names is accepted as a named vector. See
+<code><a href="align_beta.html">align_beta</a></code>. If provided, <code>RS_list</code> should be <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-rs-list">RS_list<a class="anchor" aria-label="anchor" href="#arg-rs-list"></a></dt>
@@ -103,7 +109,8 @@ should be conformable with <code>n</code>. If provided, <code>beta_list</code> i
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Vector of <code>eta</code> values for transfer-learning shrinkage.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights. Must be finite
+and \(\ge 0\).</p></dd>
 
 
 <dt id="arg-combine">combine<a class="anchor" aria-label="anchor" href="#arg-combine"></a></dt>
@@ -130,10 +137,14 @@ or <code>"median"</code>.</p></dd>
     <p>An object of class <code>"coxkl_enet.multi"</code>, which is a list containing:</p><ul><li><p><code>best_beta</code> — combined coefficient estimate across sources.</p></li>
 <li><p><code>all_betas</code> — matrix of dimension <code>p x K_valid</code> of coefficient vectors
 from each successful fit.</p></li>
+<li><p><code>etas</code> — the <code>etas</code> argument exactly as supplied by the caller (raw and
+unsorted); each <code><a href="cv.coxkl_enet.html">cv.coxkl_enet()</a></code> run sorts its own copy internally.</p></li>
 <li><p><code>K</code> — total number of external sources provided.</p></li>
 <li><p><code>valid_sources</code> — number of successful (non-error) fits used in aggregation.</p></li>
 <li><p><code>combine</code> — combination rule used.</p></li>
 <li><p><code>seed</code> — seed used (if any).</p></li>
+<li><p><code>source_fits</code> — list of the <code>cv.coxkl_enet</code> fit objects for the valid
+sources, in the same order as the columns of <code>all_betas</code>.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

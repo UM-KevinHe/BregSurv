@@ -49,11 +49,19 @@ coxkl_enet(
 \item{RS}{Optional numeric vector of external risk scores. Length must equal \code{nrow(z)}.
 If not provided, \code{beta} must be supplied.}
 
-\item{beta}{Optional numeric vector of external coefficients. Length must equal \code{ncol(z)}.
+\item{beta}{Optional numeric vector of external coefficients. If \code{beta} is
+named, names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed \code{beta} is aligned positionally and must
+have length \code{ncol(z)}. A one-column matrix with row names is accepted
+as a named vector. See \code{\link{align_beta}}.
 If provided, it is used to calculate risk scores. If not provided, \code{RS} must be supplied.}
 
-\item{eta}{Numeric scalar. The tuning parameter for KL divergence (integration strength).
-Defaults to 0 (no external information).}
+\item{eta}{Single finite non-negative integration weight for the KL divergence
+(integration strength). The formal default is \code{NULL}, which resolves to
+\code{eta = 0} (no external information used) with the warning
+"eta is not provided. Setting eta = 0 (no external information used)."}
 
 \item{alpha}{The Elastic Net mixing parameter, with \eqn{0 < \alpha \le 1}.
 \code{alpha = 1} is the lasso penalty, and \code{alpha} close to 0 approaches ridge.
@@ -110,14 +118,25 @@ Coefficients are returned on the original scale.}
 An object of class \code{"coxkl_enet"}. A list containing:
 \describe{
 \item{\code{beta}}{Matrix of coefficient estimates (p x nlambda).}
+\item{\code{group}}{Factor recording the group membership originally supplied in \code{group}.}
 \item{\code{lambda}}{The sequence of lambda values used.}
 \item{\code{alpha}}{The elastic-net mixing parameter used.}
-\item{\code{likelihood}}{Vector of negative log-partial likelihoods (loss) for each lambda.}
+\item{\code{likelihood}}{Vector of KL-weighted log-partial likelihoods, one per lambda
+(larger values indicate better fit; this is \emph{not} a loss). The contribution of each
+observation is weighted by \eqn{(\delta + \eta \tilde{\delta}) / (1 + \eta)}, so this is
+not the same quantity as the unweighted log-partial likelihood reported by \code{\link{coxkl}}.}
+\item{\code{n}}{Number of observations used in the fit.}
 \item{\code{df}}{Vector of degrees of freedom (number of non-zero coefficients) for each lambda.}
 \item{\code{iter}}{Vector of iteration counts for each lambda.}
 \item{\code{W}}{Matrix of exponentiated linear predictors (risk scores) on the original scale.}
-\item{\code{data}}{List containing the input data used.}
+\item{\code{group.multiplier}}{Numeric vector of the group-level penalty multipliers actually used.}
+\item{\code{data}}{List containing the input data used (\code{z}, \code{time}, \code{delta},
+\code{stratum}, \code{RS}), in the original row order supplied by the caller.}
 }
+When \code{returnX = TRUE}, the object additionally contains a \code{returnX} component: a list
+with elements \code{XX} (the standardized design object), \code{time}, \code{delta},
+\code{stratum} and \code{RS}, all in the internal sorted (\code{stratum}, \code{time}) order
+rather than the original row order.
 }
 \description{
 Fits a Cox proportional hazards model that integrates external information

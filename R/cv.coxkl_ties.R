@@ -14,17 +14,30 @@
 #' @param z Numeric matrix of covariates (rows = observations, columns = variables).
 #' @param delta Numeric vector of event indicators (1 = event, 0 = censored).
 #' @param time Numeric vector of observed event or censoring times.
-#' @param stratum Optional numeric or factor vector defining strata.
-#' @param beta Numeric vector of external coefficients. **Required**.
-#' @param etas Numeric vector of candidate tuning values to be cross-validated.
+#' @param stratum Optional numeric or factor vector defining strata. If \code{NULL},
+#'   all observations are treated as a single stratum; a warning to that effect is
+#'   issued only when \code{message = TRUE}.
+#' @param beta Numeric vector of external coefficients. **Required**. If \code{beta}
+#'   is named, names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered, so an
+#'   external source covering only a subset of the internal covariates may be
+#'   supplied directly. An unnamed \code{beta} is aligned positionally and must have
+#'   length \code{ncol(z)}. A one-column matrix with row names is accepted as a named
+#'   vector. See \code{\link{align_beta}}.
+#' @param etas Numeric vector of non-negative candidate tuning values to be
+#'   cross-validated. Must be finite and \eqn{\ge 0}. This argument is
+#'   **required**: leaving it at its \code{NULL} default is an error. The values are
+#'   sorted in ascending order internally, and the rows of \code{internal_stat} /
+#'   columns of \code{beta_full} follow that sorted order.
 #' @param ties Character string specifying the method for handling ties. Must be one of
 #'   \code{"breslow"} (default) or \code{"exact"}.
 #' @param tol Convergence tolerance for the optimizer used inside `coxkl_ties`. Default \code{1e-4}.
 #' @param Mstop Maximum number of Newton iterations used inside `coxkl_ties`. Default \code{100}.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
 #' @param cv.criteria Character string specifying the performance criterion.
-#'   Choices are `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
-#'   Default `"CIndex_pooled"`.
+#'   Choices are `"CIndex_pooled"`, `"V&VH"`, `"LinPred"`, or `"CIndex_foldaverage"`.
+#'   Default `"CIndex_pooled"` (note this differs from the other Cox
+#'   cross-validation functions, whose default is `"V&VH"`).
 #' @param c_index_stratum Optional stratum vector. Used for C-index calculation on test sets.
 #' @param message Logical; if \code{TRUE}, prints progress messages. Default \code{FALSE}.
 #' @param seed Optional integer seed for reproducible fold assignment. Default \code{NULL}.
@@ -32,9 +45,18 @@
 #'   Only relevant if \code{ties = "exact"}. Default \code{1e7}.
 #' @param ... Additional arguments (currently ignored).
 #'
-#' @return A \code{list} of class \code{"cv.coxkl"} containing:
+#' @return A \code{list} of class \code{"cv.coxkl"} (deliberately shared with
+#'   \code{\link{cv.coxkl}} so that downstream methods apply to both) containing:
 #' \describe{
-#'    \item{\code{internal_stat}}{A \code{data.frame} with one row per \code{eta} and the CV metric results.}
+#'    \item{\code{internal_stat}}{A \code{data.frame} with one row per \code{eta}, in
+#'      ascending \code{eta} order. It has a column \code{eta} plus \emph{exactly one}
+#'      metric column, whose name is determined by \code{cv.criteria}:
+#'      \code{VVH_Loss} for \code{"V&VH"}, \code{LinPred_Loss} for \code{"LinPred"},
+#'      \code{CIndex_pooled} for \code{"CIndex_pooled"}, or
+#'      \code{CIndex_foldaverage} for \code{"CIndex_foldaverage"}. The other three
+#'      metrics are never computed.}
+#'    \item{\code{beta_full}}{A \code{ncol(z)} by \code{length(etas)} matrix of
+#'      coefficients from the full-data fit, one column per candidate \code{eta}.}
 #'    \item{\code{best}}{A list containing the \code{best_eta}, the corresponding \code{best_beta} from the full model fit, and the \code{criteria} used.}
 #'    \item{\code{criteria}}{The criterion used for selection.}
 #'    \item{\code{nfolds}}{The number of folds used.}

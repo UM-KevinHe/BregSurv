@@ -13,11 +13,18 @@
 #' @param delta Event indicator vector.
 #' @param time Survival time vector.
 #' @param stratum Optional stratum indicator vector for stratified Cox models.
-#' @param beta_list A list of external coefficient vectors. Each element must have
-#'   length \code{p}. If provided, \code{RS_list} should be \code{NULL}.
+#' @param beta_list A list of external coefficient vectors, one per external source.
+#'   Each element is aligned to the internal covariate space independently: if the
+#'   element is named, names are matched against \code{colnames(z)}, covariates absent
+#'   from that element are set to 0 (with a message) and the vector is reordered, so
+#'   different sources may cover different subsets of the internal covariates. An
+#'   unnamed element is aligned positionally and must have length \code{p}. A
+#'   one-column matrix with row names is accepted as a named vector. See
+#'   \code{\link{align_beta}}. If provided, \code{RS_list} should be \code{NULL}.
 #' @param RS_list Optional list of external risk score vectors/matrices. Each element
 #'   should be conformable with \code{n}. If provided, \code{beta_list} is ignored.
-#' @param etas Vector of \code{eta} values for transfer-learning shrinkage.
+#' @param etas Numeric vector of non-negative integration weights. Must be finite
+#'   and \eqn{\ge 0}.
 #' @param combine How to combine coefficients across sources. Either \code{"mean"} (default)
 #'   or \code{"median"}.
 #' @param message Logical indicating whether to print progress.
@@ -32,10 +39,14 @@
 #'   \item \code{best_beta} — combined coefficient estimate across sources.
 #'   \item \code{all_betas} — matrix of dimension \code{p x K_valid} of coefficient vectors
 #'     from each successful fit.
+#'   \item \code{etas} — the \code{etas} argument exactly as supplied by the caller (raw and
+#'     unsorted); each \code{cv.coxkl_enet()} run sorts its own copy internally.
 #'   \item \code{K} — total number of external sources provided.
 #'   \item \code{valid_sources} — number of successful (non-error) fits used in aggregation.
 #'   \item \code{combine} — combination rule used.
 #'   \item \code{seed} — seed used (if any).
+#'   \item \code{source_fits} — list of the \code{cv.coxkl_enet} fit objects for the valid
+#'     sources, in the same order as the columns of \code{all_betas}.
 #' }
 #'
 #' @export
@@ -120,7 +131,7 @@ coxkl_enet.multi <- function(
       fit_res_list[[k]] <- fit_res   # save full fit object
     } else {
       res_list[[k]]     <- rep(NA_real_, p)
-      fit_res_list[[k]] <- NULL
+      fit_res_list[k]   <- list(NULL)   # store NULL WITHOUT deleting the element
     }
 
     if (message) setTxtProgressBar(pb, k)
@@ -178,17 +189,15 @@ coxkl_enet.multi <- function(
 #'
 #' @param x An object of class \code{"coxkl_enet.multi"}, as returned by
 #'   \code{\link{coxkl_enet.multi}}.
-#' @param test_z Optional numeric matrix of test predictors of dimension
-#'   \code{n_test x p}. If \code{NULL} (default), training data stored inside
-#'   each source fit are used for evaluation.
-#' @param test_time Optional numeric vector of test survival times of length
-#'   \code{n_test}. Must be provided together with \code{test_z} and
-#'   \code{test_delta} when evaluating on external test data.
-#' @param test_delta Optional numeric vector of test event indicators of length
-#'   \code{n_test}. Must be provided together with \code{test_z} and
-#'   \code{test_time} when evaluating on external test data.
+#' @param test_z Numeric matrix of test predictors of dimension
+#'   \code{n_test x p}. Required: evaluation is always carried out on test data.
+#' @param test_time Numeric vector of test survival times of length
+#'   \code{n_test}. Required, together with \code{test_z} and \code{test_delta}.
+#' @param test_delta Numeric vector of test event indicators of length
+#'   \code{n_test}. Required, together with \code{test_z} and \code{test_time}.
 #' @param test_stratum Optional vector of stratum indicators of length
-#'   \code{n_test} for stratified Cox models. Ignored if \code{NULL} (default).
+#'   \code{n_test} for stratified Cox models. When \code{NULL} (default), the test
+#'   set is evaluated as a single stratum.
 #' @param criteria Character string specifying the performance metric to plot.
 #'   Either \code{"loss"} (default, negative log partial likelihood scaled by
 #'   sample size) or \code{"CIndex"} (Harrell's concordance index).
@@ -201,12 +210,6 @@ coxkl_enet.multi <- function(
 #' value of \eqn{\eta}. It then calls \code{test_eval()} on every column to
 #' compute the chosen performance metric, and overlays the resulting curves on
 #' a single \pkg{ggplot2} figure.
-#'
-#' If all four test arguments (\code{test_z}, \code{test_time},
-#' \code{test_delta}, \code{test_stratum}) are \code{NULL}, evaluation is
-#' performed on the training data embedded in each source fit object. This is
-#' useful for a quick in-sample diagnostic but may give optimistic estimates of
-#' performance.
 #'
 #' Colors are assigned automatically via \code{\link[scales]{hue_pal}} and
 #' linetypes cycle through \code{"solid"}, \code{"dashed"}, \code{"dotdash"},
@@ -231,9 +234,6 @@ coxkl_enet.multi <- function(
 #'   etas      = seq(0, 1, by = 0.1)
 #' )
 #'
-#' # In-sample diagnostic (uses training data stored in each source fit)
-#' plot(fit, criteria = "CIndex")
-#'
 #' # Out-of-sample evaluation on a held-out test set
 #' plot(fit,
 #'      test_z     = z_test,
@@ -254,7 +254,10 @@ plot.coxkl_enet.multi <- function(x, test_z = NULL, test_time = NULL, test_delta
 
   if (is.null(source_fits)) stop("No 'source_fits' found. Ensure coxkl_enet.multi stores source_fits.", call. = FALSE)
 
-  using_train <- is.null(test_z) && is.null(test_time) && is.null(test_delta) && is.null(test_stratum)
+  if (is.null(test_z) || is.null(test_time) || is.null(test_delta)) {
+    stop("test_z, test_time and test_delta must be supplied; in-sample evaluation is not available because source fits do not retain training data.",
+         call. = FALSE)
+  }
 
   results_list <- lapply(seq_len(K), function(k) {
     fit_k <- source_fits[[k]]
@@ -265,17 +268,10 @@ plot.coxkl_enet.multi <- function(x, test_z = NULL, test_time = NULL, test_delta
 
     if (is.null(beta_mat_k) || is.null(etas_k)) return(NULL)
 
-    if (using_train) {
-      eval_z       <- fit_k$data$z
-      eval_time    <- fit_k$data$time
-      eval_delta   <- fit_k$data$delta
-      eval_stratum <- fit_k$data$stratum
-    } else {
-      eval_z       <- test_z
-      eval_time    <- test_time
-      eval_delta   <- test_delta
-      eval_stratum <- test_stratum
-    }
+    eval_z       <- test_z
+    eval_time    <- test_time
+    eval_delta   <- test_delta
+    eval_stratum <- test_stratum
 
     metrics <- sapply(seq_along(etas_k), function(i) {
       as.numeric(test_eval(

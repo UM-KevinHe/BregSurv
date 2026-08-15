@@ -64,12 +64,15 @@ bopt.coxkl(
 - bounds_list:
 
   A named list defining the search range for `eta`, e.g.,
-  `list(eta = c(0, 10))`.
+  `list(eta = c(0, 10))`. Default `list(eta = c(0, 10))`. The lower
+  bound must be non-negative.
 
 - init_grid_dt:
 
-  A `data.frame` of initial points for the optimization. Default is `0`
-  if `init_grid_dt` is provided.
+  A `data.frame` of initial points at which to evaluate the criterion
+  before the Bayesian search begins. Default
+  `data.frame(eta = c(0, 1, 5))`. All `eta` values in it must be
+  non-negative.
 
 - init_points:
 
@@ -79,7 +82,8 @@ bopt.coxkl(
 
 - n_iter:
 
-  Number of iterations for the Bayesian Optimization process.
+  Number of iterations for the Bayesian Optimization process. Default
+  `10`.
 
 - acq:
 
@@ -139,6 +143,19 @@ A list containing:
 - `criteria`:
 
   The criterion used for optimization.
+
+## Details
+
+Each objective evaluation is a call to
+[`cv.coxkl`](https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl.md)
+at a single candidate `eta`, and this function consumes that call's S3
+return directly: the scalar criterion is read from the metric column of
+`internal_stat` (its second column, whose name depends on `criteria`),
+and the coefficient vector from `beta_full`. Loss criteria (`"V&VH"`,
+`"LinPred"`) are negated before being handed to the optimizer, which
+always maximizes, while the C-index criteria are passed through
+unchanged; `best_score` and `full_stats` report the raw, un-negated
+values in either case.
 
 ## Examples
 

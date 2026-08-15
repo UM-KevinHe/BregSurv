@@ -68,6 +68,18 @@ Data-generating mechanism:
   coefficient vector \\\beta\_{\mathrm{ext}} = (0.8, -0.8, \dots)\\ and
   correlation \\\rho = 0.3\\, using the `"breslow"` tie approximation.
 
+**External coefficients: name present-and-zero vs. name absent.**
+`beta_external` is fully populated and fully named over `Z1`–`Z6`, so
+[`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md)
+never zero-pads it and
+[`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md)
+with `Q = NULL` returns the full identity rather than a masked identity.
+In general, a covariate whose name is *present* with value 0 asserts an
+external estimate of exactly zero and is penalized toward zero, whereas
+a covariate whose name is *absent* is treated as carrying no external
+information – it is zero-padded and, under the Mahalanobis penalty, left
+unpenalized.
+
 ## Examples
 
 ``` r

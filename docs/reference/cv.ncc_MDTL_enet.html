@@ -102,16 +102,36 @@ stratum (matched set) contains exactly one case and \(m\) controls.</p>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Numeric vector of external coefficients (length <code>ncol(z)</code>). <strong>Required</strong>.</p></dd>
+<dd><p>Numeric vector of external coefficients. <strong>Required</strong>. If
+<code>beta</code> is named, names are matched against <code>colnames(z)</code>:
+covariates absent from <code>beta</code> are set to 0 (with a message) and the
+vector is reordered, so an external source covering only a subset of the
+internal covariates may be supplied directly. An unnamed <code>beta</code> is
+aligned positionally and must have length <code>ncol(z)</code>. A one-column
+matrix with row names is accepted as a named vector. See
+<code><a href="align_beta_Q.html">align_beta_Q</a></code>. The bundled fixture
+<code>ExampleData_cc_highdim$beta_external</code> is named <code>Z1</code>–<code>Z20</code>
+and therefore takes the name-matching path.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>Optional numeric matrix (<code>ncol(z)</code> x <code>ncol(z)</code>) as the weighting
-matrix \(Q\). If <code>NULL</code>, defaults to the identity matrix.</p></dd>
+<dd><p>Optional weighting (precision) matrix for the Mahalanobis penalty.
+Must be symmetric and positive semi-definite (both checked to a tolerance of
+1e-8). If named, it is reordered and zero-padded to <code>colnames(z)</code>; only
+an unnamed <code>Q</code> must be exactly <code>ncol(z)</code> by <code>ncol(z)</code>. If
+<code>NULL</code>, a <em>masked identity</em> is used: 1 on covariates actually
+supplied by <code>beta</code> and 0 on zero-padded positions, so padded
+coefficients are left unpenalized. See <code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate tuning values for \(\eta\). <strong>Required</strong>.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights for
+\(\eta\). <strong>Required</strong>; the function stops if <code>etas</code> is
+<code>NULL</code>. Must be finite and \(\ge 0\). The values are sorted in
+ascending order internally, and the rows of
+<code>integrated_stat.full_results</code> /
+<code>integrated_stat.best_per_eta</code> and the columns of
+<code>integrated_stat.betahat_best</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -129,8 +149,11 @@ is generated automatically for each <code>eta</code>.</p></dd>
 
 
 <dt id="arg-lambda-min-ratio">lambda.min.ratio<a class="anchor" aria-label="anchor" href="#arg-lambda-min-ratio"></a></dt>
-<dd><p>Smallest lambda as a fraction of <code>lambda.max</code>. Default
-depends on sample size relative to number of covariates.</p></dd>
+<dd><p>Smallest lambda as a fraction of <code>lambda.max</code>.
+Defaults to <code>ifelse(nrow(z) &lt; ncol(z), 0.05, 1e-3)</code>, i.e. <code>0.05</code>
+when there are fewer observations than covariates and <code>1e-3</code> otherwise.
+This default is supplied directly in the formal argument list, so passing
+<code>NULL</code> explicitly does <em>not</em> trigger it.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
@@ -158,7 +181,7 @@ One of <code>"loss"</code> (default), <code>"AUC"</code>, <code>"CIndex"</code>,
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list of class <code>"cv.ncc_MDTL_enet"</code> containing:</p><dl><dt><code>best</code></dt>
 <dd><p>A list with the global best \((\eta, \lambda)\):
-<code>best_eta</code>, <code>best_lambda</code>, <code>best_beta</code>, <code>cv.criteria</code>.</p></dd>
+<code>best_eta</code>, <code>best_lambda</code>, <code>best_beta</code>, <code>criteria</code>.</p></dd>
 
 <dt><code>integrated_stat.full_results</code></dt>
 <dd><p>A <code>data.frame</code> with the CV score

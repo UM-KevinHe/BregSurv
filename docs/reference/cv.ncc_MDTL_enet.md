@@ -47,17 +47,36 @@ cv.ncc_MDTL_enet(
 
 - beta:
 
-  Numeric vector of external coefficients (length `ncol(z)`).
-  **Required**.
+  Numeric vector of external coefficients. **Required**. If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
+  The bundled fixture `ExampleData_cc_highdim$beta_external` is named
+  `Z1`–`Z20` and therefore takes the name-matching path.
 
 - Q:
 
-  Optional numeric matrix (`ncol(z)` x `ncol(z)`) as the weighting
-  matrix \\Q\\. If `NULL`, defaults to the identity matrix.
+  Optional weighting (precision) matrix for the Mahalanobis penalty.
+  Must be symmetric and positive semi-definite (both checked to a
+  tolerance of 1e-8). If named, it is reordered and zero-padded to
+  `colnames(z)`; only an unnamed `Q` must be exactly `ncol(z)` by
+  `ncol(z)`. If `NULL`, a *masked identity* is used: 1 on covariates
+  actually supplied by `beta` and 0 on zero-padded positions, so padded
+  coefficients are left unpenalized. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  Numeric vector of candidate tuning values for \\\eta\\. **Required**.
+  Numeric vector of non-negative integration weights for \\\eta\\.
+  **Required**; the function stops if `etas` is `NULL`. Must be finite
+  and \\\ge 0\\. The values are sorted in ascending order internally,
+  and the rows of `integrated_stat.full_results` /
+  `integrated_stat.best_per_eta` and the columns of
+  `integrated_stat.betahat_best` follow that sorted order.
 
 - alpha:
 
@@ -75,8 +94,11 @@ cv.ncc_MDTL_enet(
 
 - lambda.min.ratio:
 
-  Smallest lambda as a fraction of `lambda.max`. Default depends on
-  sample size relative to number of covariates.
+  Smallest lambda as a fraction of `lambda.max`. Defaults to
+  `ifelse(nrow(z) < ncol(z), 0.05, 1e-3)`, i.e. `0.05` when there are
+  fewer observations than covariates and `1e-3` otherwise. This default
+  is supplied directly in the formal argument list, so passing `NULL`
+  explicitly does *not* trigger it.
 
 - nfolds:
 
@@ -108,7 +130,7 @@ A list of class `"cv.ncc_MDTL_enet"` containing:
 - `best`:
 
   A list with the global best \\(\eta, \lambda)\\: `best_eta`,
-  `best_lambda`, `best_beta`, `cv.criteria`.
+  `best_lambda`, `best_beta`, `criteria`.
 
 - `integrated_stat.full_results`:
 

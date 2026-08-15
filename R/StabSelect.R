@@ -7,6 +7,17 @@
 #' a single split of the data.
 #'
 #' @inheritParams cv.coxkl_enet
+#' @param beta Optional numeric vector of external coefficients. If \code{beta} is
+#'   named, names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered. An
+#'   unnamed \code{beta} is aligned positionally and must have length
+#'   \code{ncol(z)}. See \code{\link{align_beta}}.
+#' @param etas Numeric vector of non-negative integration weights. Must be finite
+#'   and \eqn{\ge 0}.
+#' @param lambda.min.ratio Numeric. Smallest value for \code{lambda}, as a fraction
+#'   of \code{lambda.max}. Default is \code{0.1} for this function. Only if it is
+#'   explicitly set to \code{NULL} does the sample-size-dependent fallback apply
+#'   (\code{0.05} when \eqn{n < p}, \code{1e-03} otherwise).
 #' @param B Integer. Number of bootstrap/subsampling replicates used for
 #'   stability selection. Default is \code{50}.
 #' @param fraction_sample Numeric in \code{(0, 1]}. Fraction of the original
@@ -221,6 +232,18 @@ coxkl_enet.StabSelect <- function(z, delta, time, stratum = NULL, RS = NULL, bet
 #' importance that is less sensitive to a single data split.
 #'
 #' @inheritParams cv.cox_MDTL_enet
+#' @param beta Optional numeric vector of external coefficients. If \code{beta} is
+#'   named, names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered. An
+#'   unnamed \code{beta} is aligned positionally and must have length
+#'   \code{ncol(z)}. See \code{\link{align_beta}}.
+#' @param etas Numeric vector of non-negative integration weights. Must be finite
+#'   and \eqn{\ge 0}. This argument is **required**: leaving it at its \code{NULL}
+#'   default is an error.
+#' @param lambda.min.ratio Numeric. Smallest value for \code{lambda}, as a fraction
+#'   of \code{lambda.max}. Default is \code{0.1} for this function. Only if it is
+#'   explicitly set to \code{NULL} does the sample-size-dependent fallback apply
+#'   (\code{0.05} when \eqn{n < p}, \code{1e-03} otherwise).
 #' @param B Integer. Number of bootstrap/subsampling replicates used for stability
 #'   selection. Default is \code{50}.
 #' @param fraction_sample Numeric in \code{(0, 1]}. Fraction of the original sample
@@ -277,7 +300,8 @@ cox_MDTL_enet.StabSelect <- function(z, delta, time, stratum = NULL,
 
   if (!is.null(seed)) set.seed(seed)
   cv.criteria <- match.arg(cv.criteria)
-  if (!is.null(etas)) check_etas(etas)
+  if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
+  check_etas(etas)
 
   z <- as.matrix(z)
   n_full <- nrow(z)

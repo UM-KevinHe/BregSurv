@@ -69,8 +69,10 @@ ncckl_enet(
 
 - stratum:
 
-  Numeric or factor vector defining the matched sets (strata). This is
-  required for conditional logistic regression.
+  Numeric or factor vector defining the matched sets (strata). Strongly
+  recommended for conditional logistic regression: if omitted, a warning
+  is issued and all observations are assumed to lie in a single stratum,
+  which defeats the purpose of matching.
 
 - RS:
 
@@ -79,14 +81,28 @@ ncckl_enet(
 
 - beta:
 
-  Optional numeric vector of external coefficients. Length must equal
-  `ncol(z)`. If provided, it is used to calculate risk scores. If not
-  provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients; if provided, it is
+  used to calculate risk scores, and if not provided, `RS` must be
+  supplied. If `beta` is named, names are matched against `colnames(z)`:
+  covariates absent from `beta` are set to 0 (with a message) and the
+  vector is reordered, so an external source covering only a subset of
+  the internal covariates may be supplied directly. An unnamed `beta` is
+  aligned positionally and must have length `ncol(z)`. A one-column
+  matrix with row names is accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  The bundled external beta `ExampleData_cc_lowdim$beta_external` is
+  named `Z1`–`Z6`, so the examples below already exercise the
+  name-matching path.
 
 - eta:
 
   Numeric scalar. The tuning parameter for KL divergence (integration
-  strength). Defaults to 0 (no external information).
+  strength). Must be a single finite non-negative value. The formal
+  default is `NULL`; a `NULL` `eta` is resolved to 0 (no external
+  information) inside
+  [`coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_enet.md),
+  which emits the warning
+  `"eta is not provided. Setting eta = 0 (no external information used)."`
 
 - alpha:
 
@@ -209,9 +225,13 @@ An object of class `"ncckl_enet"` and `"coxkl_enet"` containing:
 
   Matrix of coefficient estimates (p x nlambda).
 
+- `group`:
+
+  Factor recording the group membership supplied in `group`.
+
 - `lambda`:
 
-  Sequence of lambda values used.
+  Sequence of lambda values used, after saturated values are dropped.
 
 - `alpha`:
 
@@ -219,7 +239,16 @@ An object of class `"ncckl_enet"` and `"coxkl_enet"` containing:
 
 - `likelihood`:
 
-  Vector of negative log-partial likelihoods (loss) for each lambda.
+  Vector of KL-weighted log-partial likelihoods, one per lambda (larger
+  values indicate better fit; this is *not* a loss). The contribution of
+  each matched set is weighted by \\(\delta + \eta \tilde{\delta}) /
+  (1 + \eta)\\, so this is not the same quantity as the unweighted
+  log-partial likelihood reported by
+  [`ncckl`](https://um-kevinhe.github.io/BregSurv/reference/ncckl.md).
+
+- `n`:
+
+  Number of observations used in the fit.
 
 - `df`:
 
@@ -235,10 +264,21 @@ An object of class `"ncckl_enet"` and `"coxkl_enet"` containing:
   Matrix of exponentiated linear predictors (risk scores) on the
   original scale.
 
+- `group.multiplier`:
+
+  Numeric vector of group penalty multipliers used.
+
 - `data`:
 
-  List containing the input data used (including `y`, `z`, `stratum`,
-  and external information).
+  List containing the input data used, with the CLR-to-Cox mapping
+  already applied: `z`, `stratum`, the external risk scores `RS`, the
+  outcome stored under `delta`, and `time` (a vector of 1s). There is no
+  `y` component: `fit$data$y` is `NULL`, and the outcome must be read
+  from `fit$data$delta`.
+
+If `returnX = TRUE`, the object additionally carries a `returnX`
+component holding the standardized design matrix together with the
+sorted `time`, `delta`, `stratum` and `RS`.
 
 ## Details
 

@@ -85,8 +85,7 @@ data or multicollinearity, controlled by the sequence of <code>lambda</code> val
 <span>  backtrack <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  message <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  data_sorted <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  beta_initial <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  beta_initial <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -112,9 +111,11 @@ all subjects are assumed to be in the same stratum.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>A numeric vector of external coefficients. If named, the names are
-matched against <code>colnames(z)</code> and covariates absent from <code>beta</code> are
-zero-padded; if unnamed, <code>beta</code> must have length <code>ncol(z)</code>.</p></dd>
+<dd><p>A numeric vector of external coefficients. The formal default is
+<code>NULL</code>, but the argument is in practice mandatory: if it is not supplied
+the function stops with the message "External beta must be provided." If named, the names
+are matched against <code>colnames(z)</code> and covariates absent from <code>beta</code>
+are zero-padded; if unnamed, <code>beta</code> must have length <code>ncol(z)</code>.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
@@ -168,10 +169,6 @@ A value close to 1 (default 0.999) results in <code>alpha</code> close to 0, enf
 
 <dt id="arg-beta-initial">beta_initial<a class="anchor" aria-label="anchor" href="#arg-beta-initial"></a></dt>
 <dd><p>Optional initial coefficient vector for warm start.</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to internal functions.</p></dd>
 
 </dl></div>
     <div class="section level2">

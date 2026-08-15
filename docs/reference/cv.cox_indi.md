@@ -32,7 +32,9 @@ cv.cox_indi(
 
 - z_int, delta_int, time_int, stratum_int:
 
-  Internal data.
+  Internal data. If `stratum_int` is `NULL`, all internal observations
+  are treated as a single stratum; unlike the other cross-validation
+  functions in the package, no warning is issued in that case.
 
 - z_ext, delta_ext, time_ext, stratum_ext:
 
@@ -40,7 +42,10 @@ cv.cox_indi(
 
 - etas:
 
-  Numeric vector of candidate eta values (must be provided).
+  Numeric vector of non-negative candidate eta values (must be provided;
+  omitting it is an error). Must be finite and \\\ge 0\\. The values are
+  sorted in ascending order internally, and the rows of `internal_stat`
+  / columns of `beta_full` follow that sorted order.
 
 - nfolds:
 
@@ -48,15 +53,19 @@ cv.cox_indi(
 
 - cv.criteria:
 
-  Performance criterion.
+  Performance criterion. One of `"V&VH"` (default), `"LinPred"`,
+  `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
 
 - c_index_stratum:
 
   Optional stratum vector used for C-index evaluation on internal data.
+  When supplied it must have the same length as the internal data.
 
 - max_iter, tol:
 
-  Passed to `cox_indi`.
+  Passed to `cox_indi`. Defaults are `max_iter = 100` and
+  `tol = 1.0e-7`; note that this `tol` is an order of magnitude tighter
+  than the `1e-4` used elsewhere in the package.
 
 - message:
 
@@ -70,11 +79,20 @@ cv.cox_indi(
 
 An object of class `"cv.cox_indi"` with components:
 
-- `internal_stat`: data.frame of CV stats by eta
+- `internal_stat`: data.frame of CV stats by eta, one row per candidate
+  `eta` in ascending order. It has a column `eta` plus *exactly one*
+  metric column, whose name is determined by `cv.criteria`: `VVH_Loss`
+  for `"V&VH"`, `LinPred_Loss` for `"LinPred"`, `CIndex_pooled` for
+  `"CIndex_pooled"`, or `CIndex_foldaverage` for `"CIndex_foldaverage"`.
+  The other three metrics are never computed.
 
 - `beta_full`: matrix of full-data estimates (p x length(etas))
 
 - `best`: list with `best_eta`, `best_beta`, `criteria`
+
+- `criteria`: the criterion used for selection
+
+- `nfolds`: the number of folds used
 
 ## Examples
 

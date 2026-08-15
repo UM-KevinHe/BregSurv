@@ -49,7 +49,10 @@ ncc_indi_enet(
 
 \item{stratum_ext}{Numeric or factor vector defining the external matched sets. \strong{Required}.}
 
-\item{etas}{Numeric vector of nonnegative external weights. \code{eta = 0} gives internal-only fit.}
+\item{etas}{Numeric vector of nonnegative external weights. Must be finite and
+\eqn{\ge 0}; \code{eta = 0} gives an internal-only fit. The values are sorted in
+ascending order internally, and the per-\code{eta} elements of the returned
+\code{beta} and \code{lambda} lists follow that sorted order.}
 
 \item{alpha}{The Elastic Net mixing parameter, with \eqn{0 < \alpha \le 1}.
 \code{alpha = 1} is Lasso; \code{alpha} close to 0 approaches Ridge. Default \code{1}.}
@@ -72,17 +75,21 @@ loss improvement is small. Default \code{FALSE}.}
 \item{max.total.iter}{Maximum total iterations across the entire lambda path.
 Default \code{Mstop * nlambda}.}
 
-\item{group}{Integer vector defining group membership for grouped penalties.
-Default treats each variable as its own group.}
+\item{group}{Integer vector defining group membership for grouped penalties. The
+formal default is \code{NULL}, which \code{\link{cox_indi_enet}} resolves to
+\code{seq_len(ncol(z_int))}, i.e. each variable is treated as its own group.}
 
 \item{group.multiplier}{Numeric vector of multiplicative factors for group penalties.}
 
 \item{standardize}{Logical. If \code{TRUE}, \code{z} is standardized internally.
 Coefficients are returned on the original scale. Default \code{TRUE}.}
 
-\item{nvar.max}{Integer. Maximum number of active variables. Default \code{ncol(z_int)}.}
+\item{nvar.max}{Integer. Maximum number of active variables. The formal default is
+\code{NULL}, resolved downstream to \code{ncol(z_int)}.}
 
-\item{group.max}{Integer. Maximum number of active groups.}
+\item{group.max}{Integer. Maximum number of active groups. The formal default is
+\code{NULL}, resolved downstream to \code{length(unique(group))} (after \code{group}
+itself has been resolved).}
 
 \item{stop.loss.ratio}{Numeric. Threshold for early stopping. Default \code{1e-2}.}
 
@@ -90,7 +97,9 @@ Coefficients are returned on the original scale. Default \code{TRUE}.}
 
 \item{actIter}{Integer. Iterations for active set refinement. Default \code{Mstop}.}
 
-\item{actGroupNum}{Integer. Limit on active groups.}
+\item{actGroupNum}{Integer. Limit on active groups in the active-set strategy. The
+formal default is \code{NULL}, resolved downstream to
+\code{sum(unique(group) != 0)}.}
 
 \item{actSetRemove}{Logical. Whether to allow removal from active set. Default \code{FALSE}.}
 
@@ -122,6 +131,39 @@ calls \code{\link{cox_indi_enet}} as the core engine.
 \item If \code{alpha} is close to 0, the penalty approaches Ridge.
 \item If \code{eta = 0}, external data is ignored and the model reduces to
 a standard Elastic Net CLR on internal data only.
+}
+}
+\examples{
+\dontrun{
+## Load the matched case-control individual-level example data
+data(ExampleData_cc_indi)
+
+y_int       <- ExampleData_cc_indi$internal$y
+z_int       <- ExampleData_cc_indi$internal$z
+stratum_int <- ExampleData_cc_indi$internal$stratum
+
+y_ext       <- ExampleData_cc_indi$external$y
+z_ext       <- ExampleData_cc_indi$external$z
+stratum_ext <- ExampleData_cc_indi$external$stratum
+
+## Generate a sequence of eta values
+eta_list <- generate_eta(method = "exponential", n = 10, max_eta = 10)
+
+## Fit the penalized composite-likelihood CLR path (alpha = 1 gives the Lasso)
+fit_enet <- ncc_indi_enet(
+  y_int       = y_int,
+  z_int       = z_int,
+  stratum_int = stratum_int,
+  y_ext       = y_ext,
+  z_ext       = z_ext,
+  stratum_ext = stratum_ext,
+  etas        = eta_list,
+  alpha       = 1
+)
+
+## The eta grid actually used, in ascending order; the returned beta and lambda
+## are lists with one element per eta, in this same order.
+fit_enet$eta
 }
 }
 \seealso{

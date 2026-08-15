@@ -82,14 +82,15 @@ core Cox Proportional Hazards estimation function (<code><a href="cox.html">cox<
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
 <dd><p>Numeric or factor vector defining the matched sets. This is <strong>required</strong>
-   for CLR; if omitted, a warning is issued and all data is treated as one stratum,
-   which defeats the purpose of matching.</p></dd>
+for CLR; if omitted, a warning is issued and all data is treated as one stratum,
+which defeats the purpose of matching.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
 <dd><p>Character string specifying the tie-handling method, which determines
-   the conditional likelihood approximation. Choices are <code>"breslow"</code>, <code>"exact"</code>, or <code>"efron"</code>.
-   Default is to use the first match, but typically <code>"exact"</code> is preferred for CLR.</p></dd>
+the conditional likelihood approximation. Choices are <code>"breslow"</code>, <code>"exact"</code>, or <code>"efron"</code>.
+The default is <code>"breslow"</code>, resolved by <code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg</a></code> and
+matched case-insensitively; typically <code>"exact"</code> is preferred for CLR.</p></dd>
 
 
 <dt id="arg-max-iter">max_iter<a class="anchor" aria-label="anchor" href="#arg-max-iter"></a></dt>
@@ -106,9 +107,10 @@ core Cox Proportional Hazards estimation function (<code><a href="cox.html">cox<
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>list</code> containing:</p>
+    <p>A <code>list</code> with exactly two components:</p>
 <dl><dt><code>beta</code></dt>
-<dd><p>Estimated coefficient vector (length p).</p></dd>
+<dd><p>Estimated coefficient vector (length p), named with <code>colnames(z)</code>
+when <code>z</code> carries column names.</p></dd>
 
 <dt><code>loglik</code></dt>
 <dd><p>The log-conditional likelihood (which is the log-partial likelihood from <code>cox</code>) at convergence.</p></dd>

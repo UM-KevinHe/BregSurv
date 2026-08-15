@@ -82,26 +82,24 @@ line with a distinct color and linetype.</p>
 
 
 <dt id="arg-test-z">test_z<a class="anchor" aria-label="anchor" href="#arg-test-z"></a></dt>
-<dd><p>Optional numeric matrix of test predictors of dimension
-<code>n_test x p</code>. If <code>NULL</code> (default), training data stored inside
-each source fit are used for evaluation.</p></dd>
+<dd><p>Numeric matrix of test predictors of dimension
+<code>n_test x p</code>. Required: evaluation is always carried out on test data.</p></dd>
 
 
 <dt id="arg-test-time">test_time<a class="anchor" aria-label="anchor" href="#arg-test-time"></a></dt>
-<dd><p>Optional numeric vector of test survival times of length
-<code>n_test</code>. Must be provided together with <code>test_z</code> and
-<code>test_delta</code> when evaluating on external test data.</p></dd>
+<dd><p>Numeric vector of test survival times of length
+<code>n_test</code>. Required, together with <code>test_z</code> and <code>test_delta</code>.</p></dd>
 
 
 <dt id="arg-test-delta">test_delta<a class="anchor" aria-label="anchor" href="#arg-test-delta"></a></dt>
-<dd><p>Optional numeric vector of test event indicators of length
-<code>n_test</code>. Must be provided together with <code>test_z</code> and
-<code>test_time</code> when evaluating on external test data.</p></dd>
+<dd><p>Numeric vector of test event indicators of length
+<code>n_test</code>. Required, together with <code>test_z</code> and <code>test_time</code>.</p></dd>
 
 
 <dt id="arg-test-stratum">test_stratum<a class="anchor" aria-label="anchor" href="#arg-test-stratum"></a></dt>
 <dd><p>Optional vector of stratum indicators of length
-<code>n_test</code> for stratified Cox models. Ignored if <code>NULL</code> (default).</p></dd>
+<code>n_test</code> for stratified Cox models. When <code>NULL</code> (default), the test
+set is evaluated as a single stratum.</p></dd>
 
 
 <dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
@@ -127,11 +125,6 @@ extracts the <code>p x n_eta</code> coefficient matrix
 value of \(\eta\). It then calls <code><a href="test_eval.html">test_eval()</a></code> on every column to
 compute the chosen performance metric, and overlays the resulting curves on
 a single <span class="pkg">ggplot2</span> figure.</p>
-<p>If all four test arguments (<code>test_z</code>, <code>test_time</code>,
-<code>test_delta</code>, <code>test_stratum</code>) are <code>NULL</code>, evaluation is
-performed on the training data embedded in each source fit object. This is
-useful for a quick in-sample diagnostic but may give optimistic estimates of
-performance.</p>
 <p>Colors are assigned automatically via <code><a href="https://scales.r-lib.org/reference/pal_hue.html" class="external-link">hue_pal</a></code> and
 linetypes cycle through <code>"solid"</code>, <code>"dashed"</code>, <code>"dotdash"</code>,
 <code>"longdash"</code>, and <code>"twodash"</code> to remain distinguishable when
@@ -154,9 +147,6 @@ printed in grayscale.</p>
 <span class="r-in"><span>  beta_list <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">beta_ext1</span>, <span class="va">beta_ext2</span>, <span class="va">beta_ext3</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  etas      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># In-sample diagnostic (uses training data stored in each source fit)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, criteria <span class="op">=</span> <span class="st">"CIndex"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Out-of-sample evaluation on a held-out test set</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>,</span></span>

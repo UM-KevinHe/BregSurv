@@ -12,9 +12,9 @@ generate_eta(method = "exponential", n = 10, max_eta = 5, min_eta = 0)
 
 - method:
 
-  Character string selecting how to generate `eta`: “linear” or
-  “exponential”. Default is “exponential”. for an exponentially spaced
-  sequence scaled to `max_eta`. Default is `"exponential"`.
+  Character string selecting how to generate `eta`: “linear” for an
+  evenly spaced sequence, or “exponential” for an exponentially spaced
+  sequence. Default is “exponential”.
 
 - n:
 
@@ -30,18 +30,23 @@ generate_eta(method = "exponential", n = 10, max_eta = 5, min_eta = 0)
 
 ## Value
 
-Numeric vector of length `n` containing the generated `eta` values.
+Numeric vector of length `n` containing the generated `eta` values,
+spanning `[min_eta, max_eta]`. These values are external-borrowing
+weights and are meaningful only when non-negative: the model-fitting and
+cross-validation functions of this package validate `eta`/`etas` and
+reject negative values, so `min_eta` should not be set below 0.
 
 ## Details
 
 - *Exponential*: values are formed by exponentiating a grid from
   `log(1)` to `log(100)`, then linearly rescaling to the interval
-  `[0, max_eta]`. Thus the smallest value equals `0` and the largest
-  equals `max_eta`.
+  `[min_eta, max_eta]`. Thus the smallest value equals `min_eta` and the
+  largest equals `max_eta`.
 
-- *Linear*: the current implementation calls
-  `seq(min_eta, max_eta, length.out = n)` and therefore assumes a
-  numeric object `min_eta` exists in the calling environment.
+- *Linear*: values are `seq(min_eta, max_eta, length.out = n)`.
+
+Both `min_eta` and `max_eta` must be single finite numbers with
+`min_eta <= max_eta`; otherwise an error is signalled.
 
 Only the exact strings “linear” and “exponential” are supported; other
 values for `method` will result in an error because `eta_values` is
@@ -58,4 +63,8 @@ generate_eta(method = "exponential", n = 10, max_eta = 5)
 # Generate 5 linearly spaced eta values up to 3
 generate_eta(method = "linear", n = 5, min_eta= 0, max_eta = 3)
 #> [1] 0.00 0.75 1.50 2.25 3.00
+
+# Exponential spacing that starts at 0.1 rather than 0
+generate_eta(method = "exponential", n = 5, min_eta = 0.1, max_eta = 3)
+#> [1] 0.1000000 0.1633394 0.3636364 0.9970308 3.0000000
 ```

@@ -12,7 +12,7 @@
 #' @details
 #' Cross-validation is performed at the stratum level: each matched set is
 #' treated as an indivisible unit and assigned to a single fold using
-#' \code{\link{get_fold_cc}}.
+#' \code{get_fold_cc}.
 #'
 #' For each candidate \code{eta}, a full \code{lambda} path is fit on the complete
 #' data, and then K-fold CV is used to evaluate each \code{lambda} along this path.
@@ -32,17 +32,40 @@
 #' @param y Numeric vector of binary outcomes (0 = control, 1 = case).
 #' @param z Numeric matrix of covariates.
 #' @param stratum Numeric or factor vector defining the matched sets. \strong{Required}.
-#' @param beta Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.
-#' @param Q Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
-#'   matrix \eqn{Q}. If \code{NULL}, defaults to the identity matrix.
-#' @param etas Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.
+#' @param beta Numeric vector of external coefficients. \strong{Required}. If
+#'   \code{beta} is named, names are matched against \code{colnames(z)}:
+#'   covariates absent from \code{beta} are set to 0 (with a message) and the
+#'   vector is reordered, so an external source covering only a subset of the
+#'   internal covariates may be supplied directly. An unnamed \code{beta} is
+#'   aligned positionally and must have length \code{ncol(z)}. A one-column
+#'   matrix with row names is accepted as a named vector. See
+#'   \code{\link{align_beta_Q}}. The bundled fixture
+#'   \code{ExampleData_cc_highdim$beta_external} is named \code{Z1}--\code{Z20}
+#'   and therefore takes the name-matching path.
+#' @param Q Optional weighting (precision) matrix for the Mahalanobis penalty.
+#'   Must be symmetric and positive semi-definite (both checked to a tolerance of
+#'   1e-8). If named, it is reordered and zero-padded to \code{colnames(z)}; only
+#'   an unnamed \code{Q} must be exactly \code{ncol(z)} by \code{ncol(z)}. If
+#'   \code{NULL}, a \emph{masked identity} is used: 1 on covariates actually
+#'   supplied by \code{beta} and 0 on zero-padded positions, so padded
+#'   coefficients are left unpenalized. See \code{\link{align_beta_Q}}.
+#' @param etas Numeric vector of non-negative integration weights for
+#'   \eqn{\eta}. \strong{Required}; the function stops if \code{etas} is
+#'   \code{NULL}. Must be finite and \eqn{\ge 0}. The values are sorted in
+#'   ascending order internally, and the rows of
+#'   \code{integrated_stat.full_results} /
+#'   \code{integrated_stat.best_per_eta} and the columns of
+#'   \code{integrated_stat.betahat_best} follow that sorted order.
 #' @param alpha Elastic Net mixing parameter in \eqn{(0,1]}. Default \code{NULL} (set to 1
 #'   with a warning if not supplied).
 #' @param lambda Optional numeric vector of lambda values. If \code{NULL}, a lambda path
 #'   is generated automatically for each \code{eta}.
 #' @param nlambda Integer. Number of lambda values. Default \code{100}.
-#' @param lambda.min.ratio Smallest lambda as a fraction of \code{lambda.max}. Default
-#'   depends on sample size relative to number of covariates.
+#' @param lambda.min.ratio Smallest lambda as a fraction of \code{lambda.max}.
+#'   Defaults to \code{ifelse(nrow(z) < ncol(z), 0.05, 1e-3)}, i.e. \code{0.05}
+#'   when there are fewer observations than covariates and \code{1e-3} otherwise.
+#'   This default is supplied directly in the formal argument list, so passing
+#'   \code{NULL} explicitly does \emph{not} trigger it.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
 #' @param cv.criteria Character string specifying the CV performance criterion.
 #'   One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.
@@ -53,7 +76,7 @@
 #' @return A list of class \code{"cv.ncc_MDTL_enet"} containing:
 #' \describe{
 #'   \item{\code{best}}{A list with the global best \eqn{(\eta, \lambda)}:
-#'     \code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{cv.criteria}.}
+#'     \code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{criteria}.}
 #'   \item{\code{integrated_stat.full_results}}{A \code{data.frame} with the CV score
 #'     for every \eqn{(\eta, \lambda)} combination.}
 #'   \item{\code{integrated_stat.best_per_eta}}{A \code{data.frame} with the best

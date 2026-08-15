@@ -9,23 +9,43 @@
 #' values. It is efficient for high-dimensional data where an Elastic Net penalty is not required,
 #' focusing purely on Ridge regression to handle multicollinearity and overfitting.
 #'
+#' @details
+#' When \code{lambda} is not supplied, the Ridge lambda sequence is generated
+#' internally by \code{\link{cox_MDTL_ridge}} and always spans from
+#' \code{lambda.max} down to an exact \code{0}, i.e. the last element of the path
+#' is the unpenalized solution. This behaviour is fixed for the Ridge path and is
+#' therefore \emph{not} configurable through a minimum-ratio argument; only the
+#' number of grid points (\code{nlambda}), or an explicit \code{lambda} vector, is
+#' under user control.
+#'
 #' @param z A numeric matrix or data frame of covariates (n x p).
 #' @param delta A numeric vector of event indicators (1 = event, 0 = censored).
 #' @param time A numeric vector of observed times.
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
-#'   all subjects are assumed to be in the same stratum.
-#' @param beta A numeric vector of external coefficients (length p).
-#' @param Q Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-#'   for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-#'   \emph{precision} matrix (typically the inverse covariance / information matrix of
-#'   the external estimator). If named, it is reordered and zero-padded to
-#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
-#' @param etas A numeric vector of candidate \code{eta} values to be evaluated.
+#'   a warning is issued and all subjects are assumed to be in the same stratum.
+#' @param beta A numeric vector of external coefficients. If \code{beta} is named,
+#'   names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered, so an
+#'   external source covering only a subset of the internal covariates may be
+#'   supplied directly. An unnamed \code{beta} is aligned positionally and must have
+#'   length \code{ncol(z)}. A one-column matrix with row names is accepted as a
+#'   named vector. See \code{\link{align_beta_Q}}.
+#' @param Q Optional weighting (precision) matrix for the Mahalanobis penalty
+#'   (typically the inverse covariance / information matrix of the external
+#'   estimator). Must be symmetric and positive semi-definite; both are checked to a
+#'   tolerance of 1e-8 and violations are errors. If named, it is reordered and
+#'   zero-padded to \code{colnames(z)}; only an unnamed \code{Q} must be exactly
+#'   \code{ncol(z)} by \code{ncol(z)}. If \code{NULL}, a \emph{masked identity} is
+#'   used: 1 on covariates actually supplied by \code{beta} and 0 on zero-padded
+#'   positions, so padded coefficients are left unpenalized. See
+#'   \code{\link{align_beta_Q}}.
+#' @param etas A numeric vector of non-negative candidate \code{eta} values to be
+#'   evaluated. Must be finite and \eqn{\ge 0}. The values are sorted in ascending
+#'   order internally, and the rows of \code{integrated_stat.best_per_eta} /
+#'   columns of \code{integrated_stat.betahat_best} follow that sorted order.
 #' @param lambda Optional user-supplied lambda sequence. If \code{NULL}, the function
 #'   computes its own sequence based on \code{nlambda}.
 #' @param nlambda The number of \code{lambda} values. Default is 100.
-#' @param lambda.min.ratio Smallest value for \code{lambda}, as a fraction of \code{lambda.max}.
-#'   Default depends on the sample size relative to the number of predictors.
 #' @param nfolds Integer. Number of cross-validation folds. Default is 5.
 #' @param cv.criteria Character string specifying the cross-validation criterion. Choices are:
 #'   \itemize{
@@ -35,7 +55,9 @@
 #'     \item \code{"CIndex_foldaverage"}: Harrell's C-index computed within each fold and averaged.
 #'   }
 #' @param c_index_stratum Optional stratum vector. Required only when \code{cv.criteria} involves
-#'   stratified C-index calculation but the model itself is unstratified.
+#'   stratified C-index calculation but the model itself is unstratified. That use case is
+#'   therefore only reachable when \code{stratum = NULL}: if \code{stratum} is supplied and
+#'   \code{c_index_stratum} is not identical to it, the function stops with an error.
 #' @param message Logical. If \code{TRUE}, progress messages are printed.
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
 #' @param ... Additional arguments passed to the underlying fitting function.
@@ -50,8 +72,12 @@
 #'       \item \code{criteria}: The selection criterion used.
 #'     }
 #'   }
-#'   \item{\code{integrated_stat.full_results}}{A data frame of performance metrics for all combinations of eta and lambda.}
-#'   \item{\code{integrated_stat.best_per_eta}}{A data frame summarizing the best lambda and performance metric for each eta.}
+#'   \item{\code{integrated_stat.full_results}}{A data frame of performance metrics for all combinations of eta and lambda.
+#'     Besides \code{eta} and \code{lambda} it carries a single metric column named after the
+#'     selected criterion: \code{Loss} for \code{"V&VH"} and \code{"LinPred"}, otherwise
+#'     \code{CIndex_pooled} or \code{CIndex_foldaverage}.}
+#'   \item{\code{integrated_stat.best_per_eta}}{A data frame summarizing the best lambda and performance metric for each eta,
+#'     with the same criterion-named metric column.}
 #'   \item{\code{integrated_stat.betahat_best}}{A matrix of coefficients for the best lambda at each eta.}
 #'   \item{\code{criteria}}{The selection criterion used.}
 #'   \item{\code{nfolds}}{The number of folds used.}
@@ -79,7 +105,7 @@
 #'
 #' @export
 cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL, etas,
-                              lambda = NULL, nlambda = 100, lambda.min.ratio = ifelse(n_obs < n_vars, 0.01, 1e-04), nfolds = 5,
+                              lambda = NULL, nlambda = 100, nfolds = 5,
                               cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                               c_index_stratum = NULL,
                               message = FALSE, seed = NULL,  ...) {
@@ -140,14 +166,14 @@ cv.cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = N
     if (is.null(lambda)) {
       fit0 <- cox_MDTL_ridge(z = z, delta = delta, time = time, stratum = stratum,
                              beta = beta_ext, Q = Q, eta = eta, lambda = NULL,
-                             nlambda = nlambda, lambda.min.ratio = lambda.min.ratio,
+                             nlambda = nlambda,
                              data_sorted = TRUE, message = FALSE, ...)
       lambda_seq <- as.vector(fit0$lambda)
     } else {
       lambda_seq <- sort(lambda, decreasing = TRUE)
       fit0 <- cox_MDTL_ridge(z = z, delta = delta, time = time, stratum = stratum,
                              beta = beta_ext, Q = Q, eta = eta, lambda = lambda_seq,
-                             nlambda = nlambda, lambda.min.ratio = lambda.min.ratio,
+                             nlambda = nlambda,
                              data_sorted = TRUE, message = FALSE, ...)
     }
     beta_initial.fit0 <- fit0$beta[, 1]

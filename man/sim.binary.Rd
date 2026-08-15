@@ -15,25 +15,53 @@ sim.binary(
 )
 }
 \arguments{
-\item{n_stratum}{Number of strata.}
+\item{n_stratum}{Number of strata. No default.}
 
-\item{beta}{Numeric vector of coefficients (length p).}
+\item{beta}{Numeric vector of coefficients (length p). No default; must be finite.}
 
-\item{stratum.size.mean}{Mean stratum size (Poisson distributed).}
+\item{stratum.size.mean}{Mean stratum size (Poisson distributed). Default is 80.}
 
-\item{rho}{Correlation parameter for Z within stratum.}
+\item{rho}{Covariance parameter for Z within stratum. Default is 0.8. See Details --
+\code{rho} is \emph{not} the resulting correlation.}
 
-\item{link}{Link function, one of "logit" or "probit".}
+\item{link}{Link function, one of "logit" or "probit". Default is "logit".}
 
-\item{stratum_sd}{Standard deviation of stratum random intercepts.}
+\item{stratum_sd}{Standard deviation of stratum random intercepts. Default is 0.5.}
 
-\item{seed}{Optional RNG seed.}
+\item{seed}{Optional RNG seed. Default \code{NULL}.}
 }
 \value{
-A list with combined data frame, data list, and metadata.
+A list with five components:
+\itemize{
+\item \code{data_combined}: a \code{data.frame} with columns \code{stratum},
+\code{y}, and covariates \code{Z1...Zp}.
+\item \code{data}: a list containing \code{stratum}, \code{Z}, and \code{y}.
+\item \code{true_beta}: numeric vector of the coefficients used.
+\item \code{char}: a list of column-name metadata (\code{stratum},
+\code{Z.char}, \code{Outcome.char}).
+\item \code{meta}: a list of simulation metadata including \code{n_stratum},
+\code{stratum_size}, \code{theta_stratum}, \code{link}, \code{alpha0},
+\code{stratum_sd}, \code{rho}, and the achieved prevalence
+\code{actual_prev}.
+}
 }
 \description{
 Internal function to simulate stratified binary data (logistic or probit) with
 random intercepts and no prevalence calibration.
+}
+\details{
+\strong{\code{rho} is not the correlation of \code{Z}.} The within-stratum
+covariance is built as \code{diag(1 - rho, p) + (rho - rho^2) * matrix(1, p, p)},
+whose diagonal is \eqn{1-\rho^2} and whose off-diagonal is \eqn{\rho(1-\rho)}. The
+implied correlation is therefore \eqn{\rho/(1+\rho)}, not \eqn{\rho}: at the
+default \code{rho = 0.8} the actual correlation is \eqn{0.444} and the variance of
+each covariate is \eqn{0.36}.
+
+\strong{Covariates are confounded with the stratum effect by construction.} The
+mean of \code{Z} within stratum \eqn{i} is set to
+\eqn{(\theta_i \rho / 0.4)\mathbf{1}}, a function of that stratum's random
+intercept \eqn{\theta_i}. Covariates and stratum effects are thus deliberately
+dependent, which is the intended design for testing stratified estimators; it is
+not a neutral covariate-generating mechanism.
 }
 \keyword{internal}

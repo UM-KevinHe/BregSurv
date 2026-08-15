@@ -100,15 +100,21 @@ it will be converted to a numeric matrix via <code>as.matrix(z)</code>.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Optional external coefficients. Default NULL.</p></dd>
+<dd><p>Optional numeric vector of external coefficients. Default NULL. It is
+forwarded to <code><a href="cv.coxkl_enet.html">cv.coxkl_enet</a></code>, which aligns it: if <code>beta</code> is
+named, names are matched against <code>colnames(z)</code>, covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered. An
+unnamed <code>beta</code> is aligned positionally and must have length
+<code>ncol(z)</code>. See <code><a href="align_beta.html">align_beta</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate eta values.</p></dd>
+<dd><p>Numeric vector of non-negative candidate eta values. Must be finite
+and \(\ge 0\); this is validated by <code><a href="cv.coxkl_enet.html">cv.coxkl_enet</a></code>.</p></dd>
 
 
 <dt id="arg-b">B<a class="anchor" aria-label="anchor" href="#arg-b"></a></dt>
-<dd><p>Integer. Number of bootstrap replications.</p></dd>
+<dd><p>Integer. Number of bootstrap replications. Default is 10.</p></dd>
 
 
 <dt id="arg-nonzero-tol">nonzero_tol<a class="anchor" aria-label="anchor" href="#arg-nonzero-tol"></a></dt>
@@ -143,6 +149,9 @@ it will be converted to a numeric matrix via <code>as.matrix(z)</code>.</p></dd>
 
 <dt>B</dt>
 <dd><p>Number of bootstrap replications.</p></dd>
+
+<dt>nonzero_tol</dt>
+<dd><p>The tolerance used to define "selected".</p></dd>
 
 <dt>call</dt>
 <dd><p>Matched call.</p></dd>

@@ -109,8 +109,8 @@ designs.
 - [`cox_MDTL_ridge()`](https://um-kevinhe.github.io/BregSurv/reference/cox_MDTL_ridge.md)
   : Cox MDTL with Ridge Regularization
 - [`cox_MDTL_enet()`](https://um-kevinhe.github.io/BregSurv/reference/cox_MDTL_enet.md)
-  : Fit Cox Model with Multi-Domain Transfer Learning and Elastic Net
-  Penalty
+  : Fit Cox Model with Mahalanobis Distance Transfer Learning and
+  Elastic Net Penalty
 - [`cv.cox_MDTL_ridge()`](https://um-kevinhe.github.io/BregSurv/reference/cv.cox_MDTL_ridge.md)
   : Cross-Validation for Cox MDTL with Ridge Regularization
 - [`cv.cox_MDTL_enet()`](https://um-kevinhe.github.io/BregSurv/reference/cv.cox_MDTL_enet.md)
@@ -154,7 +154,7 @@ designs.
 - [`plot(`*`<coxkl_enet>`*`)`](https://um-kevinhe.github.io/BregSurv/reference/plot.coxkl_enet.md)
   : Plot Validation Results for coxkl_enet Object
 - [`plot(`*`<cox_MDTL>`*`)`](https://um-kevinhe.github.io/BregSurv/reference/plot.cox_MDTL.md)
-  : Plot Validation Results for Cox_MDTL Object
+  : Plot Validation Results for cox_MDTL Object
 - [`plot(`*`<cox_MDTL_enet>`*`)`](https://um-kevinhe.github.io/BregSurv/reference/plot.cox_MDTL_enet.md)
   : Plot Validation Results for cox_MDTL_enet Object
 - [`plot(`*`<cox_MDTL_ridge>`*`)`](https://um-kevinhe.github.io/BregSurv/reference/plot.cox_MDTL_ridge.md)

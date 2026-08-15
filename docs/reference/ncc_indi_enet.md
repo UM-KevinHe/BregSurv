@@ -74,8 +74,10 @@ ncc_indi_enet(
 
 - etas:
 
-  Numeric vector of nonnegative external weights. `eta = 0` gives
-  internal-only fit.
+  Numeric vector of nonnegative external weights. Must be finite and
+  \\\ge 0\\; `eta = 0` gives an internal-only fit. The values are sorted
+  in ascending order internally, and the per-`eta` elements of the
+  returned `beta` and `lambda` lists follow that sorted order.
 
 - alpha:
 
@@ -118,8 +120,11 @@ ncc_indi_enet(
 
 - group:
 
-  Integer vector defining group membership for grouped penalties.
-  Default treats each variable as its own group.
+  Integer vector defining group membership for grouped penalties. The
+  formal default is `NULL`, which
+  [`cox_indi_enet`](https://um-kevinhe.github.io/BregSurv/reference/cox_indi_enet.md)
+  resolves to `seq_len(ncol(z_int))`, i.e. each variable is treated as
+  its own group.
 
 - group.multiplier:
 
@@ -132,11 +137,14 @@ ncc_indi_enet(
 
 - nvar.max:
 
-  Integer. Maximum number of active variables. Default `ncol(z_int)`.
+  Integer. Maximum number of active variables. The formal default is
+  `NULL`, resolved downstream to `ncol(z_int)`.
 
 - group.max:
 
-  Integer. Maximum number of active groups.
+  Integer. Maximum number of active groups. The formal default is
+  `NULL`, resolved downstream to `length(unique(group))` (after `group`
+  itself has been resolved).
 
 - stop.loss.ratio:
 
@@ -152,7 +160,8 @@ ncc_indi_enet(
 
 - actGroupNum:
 
-  Integer. Limit on active groups.
+  Integer. Limit on active groups in the active-set strategy. The formal
+  default is `NULL`, resolved downstream to `sum(unique(group) != 0)`.
 
 - actSetRemove:
 
@@ -202,3 +211,39 @@ as the core engine.
 
 [`cox_indi_enet`](https://um-kevinhe.github.io/BregSurv/reference/cox_indi_enet.md),
 [`ncc_indi`](https://um-kevinhe.github.io/BregSurv/reference/ncc_indi.md)
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+## Load the matched case-control individual-level example data
+data(ExampleData_cc_indi)
+
+y_int       <- ExampleData_cc_indi$internal$y
+z_int       <- ExampleData_cc_indi$internal$z
+stratum_int <- ExampleData_cc_indi$internal$stratum
+
+y_ext       <- ExampleData_cc_indi$external$y
+z_ext       <- ExampleData_cc_indi$external$z
+stratum_ext <- ExampleData_cc_indi$external$stratum
+
+## Generate a sequence of eta values
+eta_list <- generate_eta(method = "exponential", n = 10, max_eta = 10)
+
+## Fit the penalized composite-likelihood CLR path (alpha = 1 gives the Lasso)
+fit_enet <- ncc_indi_enet(
+  y_int       = y_int,
+  z_int       = z_int,
+  stratum_int = stratum_int,
+  y_ext       = y_ext,
+  z_ext       = z_ext,
+  stratum_ext = stratum_ext,
+  etas        = eta_list,
+  alpha       = 1
+)
+
+## The eta grid actually used, in ascending order; the returned beta and lambda
+## are lists with one element per eta, in this same order.
+fit_enet$eta
+} # }
+```

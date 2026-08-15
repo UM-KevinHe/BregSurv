@@ -248,8 +248,9 @@ estimated coefficients (\(p \times n_\lambda\)) on the original covariate scale,
 with columns named by the corresponding <code>lambda</code> values.</p></dd>
 
 <dt><code>lambda</code></dt>
-<dd><p>Named list of length <code>length(etas)</code>. Each element is the
-vector of lambda values actually used for that <code>eta</code>.</p></dd>
+<dd><p>Unnamed list of length <code>length(etas)</code>, parallel to
+<code>beta</code>. Each element is the vector of lambda values actually used for
+that <code>eta</code>.</p></dd>
 
 <dt><code>alpha</code></dt>
 <dd><p>The Elastic Net mixing parameter used.</p></dd>
@@ -272,7 +273,9 @@ of external linear predictors in the original observation order, one per <code>e
 <dd><p>List of the original input data used.</p></dd>
 
 
-</dl></div>
+</dl><p>When <code>returnX = TRUE</code>, an additional component <code>std.Z</code> is attached,
+the standardized design object built from the stacked covariate matrix.</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The fitted objective is

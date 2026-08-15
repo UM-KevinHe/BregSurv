@@ -219,8 +219,8 @@ An object of class `"cox_indi_enet"` containing:
 
 - `lambda`:
 
-  Named list of length `length(etas)`. Each element is the vector of
-  lambda values actually used for that `eta`.
+  Unnamed list of length `length(etas)`, parallel to `beta`. Each
+  element is the vector of lambda values actually used for that `eta`.
 
 - `alpha`:
 
@@ -247,6 +247,9 @@ An object of class `"cox_indi_enet"` containing:
 - `data`:
 
   List of the original input data used.
+
+When `returnX = TRUE`, an additional component `std.Z` is attached, the
+standardized design object built from the stacked covariate matrix.
 
 ## Details
 

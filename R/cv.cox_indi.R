@@ -4,21 +4,37 @@
 #' For each fold, the model is trained on the internal training split plus the full external dataset,
 #' then evaluated on the held-out internal fold.
 #'
-#' @param z_int,delta_int,time_int,stratum_int Internal data.
+#' @param z_int,delta_int,time_int,stratum_int Internal data. If \code{stratum_int} is
+#'   \code{NULL}, all internal observations are treated as a single stratum; unlike the
+#'   other cross-validation functions in the package, no warning is issued in that case.
 #' @param z_ext,delta_ext,time_ext,stratum_ext External data (always fully included in training).
-#' @param etas Numeric vector of candidate eta values (must be provided).
+#' @param etas Numeric vector of non-negative candidate eta values (must be provided;
+#'   omitting it is an error). Must be finite and \eqn{\ge 0}. The values are sorted in
+#'   ascending order internally, and the rows of \code{internal_stat} / columns of
+#'   \code{beta_full} follow that sorted order.
 #' @param nfolds Number of folds (default 5).
-#' @param cv.criteria Performance criterion.
+#' @param cv.criteria Performance criterion. One of \code{"V&VH"} (default),
+#'   \code{"LinPred"}, \code{"CIndex_pooled"}, or \code{"CIndex_foldaverage"}.
 #' @param c_index_stratum Optional stratum vector used for C-index evaluation on internal data.
-#' @param max_iter,tol Passed to \code{cox_indi}.
+#'   When supplied it must have the same length as the internal data.
+#' @param max_iter,tol Passed to \code{cox_indi}. Defaults are \code{max_iter = 100} and
+#'   \code{tol = 1.0e-7}; note that this \code{tol} is an order of magnitude tighter than
+#'   the \code{1e-4} used elsewhere in the package.
 #' @param message Logical; print progress (default FALSE).
 #' @param seed Optional seed for reproducible folds.
 #'
 #' @return An object of class \code{"cv.cox_indi"} with components:
 #' \itemize{
-#' \item \code{internal_stat}: data.frame of CV stats by eta
+#' \item \code{internal_stat}: data.frame of CV stats by eta, one row per candidate
+#'   \code{eta} in ascending order. It has a column \code{eta} plus \emph{exactly one}
+#'   metric column, whose name is determined by \code{cv.criteria}: \code{VVH_Loss} for
+#'   \code{"V&VH"}, \code{LinPred_Loss} for \code{"LinPred"}, \code{CIndex_pooled} for
+#'   \code{"CIndex_pooled"}, or \code{CIndex_foldaverage} for
+#'   \code{"CIndex_foldaverage"}. The other three metrics are never computed.
 #' \item \code{beta_full}: matrix of full-data estimates (p x length(etas))
 #' \item \code{best}: list with \code{best_eta}, \code{best_beta}, \code{criteria}
+#' \item \code{criteria}: the criterion used for selection
+#' \item \code{nfolds}: the number of folds used
 #' }
 #' @examples
 #' \dontrun{

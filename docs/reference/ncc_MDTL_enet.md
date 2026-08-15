@@ -59,19 +59,39 @@ ncc_MDTL_enet(
 
 - beta:
 
-  Numeric vector of external coefficients (length `ncol(z)`).
-  **Required**.
+  Numeric vector of external coefficients. **Required**. If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
+  The bundled external beta `ExampleData_cc_highdim$beta_external` is
+  named `Z1`–`Z20`, so the examples below already exercise the
+  name-matching path.
 
 - Q:
 
-  Optional numeric matrix (`ncol(z)` x `ncol(z)`) acting as the
-  weighting matrix \\Q\\. Typically the precision matrix of the external
-  estimator. If `NULL`, defaults to the identity matrix.
+  Optional weighting (precision) matrix for the Mahalanobis penalty,
+  typically the precision matrix of the external estimator. Must be
+  symmetric and positive semi-definite (both checked to a tolerance of
+  1e-8). If named, it is reordered and zero-padded to `colnames(z)`;
+  only an unnamed `Q` must be exactly `ncol(z)` by `ncol(z)`. If `NULL`,
+  a *masked identity* is used: 1 on covariates actually supplied by
+  `beta` and 0 on zero-padded positions, so padded coefficients are left
+  unpenalized. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - eta:
 
-  Numeric scalar. The transfer learning parameter (\\\geq 0\\). Controls
-  the strength of external information. `eta = 0` ignores external info.
+  Numeric scalar. The transfer learning parameter controlling the
+  strength of external information; `eta = 0` ignores external info.
+  Must be a single finite non-negative (\\\geq 0\\) value. The formal
+  default is `NULL`; a `NULL` `eta` is resolved to 0 inside
+  [`cox_MDTL_enet`](https://um-kevinhe.github.io/BregSurv/reference/cox_MDTL_enet.md),
+  which emits the warning
+  `"eta is not provided. Setting eta = 0 (no external information used)."`
 
 - alpha:
 
@@ -200,8 +220,10 @@ Net penalty.
 
 - If `alpha` is close to 0, the penalty approaches Ridge.
 
-- If `Q = NULL`, \\Q = I\\ (Euclidean distance shrinkage towards
-  `beta`).
+- If `Q = NULL`, a *masked identity* is used: 1 on the covariates
+  actually supplied by `beta` and 0 on zero-padded positions. This gives
+  Euclidean-distance shrinkage towards `beta` on the covariates the
+  external source covers, while leaving padded coefficients unpenalized.
 
 ## See also
 

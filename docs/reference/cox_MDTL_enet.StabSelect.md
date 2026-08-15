@@ -50,31 +50,43 @@ cox_MDTL_enet.StabSelect(
 
 - stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, a
+  warning is issued and all subjects are assumed to be in the same
+  stratum.
 
 - beta:
 
-  A numeric vector of external coefficients (length p).
+  Optional numeric vector of external coefficients. If `beta` is named,
+  names are matched against `colnames(z)`: covariates absent from `beta`
+  are set to 0 (with a message) and the vector is reordered. An unnamed
+  `beta` is aligned positionally and must have length `ncol(z)`. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - Q:
 
-  Optional numeric matrix (p x p) representing the weighting matrix
-  \\Q\\ for the Mahalanobis penalty. This should be a symmetric
-  positive-semidefinite *precision* matrix (typically the inverse
-  covariance / information matrix of the external estimator). If named,
-  it is reordered and zero-padded to `colnames(z)`. If `NULL`, a masked
-  identity is used.
+  Optional weighting (precision) matrix for the Mahalanobis penalty
+  (typically the inverse covariance / information matrix of the external
+  estimator). Must be symmetric and positive semi-definite; both are
+  checked to a tolerance of 1e-8 and violations are errors. If named, it
+  is reordered and zero-padded to `colnames(z)`; only an unnamed `Q`
+  must be exactly `ncol(z)` by `ncol(z)`. If `NULL`, a *masked identity*
+  is used: 1 on covariates actually supplied by `beta` and 0 on
+  zero-padded positions, so padded coefficients are left unpenalized.
+  See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  A numeric vector of candidate `eta` values to be evaluated.
+  Numeric vector of non-negative integration weights. Must be finite and
+  \\\ge 0\\. This argument is **required**: leaving it at its `NULL`
+  default is an error.
 
 - alpha:
 
-  The Elastic Net mixing parameter, with \\0 \le \alpha \le 1\\.
-  `alpha = 1` is the Lasso penalty, and `alpha = 0` is the Ridge
-  penalty. If `NULL`, defaults to 1 (Lasso).
+  The Elastic Net mixing parameter, with \\0 \< \alpha \le 1\\.
+  `alpha = 1` is the Lasso penalty, and `alpha` close to 0 approaches
+  ridge. Values outside \\(0, 1\]\\ are an error. If `NULL` (the
+  default), `alpha` is set to 1 (Lasso) and a warning is issued.
 
 - lambda:
 
@@ -88,8 +100,10 @@ cox_MDTL_enet.StabSelect(
 
 - lambda.min.ratio:
 
-  Smallest value for `lambda`, as a fraction of `lambda.max`. Default
-  depends on the sample size relative to the number of predictors.
+  Numeric. Smallest value for `lambda`, as a fraction of `lambda.max`.
+  Default is `0.1` for this function. Only if it is explicitly set to
+  `NULL` does the sample-size-dependent fallback apply (`0.05` when \\n
+  \< p\\, `1e-03` otherwise).
 
 - nfolds:
 
@@ -116,6 +130,9 @@ cox_MDTL_enet.StabSelect(
 
   Optional stratum vector. Required only when `cv.criteria` involves
   stratified C-index calculation but the model itself is unstratified.
+  That use case is therefore only reachable when `stratum = NULL`: if
+  `stratum` is supplied and `c_index_stratum` is not identical to it,
+  the function stops with an error.
 
 - message:
 

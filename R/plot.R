@@ -4,13 +4,26 @@
 #' Plots the validation performance (Loss or C-Index) against the tuning parameter \code{eta}.
 #' Compares the "Integrated" estimator (solid line) against the "Internal" baseline (dotted line, eta=0).
 #'
+#' The output of \code{\link{coxkl_ties}} also carries class \code{"coxkl"} and is
+#' therefore served by this same method.
+#'
 #' @param x An object of class \code{"coxkl"}.
-#' @param test_z Matrix of test covariates. If NULL, training data is used.
-#' @param test_time Vector of test survival times.
-#' @param test_delta Vector of test status indicators.
-#' @param test_stratum Vector of test strata (optional).
+#' @param test_z Matrix of test covariates. Optional; see Details.
+#' @param test_time Vector of test survival times. Optional; see Details.
+#' @param test_delta Vector of test status indicators. Optional; see Details.
+#' @param test_stratum Vector of test strata. Optional; see Details.
 #' @param criteria Metric to plot: \code{"loss"} or \code{"CIndex"}.
 #' @param ... Additional arguments.
+#'
+#' @details
+#' The four \code{test_*} arguments act as a single unit. The training data stored
+#' in the fitted object are used for evaluation only when \emph{all four} of
+#' \code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+#' \code{NULL}. Supplying any one of them selects the external-test path, so
+#' leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+#' back to the training data -- it produces an error. The one exception is
+#' \code{test_time}: on the external-test path, if it alone is omitted all test
+#' times are set to 1.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -34,12 +47,12 @@
 #'                    beta = beta_external_lowdim,
 #'                    etas = eta_list)
 #'
-#' plot.coxkl(coxkl_est,
-#'            test_z = test_dat_lowdim$z,
-#'            test_time = test_dat_lowdim$time,
-#'            test_delta = test_dat_lowdim$status,
-#'            test_stratum = test_dat_lowdim$stratum,
-#'            criteria = "CIndex")
+#' plot(coxkl_est,
+#'      test_z = test_dat_lowdim$z,
+#'      test_time = test_dat_lowdim$time,
+#'      test_delta = test_dat_lowdim$status,
+#'      test_stratum = test_dat_lowdim$stratum,
+#'      criteria = "CIndex")
 #' }
 plot.coxkl <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
                        test_stratum = NULL, criteria = c("loss", "CIndex"), ...) {
@@ -144,12 +157,22 @@ plot.coxkl <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
 #' The optimal lambda is marked with a dashed orange line.
 #'
 #' @param x An object of class \code{"coxkl_ridge"}.
-#' @param test_z Matrix of test covariates.
-#' @param test_time Vector of test survival times.
-#' @param test_delta Vector of test status indicators.
-#' @param test_stratum Vector of test strata.
+#' @param test_z Matrix of test covariates. Optional; see Details.
+#' @param test_time Vector of test survival times. Optional; see Details.
+#' @param test_delta Vector of test status indicators. Optional; see Details.
+#' @param test_stratum Vector of test strata. Optional; see Details.
 #' @param criteria Metric to plot: \code{"loss"} or \code{"CIndex"}.
 #' @param ... Additional arguments.
+#'
+#' @details
+#' The four \code{test_*} arguments act as a single unit. The training data stored
+#' in the fitted object are used for evaluation only when \emph{all four} of
+#' \code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+#' \code{NULL}. Supplying any one of them selects the external-test path, so
+#' leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+#' back to the training data -- it produces an error. The one exception is
+#' \code{test_time}: on the external-test path, if it alone is omitted all test
+#' times are set to 1.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -171,12 +194,12 @@ plot.coxkl <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
 #'                                beta = beta_external_highdim,
 #'                                eta = 0)
 #'
-#' plot.coxkl_ridge(coxkl_ridge_est,
-#'                  test_z = test_dat_highdim$z,
-#'                  test_time = test_dat_highdim$time,
-#'                  test_delta = test_dat_highdim$status,
-#'                  test_stratum = test_dat_highdim$stratum,
-#'                  criteria = "CIndex")
+#' plot(coxkl_ridge_est,
+#'      test_z = test_dat_highdim$z,
+#'      test_time = test_dat_highdim$time,
+#'      test_delta = test_dat_highdim$status,
+#'      test_stratum = test_dat_highdim$stratum,
+#'      criteria = "CIndex")
 #' }
 plot.coxkl_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
                              test_stratum = NULL, criteria = c("loss", "CIndex"), ...) {
@@ -266,12 +289,22 @@ plot.coxkl_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta = NU
 #' The optimal lambda is marked with a dashed orange line.
 #'
 #' @param x An object of class \code{"coxkl_enet"}.
-#' @param test_z Matrix of test covariates.
-#' @param test_time Vector of test survival times.
-#' @param test_delta Vector of test status indicators.
-#' @param test_stratum Vector of test strata.
+#' @param test_z Matrix of test covariates. Optional; see Details.
+#' @param test_time Vector of test survival times. Optional; see Details.
+#' @param test_delta Vector of test status indicators. Optional; see Details.
+#' @param test_stratum Vector of test strata. Optional; see Details.
 #' @param criteria Metric to plot: \code{"loss"} or \code{"CIndex"}.
 #' @param ... Additional arguments.
+#'
+#' @details
+#' The four \code{test_*} arguments act as a single unit. The training data stored
+#' in the fitted object are used for evaluation only when \emph{all four} of
+#' \code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+#' \code{NULL}. Supplying any one of them selects the external-test path, so
+#' leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+#' back to the training data -- it produces an error. The one exception is
+#' \code{test_time}: on the external-test path, if it alone is omitted all test
+#' times are set to 1.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -293,12 +326,12 @@ plot.coxkl_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta = NU
 #'                              beta = beta_external_highdim,
 #'                              eta = 0)
 #'
-#' plot.coxkl_enet(coxkl_enet_est,
-#'                 test_z = test_dat_highdim$z,
-#'                 test_time = test_dat_highdim$time,
-#'                 test_delta = test_dat_highdim$status,
-#'                 test_stratum = test_dat_highdim$stratum,
-#'                 criteria = "CIndex")
+#' plot(coxkl_enet_est,
+#'      test_z = test_dat_highdim$z,
+#'      test_time = test_dat_highdim$time,
+#'      test_delta = test_dat_highdim$status,
+#'      test_stratum = test_dat_highdim$stratum,
+#'      criteria = "CIndex")
 #' }
 plot.coxkl_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
                             test_stratum = NULL, criteria = c("loss", "CIndex"), ...) {
@@ -382,19 +415,29 @@ plot.coxkl_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = NUL
     theme_biometrics()
 }
 
-#' Plot Validation Results for Cox_MDTL Object
+#' Plot Validation Results for cox_MDTL Object
 #'
 #' @description
 #' Plots the validation performance against \code{eta} for MDTL estimates.
 #' Compares the "Integrated" estimator (solid line) against the "Internal" baseline (dotted line, eta=0).
 #'
-#' @param x An object of class \code{"Cox_MDTL"}.
-#' @param test_z Matrix of test covariates.
-#' @param test_time Vector of test survival times.
-#' @param test_delta Vector of test status indicators.
-#' @param test_stratum Vector of test strata.
+#' @param x An object of class \code{"cox_MDTL"}.
+#' @param test_z Matrix of test covariates. Optional; see Details.
+#' @param test_time Vector of test survival times. Optional; see Details.
+#' @param test_delta Vector of test status indicators. Optional; see Details.
+#' @param test_stratum Vector of test strata. Optional; see Details.
 #' @param criteria Metric to plot: \code{"loss"} or \code{"CIndex"}.
 #' @param ... Additional arguments.
+#'
+#' @details
+#' The four \code{test_*} arguments act as a single unit. The training data stored
+#' in the fitted object are used for evaluation only when \emph{all four} of
+#' \code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+#' \code{NULL}. Supplying any one of them selects the external-test path, so
+#' leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+#' back to the training data -- it produces an error. The one exception is
+#' \code{test_time}: on the external-test path, if it alone is omitted all test
+#' times are set to 1.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -418,12 +461,12 @@ plot.coxkl_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = NUL
 #'                          Q = NULL,
 #'                          etas = eta_list)
 #'
-#' plot.cox_MDTL(cox_MDTL_est,
-#'               test_z = test_dat_lowdim$z,
-#'               test_time = test_dat_lowdim$time,
-#'               test_delta = test_dat_lowdim$status,
-#'               test_stratum = test_dat_lowdim$stratum,
-#'               criteria = "CIndex")
+#' plot(cox_MDTL_est,
+#'      test_z = test_dat_lowdim$z,
+#'      test_time = test_dat_lowdim$time,
+#'      test_delta = test_dat_lowdim$status,
+#'      test_stratum = test_dat_lowdim$stratum,
+#'      criteria = "CIndex")
 #' }
 plot.cox_MDTL <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
                           test_stratum = NULL, criteria = c("loss", "CIndex"), ...) {
@@ -528,12 +571,22 @@ plot.cox_MDTL <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
 #' Plots the validation performance against \code{lambda} for MDTL ridge estimates.
 #'
 #' @param x An object of class \code{"cox_MDTL_ridge"}.
-#' @param test_z Matrix of test covariates.
-#' @param test_time Vector of test survival times.
-#' @param test_delta Vector of test status indicators.
-#' @param test_stratum Vector of test strata.
+#' @param test_z Matrix of test covariates. Optional; see Details.
+#' @param test_time Vector of test survival times. Optional; see Details.
+#' @param test_delta Vector of test status indicators. Optional; see Details.
+#' @param test_stratum Vector of test strata. Optional; see Details.
 #' @param criteria Metric to plot: \code{"loss"} or \code{"CIndex"}.
 #' @param ... Additional arguments.
+#'
+#' @details
+#' The four \code{test_*} arguments act as a single unit. The training data stored
+#' in the fitted object are used for evaluation only when \emph{all four} of
+#' \code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+#' \code{NULL}. Supplying any one of them selects the external-test path, so
+#' leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+#' back to the training data -- it produces an error. The one exception is
+#' \code{test_time}: on the external-test path, if it alone is omitted all test
+#' times are set to 1.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -555,11 +608,11 @@ plot.cox_MDTL <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
 #'                                  Q = NULL,
 #'                                  eta = 0)
 #'
-#' plot.cox_MDTL_ridge(mdtl_ridge_est,
-#'                     test_z = test_dat_highdim$z,
-#'                     test_time = test_dat_highdim$time,
-#'                     test_delta = test_dat_highdim$status,
-#'                     criteria = "CIndex")
+#' plot(mdtl_ridge_est,
+#'      test_z = test_dat_highdim$z,
+#'      test_time = test_dat_highdim$time,
+#'      test_delta = test_dat_highdim$status,
+#'      criteria = "CIndex")
 #' }
 plot.cox_MDTL_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
                                 test_stratum = NULL, criteria = c("loss", "CIndex"), ...) {
@@ -649,12 +702,22 @@ plot.cox_MDTL_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta =
 #' Plots the validation performance against \code{lambda} for MDTL elastic net estimates.
 #'
 #' @param x An object of class \code{"cox_MDTL_enet"}.
-#' @param test_z Matrix of test covariates.
-#' @param test_time Vector of test survival times.
-#' @param test_delta Vector of test status indicators.
-#' @param test_stratum Vector of test strata.
+#' @param test_z Matrix of test covariates. Optional; see Details.
+#' @param test_time Vector of test survival times. Optional; see Details.
+#' @param test_delta Vector of test status indicators. Optional; see Details.
+#' @param test_stratum Vector of test strata. Optional; see Details.
 #' @param criteria Metric to plot: \code{"loss"} or \code{"CIndex"}.
 #' @param ... Additional arguments.
+#'
+#' @details
+#' The four \code{test_*} arguments act as a single unit. The training data stored
+#' in the fitted object are used for evaluation only when \emph{all four} of
+#' \code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+#' \code{NULL}. Supplying any one of them selects the external-test path, so
+#' leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+#' back to the training data -- it produces an error. The one exception is
+#' \code{test_time}: on the external-test path, if it alone is omitted all test
+#' times are set to 1.
 #'
 #' @return A \code{ggplot} object.
 #'
@@ -676,12 +739,12 @@ plot.cox_MDTL_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta =
 #'                                    Q = NULL,
 #'                                    eta = 0)
 #'
-#' plot.cox_MDTL_enet(cox_MDTL_enet_est,
-#'                    test_z = test_dat_highdim$z,
-#'                    test_time = test_dat_highdim$time,
-#'                    test_delta = test_dat_highdim$status,
-#'                    test_stratum = test_dat_highdim$stratum,
-#'                    criteria = "CIndex")
+#' plot(cox_MDTL_enet_est,
+#'      test_z = test_dat_highdim$z,
+#'      test_time = test_dat_highdim$time,
+#'      test_delta = test_dat_highdim$status,
+#'      test_stratum = test_dat_highdim$stratum,
+#'      criteria = "CIndex")
 #' }
 plot.cox_MDTL_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
                                test_stratum = NULL, criteria = c("loss", "CIndex"), ...) {

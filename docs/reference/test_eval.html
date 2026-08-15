@@ -96,14 +96,23 @@ Required only when <code>criteria = "IBS"</code>.</p></dd>
 
 <dt id="arg-criteria">criteria<a class="anchor" aria-label="anchor" href="#arg-criteria"></a></dt>
 <dd><p>Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex" (Concordance Index),
-"IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC).</p></dd>
+"IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC). Default is "loss".</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A numeric value representing the performance metric.
-Returns <code>NA</code> if the metric cannot be computed (e.g., no events in test set).</p>
-    </div>
+Returns <code>NA</code> if the metric cannot be computed (e.g., no events in test set).
+Two silent-<code>NA</code> paths are worth naming explicitly, because neither raises an
+error:</p><ul><li><p><code>criteria = "IBS"</code> returns <code>NA</code> immediately whenever
+<code>train_baseline_obj</code> is <code>NULL</code>. Despite the wording of that
+argument's description, omitting it is not an error – the result is simply
+missing.</p></li>
+<li><p>Both <code>"IBS"</code> and <code>"tdAUC"</code> return <code>NA</code> whenever the test
+set contains fewer than two distinct event times, since neither quantity can
+be integrated over a single time point. <code>"loss"</code> and <code>"CIndex"</code> are
+returned before this check and are unaffected.</p></li>
+</ul></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>For "IBS", the function predicts survival probabilities and converts them to risk (1 - S).

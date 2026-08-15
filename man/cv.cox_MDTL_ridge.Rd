@@ -14,7 +14,6 @@ cv.cox_MDTL_ridge(
   etas,
   lambda = NULL,
   nlambda = 100,
-  lambda.min.ratio = ifelse(n_obs < n_vars, 0.01, 1e-04),
   nfolds = 5,
   cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
@@ -31,25 +30,35 @@ cv.cox_MDTL_ridge(
 \item{time}{A numeric vector of observed times.}
 
 \item{stratum}{Optional numeric or factor vector indicating strata. If \code{NULL},
-all subjects are assumed to be in the same stratum.}
+a warning is issued and all subjects are assumed to be in the same stratum.}
 
-\item{beta}{A numeric vector of external coefficients (length p).}
+\item{beta}{A numeric vector of external coefficients. If \code{beta} is named,
+names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed \code{beta} is aligned positionally and must have
+length \code{ncol(z)}. A one-column matrix with row names is accepted as a
+named vector. See \code{\link{align_beta_Q}}.}
 
-\item{Q}{Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-\emph{precision} matrix (typically the inverse covariance / information matrix of
-the external estimator). If named, it is reordered and zero-padded to
-\code{colnames(z)}. If \code{NULL}, a masked identity is used.}
+\item{Q}{Optional weighting (precision) matrix for the Mahalanobis penalty
+(typically the inverse covariance / information matrix of the external
+estimator). Must be symmetric and positive semi-definite; both are checked to a
+tolerance of 1e-8 and violations are errors. If named, it is reordered and
+zero-padded to \code{colnames(z)}; only an unnamed \code{Q} must be exactly
+\code{ncol(z)} by \code{ncol(z)}. If \code{NULL}, a \emph{masked identity} is
+used: 1 on covariates actually supplied by \code{beta} and 0 on zero-padded
+positions, so padded coefficients are left unpenalized. See
+\code{\link{align_beta_Q}}.}
 
-\item{etas}{A numeric vector of candidate \code{eta} values to be evaluated.}
+\item{etas}{A numeric vector of non-negative candidate \code{eta} values to be
+evaluated. Must be finite and \eqn{\ge 0}. The values are sorted in ascending
+order internally, and the rows of \code{integrated_stat.best_per_eta} /
+columns of \code{integrated_stat.betahat_best} follow that sorted order.}
 
 \item{lambda}{Optional user-supplied lambda sequence. If \code{NULL}, the function
 computes its own sequence based on \code{nlambda}.}
 
 \item{nlambda}{The number of \code{lambda} values. Default is 100.}
-
-\item{lambda.min.ratio}{Smallest value for \code{lambda}, as a fraction of \code{lambda.max}.
-Default depends on the sample size relative to the number of predictors.}
 
 \item{nfolds}{Integer. Number of cross-validation folds. Default is 5.}
 
@@ -62,7 +71,9 @@ Default depends on the sample size relative to the number of predictors.}
 }}
 
 \item{c_index_stratum}{Optional stratum vector. Required only when \code{cv.criteria} involves
-stratified C-index calculation but the model itself is unstratified.}
+stratified C-index calculation but the model itself is unstratified. That use case is
+therefore only reachable when \code{stratum = NULL}: if \code{stratum} is supplied and
+\code{c_index_stratum} is not identical to it, the function stops with an error.}
 
 \item{message}{Logical. If \code{TRUE}, progress messages are printed.}
 
@@ -81,8 +92,12 @@ An object of class \code{"cv.cox_MDTL_ridge"} containing:
 \item \code{criteria}: The selection criterion used.
 }
 }
-\item{\code{integrated_stat.full_results}}{A data frame of performance metrics for all combinations of eta and lambda.}
-\item{\code{integrated_stat.best_per_eta}}{A data frame summarizing the best lambda and performance metric for each eta.}
+\item{\code{integrated_stat.full_results}}{A data frame of performance metrics for all combinations of eta and lambda.
+Besides \code{eta} and \code{lambda} it carries a single metric column named after the
+selected criterion: \code{Loss} for \code{"V&VH"} and \code{"LinPred"}, otherwise
+\code{CIndex_pooled} or \code{CIndex_foldaverage}.}
+\item{\code{integrated_stat.best_per_eta}}{A data frame summarizing the best lambda and performance metric for each eta,
+with the same criterion-named metric column.}
 \item{\code{integrated_stat.betahat_best}}{A matrix of coefficients for the best lambda at each eta.}
 \item{\code{criteria}}{The selection criterion used.}
 \item{\code{nfolds}}{The number of folds used.}
@@ -96,6 +111,15 @@ Cox MDTL model with a Ridge penalty (L2-norm).
 This function evaluates the model performance across a grid of \code{eta} and \code{lambda}
 values. It is efficient for high-dimensional data where an Elastic Net penalty is not required,
 focusing purely on Ridge regression to handle multicollinearity and overfitting.
+}
+\details{
+When \code{lambda} is not supplied, the Ridge lambda sequence is generated
+internally by \code{\link{cox_MDTL_ridge}} and always spans from
+\code{lambda.max} down to an exact \code{0}, i.e. the last element of the path
+is the unpenalized solution. This behaviour is fixed for the Ridge path and is
+therefore \emph{not} configurable through a minimum-ratio argument; only the
+number of grid points (\code{nlambda}), or an explicit \code{lambda} vector, is
+under user control.
 }
 \examples{
 \dontrun{

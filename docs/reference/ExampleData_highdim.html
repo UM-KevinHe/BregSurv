@@ -152,7 +152,20 @@ Breslow ties are fitted on the external dataset using
 length-50 coefficient vectors, with additional variants constructed
 to represent different forms of coefficient perturbation and
 distributional shift.</p></li>
-</ul></div>
+</ul><p><strong>External coefficients: name present-and-zero vs. name absent.</strong> Every
+external coefficient vector bundled here is fully populated and fully named over
+the complete covariate space <code>Z1</code>–<code>Z50</code>. Consequently
+<code><a href="align_beta.html">align_beta</a></code> never zero-pads them, and <code><a href="align_beta_Q.html">align_beta_Q</a></code>
+with <code>Q = NULL</code> returns the full identity rather than a masked identity.
+The distinction is semantic: a covariate whose name is <em>present</em> with value
+0 asserts an external estimate of exactly zero and is penalized toward zero like
+any other external coefficient, whereas a covariate whose name is <em>absent</em>
+is treated as carrying no external information – it is zero-padded and, under
+the Mahalanobis penalty, left unpenalized. The structural zeros in these vectors
+(for example <code>Z7</code>–<code>Z50</code> in <code>beta_external</code>, which the external
+model did not fit) are therefore of the first kind: they are borrowed as genuine
+external estimates of zero.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

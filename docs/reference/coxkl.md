@@ -54,21 +54,30 @@ coxkl(
 
 - RS:
 
-  Optional numeric vector or matrix of external risk scores. Length must
-  equal the number of observations. If not supplied, `beta` must be
-  provided.
+  Optional numeric vector of external risk scores, one per observation
+  (a one-column matrix is also accepted); its length must equal the
+  number of observations. Only a single risk score per observation is
+  supported. If not supplied, `beta` must be provided.
 
 - beta:
 
-  Optional numeric vector of external coefficients. Length must equal
-  the number of columns in `z`. If provided, these are used to calculate
-  risk scores internally. If not supplied, `RS` must be provided.
+  Optional numeric vector of external coefficients. If `beta` is named,
+  names are matched against `colnames(z)`: covariates absent from `beta`
+  are set to 0 (with a message) and the vector is reordered, so an
+  external source covering only a subset of the internal covariates may
+  be supplied directly. An unnamed `beta` is aligned positionally and
+  must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  If provided, it is used to calculate risk scores internally. If not
+  supplied, `RS` must be provided.
 
 - etas:
 
-  Numeric vector of tuning parameters. Controls the reliance on external
-  information. The function will sort these values and fit a model for
-  each.
+  Numeric vector of non-negative integration weights. Must be finite and
+  \\\ge 0\\. The values are sorted in ascending order internally, and
+  the columns of the returned coefficient matrix follow that sorted
+  order.
 
 - tol:
 
@@ -98,7 +107,7 @@ coxkl(
 - beta_initial:
 
   Optional numeric vector. Initial values for the coefficients for the
-  first `eta`.
+  first `eta`. Default is a zero vector.
 
 ## Value
 
@@ -119,7 +128,8 @@ An object of class `"coxkl"` containing:
 
 - `likelihood`:
 
-  Vector of negative log-partial likelihoods for each `eta`.
+  Vector of log-partial likelihoods, one per `eta` (larger values
+  indicate better fit; this is *not* a loss).
 
 - `data`:
 

@@ -108,20 +108,32 @@ to sampling variation or a single data split.</p>
 
 <dt id="arg-rs">RS<a class="anchor" aria-label="anchor" href="#arg-rs"></a></dt>
 <dd><p>Optional matrix or vector of external risk scores. If provided, it
-is resampled within each bootstrap replicate.</p></dd>
+is resampled within each bootstrap replicate. If both <code>RS</code> and
+<code>beta</code> are supplied, <code>RS</code> takes precedence and <code>beta</code> is
+silently discarded.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
 <dd><p>Optional vector of external coefficients. If provided, it is
-treated as fixed and not resampled.</p></dd>
+treated as fixed and not resampled. It is passed through unchanged to
+<code>cv.coxkl_enet</code>, where a named <code>beta</code> is matched against
+<code>colnames(z)</code> and zero-padded for any covariate it does not cover,
+while an unnamed <code>beta</code> is aligned positionally and must have length
+<code>p</code> (see <code><a href="align_beta.html">align_beta</a></code>). Ignored when <code>RS</code> is supplied.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Vector of <code>eta</code> values for transfer-learning shrinkage.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights. Must be finite
+and \(\ge 0\).</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>Elastic-net mixing parameter (between <code>0</code> and <code>1</code>).</p></dd>
+<dd><p>Elastic-net mixing parameter, with \(0 &lt; \alpha \le 1\)
+(<code>alpha = 1</code> is the lasso penalty; values close to 0 approach ridge).
+Default is <code>1.0</code>. Values outside <code>(0, 1]</code> are rejected by
+<code>cv.coxkl_enet</code>; because each replicate is wrapped in
+<code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code>, this surfaces as every replicate failing rather than as
+an immediate error.</p></dd>
 
 
 <dt id="arg-b">B<a class="anchor" aria-label="anchor" href="#arg-b"></a></dt>
@@ -135,22 +147,24 @@ underlying elastic-net fit.</p></dd>
 
 <dt id="arg-nlambda">nlambda<a class="anchor" aria-label="anchor" href="#arg-nlambda"></a></dt>
 <dd><p>Number of <code>lambda</code> values to generate if <code>lambda</code>
-is not supplied.</p></dd>
+is not supplied. Default is <code>100</code>.</p></dd>
 
 
 <dt id="arg-lambda-min-ratio">lambda.min.ratio<a class="anchor" aria-label="anchor" href="#arg-lambda-min-ratio"></a></dt>
 <dd><p>Ratio of smallest to largest <code>lambda</code> value
-when generating a <code>lambda</code> sequence.</p></dd>
+when generating a <code>lambda</code> sequence. Defaults to <code>0.05</code> when
+<code>nrow(z) &lt; ncol(z)</code> and <code>1e-03</code> otherwise.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
 <dd><p>Number of folds for cross-validation in
-<code>cv.coxkl_enet</code>.</p></dd>
+<code>cv.coxkl_enet</code>. Default is <code>5</code>.</p></dd>
 
 
 <dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
 <dd><p>Cross-validation criterion used for selecting
-<code>eta</code>–<code>lambda</code> pairs.</p></dd>
+<code>eta</code>–<code>lambda</code> pairs. One of <code>"V&amp;VH"</code> (the default),
+<code>"LinPred"</code>, <code>"CIndex_pooled"</code> or <code>"CIndex_foldaverage"</code>.</p></dd>
 
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>

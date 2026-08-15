@@ -117,7 +117,20 @@ Observed time is \(\min(T,C)\), status is \(\mathbf{1}\{T \le C\}\).</p></li>
 <code>Surv(time, status) ~ Z1 + ...</code> on the corresponding external data (Breslow ties)
 using the specified covariate subset; place estimates into a length-6 vector named <code>Z1</code>–<code>Z6</code>
 with zeros for variables not included.</p></li>
-</ul></div>
+</ul><p><strong>External coefficients: name present-and-zero vs. name absent.</strong> All three
+external vectors are fully populated and fully named over <code>Z1</code>–<code>Z6</code>.
+Consequently <code><a href="align_beta.html">align_beta</a></code> never zero-pads them, and
+<code><a href="align_beta_Q.html">align_beta_Q</a></code> with <code>Q = NULL</code> returns the full identity rather
+than a masked identity. The distinction is semantic: a covariate whose name is
+<em>present</em> with value 0 asserts an external estimate of exactly zero and is
+penalized toward zero like any other external coefficient, whereas a covariate
+whose name is <em>absent</em> is treated as carrying no external information – it
+is zero-padded and, under the Mahalanobis penalty, left unpenalized. The zeros
+here are of the first kind: the <code>Z2</code> and <code>Z4</code> entries of
+<code>beta_external_fair</code>, and the <code>Z2</code>, <code>Z3</code>, <code>Z4</code> and <code>Z6</code>
+entries of <code>beta_external_poor</code>, are borrowed as genuine external estimates
+of zero rather than treated as "not estimated externally".</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

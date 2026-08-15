@@ -43,3 +43,7 @@ plot(
 - ...:
 
   Unused.
+
+## Value
+
+A `ggplot` object.

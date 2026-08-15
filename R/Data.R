@@ -79,6 +79,20 @@
 #'     distributional shift.
 #' }
 #'
+#' \strong{External coefficients: name present-and-zero vs. name absent.} Every
+#' external coefficient vector bundled here is fully populated and fully named over
+#' the complete covariate space \code{Z1}--\code{Z50}. Consequently
+#' \code{\link{align_beta}} never zero-pads them, and \code{\link{align_beta_Q}}
+#' with \code{Q = NULL} returns the full identity rather than a masked identity.
+#' The distinction is semantic: a covariate whose name is \emph{present} with value
+#' 0 asserts an external estimate of exactly zero and is penalized toward zero like
+#' any other external coefficient, whereas a covariate whose name is \emph{absent}
+#' is treated as carrying no external information -- it is zero-padded and, under
+#' the Mahalanobis penalty, left unpenalized. The structural zeros in these vectors
+#' (for example \code{Z7}--\code{Z50} in \code{beta_external}, which the external
+#' model did not fit) are therefore of the first kind: they are borrowed as genuine
+#' external estimates of zero.
+#'
 #' @examples
 #' data(ExampleData_highdim)
 "ExampleData_highdim"
@@ -138,6 +152,20 @@
 #'     with zeros for variables not included.
 #' }
 #'
+#' \strong{External coefficients: name present-and-zero vs. name absent.} All three
+#' external vectors are fully populated and fully named over \code{Z1}--\code{Z6}.
+#' Consequently \code{\link{align_beta}} never zero-pads them, and
+#' \code{\link{align_beta_Q}} with \code{Q = NULL} returns the full identity rather
+#' than a masked identity. The distinction is semantic: a covariate whose name is
+#' \emph{present} with value 0 asserts an external estimate of exactly zero and is
+#' penalized toward zero like any other external coefficient, whereas a covariate
+#' whose name is \emph{absent} is treated as carrying no external information -- it
+#' is zero-padded and, under the Mahalanobis penalty, left unpenalized. The zeros
+#' here are of the first kind: the \code{Z2} and \code{Z4} entries of
+#' \code{beta_external_fair}, and the \code{Z2}, \code{Z3}, \code{Z4} and \code{Z6}
+#' entries of \code{beta_external_poor}, are borrowed as genuine external estimates
+#' of zero rather than treated as "not estimated externally".
+#'
 #' @examples
 #' data(ExampleData_lowdim)
 "ExampleData_lowdim"
@@ -188,6 +216,15 @@
 #'     using the \code{"breslow"} tie approximation.
 #' }
 #'
+#' \strong{External coefficients: name present-and-zero vs. name absent.}
+#' \code{beta_external} is fully populated and fully named over \code{Z1}--\code{Z6},
+#' so \code{\link{align_beta}} never zero-pads it and \code{\link{align_beta_Q}} with
+#' \code{Q = NULL} returns the full identity rather than a masked identity. In
+#' general, a covariate whose name is \emph{present} with value 0 asserts an external
+#' estimate of exactly zero and is penalized toward zero, whereas a covariate whose
+#' name is \emph{absent} is treated as carrying no external information -- it is
+#' zero-padded and, under the Mahalanobis penalty, left unpenalized.
+#'
 #' @examples
 #' data(ExampleData_cc_lowdim)
 "ExampleData_cc_lowdim"
@@ -196,10 +233,12 @@
 
 #' Example high-dimensional matched case-control data
 #'
-#' A simulated 1:5 matched case-control dataset with 20 covariates,
-#' where 10 covariates are truly non-zero. The data are split into
-#' training and test sets and include both the true underlying coefficients
-#' and an externally supplied coefficient vector for KL-based integration.
+#' A simulated 1:9 matched case-control dataset with 20 covariates,
+#' where 10 covariates are truly non-zero. Each matched set contains ten
+#' subjects (one case and nine controls): the training set has 50 matched sets
+#' (\eqn{n = 500}) and the test set has 500 matched sets (\eqn{n = 5000}). The
+#' data include both the true underlying coefficients and an externally supplied
+#' coefficient vector for KL-based integration.
 #'
 #' @name ExampleData_cc_highdim
 #' @docType data
@@ -214,6 +253,16 @@
 #'     representing external coefficients.}
 #' }
 #'
+#' @details
+#' \strong{External coefficients: name present-and-zero vs. name absent.}
+#' \code{beta_external} is fully populated and fully named over \code{Z1}--\code{Z20},
+#' so \code{\link{align_beta}} never zero-pads it and \code{\link{align_beta_Q}} with
+#' \code{Q = NULL} returns the full identity rather than a masked identity. In
+#' general, a covariate whose name is \emph{present} with value 0 asserts an external
+#' estimate of exactly zero and is penalized toward zero, whereas a covariate whose
+#' name is \emph{absent} is treated as carrying no external information -- it is
+#' zero-padded and, under the Mahalanobis penalty, left unpenalized.
+#'
 #' @examples
 #' data(ExampleData_cc_highdim)
 "ExampleData_cc_highdim"
@@ -223,19 +272,19 @@
 #'
 #' A simulated survival dataset for illustrating \code{cox_indi()} and
 #' \code{cv.cox_indi()}. The object contains one internal cohort and one external
-#' cohort, each stratified into multiple strata, along with the true coefficient
-#' vector used in simulation.
+#' cohort, each stratified into multiple strata.
 #'
 #' @name ExampleData_indi
 #' @docType data
 #' @usage data(ExampleData_indi)
 #'
-#' @format A list containing:
+#' @format A list with exactly two components:
 #' \describe{
-#'   \item{internal}{List with elements \code{z}, \code{time}, \code{status}, \code{stratum}.}
-#'   \item{external}{List with elements \code{z}, \code{time}, \code{status}, \code{stratum}.}
-#'   \item{beta_true}{Numeric vector (length p) of true coefficients.}
-#'   \item{meta}{List of simulation settings for internal and external cohorts.}
+#'   \item{internal}{List with elements \code{z} (a \eqn{500 \times 10} numeric
+#'     matrix with columns named \code{Z1}--\code{Z10}), \code{time},
+#'     \code{status}, and \code{stratum} (10 strata of 50 subjects each).}
+#'   \item{external}{List with the same four elements, with \code{z} of dimension
+#'     \eqn{2000 \times 10} and 10 strata of 200 subjects each.}
 #' }
 #'
 #' @examples

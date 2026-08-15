@@ -211,6 +211,17 @@ valid indices.</p></dd>
 <code>NULL</code>, a zero vector is used. For indices in <code>binary_idx</code>, <code>mu_Z</code> is ignored.</p></dd>
 
 
+<dt id="arg-sd-z">sd_Z<a class="anchor" aria-label="anchor" href="#arg-sd-z"></a></dt>
+<dd><p>Numeric or <code>NULL</code>. Standard deviations of the continuous covariates.
+Four shapes are accepted: <code>NULL</code> (the default; all standard deviations set to
+1), a scalar (recycled to all <code>n.beta</code> covariates), a vector of length
+<code>n.beta</code> (used as-is), or a vector of length equal to the number of
+continuous covariates (i.e. <code>length(setdiff(1:n.beta, binary_idx))</code>, applied
+to those positions with 1 elsewhere). All values must be positive and finite.
+Standard deviations at <code>binary_idx</code> positions have no effect, since binary
+covariates are generated from a latent threshold model.</p></dd>
+
+
 <dt id="arg-stratum-size">stratum_size<a class="anchor" aria-label="anchor" href="#arg-stratum-size"></a></dt>
 <dd><p>Integer or numeric vector. Stratum sample sizes. If a scalar, it is recycled
 to length <code>n_stratum</code>; if a vector, it must have length <code>n_stratum</code>.</p></dd>
@@ -300,8 +311,13 @@ rate achieved.</p></li>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Continuous covariates (those not in <code>binary_idx</code>) are generated independently within each
 stratum from a multivariate normal distribution with mean given by <code>mu_Z</code> (restricted to the
-continuous indices) and an equicorrelation covariance matrix with diagonal 1 and off-diagonal
-<code>rho</code>.</p>
+continuous indices) and covariance \(D R D\), where \(R\) is the equicorrelation
+matrix with diagonal 1 and off-diagonal <code>rho</code> and \(D\) is the diagonal matrix of
+the standard deviations in <code>sd_Z</code>. With the default <code>sd_Z = NULL</code> all standard
+deviations equal 1, so the covariance reduces to \(R\) itself – diagonal 1 and
+off-diagonal <code>rho</code>. When <code>sd_Z</code> is supplied the diagonal becomes
+\(\sigma_j^2\) and the off-diagonals \(\rho \sigma_i \sigma_j\); the
+<em>correlation</em> remains <code>rho</code> in either case.</p>
 <p>Stratum-specific scaling factors are sampled as \(\gamma_s \sim \mathrm{Unif}(0,2)\) and applied
 multiplicatively to the hazard.</p>
 <p>For <code>baseline="weibull"</code>, the implied event-time distribution (conditional on \(Z\) and

@@ -1,13 +1,15 @@
 #' Plot Stability Selection Path
 #'
-#' Generates a visualization of the stability paths. Variables that exceed the 
-#' specified probability threshold at any point in the path are highlighted.
+#' Generates a visualization of the stability paths. Variables that reach or exceed
+#' the specified probability threshold at any point in the path are highlighted.
 #'
 #' @param x An object of class \code{StabSelect}.
 #' @param threshold Numeric. The selection probability threshold (0 to 1). Variables reaching this frequency are highlighted. Default is 0.75.
 #' @param highlight_color Color for variables that are selected (stable). Default is "red".
 #' @param background_color Color for variables that are not selected. Default is "gray".
 #' @param ... Additional arguments passed to methods.
+#'
+#' @return A \code{ggplot} object.
 #'
 #' @importFrom reshape2 melt
 #' @importFrom ggplot2 ggplot aes geom_line geom_hline scale_x_reverse labs theme_minimal theme element_text element_line element_blank

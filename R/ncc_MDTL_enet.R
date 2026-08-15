@@ -19,18 +19,37 @@
 #'   \item If \code{eta = 0}, the method reduces to a standard Elastic Net CLR.
 #'   \item If \code{alpha = 1}, the penalty is Lasso.
 #'   \item If \code{alpha} is close to 0, the penalty approaches Ridge.
-#'   \item If \code{Q = NULL}, \eqn{Q = I} (Euclidean distance shrinkage towards \code{beta}).
+#'   \item If \code{Q = NULL}, a \emph{masked identity} is used: 1 on the covariates
+#'     actually supplied by \code{beta} and 0 on zero-padded positions. This gives
+#'     Euclidean-distance shrinkage towards \code{beta} on the covariates the external
+#'     source covers, while leaving padded coefficients unpenalized.
 #' }
 #'
 #' @param y Numeric vector of binary outcomes (0 = control, 1 = case).
 #' @param z Numeric matrix of covariates (rows = observations, columns = variables).
 #' @param stratum Numeric or factor vector defining the matched sets (strata). \strong{Required}.
-#' @param beta Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.
-#' @param Q Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) acting as the
-#'   weighting matrix \eqn{Q}. Typically the precision matrix of the external estimator.
-#'   If \code{NULL}, defaults to the identity matrix.
-#' @param eta Numeric scalar. The transfer learning parameter (\eqn{\geq 0}). Controls
-#'   the strength of external information. \code{eta = 0} ignores external info.
+#' @param beta Numeric vector of external coefficients. \strong{Required}. If \code{beta}
+#'   is named, names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered, so an
+#'   external source covering only a subset of the internal covariates may be supplied
+#'   directly. An unnamed \code{beta} is aligned positionally and must have length
+#'   \code{ncol(z)}. A one-column matrix with row names is accepted as a named vector.
+#'   See \code{\link{align_beta_Q}}. The bundled external beta
+#'   \code{ExampleData_cc_highdim$beta_external} is named \code{Z1}--\code{Z20}, so the
+#'   examples below already exercise the name-matching path.
+#' @param Q Optional weighting (precision) matrix for the Mahalanobis penalty, typically
+#'   the precision matrix of the external estimator. Must be symmetric and positive
+#'   semi-definite (both checked to a tolerance of 1e-8). If named, it is reordered and
+#'   zero-padded to \code{colnames(z)}; only an unnamed \code{Q} must be exactly
+#'   \code{ncol(z)} by \code{ncol(z)}. If \code{NULL}, a \emph{masked identity} is used:
+#'   1 on covariates actually supplied by \code{beta} and 0 on zero-padded positions, so
+#'   padded coefficients are left unpenalized. See \code{\link{align_beta_Q}}.
+#' @param eta Numeric scalar. The transfer learning parameter controlling the strength of
+#'   external information; \code{eta = 0} ignores external info. Must be a single finite
+#'   non-negative (\eqn{\geq 0}) value. The formal default is \code{NULL}; a \code{NULL}
+#'   \code{eta} is resolved to 0 inside \code{\link{cox_MDTL_enet}}, which emits the
+#'   warning
+#'   \code{"eta is not provided. Setting eta = 0 (no external information used)."}
 #' @param alpha The Elastic Net mixing parameter, with \eqn{0 < \alpha \le 1}.
 #'   \code{alpha = 1} is Lasso; \code{alpha} close to 0 approaches Ridge. Default \code{NULL}
 #'   (set to 1 with a warning if not supplied).

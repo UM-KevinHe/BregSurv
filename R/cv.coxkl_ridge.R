@@ -10,20 +10,35 @@
 #'   \item **Inner Loop (Lambda):** For each \code{eta}, performs cross-validation to select the optimal Ridge penalty parameter \code{lambda}.
 #' }
 #'
+#' @details
+#' When \code{lambda} is not supplied, the Ridge lambda sequence is generated
+#' internally by \code{\link{coxkl_ridge}} and always spans from \code{lambda.max}
+#' down to an exact \code{0}, i.e. the last element of the path is the unpenalized
+#' solution. This behaviour is fixed for the Ridge path and is therefore \emph{not}
+#' configurable through a minimum-ratio argument; only the number of grid points
+#' (\code{nlambda}), or an explicit \code{lambda} vector, is under user control.
+#'
 #' @param z Numeric matrix of covariates. Rows represent individuals and columns represent predictors.
 #' @param delta Numeric vector of event indicators (1 = event, 0 = censored).
 #' @param time Numeric vector of observed times (event or censoring).
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
-#'   all subjects are assumed to be in the same stratum.
+#'   a warning is issued and all subjects are assumed to be in the same stratum.
 #' @param RS Optional numeric vector or matrix of external risk scores. If not provided,
 #'   \code{beta} must be supplied.
-#' @param beta Optional numeric vector of external coefficients (length equal to \code{ncol(z)}).
-#'   If provided, used to compute external risk scores. If not provided, \code{RS} must be supplied.
-#' @param etas Numeric vector of candidate \code{eta} values to be evaluated.
+#' @param beta Optional numeric vector of external coefficients. If provided, used to
+#'   compute external risk scores; if not provided, \code{RS} must be supplied. If
+#'   \code{beta} is named, names are matched against \code{colnames(z)}: covariates
+#'   absent from \code{beta} are set to 0 (with a message) and the vector is
+#'   reordered, so an external source covering only a subset of the internal
+#'   covariates may be supplied directly. An unnamed \code{beta} is aligned
+#'   positionally and must have length \code{ncol(z)}. A one-column matrix with row
+#'   names is accepted as a named vector. See \code{\link{align_beta}}.
+#' @param etas Numeric vector of non-negative candidate \code{eta} values to be
+#'   evaluated. Must be finite and \eqn{\ge 0}. The values are sorted in ascending
+#'   order internally, and the rows of \code{integrated_stat.best_per_eta} /
+#'   columns of \code{integrated_stat.betahat_best} follow that sorted order.
 #' @param lambda Optional numeric vector of lambda values. If \code{NULL}, a path is generated automatically.
 #' @param nlambda Integer. Number of lambda values to generate if \code{lambda} is \code{NULL}. Default is 100.
-#' @param lambda.min.ratio Numeric. Ratio of min/max lambda. If \code{NULL} (default),
-#'   it is set to 0.01 if \code{n < p} and 1e-04 otherwise.
 #' @param nfolds Integer. Number of cross-validation folds. Default is \code{5}.
 #' @param cv.criteria Character string specifying the cross-validation criterion for selecting
 #'   parameters. Choices are:
@@ -35,7 +50,9 @@
 #'   }
 #' @param c_index_stratum Optional stratum vector. Required only when \code{cv.criteria} is set
 #'   to \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"} and stratification is needed for
-#'   evaluation but not for model fitting. Default is \code{NULL}.
+#'   evaluation but not for model fitting. That use case is therefore only reachable when
+#'   \code{stratum = NULL}: if \code{stratum} is supplied and \code{c_index_stratum} is not
+#'   identical to it, the function stops with an error. Default is \code{NULL}.
 #' @param message Logical. Whether to print progress messages. Default is \code{FALSE}.
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
 #' @param ... Additional arguments passed to the underlying fitting function \code{\link{coxkl_ridge}}.
@@ -51,9 +68,14 @@
 #'     }
 #'   }
 #'   \item{\code{integrated_stat.full_results}}{A \code{data.frame} containing the performance score
-#'     (and loss if applicable) for every combination of \code{eta} and \code{lambda}.}
+#'     (and loss if applicable) for every combination of \code{eta} and \code{lambda}.
+#'     Besides \code{eta} and \code{lambda} it carries a single metric column named
+#'     after the selected criterion: \code{Loss} for \code{"V&VH"} and
+#'     \code{"LinPred"}, otherwise \code{CIndex_pooled} or
+#'     \code{CIndex_foldaverage}.}
 #'   \item{\code{integrated_stat.best_per_eta}}{A \code{data.frame} summarizing the best lambda
-#'     and corresponding score for each candidate \code{eta}.}
+#'     and corresponding score for each candidate \code{eta}, with the same
+#'     criterion-named metric column.}
 #'   \item{\code{integrated_stat.betahat_best}}{A matrix of coefficients where each column corresponds
 #'     to the optimal model for a specific \code{eta}.}
 #'   \item{\code{criteria}}{The selection criterion used.}
@@ -80,7 +102,7 @@
 #'
 #' @export
 cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, etas,
-                           lambda = NULL, nlambda = 100, lambda.min.ratio = NULL,
+                           lambda = NULL, nlambda = 100,
                            nfolds = 5,
                            cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                            c_index_stratum = NULL,
@@ -122,12 +144,7 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
   n_obs <- nrow(z)
   n_vars <- ncol(z)
   n.each_stratum_full <- as.numeric(table(stratum))
-  
-  ## Handle default lambda.min.ratio inside function (requires n_obs and n_vars)
-  if (is.null(lambda.min.ratio)) {
-    lambda.min.ratio <- ifelse(n_obs < n_vars, 0.01, 1e-04)
-  }
-  
+
   ## ---- CV Folds ----
   if (!is.null(seed)) set.seed(seed)
   folds <- get_fold(nfolds = nfolds, delta = delta, stratum = stratum)
@@ -152,7 +169,7 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
       fit0 <- coxkl_ridge(z = z, delta = delta, time = time, stratum = stratum,
                           RS = RS, eta = eta, lambda = NULL,
                           nlambda = nlambda, penalty.factor = 1 - 1e-4, # implicit assumption for ridge gen
-                          data_sorted = TRUE, message = FALSE, ...) # Removed lambda.min.ratio passed to fit0 if fit0 doesn't support it directly in ... or add logic
+                          data_sorted = TRUE, message = FALSE, ...) # coxkl_ridge hard-codes lambda.min.ratio = 0 (path ends at the unpenalized solution)
       lambda_seq <- as.vector(fit0$lambda)
     } else {
       lambda_seq <- sort(lambda, decreasing = TRUE)

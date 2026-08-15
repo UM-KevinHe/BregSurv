@@ -27,13 +27,31 @@ cv.ncc_MDTL(
 
 \item{stratum}{Numeric or factor vector defining the matched sets. \strong{Required}.}
 
-\item{beta}{Numeric vector of external coefficients (length \code{ncol(z)}). \strong{Required}.}
+\item{beta}{Numeric vector of external coefficients. \strong{Required}. If
+\code{beta} is named, names are matched against \code{colnames(z)}:
+covariates absent from \code{beta} are set to 0 (with a message) and the
+vector is reordered, so an external source covering only a subset of the
+internal covariates may be supplied directly. An unnamed \code{beta} is
+aligned positionally and must have length \code{ncol(z)}. A one-column
+matrix with row names is accepted as a named vector. See
+\code{\link{align_beta_Q}}. The bundled fixture
+\code{ExampleData_cc_lowdim$beta_external} is named \code{Z1}--\code{Z6} and
+therefore takes the name-matching path.}
 
-\item{Q}{Optional numeric matrix (\code{ncol(z)} x \code{ncol(z)}) as the weighting
-matrix \eqn{Q}. Typically the precision matrix of the external estimator. If \code{NULL},
-defaults to the identity matrix.}
+\item{Q}{Optional weighting (precision) matrix for the Mahalanobis penalty,
+typically the precision matrix of the external estimator. Must be symmetric
+and positive semi-definite (both checked to a tolerance of 1e-8). If named,
+it is reordered and zero-padded to \code{colnames(z)}; only an unnamed
+\code{Q} must be exactly \code{ncol(z)} by \code{ncol(z)}. If \code{NULL}, a
+\emph{masked identity} is used: 1 on covariates actually supplied by
+\code{beta} and 0 on zero-padded positions, so padded coefficients are left
+unpenalized. See \code{\link{align_beta_Q}}.}
 
-\item{etas}{Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.}
+\item{etas}{Numeric vector of non-negative integration weights for
+\eqn{\eta}. \strong{Required}; the function stops if \code{etas} is
+\code{NULL}. Must be finite and \eqn{\ge 0}. The values are sorted in
+ascending order internally, and the rows of \code{internal_stat} / columns
+of \code{beta_full} follow that sorted order.}
 
 \item{tol}{Convergence tolerance passed to \code{\link{ncc_MDTL}}. Default \code{1e-4}.}
 
@@ -74,7 +92,7 @@ stratum (matched set) contains exactly one case and \eqn{m} controls.
 \details{
 Cross-validation is performed at the stratum level: each matched set is
 treated as an indivisible unit and assigned to a single fold using
-\code{\link{get_fold_cc}}. This ensures that the conditional likelihood is
+\code{get_fold_cc}. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
 The \code{cv.criteria} argument controls the CV performance metric:

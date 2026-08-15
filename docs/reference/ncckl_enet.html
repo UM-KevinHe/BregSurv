@@ -131,8 +131,10 @@ and then calls <code>coxkl_enet</code> as the core engine.</p>
 
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
-<dd><p>Numeric or factor vector defining the matched sets (strata).
-This is required for conditional logistic regression.</p></dd>
+<dd><p>Numeric or factor vector defining the matched sets (strata). Strongly
+recommended for conditional logistic regression: if omitted, a warning is issued and
+all observations are assumed to lie in a single stratum, which defeats the purpose
+of matching.</p></dd>
 
 
 <dt id="arg-rs">RS<a class="anchor" aria-label="anchor" href="#arg-rs"></a></dt>
@@ -141,13 +143,24 @@ If not provided, <code>beta</code> must be supplied.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Optional numeric vector of external coefficients. Length must equal <code>ncol(z)</code>.
-If provided, it is used to calculate risk scores. If not provided, <code>RS</code> must be supplied.</p></dd>
+<dd><p>Optional numeric vector of external coefficients; if provided, it is used to
+calculate risk scores, and if not provided, <code>RS</code> must be supplied. If <code>beta</code>
+is named, names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an external
+source covering only a subset of the internal covariates may be supplied directly. An
+unnamed <code>beta</code> is aligned positionally and must have length <code>ncol(z)</code>. A
+one-column matrix with row names is accepted as a named vector. See
+<code><a href="align_beta.html">align_beta</a></code>. The bundled external beta
+<code>ExampleData_cc_lowdim$beta_external</code> is named <code>Z1</code>–<code>Z6</code>, so the
+examples below already exercise the name-matching path.</p></dd>
 
 
 <dt id="arg-eta">eta<a class="anchor" aria-label="anchor" href="#arg-eta"></a></dt>
 <dd><p>Numeric scalar. The tuning parameter for KL divergence (integration strength).
-Defaults to 0 (no external information).</p></dd>
+Must be a single finite non-negative value. The formal default is <code>NULL</code>; a
+<code>NULL</code> <code>eta</code> is resolved to 0 (no external information) inside
+<code><a href="coxkl_enet.html">coxkl_enet</a></code>, which emits the warning
+<code>"eta is not provided. Setting eta = 0 (no external information used)."</code></p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
@@ -264,15 +277,24 @@ Default is <code>FALSE</code>.</p></dd>
     <p>An object of class <code>"ncckl_enet"</code> and <code>"coxkl_enet"</code> containing:</p><dl><dt><code>beta</code></dt>
 <dd><p>Matrix of coefficient estimates (p x nlambda).</p></dd>
 
+<dt><code>group</code></dt>
+<dd><p>Factor recording the group membership supplied in <code>group</code>.</p></dd>
+
 <dt><code>lambda</code></dt>
-<dd><p>Sequence of lambda values used.</p></dd>
+<dd><p>Sequence of lambda values used, after saturated values are dropped.</p></dd>
 
 <dt><code>alpha</code></dt>
 <dd><p>Elastic Net mixing parameter used.</p></dd>
 
 <dt><code>likelihood</code></dt>
-<dd><p>Vector of negative log-partial likelihoods (loss)
-for each lambda.</p></dd>
+<dd><p>Vector of KL-weighted log-partial likelihoods, one per lambda
+(larger values indicate better fit; this is <em>not</em> a loss). The contribution of
+each matched set is weighted by \((\delta + \eta \tilde{\delta}) / (1 + \eta)\),
+so this is not the same quantity as the unweighted log-partial likelihood reported
+by <code><a href="ncckl.html">ncckl</a></code>.</p></dd>
+
+<dt><code>n</code></dt>
+<dd><p>Number of observations used in the fit.</p></dd>
 
 <dt><code>df</code></dt>
 <dd><p>Vector of degrees of freedom (number of non-zero coefficients)
@@ -285,12 +307,21 @@ for each lambda.</p></dd>
 <dd><p>Matrix of exponentiated linear predictors (risk scores)
 on the original scale.</p></dd>
 
+<dt><code>group.multiplier</code></dt>
+<dd><p>Numeric vector of group penalty multipliers used.</p></dd>
+
 <dt><code>data</code></dt>
-<dd><p>List containing the input data used (including <code>y</code>,
-<code>z</code>, <code>stratum</code>, and external information).</p></dd>
+<dd><p>List containing the input data used, with the CLR-to-Cox mapping
+already applied: <code>z</code>, <code>stratum</code>, the external risk scores <code>RS</code>,
+the outcome stored under <code>delta</code>, and <code>time</code> (a vector of 1s).
+There is no <code>y</code> component: <code>fit$data$y</code> is <code>NULL</code>, and the
+outcome must be read from <code>fit$data$delta</code>.</p></dd>
 
 
-</dl></div>
+</dl><p>If <code>returnX = TRUE</code>, the object additionally carries a <code>returnX</code> component
+holding the standardized design matrix together with the sorted <code>time</code>,
+<code>delta</code>, <code>stratum</code> and <code>RS</code>.</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function assumes a 1:M matched case-control design, where each stratum

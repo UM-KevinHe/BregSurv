@@ -35,15 +35,19 @@ coxkl_enet.StabSelect(
 \item{time}{Numeric vector of observed times (event or censoring).}
 
 \item{stratum}{Optional numeric or factor vector indicating strata. If \code{NULL},
-all subjects are assumed to be in the same stratum.}
+a warning is issued and all subjects are assumed to be in the same stratum.}
 
 \item{RS}{Optional numeric vector or matrix of external risk scores. If not provided,
 \code{beta} must be supplied.}
 
-\item{beta}{Optional numeric vector of external coefficients (length equal to \code{ncol(z)}).
-If provided, it is used to compute external risk scores. If not provided, \code{RS} must be supplied.}
+\item{beta}{Optional numeric vector of external coefficients. If \code{beta} is
+named, names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered. An
+unnamed \code{beta} is aligned positionally and must have length
+\code{ncol(z)}. See \code{\link{align_beta}}.}
 
-\item{etas}{Numeric vector of candidate \code{eta} values to be evaluated.}
+\item{etas}{Numeric vector of non-negative integration weights. Must be finite
+and \eqn{\ge 0}.}
 
 \item{alpha}{Elastic-net mixing parameter in \eqn{(0,1]}. Default is \code{1} (lasso penalty).}
 
@@ -51,8 +55,10 @@ If provided, it is used to compute external risk scores. If not provided, \code{
 
 \item{nlambda}{Integer. Number of lambda values to generate if \code{lambda} is NULL. Default is 100.}
 
-\item{lambda.min.ratio}{Numeric. Ratio of min/max lambda.
-Default depends on sample size vs dimension (0.05 if n < p, else 1e-03).}
+\item{lambda.min.ratio}{Numeric. Smallest value for \code{lambda}, as a fraction
+of \code{lambda.max}. Default is \code{0.1} for this function. Only if it is
+explicitly set to \code{NULL} does the sample-size-dependent fallback apply
+(\code{0.05} when \eqn{n < p}, \code{1e-03} otherwise).}
 
 \item{nfolds}{Integer. Number of cross-validation folds. Default is \code{5}.}
 
@@ -67,7 +73,10 @@ both \code{eta} and \code{lambda}. Choices are:
 
 \item{c_index_stratum}{Optional stratum vector. Required only when \code{cv.criteria} is set
 to \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"}, and a stratified C-index needs
-to be computed while the fitted model is non-stratified. Default is \code{NULL}.}
+to be computed while the fitted model is non-stratified. That use case is therefore only
+reachable when \code{stratum = NULL}: if \code{stratum} is supplied and
+\code{c_index_stratum} is not identical to it, the function stops with an error.
+Default is \code{NULL}.}
 
 \item{message}{Logical. Whether to print progress messages. Default is \code{FALSE}.}
 

@@ -6,14 +6,24 @@ beta carries names, they are matched against colnames(z) and any
 covariate absent from beta is filled with 0 (the external source is
 treated as providing no information for that covariate). When beta is
 unnamed (or z has no column names), it is aligned positionally and must
-already have length ncol(z)."><meta property="og:description" content="Reconciles an external coefficient vector beta with the covariates of
+already have length ncol(z).
+Name-based alignment signals an error if beta has duplicated names, or if
+any name in beta is not one of colnames(z) (covariates that exist
+only in the external source must be dropped by the caller). Whenever at least one
+covariate is zero-padded, a message() listing the padded covariates is
+emitted."><meta property="og:description" content="Reconciles an external coefficient vector beta with the covariates of
 the internal design matrix z, so that external information supplied on a
 subset (or a differently ordered set) of covariates is placed correctly. When
 beta carries names, they are matched against colnames(z) and any
 covariate absent from beta is filled with 0 (the external source is
 treated as providing no information for that covariate). When beta is
 unnamed (or z has no column names), it is aligned positionally and must
-already have length ncol(z)."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
+already have length ncol(z).
+Name-based alignment signals an error if beta has duplicated names, or if
+any name in beta is not one of colnames(z) (covariates that exist
+only in the external source must be dropped by the caller). Whenever at least one
+covariate is zero-padded, a message() listing the padded covariates is
+emitted."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -68,6 +78,11 @@ covariate absent from <code>beta</code> is filled with 0 (the external source is
 treated as providing no information for that covariate). When <code>beta</code> is
 unnamed (or <code>z</code> has no column names), it is aligned positionally and must
 already have length <code>ncol(z)</code>.</p>
+<p>Name-based alignment signals an error if <code>beta</code> has duplicated names, or if
+any name in <code>beta</code> is not one of <code>colnames(z)</code> (covariates that exist
+only in the external source must be dropped by the caller). Whenever at least one
+covariate is zero-padded, a <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code> listing the padded covariates is
+emitted.</p>
     </div>
 
     <div class="section level2">
@@ -85,7 +100,10 @@ target coefficient space; column names, when present, are used for matching.</p>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>External coefficient vector (optionally named).</p></dd>
+<dd><p>External coefficient vector (optionally named). A one-column matrix is
+also accepted – the shape in which a <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef()</a></code> result or a stored
+external-model artifact typically arrives – and its row names are promoted to
+the names of the resulting vector.</p></dd>
 
 
 <dt id="arg-arg">arg<a class="anchor" aria-label="anchor" href="#arg-arg"></a></dt>
@@ -94,13 +112,42 @@ target coefficient space; column names, when present, are used for matching.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A numeric vector of length <code>ncol(z)</code>, ordered to <code>colnames(z)</code>.</p>
+    <p>A numeric vector of length <code>ncol(z)</code>, ordered to <code>colnames(z)</code>
+and named with <code>colnames(z)</code> whenever <code>z</code> carries column names.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="align_beta_Q.html">align_beta_Q</a></code> for the Mahalanobis-distance setting.</p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Six internal covariates; the external source estimated only four of them.</span></span></span>
+<span class="r-in"><span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">30</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">5</span>, ncol <span class="op">=</span> <span class="fl">6</span>,</span></span>
+<span class="r-in"><span>            dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Z"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">beta_ext</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Z1 <span class="op">=</span> <span class="fl">0.30</span>, Z3 <span class="op">=</span> <span class="fl">0.25</span>, Z5 <span class="op">=</span> <span class="op">-</span><span class="fl">0.10</span>, Z6 <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Z2 and Z4 are absent from the external vector and are zero-padded.</span></span></span>
+<span class="r-in"><span><span class="fu">align_beta</span><span class="op">(</span><span class="va">z</span>, <span class="va">beta_ext</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 2 covariate(s) absent from external 'beta' were set to 0: Z2, Z4.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Z1    Z2    Z3    Z4    Z5    Z6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.30  0.00  0.25  0.00 -0.10  0.05 </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A one-column matrix is accepted; its row names are used as the names.</span></span></span>
+<span class="r-in"><span><span class="va">beta_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0.25</span>, <span class="op">-</span><span class="fl">0.10</span>, <span class="fl">0.05</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">1</span>,</span></span>
+<span class="r-in"><span>                   dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Z1"</span>, <span class="st">"Z3"</span>, <span class="st">"Z5"</span>, <span class="st">"Z6"</span><span class="op">)</span>, <span class="st">"coef"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">align_beta</span><span class="op">(</span><span class="va">z</span>, <span class="va">beta_mat</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 2 covariate(s) absent from external 'beta' were set to 0: Z2, Z4.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Z1    Z2    Z3    Z4    Z5    Z6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.30  0.00  0.25  0.00 -0.10  0.05 </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># An unnamed beta is aligned positionally and must have length ncol(z).</span></span></span>
+<span class="r-in"><span><span class="fu">align_beta</span><span class="op">(</span><span class="va">z</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.30</span>, <span class="fl">0</span>, <span class="fl">0.25</span>, <span class="fl">0</span>, <span class="op">-</span><span class="fl">0.10</span>, <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Z1    Z2    Z3    Z4    Z5    Z6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.30  0.00  0.25  0.00 -0.10  0.05 </span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

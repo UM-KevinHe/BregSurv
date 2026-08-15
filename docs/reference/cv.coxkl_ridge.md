@@ -25,7 +25,6 @@ cv.coxkl_ridge(
   etas,
   lambda = NULL,
   nlambda = 100,
-  lambda.min.ratio = NULL,
   nfolds = 5,
   cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
   c_index_stratum = NULL,
@@ -52,8 +51,9 @@ cv.coxkl_ridge(
 
 - stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, a
+  warning is issued and all subjects are assumed to be in the same
+  stratum.
 
 - RS:
 
@@ -62,13 +62,22 @@ cv.coxkl_ridge(
 
 - beta:
 
-  Optional numeric vector of external coefficients (length equal to
-  `ncol(z)`). If provided, used to compute external risk scores. If not
-  provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients. If provided, used to
+  compute external risk scores; if not provided, `RS` must be supplied.
+  If `beta` is named, names are matched against `colnames(z)`:
+  covariates absent from `beta` are set to 0 (with a message) and the
+  vector is reordered, so an external source covering only a subset of
+  the internal covariates may be supplied directly. An unnamed `beta` is
+  aligned positionally and must have length `ncol(z)`. A one-column
+  matrix with row names is accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - etas:
 
-  Numeric vector of candidate `eta` values to be evaluated.
+  Numeric vector of non-negative candidate `eta` values to be evaluated.
+  Must be finite and \\\ge 0\\. The values are sorted in ascending order
+  internally, and the rows of `integrated_stat.best_per_eta` / columns
+  of `integrated_stat.betahat_best` follow that sorted order.
 
 - lambda:
 
@@ -79,11 +88,6 @@ cv.coxkl_ridge(
 
   Integer. Number of lambda values to generate if `lambda` is `NULL`.
   Default is 100.
-
-- lambda.min.ratio:
-
-  Numeric. Ratio of min/max lambda. If `NULL` (default), it is set to
-  0.01 if `n < p` and 1e-04 otherwise.
 
 - nfolds:
 
@@ -110,7 +114,10 @@ cv.coxkl_ridge(
 
   Optional stratum vector. Required only when `cv.criteria` is set to
   `"CIndex_pooled"` or `"CIndex_foldaverage"` and stratification is
-  needed for evaluation but not for model fitting. Default is `NULL`.
+  needed for evaluation but not for model fitting. That use case is
+  therefore only reachable when `stratum = NULL`: if `stratum` is
+  supplied and `c_index_stratum` is not identical to it, the function
+  stops with an error. Default is `NULL`.
 
 - message:
 
@@ -145,12 +152,15 @@ An object of class `"cv.coxkl_ridge"`. A list containing:
 - `integrated_stat.full_results`:
 
   A `data.frame` containing the performance score (and loss if
-  applicable) for every combination of `eta` and `lambda`.
+  applicable) for every combination of `eta` and `lambda`. Besides `eta`
+  and `lambda` it carries a single metric column named after the
+  selected criterion: `Loss` for `"V&VH"` and `"LinPred"`, otherwise
+  `CIndex_pooled` or `CIndex_foldaverage`.
 
 - `integrated_stat.best_per_eta`:
 
   A `data.frame` summarizing the best lambda and corresponding score for
-  each candidate `eta`.
+  each candidate `eta`, with the same criterion-named metric column.
 
 - `integrated_stat.betahat_best`:
 
@@ -164,6 +174,17 @@ An object of class `"cv.coxkl_ridge"`. A list containing:
 - `nfolds`:
 
   The number of folds used.
+
+## Details
+
+When `lambda` is not supplied, the Ridge lambda sequence is generated
+internally by
+[`coxkl_ridge`](https://um-kevinhe.github.io/BregSurv/reference/coxkl_ridge.md)
+and always spans from `lambda.max` down to an exact `0`, i.e. the last
+element of the path is the unpenalized solution. This behaviour is fixed
+for the Ridge path and is therefore *not* configurable through a
+minimum-ratio argument; only the number of grid points (`nlambda`), or
+an explicit `lambda` vector, is under user control.
 
 ## Examples
 

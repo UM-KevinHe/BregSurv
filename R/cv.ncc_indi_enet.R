@@ -7,12 +7,17 @@
 #' integration and Elastic Net penalty, implemented via \code{\link{ncc_indi_enet}}.
 #'
 #' This function is designed for 1:m matched case-control settings where each
-#' stratum (matched set) contains exactly one case and \eqn{m} controls.
+#' stratum (matched set) contains exactly one case and \eqn{m} controls. Note
+#' that this precondition is \emph{enforced} only on the internal cohort (and on
+#' each internal training and test fold): \code{stratum_ext} is not coerced to a
+#' factor and the external cohort's matched-set structure is never checked, so
+#' supplying a correctly matched external dataset is the caller's
+#' responsibility.
 #'
 #' @details
 #' Cross-validation is performed at the stratum level on the \emph{internal} dataset:
 #' each matched set is treated as an indivisible unit and assigned to a single fold
-#' using \code{\link{get_fold_cc}}. The external dataset is used in full during every
+#' using \code{get_fold_cc}. The external dataset is used in full during every
 #' training fold.
 #'
 #' For each candidate \code{eta}, a full \code{lambda} path is fit on the complete
@@ -36,13 +41,24 @@
 #' @param y_ext Numeric vector of binary outcomes for the external dataset (0 = control, 1 = case).
 #' @param z_ext Numeric matrix of covariates for the external dataset.
 #' @param stratum_ext Numeric or factor vector defining the external matched sets. \strong{Required}.
-#' @param etas Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.
+#'   Unlike \code{stratum_int} it is passed on unchanged (not coerced to a factor)
+#'   and its 1:m structure is not validated.
+#' @param etas Numeric vector of non-negative integration weights for
+#'   \eqn{\eta}. \strong{Required}; the function stops if \code{etas} is
+#'   \code{NULL}. Must be finite and \eqn{\ge 0}. The values are sorted in
+#'   ascending order internally, and the rows of
+#'   \code{integrated_stat.full_results} /
+#'   \code{integrated_stat.best_per_eta} and the columns of
+#'   \code{integrated_stat.betahat_best} follow that sorted order.
 #' @param alpha Elastic Net mixing parameter in \eqn{(0,1]}. Default \code{1} (Lasso).
 #' @param lambda Optional numeric vector of lambda values. If \code{NULL}, a lambda path
 #'   is generated automatically for each \code{eta}.
 #' @param nlambda Integer. Number of lambda values to generate. Default \code{100}.
 #' @param lambda.min.ratio Numeric in \eqn{(0,1)}. Ratio of minimum to maximum lambda.
-#'   If \code{NULL}, set internally based on sample size vs. number of covariates.
+#'   If \code{NULL}, it is set internally to \code{0.05} when \code{n < p} and to
+#'   \code{1e-3} otherwise, where \code{p} is \code{ncol(z_int)} and \code{n} is
+#'   the \emph{internal} sample size \code{length(y_int)} only: the external
+#'   cohort is used in full at every fit but does not enter \code{n}.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
 #' @param cv.criteria Character string specifying the CV performance criterion.
 #'   One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.
@@ -53,7 +69,7 @@
 #' @return A list of class \code{"cv.ncc_indi_enet"} containing:
 #' \describe{
 #'   \item{\code{best}}{A list with the global best \eqn{(\eta, \lambda)}:
-#'     \code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{cv.criteria}.}
+#'     \code{best_eta}, \code{best_lambda}, \code{best_beta}, \code{criteria}.}
 #'   \item{\code{integrated_stat.full_results}}{A \code{data.frame} with the CV score
 #'     for every \eqn{(\eta, \lambda)} combination.}
 #'   \item{\code{integrated_stat.best_per_eta}}{A \code{data.frame} with the best
@@ -67,6 +83,40 @@
 #'
 #' @seealso \code{\link{ncc_indi_enet}}, \code{\link{cv.ncckl_enet}}
 #'
+#' @examples
+#' \dontrun{
+#' ## Load the matched case-control individual-level example data
+#' data(ExampleData_cc_indi)
+#'
+#' y_int       <- ExampleData_cc_indi$internal$y
+#' z_int       <- ExampleData_cc_indi$internal$z
+#' stratum_int <- ExampleData_cc_indi$internal$stratum
+#'
+#' y_ext       <- ExampleData_cc_indi$external$y
+#' z_ext       <- ExampleData_cc_indi$external$z
+#' stratum_ext <- ExampleData_cc_indi$external$stratum
+#'
+#' ## Generate candidate eta values
+#' eta_list <- generate_eta(method = "exponential", n = 20, max_eta = 10)
+#'
+#' ## Joint cross-validated tuning of (eta, lambda)
+#' cv_fit <- cv.ncc_indi_enet(
+#'   y_int       = y_int,
+#'   z_int       = z_int,
+#'   stratum_int = stratum_int,
+#'   y_ext       = y_ext,
+#'   z_ext       = z_ext,
+#'   stratum_ext = stratum_ext,
+#'   etas        = eta_list,
+#'   alpha       = 1,
+#'   nfolds      = 5,
+#'   cv.criteria = "loss",
+#'   seed        = 42
+#' )
+#'
+#' cv_fit$best$best_eta
+#' cv_fit$best$best_lambda
+#' }
 #' @export
 cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
                                  y_ext, z_ext, stratum_ext,

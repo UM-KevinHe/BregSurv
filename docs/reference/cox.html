@@ -86,11 +86,15 @@ tie-handling methods (Breslow, Efron, Exact).</p>
 
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
-<dd><p>A vector indicating strata for a stratified Cox model. If missing, all data is assumed to belong to a single stratum.</p></dd>
+<dd><p>A vector indicating strata for a stratified Cox model. If missing,
+a <code>warning</code> ("Stratum information not provided...") is issued and all data
+is assumed to belong to a single stratum.</p></dd>
 
 
 <dt id="arg-ties">ties<a class="anchor" aria-label="anchor" href="#arg-ties"></a></dt>
-<dd><p>A character string specifying the method for tie handling. Options are "breslow" (default), "efron", or "exact".</p></dd>
+<dd><p>A character string specifying the method for tie handling. Options are
+"breslow", "efron", or "exact". The formal default is <code>NULL</code>, which the
+function resolves to "breslow", so omitting <code>ties</code> gives Breslow handling.</p></dd>
 
 
 <dt id="arg-max-iter">max_iter<a class="anchor" aria-label="anchor" href="#arg-max-iter"></a></dt>
@@ -107,15 +111,12 @@ tie-handling methods (Breslow, Efron, Exact).</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing:</p>
+    <p>A list with exactly two components:</p>
 <dl><dt>beta</dt>
-<dd><p>Estimated coefficient vector (length p).</p></dd>
+<dd><p>Estimated coefficient vector (length p), named with <code>colnames(z)</code>.</p></dd>
 
 <dt>loglik</dt>
 <dd><p>The log-partial likelihood at convergence.</p></dd>
-
-<dt>...</dt>
-<dd><p>Additional outputs returned by the underlying Rcpp function.</p></dd>
 
 </dl></div>
 

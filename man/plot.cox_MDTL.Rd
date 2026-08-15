@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot.R
 \name{plot.cox_MDTL}
 \alias{plot.cox_MDTL}
-\title{Plot Validation Results for Cox_MDTL Object}
+\title{Plot Validation Results for cox_MDTL Object}
 \usage{
 \method{plot}{cox_MDTL}(
   x,
@@ -15,15 +15,15 @@
 )
 }
 \arguments{
-\item{x}{An object of class \code{"Cox_MDTL"}.}
+\item{x}{An object of class \code{"cox_MDTL"}.}
 
-\item{test_z}{Matrix of test covariates.}
+\item{test_z}{Matrix of test covariates. Optional; see Details.}
 
-\item{test_time}{Vector of test survival times.}
+\item{test_time}{Vector of test survival times. Optional; see Details.}
 
-\item{test_delta}{Vector of test status indicators.}
+\item{test_delta}{Vector of test status indicators. Optional; see Details.}
 
-\item{test_stratum}{Vector of test strata.}
+\item{test_stratum}{Vector of test strata. Optional; see Details.}
 
 \item{criteria}{Metric to plot: \code{"loss"} or \code{"CIndex"}.}
 
@@ -35,6 +35,16 @@ A \code{ggplot} object.
 \description{
 Plots the validation performance against \code{eta} for MDTL estimates.
 Compares the "Integrated" estimator (solid line) against the "Internal" baseline (dotted line, eta=0).
+}
+\details{
+The four \code{test_*} arguments act as a single unit. The training data stored
+in the fitted object are used for evaluation only when \emph{all four} of
+\code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+\code{NULL}. Supplying any one of them selects the external-test path, so
+leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+back to the training data -- it produces an error. The one exception is
+\code{test_time}: on the external-test path, if it alone is omitted all test
+times are set to 1.
 }
 \examples{
 \dontrun{
@@ -51,11 +61,11 @@ cox_MDTL_est <- cox_MDTL(z = train_dat_lowdim$z,
                          Q = NULL,
                          etas = eta_list)
 
-plot.cox_MDTL(cox_MDTL_est,
-              test_z = test_dat_lowdim$z,
-              test_time = test_dat_lowdim$time,
-              test_delta = test_dat_lowdim$status,
-              test_stratum = test_dat_lowdim$stratum,
-              criteria = "CIndex")
+plot(cox_MDTL_est,
+     test_z = test_dat_lowdim$z,
+     test_time = test_dat_lowdim$time,
+     test_delta = test_dat_lowdim$status,
+     test_stratum = test_dat_lowdim$stratum,
+     criteria = "CIndex")
 }
 }

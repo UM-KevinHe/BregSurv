@@ -84,19 +84,34 @@ suitable for matched case-control studies.</p>
 
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
-<dd><p>Numeric or factor vector defining the matched sets (strata). This is <strong>required</strong> for CLR.</p></dd>
+<dd><p>Numeric or factor vector defining the matched sets (strata). Strongly
+recommended for CLR: if omitted, a warning is issued and all observations are
+assumed to lie in a single stratum, which defeats the purpose of matching.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of tuning parameters. Controls the strength of external information integration.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights, controlling the
+strength of external information integration. Must be finite and \(\ge 0\).
+The values are sorted in ascending order internally, and the columns of the
+returned coefficient matrix follow that sorted order.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Numeric vector of external coefficients. Used to compute the KL divergence penalty.</p></dd>
+<dd><p>Numeric vector of external coefficients, used to compute the KL
+divergence penalty. Required. If <code>beta</code> is named,
+names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed <code>beta</code> is aligned positionally and must
+have length <code>ncol(z)</code>. A one-column matrix with row names is accepted
+as a named vector. See <code><a href="align_beta.html">align_beta</a></code>. The bundled external beta
+<code>ExampleData_cc_lowdim$beta_external</code> is named <code>Z1</code>–<code>Z6</code>, so the
+examples below already exercise the name-matching path.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
-<dd><p>Character string specifying the tie-handling method ("breslow" or "exact").</p></dd>
+<dd><p>Character string specifying the tie-handling method, resolved by
+<code><a href="https://rdrr.io/r/base/match.arg.html" class="external-link">match.arg</a></code>. One of <code>"breslow"</code> (the default) or <code>"exact"</code>.</p></dd>
 
 
 <dt id="arg-mstop">Mstop<a class="anchor" aria-label="anchor" href="#arg-mstop"></a></dt>
@@ -117,10 +132,29 @@ suitable for matched case-control studies.</p>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>An object of class <code>"coxkl"</code> (inherited from <code><a href="coxkl_ties.html">coxkl_ties</a></code>) containing
-the estimation results for each <code>eta</code> value, including estimated coefficients,
-linear predictors, and log-partial likelihoods.</p>
-    </div>
+    <p>An object of class <code>"coxkl"</code>, returned unchanged from <code><a href="coxkl_ties.html">coxkl_ties</a></code>,
+containing the estimation results for each <code>eta</code> value:</p><dl><dt><code>eta</code></dt>
+<dd><p>The sorted sequence of \(\eta\) values used. Because <code>etas</code>
+is sorted internally, this is the only way to recover which column of <code>beta</code>
+corresponds to which weight.</p></dd>
+
+<dt><code>beta</code></dt>
+<dd><p>Matrix of estimated coefficients (\(p \times n_{etas}\)); columns
+follow the sorted <code>eta</code> values.</p></dd>
+
+<dt><code>linear.predictors</code></dt>
+<dd><p>Matrix of linear predictors, in the original row order.</p></dd>
+
+<dt><code>likelihood</code></dt>
+<dd><p>Vector of log-partial likelihoods, one per <code>eta</code>.</p></dd>
+
+<dt><code>data</code></dt>
+<dd><p>List of the input data used (<code>z</code>, <code>time</code>, <code>delta</code>,
+<code>stratum</code>). Note the CLR-to-Cox mapping: the outcome <code>y</code> is stored under
+<code>delta</code>, and <code>time</code> is a vector of 1s.</p></dd>
+
+
+</dl></div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function maps the Conditional Logistic Regression problem to the Cox Proportional

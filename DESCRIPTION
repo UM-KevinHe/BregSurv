@@ -30,7 +30,10 @@ Imports:
     MASS,
     mvtnorm,
     scales,
-    rBayesianOptimization
+    rBayesianOptimization,
+    parallel,
+    grid,
+    utils
 Depends:
     R (>= 4.0)
 Suggests:

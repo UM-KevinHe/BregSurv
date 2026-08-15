@@ -23,7 +23,10 @@
 
 \item{...}{Additional arguments passed to methods.}
 }
+\value{
+A \code{ggplot} object.
+}
 \description{
-Generates a visualization of the stability paths. Variables that exceed the
-specified probability threshold at any point in the path are highlighted.
+Generates a visualization of the stability paths. Variables that reach or exceed
+the specified probability threshold at any point in the path are highlighted.
 }

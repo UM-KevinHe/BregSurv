@@ -53,20 +53,32 @@ coxkl_enet_bagging(
 - RS:
 
   Optional matrix or vector of external risk scores. If provided, it is
-  resampled within each bootstrap replicate.
+  resampled within each bootstrap replicate. If both `RS` and `beta` are
+  supplied, `RS` takes precedence and `beta` is silently discarded.
 
 - beta:
 
   Optional vector of external coefficients. If provided, it is treated
-  as fixed and not resampled.
+  as fixed and not resampled. It is passed through unchanged to
+  `cv.coxkl_enet`, where a named `beta` is matched against `colnames(z)`
+  and zero-padded for any covariate it does not cover, while an unnamed
+  `beta` is aligned positionally and must have length `p` (see
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md)).
+  Ignored when `RS` is supplied.
 
 - etas:
 
-  Vector of `eta` values for transfer-learning shrinkage.
+  Numeric vector of non-negative integration weights. Must be finite and
+  \\\ge 0\\.
 
 - alpha:
 
-  Elastic-net mixing parameter (between `0` and `1`).
+  Elastic-net mixing parameter, with \\0 \< \alpha \le 1\\ (`alpha = 1`
+  is the lasso penalty; values close to 0 approach ridge). Default is
+  `1.0`. Values outside `(0, 1]` are rejected by `cv.coxkl_enet`;
+  because each replicate is wrapped in
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html), this surfaces
+  as every replicate failing rather than as an immediate error.
 
 - B:
 
@@ -80,19 +92,24 @@ coxkl_enet_bagging(
 - nlambda:
 
   Number of `lambda` values to generate if `lambda` is not supplied.
+  Default is `100`.
 
 - lambda.min.ratio:
 
   Ratio of smallest to largest `lambda` value when generating a `lambda`
-  sequence.
+  sequence. Defaults to `0.05` when `nrow(z) < ncol(z)` and `1e-03`
+  otherwise.
 
 - nfolds:
 
-  Number of folds for cross-validation in `cv.coxkl_enet`.
+  Number of folds for cross-validation in `cv.coxkl_enet`. Default is
+  `5`.
 
 - cv.criteria:
 
   Cross-validation criterion used for selecting `eta`–`lambda` pairs.
+  One of `"V&VH"` (the default), `"LinPred"`, `"CIndex_pooled"` or
+  `"CIndex_foldaverage"`.
 
 - c_index_stratum:
 

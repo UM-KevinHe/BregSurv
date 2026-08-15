@@ -10,7 +10,16 @@ external source did not estimate are set to 0 so those coordinates are left
 unpenalized. When Q is NULL, a masked identity is
 returned: a diagonal matrix with 1 on covariates actually supplied by
 beta and 0 on padded positions. This ensures that padded-zero
-coefficients are not penalized as if they were genuine external information."><meta property="og:description" content="Extends align_beta to the Mahalanobis-distance transfer-learning
+coefficients are not penalized as if they were genuine external information.
+Symmetry of Q is checked with isSymmetric() at tolerance
+1e-8, and positive semi-definiteness by requiring the smallest eigenvalue
+to be at least -1e-8; violations of either are errors. Name-based
+alignment of Q engages only when rownames(Q) is non-NULL
+and z has column names; otherwise Q is used positionally and
+must be exactly ncol(z) by ncol(z). Name-based alignment signals an
+error if rownames(Q) contains duplicates, if any of them is not one of
+colnames(z), or if colnames(Q) is present but does not contain the
+same names as rownames(Q)."><meta property="og:description" content="Extends align_beta to the Mahalanobis-distance transfer-learning
 (MDTL) setting, where the external information is a coefficient vector
 beta together with a symmetric positive-semidefinite weighting
 (precision) matrix Q. beta is aligned to colnames(z)
@@ -21,7 +30,16 @@ external source did not estimate are set to 0 so those coordinates are left
 unpenalized. When Q is NULL, a masked identity is
 returned: a diagonal matrix with 1 on covariates actually supplied by
 beta and 0 on padded positions. This ensures that padded-zero
-coefficients are not penalized as if they were genuine external information."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
+coefficients are not penalized as if they were genuine external information.
+Symmetry of Q is checked with isSymmetric() at tolerance
+1e-8, and positive semi-definiteness by requiring the smallest eigenvalue
+to be at least -1e-8; violations of either are errors. Name-based
+alignment of Q engages only when rownames(Q) is non-NULL
+and z has column names; otherwise Q is used positionally and
+must be exactly ncol(z) by ncol(z). Name-based alignment signals an
+error if rownames(Q) contains duplicates, if any of them is not one of
+colnames(z), or if colnames(Q) is present but does not contain the
+same names as rownames(Q)."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -80,6 +98,15 @@ unpenalized. When <code>Q</code> is <code>NULL</code>, a <em>masked identity</em
 returned: a diagonal matrix with 1 on covariates actually supplied by
 <code>beta</code> and 0 on padded positions. This ensures that padded-zero
 coefficients are not penalized as if they were genuine external information.</p>
+<p>Symmetry of <code>Q</code> is checked with <code><a href="https://rdrr.io/r/base/isSymmetric.html" class="external-link">isSymmetric()</a></code> at tolerance
+<code>1e-8</code>, and positive semi-definiteness by requiring the smallest eigenvalue
+to be at least <code>-1e-8</code>; violations of either are errors. Name-based
+alignment of <code>Q</code> engages only when <code>rownames(Q)</code> is non-<code>NULL</code>
+<em>and</em> <code>z</code> has column names; otherwise <code>Q</code> is used positionally and
+must be exactly <code>ncol(z)</code> by <code>ncol(z)</code>. Name-based alignment signals an
+error if <code>rownames(Q)</code> contains duplicates, if any of them is not one of
+<code>colnames(z)</code>, or if <code>colnames(Q)</code> is present but does not contain the
+same names as <code>rownames(Q)</code>.</p>
     </div>
 
     <div class="section level2">
@@ -96,7 +123,8 @@ coefficients are not penalized as if they were genuine external information.</p>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>External coefficient vector (optionally named).</p></dd>
+<dd><p>External coefficient vector (optionally named). A one-column matrix
+with row names is accepted as a named vector; see <code><a href="align_beta.html">align_beta</a></code>.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
@@ -111,14 +139,49 @@ coefficients are not penalized as if they were genuine external information.</p>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A list with components <code>beta</code> (numeric, length <code>ncol(z)</code>),
-<code>Q</code> (<code>ncol(z)</code> by <code>ncol(z)</code> matrix), and <code>provided</code>
-(logical mask of covariates supplied by the external source).</p>
+<code>Q</code> (<code>ncol(z)</code> by <code>ncol(z)</code> matrix, carrying <code>colnames(z)</code>
+as both its row and column names whenever <code>z</code> has column names), and
+<code>provided</code> (logical mask of covariates supplied by the external source).</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="align_beta.html">align_beta</a></code></p></div>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fl">30</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="fl">5</span>, ncol <span class="op">=</span> <span class="fl">6</span>,</span></span>
+<span class="r-in"><span>            dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Z"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">beta_ext</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>Z1 <span class="op">=</span> <span class="fl">0.30</span>, Z3 <span class="op">=</span> <span class="fl">0.25</span>, Z5 <span class="op">=</span> <span class="op">-</span><span class="fl">0.10</span>, Z6 <span class="op">=</span> <span class="fl">0.05</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Q = NULL gives the masked identity: 1 on the covariates the external source</span></span></span>
+<span class="r-in"><span><span class="co"># supplied, 0 on the zero-padded ones (Z2, Z4), which are left unpenalized.</span></span></span>
+<span class="r-in"><span><span class="va">aligned</span> <span class="op">&lt;-</span> <span class="fu">align_beta_Q</span><span class="op">(</span><span class="va">z</span>, <span class="va">beta_ext</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 2 covariate(s) absent from external 'beta' were set to 0: Z2, Z4.</span>
+<span class="r-in"><span><span class="va">aligned</span><span class="op">$</span><span class="va">beta</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Z1    Z2    Z3    Z4    Z5    Z6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.30  0.00  0.25  0.00 -0.10  0.05 </span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="va">aligned</span><span class="op">$</span><span class="va">Q</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z1 Z2 Z3 Z4 Z5 Z6 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  1  0  1  0  1  1 </span>
+<span class="r-in"><span><span class="va">aligned</span><span class="op">$</span><span class="va">provided</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1]  TRUE FALSE  TRUE FALSE  TRUE  TRUE</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A named information matrix is reordered and zero-padded to colnames(z).</span></span></span>
+<span class="r-in"><span><span class="va">Q_ext</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">Q_ext</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">beta_ext</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">beta_ext</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">align_beta_Q</span><span class="op">(</span><span class="va">z</span>, <span class="va">beta_ext</span>, Q <span class="op">=</span> <span class="va">Q_ext</span><span class="op">)</span><span class="op">$</span><span class="va">Q</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> 2 covariate(s) absent from external 'beta' were set to 0: Z2, Z4.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Z1 Z2 Z3 Z4 Z5 Z6</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z1  4  0  0  0  0  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z2  0  0  0  0  0  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z3  0  0  2  0  0  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z4  0  0  0  0  0  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z5  0  0  0  0  1  0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Z6  0  0  0  0  0  3</span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

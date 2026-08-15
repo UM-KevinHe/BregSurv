@@ -25,8 +25,10 @@
 #'   number of columns as \code{z_int}.
 #' @param stratum_ext Numeric or factor vector defining the matched sets (strata) for the
 #'   external dataset. \strong{Required}.
-#' @param etas Numeric vector of nonnegative external weights. \code{eta = 0} gives
-#'   an internal-only fit.
+#' @param etas Numeric vector of nonnegative external weights. Must be finite and
+#'   \eqn{\ge 0}; \code{eta = 0} gives an internal-only fit. The values are sorted in
+#'   ascending order internally, and the columns of the returned coefficient matrix
+#'   follow that sorted order.
 #' @param max_iter Maximum number of Newton-Raphson iterations. Default \code{100}.
 #' @param tol Convergence tolerance. Default \code{1e-7}.
 #' @param message Logical. If \code{TRUE}, shows a progress bar. Default \code{FALSE}.

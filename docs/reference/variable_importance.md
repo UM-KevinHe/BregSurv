@@ -50,15 +50,24 @@ variable_importance(
 
 - beta:
 
-  Optional external coefficients. Default NULL.
+  Optional numeric vector of external coefficients. Default NULL. It is
+  forwarded to
+  [`cv.coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl_enet.md),
+  which aligns it: if `beta` is named, names are matched against
+  `colnames(z)`, covariates absent from `beta` are set to 0 (with a
+  message) and the vector is reordered. An unnamed `beta` is aligned
+  positionally and must have length `ncol(z)`. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - etas:
 
-  Numeric vector of candidate eta values.
+  Numeric vector of non-negative candidate eta values. Must be finite
+  and \\\ge 0\\; this is validated by
+  [`cv.coxkl_enet`](https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl_enet.md).
 
 - B:
 
-  Integer. Number of bootstrap replications.
+  Integer. Number of bootstrap replications. Default is 10.
 
 - nonzero_tol:
 
@@ -98,6 +107,10 @@ An object of class "variable_importance" with fields:
 - B:
 
   Number of bootstrap replications.
+
+- nonzero_tol:
+
+  The tolerance used to define "selected".
 
 - call:
 

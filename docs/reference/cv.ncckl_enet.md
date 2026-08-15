@@ -51,19 +51,33 @@ cv.ncckl_enet(
 
 - RS:
 
-  Optional numeric vector or matrix of external risk scores. If not
-  provided, `beta` must be supplied.
+  Optional numeric vector or matrix of external risk scores, with one
+  entry per row of `z`. A vector is coerced to a one-column matrix
+  internally so that it can be subset fold-wise. If not provided, `beta`
+  must be supplied.
 
 - beta:
 
-  Optional numeric vector of external coefficients. If provided, length
-  must equal the number of columns in `z`. Either `RS` or `beta` must be
-  non-`NULL`.
+  Optional numeric vector of external coefficients. If `beta` is named,
+  names are matched against `colnames(z)`: covariates absent from `beta`
+  are set to 0 (with a message) and the vector is reordered, so an
+  external source covering only a subset of the internal covariates may
+  be supplied directly. An unnamed `beta` is aligned positionally and
+  must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  Either `RS` or `beta` must be non-`NULL`. The bundled fixture
+  `ExampleData_cc_highdim$beta_external` is named `Z1`–`Z20` and
+  therefore takes the name-matching path.
 
 - etas:
 
-  Numeric vector of candidate tuning values for the integration
-  parameter \\\eta\\. The values will be sorted in ascending order.
+  Numeric vector of non-negative integration weights for the parameter
+  \\\eta\\. **Required**; the function stops if `etas` is `NULL`. Must
+  be finite and \\\ge 0\\. The values are sorted in ascending order
+  internally, and the rows of `integrated_stat.full_results` /
+  `integrated_stat.best_per_eta` and the columns of
+  `integrated_stat.betahat_best` follow that sorted order.
 
 - alpha:
 
@@ -191,8 +205,9 @@ according to the chosen `cv.criteria`. The function therefore performs a
 
 The `cv.criteria` argument controls the CV performance metric:
 
-- `"loss"`: Average negative conditional log-likelihood on held-out
-  strata (lower is better).
+- `"loss"`: Negative conditional log-likelihood pooled across the
+  held-out folds and divided by the total number of held-out
+  *observations* (lower is better).
 
 - `"AUC"`: Matched-set AUC based on within-stratum comparisons (higher
   is better).

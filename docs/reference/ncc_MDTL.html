@@ -89,17 +89,32 @@ case-control studies.</p>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Numeric vector of external coefficients (length <code>ncol(z)</code>). <strong>Required</strong>.</p></dd>
+<dd><p>Numeric vector of external coefficients. <strong>Required</strong>. If <code>beta</code>
+is named, names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be supplied
+directly. An unnamed <code>beta</code> is aligned positionally and must have length
+<code>ncol(z)</code>. A one-column matrix with row names is accepted as a named vector.
+See <code><a href="align_beta_Q.html">align_beta_Q</a></code>. The bundled external beta
+<code>ExampleData_cc_lowdim$beta_external</code> is named <code>Z1</code>–<code>Z6</code>, so the
+examples below already exercise the name-matching path.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>Optional numeric matrix (<code>ncol(z)</code> x <code>ncol(z)</code>) acting as the
-weighting matrix \(Q\) in the Mahalanobis penalty. Typically the inverse of the
-external covariance (precision matrix). If <code>NULL</code>, defaults to the identity matrix.</p></dd>
+<dd><p>Optional weighting (precision) matrix for the Mahalanobis penalty, typically
+the inverse of the external covariance. Must be symmetric and positive semi-definite
+(both checked to a tolerance of 1e-8). If named, it is reordered and zero-padded to
+<code>colnames(z)</code>; only an unnamed <code>Q</code> must be exactly <code>ncol(z)</code> by
+<code>ncol(z)</code>. If <code>NULL</code>, a <em>masked identity</em> is used: 1 on covariates
+actually supplied by <code>beta</code> and 0 on zero-padded positions, so padded
+coefficients are left unpenalized. See <code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of tuning parameters to evaluate. <strong>Required</strong>.</p></dd>
+<dd><p>Numeric vector of non-negative tuning parameters to evaluate.
+<strong>Required</strong>. Must be finite and \(\ge 0\). The values are sorted in ascending
+order internally, and the columns of the returned coefficient matrix follow that
+sorted order.</p></dd>
 
 
 <dt id="arg-tol">tol<a class="anchor" aria-label="anchor" href="#arg-tol"></a></dt>
@@ -136,10 +151,14 @@ then calls <code><a href="cox_MDTL.html">cox_MDTL</a></code> as the core engine.
 <p>The objective function minimizes the negative conditional log-likelihood plus
 a Mahalanobis distance penalty:
 $$P(\beta) = \frac{\eta}{2} (\beta - \beta_{ext})^T Q (\beta - \beta_{ext})$$
-where \(Q\) is the weighting matrix (identity if <code>Q</code> is <code>NULL</code>).</p>
+where \(Q\) is the weighting matrix (a <em>masked</em> identity when <code>Q</code> is
+<code>NULL</code>; see the <code>Q</code> argument).</p>
 <ul><li><p>Setting <code>etas = 0</code> recovers the standard CLR (no external information).</p></li>
 <li><p>Larger <code>eta</code> enforces stronger agreement with <code>beta</code>.</p></li>
-<li><p>If <code>Q = NULL</code>, \(Q = I\) (Euclidean/Ridge-type shrinkage towards <code>beta</code>).</p></li>
+<li><p>If <code>Q = NULL</code>, a <em>masked identity</em> is used: 1 on the covariates
+actually supplied by <code>beta</code> and 0 on zero-padded positions. This gives
+Euclidean/Ridge-type shrinkage towards <code>beta</code> on the covariates the external
+source covers, while leaving padded coefficients unpenalized.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

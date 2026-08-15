@@ -90,6 +90,23 @@ Data-generating mechanism:
   covariate subset; place estimates into a length-6 vector named
   `Z1`–`Z6` with zeros for variables not included.
 
+**External coefficients: name present-and-zero vs. name absent.** All
+three external vectors are fully populated and fully named over
+`Z1`–`Z6`. Consequently
+[`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md)
+never zero-pads them, and
+[`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md)
+with `Q = NULL` returns the full identity rather than a masked identity.
+The distinction is semantic: a covariate whose name is *present* with
+value 0 asserts an external estimate of exactly zero and is penalized
+toward zero like any other external coefficient, whereas a covariate
+whose name is *absent* is treated as carrying no external information –
+it is zero-padded and, under the Mahalanobis penalty, left unpenalized.
+The zeros here are of the first kind: the `Z2` and `Z4` entries of
+`beta_external_fair`, and the `Z2`, `Z3`, `Z4` and `Z6` entries of
+`beta_external_poor`, are borrowed as genuine external estimates of zero
+rather than treated as "not estimated externally".
+
 ## Examples
 
 ``` r

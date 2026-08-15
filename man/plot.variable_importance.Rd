@@ -24,6 +24,9 @@ If not equal to 1, variables with \code{SelectionFreq > threshold} are plotted.}
 
 \item{...}{Unused.}
 }
+\value{
+A \code{ggplot} object.
+}
 \description{
 Plots selection frequencies as a horizontal bar chart, ordered from highest to lowest.
 By default (threshold = 1), all variables are shown. If threshold != 1, only variables

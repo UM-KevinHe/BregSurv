@@ -20,8 +20,7 @@ cox_MDTL_ridge(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL,
-  ...
+  beta_initial = NULL
 )
 }
 \arguments{
@@ -34,9 +33,11 @@ cox_MDTL_ridge(
 \item{stratum}{Optional numeric or factor vector indicating strata. If \code{NULL},
 all subjects are assumed to be in the same stratum.}
 
-\item{beta}{A numeric vector of external coefficients. If named, the names are
-matched against \code{colnames(z)} and covariates absent from \code{beta} are
-zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.}
+\item{beta}{A numeric vector of external coefficients. The formal default is
+\code{NULL}, but the argument is in practice mandatory: if it is not supplied
+the function stops with the message "External beta must be provided." If named, the names
+are matched against \code{colnames(z)} and covariates absent from \code{beta}
+are zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.}
 
 \item{Q}{Optional numeric matrix acting as the weighting matrix \eqn{Q} in the
 Mahalanobis penalty. This should be a symmetric positive-semidefinite
@@ -68,8 +69,6 @@ A value close to 1 (default 0.999) results in \code{alpha} close to 0, enforcing
 \item{data_sorted}{Logical. If \code{TRUE}, assumes input data is already sorted by stratum and time.}
 
 \item{beta_initial}{Optional initial coefficient vector for warm start.}
-
-\item{...}{Additional arguments passed to internal functions.}
 }
 \value{
 An object of class \code{"cox_MDTL_ridge"} containing:

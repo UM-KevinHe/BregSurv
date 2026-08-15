@@ -94,7 +94,8 @@ evaluates on the held-out split using the specified performance criterion.</p>
 
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
-<dd><p>Optional numeric or factor vector defining strata.</p></dd>
+<dd><p>Optional numeric or factor vector defining strata. If <code>NULL</code>, a
+warning is issued and all observations are treated as a single stratum.</p></dd>
 
 
 <dt id="arg-rs">RS<a class="anchor" aria-label="anchor" href="#arg-rs"></a></dt>
@@ -104,12 +105,20 @@ evaluates on the held-out split using the specified performance criterion.</p>
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
 <dd><p>Optional numeric vector of external coefficients. If omitted, <code>RS</code>
-must be supplied.</p></dd>
+must be supplied. If <code>beta</code> is named, names are matched against
+<code>colnames(z)</code>: covariates absent from <code>beta</code> are set to 0 (with a message)
+and the vector is reordered, so an external source covering only a subset of
+the internal covariates may be supplied directly. An unnamed <code>beta</code> is
+aligned positionally and must have length <code>ncol(z)</code>. A one-column matrix with
+row names is accepted as a named vector. See <code><a href="align_beta.html">align_beta()</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate tuning values to be cross-validated.
-Default is <code>NULL</code>, which sets <code>etas = 0</code>.</p></dd>
+<dd><p>Numeric vector of non-negative candidate tuning values to be
+cross-validated. Must be finite and \(\ge 0\). This argument is
+<strong>required</strong>: leaving it at its <code>NULL</code> default is an error. The values are
+sorted in ascending order internally, and the rows of <code>internal_stat</code> /
+columns of <code>beta_full</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-tol">tol<a class="anchor" aria-label="anchor" href="#arg-tol"></a></dt>
@@ -139,7 +148,9 @@ Default <code>"V&amp;VH"</code>.</p></dd>
 <dd><p>Optional stratum vector. Only required when
 <code>cv.criteria</code> is set to <code>"CIndex_pooled"</code> or <code>"CIndex_foldaverage"</code>,
 and a stratified C-index is desired while the fitted model is non-stratified.
-Default <code>NULL</code>.</p></dd>
+That use case is therefore only reachable when <code>stratum = NULL</code>: if <code>stratum</code>
+is supplied and <code>c_index_stratum</code> is not identical to it, the function stops
+with an error. Default <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>
@@ -156,20 +167,33 @@ Default <code>NULL</code>.</p></dd>
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A <code>data.frame</code> with one row per candidate <code>eta</code> and columns:</p><dl><dt><code>eta</code></dt>
-<dd><p>The candidate <code>eta</code> values.</p></dd>
+    <p>An object of class <code>"cv.coxkl"</code>: a list with the following five
+components.</p><dl><dt><code>internal_stat</code></dt>
+<dd><p>A <code>data.frame</code> with one row per candidate <code>eta</code>,
+in ascending <code>eta</code> order. It has a column <code>eta</code> plus <em>exactly one</em> metric
+column, whose name is determined by <code>cv.criteria</code>: <code>VVH_Loss</code> for
+<code>"V&amp;VH"</code> (cross-validated V&amp;VH loss), <code>LinPred_Loss</code> for <code>"LinPred"</code> (loss
+based on the cross-validated linear predictors), <code>CIndex_pooled</code> for
+<code>"CIndex_pooled"</code> (pooled cross-validated C-index), or <code>CIndex_foldaverage</code>
+for <code>"CIndex_foldaverage"</code> (average fold-wise C-index). The other three
+metrics are never computed, so only one of them ever appears.</p></dd>
 
-<dt><code>VVH_Loss</code></dt>
-<dd><p>If <code>cv.criteria = "V&amp;VH"</code>, the cross-validated V&amp;VH loss.</p></dd>
+<dt><code>beta_full</code></dt>
+<dd><p>A <code>ncol(z)</code> by <code>length(etas)</code> matrix of
+coefficients from the full-data fit, one column per candidate <code>eta</code> (in the
+same sorted order as <code>internal_stat</code>).</p></dd>
 
-<dt><code>LinPred_Loss</code></dt>
-<dd><p>If <code>cv.criteria = "LinPred"</code>, the loss based on linear predictors.</p></dd>
+<dt><code>best</code></dt>
+<dd><p>A list with three components: <code>best_eta</code>, the selected
+<code>eta</code> (the loss is minimized for <code>"V&amp;VH"</code> / <code>"LinPred"</code>, the C-index is
+maximized otherwise); <code>best_beta</code>, the corresponding column of
+<code>beta_full</code>; and <code>criteria</code>, the criterion used.</p></dd>
 
-<dt><code>CIndex_pooled</code></dt>
-<dd><p>If <code>cv.criteria = "CIndex_pooled"</code>, the pooled cross-validated C-index.</p></dd>
+<dt><code>criteria</code></dt>
+<dd><p>The criterion used for selection.</p></dd>
 
-<dt><code>CIndex_foldaverage</code></dt>
-<dd><p>If <code>cv.criteria = "CIndex_foldaverage"</code>, the average fold-wise C-index.</p></dd>
+<dt><code>nfolds</code></dt>
+<dd><p>The number of cross-validation folds used.</p></dd>
 
 
 </dl></div>

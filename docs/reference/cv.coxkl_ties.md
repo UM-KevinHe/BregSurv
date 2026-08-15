@@ -45,15 +45,28 @@ cv.coxkl_ties(
 
 - stratum:
 
-  Optional numeric or factor vector defining strata.
+  Optional numeric or factor vector defining strata. If `NULL`, all
+  observations are treated as a single stratum; a warning to that effect
+  is issued only when `message = TRUE`.
 
 - beta:
 
-  Numeric vector of external coefficients. **Required**.
+  Numeric vector of external coefficients. **Required**. If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - etas:
 
-  Numeric vector of candidate tuning values to be cross-validated.
+  Numeric vector of non-negative candidate tuning values to be
+  cross-validated. Must be finite and \\\ge 0\\. This argument is
+  **required**: leaving it at its `NULL` default is an error. The values
+  are sorted in ascending order internally, and the rows of
+  `internal_stat` / columns of `beta_full` follow that sorted order.
 
 - ties:
 
@@ -77,8 +90,9 @@ cv.coxkl_ties(
 - cv.criteria:
 
   Character string specifying the performance criterion. Choices are
-  `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`, or `"CIndex_foldaverage"`.
-  Default `"CIndex_pooled"`.
+  `"CIndex_pooled"`, `"V&VH"`, `"LinPred"`, or `"CIndex_foldaverage"`.
+  Default `"CIndex_pooled"` (note this differs from the other Cox
+  cross-validation functions, whose default is `"V&VH"`).
 
 - c_index_stratum:
 
@@ -105,11 +119,23 @@ cv.coxkl_ties(
 
 ## Value
 
-A `list` of class `"cv.coxkl"` containing:
+A `list` of class `"cv.coxkl"` (deliberately shared with
+[`cv.coxkl`](https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl.md)
+so that downstream methods apply to both) containing:
 
 - `internal_stat`:
 
-  A `data.frame` with one row per `eta` and the CV metric results.
+  A `data.frame` with one row per `eta`, in ascending `eta` order. It
+  has a column `eta` plus *exactly one* metric column, whose name is
+  determined by `cv.criteria`: `VVH_Loss` for `"V&VH"`, `LinPred_Loss`
+  for `"LinPred"`, `CIndex_pooled` for `"CIndex_pooled"`, or
+  `CIndex_foldaverage` for `"CIndex_foldaverage"`. The other three
+  metrics are never computed.
+
+- `beta_full`:
+
+  A `ncol(z)` by `length(etas)` matrix of coefficients from the
+  full-data fit, one column per candidate `eta`.
 
 - `best`:
 

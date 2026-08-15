@@ -11,7 +11,7 @@
 #' @param train_baseline_obj A list containing the baseline hazard function (typically from \code{get_baseline_hazard}).
 #' Required only when \code{criteria = "IBS"}.
 #' @param criteria Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex" (Concordance Index),
-#' "IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC).
+#' "IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC). Default is "loss".
 #'
 #' @details
 #' For "IBS", the function predicts survival probabilities and converts them to risk (1 - S).
@@ -20,6 +20,18 @@
 #'
 #' @return A numeric value representing the performance metric.
 #' Returns \code{NA} if the metric cannot be computed (e.g., no events in test set).
+#' Two silent-\code{NA} paths are worth naming explicitly, because neither raises an
+#' error:
+#' \itemize{
+#'   \item \code{criteria = "IBS"} returns \code{NA} immediately whenever
+#'     \code{train_baseline_obj} is \code{NULL}. Despite the wording of that
+#'     argument's description, omitting it is not an error -- the result is simply
+#'     missing.
+#'   \item Both \code{"IBS"} and \code{"tdAUC"} return \code{NA} whenever the test
+#'     set contains fewer than two distinct event times, since neither quantity can
+#'     be integrated over a single time point. \code{"loss"} and \code{"CIndex"} are
+#'     returned before this check and are unaffected.
+#' }
 #'
 #' @importFrom riskRegression Score
 #' @importFrom survival Surv

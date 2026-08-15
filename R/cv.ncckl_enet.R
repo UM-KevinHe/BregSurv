@@ -16,7 +16,7 @@
 #'
 #' Cross-validation is performed at the stratum level: each matched set is
 #' treated as an indivisible unit and assigned to a single fold using
-#' \code{\link{get_fold_cc}}. This ensures that the conditional likelihood is
+#' \code{get_fold_cc}. This ensures that the conditional likelihood is
 #' well-defined within each training and test split.
 #'
 #' For each candidate \code{eta}, a full \code{lambda} path is fit on the
@@ -27,8 +27,9 @@
 #'
 #' The \code{cv.criteria} argument controls the CV performance metric:
 #' \itemize{
-#'   \item \code{"loss"}: Average negative conditional log-likelihood on held-out
-#'     strata (lower is better).
+#'   \item \code{"loss"}: Negative conditional log-likelihood pooled across the
+#'     held-out folds and divided by the total number of held-out
+#'     \emph{observations} (lower is better).
 #'   \item \code{"AUC"}: Matched-set AUC based on within-stratum comparisons
 #'     (higher is better).
 #'   \item \code{"CIndex"}: Alias for \code{"AUC"} in the 1:m matched setting
@@ -43,13 +44,27 @@
 #' @param z Numeric matrix of covariates (rows = observations, columns = variables).
 #' @param stratum Numeric or factor vector defining the matched sets (strata).
 #'   Each unique value identifies one matched set.
-#' @param RS Optional numeric vector or matrix of external risk scores.
-#'   If not provided, \code{beta} must be supplied.
-#' @param beta Optional numeric vector of external coefficients. If provided,
-#'   length must equal the number of columns in \code{z}. Either \code{RS} or
-#'   \code{beta} must be non-\code{NULL}.
-#' @param etas Numeric vector of candidate tuning values for the integration
-#'   parameter \eqn{\eta}. The values will be sorted in ascending order.
+#' @param RS Optional numeric vector or matrix of external risk scores, with one
+#'   entry per row of \code{z}. A vector is coerced to a one-column matrix
+#'   internally so that it can be subset fold-wise. If not provided, \code{beta}
+#'   must be supplied.
+#' @param beta Optional numeric vector of external coefficients. If \code{beta}
+#'   is named, names are matched against \code{colnames(z)}: covariates absent
+#'   from \code{beta} are set to 0 (with a message) and the vector is reordered,
+#'   so an external source covering only a subset of the internal covariates may
+#'   be supplied directly. An unnamed \code{beta} is aligned positionally and
+#'   must have length \code{ncol(z)}. A one-column matrix with row names is
+#'   accepted as a named vector. See \code{\link{align_beta}}. Either \code{RS}
+#'   or \code{beta} must be non-\code{NULL}. The bundled fixture
+#'   \code{ExampleData_cc_highdim$beta_external} is named \code{Z1}--\code{Z20}
+#'   and therefore takes the name-matching path.
+#' @param etas Numeric vector of non-negative integration weights for the
+#'   parameter \eqn{\eta}. \strong{Required}; the function stops if \code{etas}
+#'   is \code{NULL}. Must be finite and \eqn{\ge 0}. The values are sorted in
+#'   ascending order internally, and the rows of
+#'   \code{integrated_stat.full_results} /
+#'   \code{integrated_stat.best_per_eta} and the columns of
+#'   \code{integrated_stat.betahat_best} follow that sorted order.
 #' @param alpha Elastic Net mixing parameter in \eqn{(0,1]}. Default is
 #'   \code{1} (lasso penalty).
 #' @param lambda Optional numeric vector of lambda values. If \code{NULL}, a
@@ -163,6 +178,11 @@ cv.ncckl_enet <- function(y, z, stratum,
   ## External information: RS or beta
   if (is.null(RS) && is.null(beta)) {
     stop("Either RS or beta must be provided for cv.ncckl_enet.", call. = FALSE)
+  }
+  if (!is.null(RS)) {
+    ## Coerce once so that the documented plain-vector form of RS also supports
+    ## the fold-wise row subsetting RS[train_idx, , drop = FALSE] used below.
+    RS <- as.matrix(RS)
   }
   if (!is.null(beta)) {
     beta <- align_beta(z, beta)

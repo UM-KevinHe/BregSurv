@@ -14,24 +14,41 @@
 #' @param delta Event indicator vector.
 #' @param time Survival time vector.
 #' @param stratum Optional stratum indicator vector for stratified Cox modeling.
-#' @param beta External coefficient vector of length \code{p}. Treated as fixed
+#' @param beta Numeric vector of external coefficients. If \code{beta} is named,
+#'   names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered, so an
+#'   external source covering only a subset of the internal covariates may be
+#'   supplied directly. An unnamed \code{beta} is aligned positionally and must
+#'   have length \code{ncol(z)}. See \code{\link{align_beta_Q}}. Treated as fixed
 #'   prior information and not resampled across bootstrap replicates.
-#' @param Q Optional weighting matrix (\code{p x p}) used in the Mahalanobis
-#'   distance formulation.
-#' @param etas Vector of \code{eta} values for transfer-learning shrinkage.
-#' @param alpha Elastic-net mixing parameter between \code{0} and \code{1}.
-#'   \code{alpha = 1} corresponds to lasso; \code{alpha = 0} to ridge. Default is \code{1.0}.
+#' @param Q Optional weighting (precision) matrix for the Mahalanobis penalty.
+#'   Must be symmetric and positive semi-definite (both checked to a tolerance of
+#'   1e-8). If named, it is reordered and zero-padded to \code{colnames(z)}; only
+#'   an unnamed \code{Q} must be exactly \code{ncol(z)} by \code{ncol(z)}. If
+#'   \code{NULL}, a \emph{masked identity} is used: 1 on covariates actually
+#'   supplied by \code{beta} and 0 on zero-padded positions, so padded
+#'   coefficients are left unpenalized. See \code{\link{align_beta_Q}}.
+#' @param etas Numeric vector of non-negative integration weights. Must be finite
+#'   and \eqn{\ge 0}.
+#' @param alpha Elastic-net mixing parameter, with \eqn{0 < \alpha \le 1}.
+#'   \code{alpha = 1} corresponds to lasso; values close to 0 approach ridge.
+#'   Default is \code{1.0}.
 #' @param B Number of bootstrap replicates. Default is \code{100}.
 #' @param lambda Optional user-specified \code{lambda} sequence.
 #' @param nlambda Number of \code{lambda} values to generate if \code{lambda} is not supplied.
+#'   Default is \code{100}.
 #' @param lambda.min.ratio Ratio of the smallest to the largest \code{lambda} when generating a sequence.
+#'   Default is \code{ifelse(nrow(z) < ncol(z), 0.01, 1e-04)}.
 #' @param nfolds Number of folds for inner cross-validation via \code{cv.cox_MDTL_enet}.
+#'   Default is \code{5}.
 #' @param cv.criteria Cross-validation criterion used for selecting the optimal
-#'   \code{(eta, lambda)} pair.
+#'   \code{(eta, lambda)} pair. One of \code{"V&VH"}, \code{"LinPred"},
+#'   \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"}; the default is
+#'   \code{"V&VH"}.
 #' @param c_index_stratum Optional stratum assignment for stratified C-index
 #'   evaluation (may differ from model stratification).
 #' @param message Logical indicating whether to print progress. Default is \code{FALSE}.
-#' @param seed Optional integer seed for reproducibility.
+#' @param seed Optional integer seed for reproducibility. Default is \code{NULL}.
 #' @param ncores Integer. Number of parallel cores. Default 1 (sequential execution).
 #' @param ... Additional arguments passed to \code{cv.cox_MDTL_enet}.
 #'
@@ -86,12 +103,11 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
   n <- nrow(z)
   p <- ncol(z)
 
-  # Input checks specific to MDTL
+  # Input checks specific to MDTL. The length/name reconciliation of 'beta' (and
+  # 'Q') is delegated to align_beta_Q() inside cv.cox_MDTL_enet(), so a named
+  # partial external vector is accepted here exactly as it is there.
   if (is.null(beta)) {
     stop("External beta must be provided for Cox MDTL.")
-  }
-  if (length(beta) != p) {
-    stop("Length of external beta must match number of columns in z.")
   }
 
   if (missing(etas) || is.null(etas)) stop("etas must be provided.", call. = FALSE)
@@ -150,8 +166,16 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
         dots
       ))
     }, error = function(e) {
-      return(NULL)
+      # Carry the message out so a systematic failure is reported rather than
+      # collapsing into the opaque "All bootstrap replicates failed."
+      structure(conditionMessage(e), class = "bagging_replicate_error")
     })
+
+    if (inherits(fit_res, "bagging_replicate_error")) {
+      failed <- rep(NA_real_, p)
+      attr(failed, "boot_error") <- as.character(fit_res)
+      return(failed)
+    }
 
     if (!is.null(fit_res)) {
       return(as.vector(fit_res$best$best_beta))
@@ -179,8 +203,12 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
     cl <- parallel::makeCluster(ncores)
     on.exit(parallel::stopCluster(cl), add = TRUE)
 
-    # Set up parallel RNG
+    # Set up parallel RNG. Switching the generator is a global side effect, so
+    # the caller's RNG kind is captured first and restored on exit (including on
+    # error) rather than left mutated.
     if (!is.null(seed)) {
+      old_kind <- RNGkind()
+      on.exit(RNGkind(old_kind[1]), add = TRUE)
       RNGkind("L'Ecuyer-CMRG")
       set.seed(seed)
       parallel::clusterSetRNGStream(cl, seed)
@@ -198,6 +226,17 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
 
   if (message) cat("Done.\n")
 
+  # First error raised by any replicate (attached by boot_one); cbind() drops
+  # attributes, so it must be read off res_list before aggregation.
+  first_err <- NA_character_
+  for (res_i in res_list) {
+    err_i <- attr(res_i, "boot_error")
+    if (!is.null(err_i)) {
+      first_err <- err_i
+      break
+    }
+  }
+
   # Aggregate results
   res_mat <- do.call(cbind, res_list)
 
@@ -211,7 +250,11 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
   }
 
   if (n_valid == 0) {
-    stop("All bootstrap replicates failed.")
+    if (is.na(first_err)) {
+      stop("All bootstrap replicates failed.")
+    } else {
+      stop(sprintf("All bootstrap replicates failed. First error: %s", first_err))
+    }
   }
 
   bagged_beta <- rowMeans(res_mat)

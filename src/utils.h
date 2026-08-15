@@ -13,7 +13,6 @@ arma::vec calculateDeltaTilde(const arma::vec& event,
 
 double pl_cal_theta(const arma::vec& lp,
                     const arma::vec& delta,
-                    const arma::vec& time,
                     const arma::vec& n_each_stratum);
 
 

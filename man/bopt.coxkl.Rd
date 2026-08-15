@@ -41,16 +41,20 @@ Choices are \code{"V&VH"}, \code{"LinPred"}, \code{"CIndex_pooled"},
 or \code{"CIndex_foldaverage"}.}
 
 \item{bounds_list}{A named list defining the search range for \code{eta},
-e.g., \code{list(eta = c(0, 10))}.}
+e.g., \code{list(eta = c(0, 10))}. Default \code{list(eta = c(0, 10))}. The
+lower bound must be non-negative.}
 
-\item{init_grid_dt}{A \code{data.frame} of initial points for the optimization.
-Default is \code{0} if \code{init_grid_dt} is provided.}
+\item{init_grid_dt}{A \code{data.frame} of initial points at which to evaluate the
+criterion before the Bayesian search begins. Default
+\code{data.frame(eta = c(0, 1, 5))}. All \code{eta} values in it must be
+non-negative.}
 
 \item{init_points}{Number of randomly drawn initial points to evaluate before
 the Bayesian search begins, in addition to those supplied via
 \code{init_grid_dt}. Default \code{0}.}
 
-\item{n_iter}{Number of iterations for the Bayesian Optimization process.}
+\item{n_iter}{Number of iterations for the Bayesian Optimization process.
+Default \code{10}.}
 
 \item{acq}{Acquisition function type. Default is \code{"ucb"}.}
 
@@ -81,6 +85,16 @@ Employs Bayesian Optimization to find the optimal integration parameter \code{et
 for the Cox–KL model by maximizing a cross-validated performance criterion.
 The function wraps \code{\link{cv.coxkl}} and uses the \pkg{rBayesianOptimization}
 framework to efficiently search the parameter space.
+}
+\details{
+Each objective evaluation is a call to \code{\link{cv.coxkl}} at a single candidate
+\code{eta}, and this function consumes that call's S3 return directly: the scalar
+criterion is read from the metric column of \code{internal_stat} (its second
+column, whose name depends on \code{criteria}), and the coefficient vector from
+\code{beta_full}. Loss criteria (\code{"V&VH"}, \code{"LinPred"}) are negated
+before being handed to the optimizer, which always maximizes, while the C-index
+criteria are passed through unchanged; \code{best_score} and \code{full_stats}
+report the raw, un-negated values in either case.
 }
 \examples{
 \dontrun{

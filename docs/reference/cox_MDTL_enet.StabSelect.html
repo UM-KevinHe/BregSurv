@@ -105,29 +105,40 @@ importance that is less sensitive to a single data split.</p>
 
 <dt id="arg-stratum">stratum<a class="anchor" aria-label="anchor" href="#arg-stratum"></a></dt>
 <dd><p>Optional numeric or factor vector indicating strata. If <code>NULL</code>,
-all subjects are assumed to be in the same stratum.</p></dd>
+a warning is issued and all subjects are assumed to be in the same stratum.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>A numeric vector of external coefficients (length p).</p></dd>
+<dd><p>Optional numeric vector of external coefficients. If <code>beta</code> is
+named, names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered. An
+unnamed <code>beta</code> is aligned positionally and must have length
+<code>ncol(z)</code>. See <code><a href="align_beta.html">align_beta</a></code>.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>Optional numeric matrix (p x p) representing the weighting matrix \(Q\)
-for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-<em>precision</em> matrix (typically the inverse covariance / information matrix of
-the external estimator). If named, it is reordered and zero-padded to
-<code>colnames(z)</code>. If <code>NULL</code>, a masked identity is used.</p></dd>
+<dd><p>Optional weighting (precision) matrix for the Mahalanobis penalty
+(typically the inverse covariance / information matrix of the external
+estimator). Must be symmetric and positive semi-definite; both are checked to a
+tolerance of 1e-8 and violations are errors. If named, it is reordered and
+zero-padded to <code>colnames(z)</code>; only an unnamed <code>Q</code> must be exactly
+<code>ncol(z)</code> by <code>ncol(z)</code>. If <code>NULL</code>, a <em>masked identity</em> is
+used: 1 on covariates actually supplied by <code>beta</code> and 0 on zero-padded
+positions, so padded coefficients are left unpenalized. See
+<code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>A numeric vector of candidate <code>eta</code> values to be evaluated.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights. Must be finite
+and \(\ge 0\). This argument is <strong>required</strong>: leaving it at its <code>NULL</code>
+default is an error.</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>The Elastic Net mixing parameter, with \(0 \le \alpha \le 1\).
-<code>alpha = 1</code> is the Lasso penalty, and <code>alpha = 0</code> is the Ridge penalty.
-If <code>NULL</code>, defaults to 1 (Lasso).</p></dd>
+<dd><p>The Elastic Net mixing parameter, with \(0 &lt; \alpha \le 1\).
+<code>alpha = 1</code> is the Lasso penalty, and <code>alpha</code> close to 0 approaches
+ridge. Values outside \((0, 1]\) are an error. If <code>NULL</code> (the default),
+<code>alpha</code> is set to 1 (Lasso) and a warning is issued.</p></dd>
 
 
 <dt id="arg-lambda">lambda<a class="anchor" aria-label="anchor" href="#arg-lambda"></a></dt>
@@ -141,8 +152,10 @@ and <code>lambda.min.ratio</code>.</p></dd>
 
 
 <dt id="arg-lambda-min-ratio">lambda.min.ratio<a class="anchor" aria-label="anchor" href="#arg-lambda-min-ratio"></a></dt>
-<dd><p>Smallest value for <code>lambda</code>, as a fraction of <code>lambda.max</code>.
-Default depends on the sample size relative to the number of predictors.</p></dd>
+<dd><p>Numeric. Smallest value for <code>lambda</code>, as a fraction
+of <code>lambda.max</code>. Default is <code>0.1</code> for this function. Only if it is
+explicitly set to <code>NULL</code> does the sample-size-dependent fallback apply
+(<code>0.05</code> when \(n &lt; p\), <code>1e-03</code> otherwise).</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
@@ -159,7 +172,9 @@ Default depends on the sample size relative to the number of predictors.</p></dd
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
 <dd><p>Optional stratum vector. Required only when <code>cv.criteria</code> involves
-stratified C-index calculation but the model itself is unstratified.</p></dd>
+stratified C-index calculation but the model itself is unstratified. That use case is
+therefore only reachable when <code>stratum = NULL</code>: if <code>stratum</code> is supplied and
+<code>c_index_stratum</code> is not identical to it, the function stops with an error.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>

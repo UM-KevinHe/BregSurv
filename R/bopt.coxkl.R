@@ -16,13 +16,17 @@
 #'   Choices are \code{"V&VH"}, \code{"LinPred"}, \code{"CIndex_pooled"},
 #'   or \code{"CIndex_foldaverage"}.
 #' @param bounds_list A named list defining the search range for \code{eta},
-#'   e.g., \code{list(eta = c(0, 10))}.
-#' @param init_grid_dt A \code{data.frame} of initial points for the optimization.
-#'   Default is \code{0} if \code{init_grid_dt} is provided.
+#'   e.g., \code{list(eta = c(0, 10))}. Default \code{list(eta = c(0, 10))}. The
+#'   lower bound must be non-negative.
+#' @param init_grid_dt A \code{data.frame} of initial points at which to evaluate the
+#'   criterion before the Bayesian search begins. Default
+#'   \code{data.frame(eta = c(0, 1, 5))}. All \code{eta} values in it must be
+#'   non-negative.
 #' @param init_points Number of randomly drawn initial points to evaluate before
 #'   the Bayesian search begins, in addition to those supplied via
 #'   \code{init_grid_dt}. Default \code{0}.
 #' @param n_iter Number of iterations for the Bayesian Optimization process.
+#'   Default \code{10}.
 #' @param acq Acquisition function type. Default is \code{"ucb"}.
 #' @param kappa Numeric tuning parameter controlling the exploration--exploitation
 #'   trade-off of the upper confidence bound (UCB) acquisition function. Larger
@@ -30,6 +34,16 @@
 #' @param seed Optional integer seed to ensure reproducible CV fold assignments.
 #' @param verbose Logical; if \code{TRUE}, progress of the optimization is printed.
 #' @param ... Additional arguments passed to \code{\link{cv.coxkl}} and \code{\link{coxkl}}.
+#'
+#' @details
+#' Each objective evaluation is a call to \code{\link{cv.coxkl}} at a single candidate
+#' \code{eta}, and this function consumes that call's S3 return directly: the scalar
+#' criterion is read from the metric column of \code{internal_stat} (its second
+#' column, whose name depends on \code{criteria}), and the coefficient vector from
+#' \code{beta_full}. Loss criteria (\code{"V&VH"}, \code{"LinPred"}) are negated
+#' before being handed to the optimizer, which always maximizes, while the C-index
+#' criteria are passed through unchanged; \code{best_score} and \code{full_stats}
+#' report the raw, un-negated values in either case.
 #'
 #' @return A list containing:
 #' \describe{

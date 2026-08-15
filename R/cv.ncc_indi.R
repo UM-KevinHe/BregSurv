@@ -6,12 +6,17 @@
 #' data integration, implemented via \code{\link{ncc_indi}}.
 #'
 #' This function is designed for 1:m matched case-control settings where each
-#' stratum (matched set) contains exactly one case and \eqn{m} controls.
+#' stratum (matched set) contains exactly one case and \eqn{m} controls. Note
+#' that this precondition is \emph{enforced} only on the internal cohort (and on
+#' each internal training and test fold): \code{stratum_ext} is not coerced to a
+#' factor and the external cohort's matched-set structure is never checked, so
+#' supplying a correctly matched external dataset is the caller's
+#' responsibility.
 #'
 #' @details
 #' Cross-validation is performed at the stratum level on the \emph{internal} dataset:
 #' each matched set is treated as an indivisible unit and assigned to a single fold
-#' using \code{\link{get_fold_cc}}. The external dataset is used in full during every
+#' using \code{get_fold_cc}. The external dataset is used in full during every
 #' training fold.
 #'
 #' The \code{cv.criteria} argument controls the CV performance metric:
@@ -28,7 +33,13 @@
 #' @param y_ext Numeric vector of binary outcomes for the external dataset (0 = control, 1 = case).
 #' @param z_ext Numeric matrix of covariates for the external dataset.
 #' @param stratum_ext Numeric or factor vector defining the external matched sets. \strong{Required}.
-#' @param etas Numeric vector of candidate tuning values for \eqn{\eta}. \strong{Required}.
+#'   Unlike \code{stratum_int} it is passed on unchanged (not coerced to a factor)
+#'   and its 1:m structure is not validated.
+#' @param etas Numeric vector of non-negative integration weights for
+#'   \eqn{\eta}. \strong{Required}; the function stops if \code{etas} is
+#'   \code{NULL}. Must be finite and \eqn{\ge 0}. The values are sorted in
+#'   ascending order internally, and the rows of \code{internal_stat} / columns
+#'   of \code{beta_full} follow that sorted order.
 #' @param nfolds Number of cross-validation folds. Default \code{5}.
 #' @param cv.criteria Character string specifying the CV performance criterion.
 #'   One of \code{"loss"} (default), \code{"AUC"}, \code{"CIndex"}, or \code{"Brier"}.

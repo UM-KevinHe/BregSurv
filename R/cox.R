@@ -8,16 +8,19 @@
 #' @param z A matrix or data frame of covariates (n x p).
 #' @param delta A binary event indicator vector (length n), where 1 = event and 0 = censored.
 #' @param time A numeric vector of observed times (length n).
-#' @param stratum A vector indicating strata for a stratified Cox model. If missing, all data is assumed to belong to a single stratum.
-#' @param ties A character string specifying the method for tie handling. Options are "breslow" (default), "efron", or "exact".
+#' @param stratum A vector indicating strata for a stratified Cox model. If missing,
+#'   a \code{warning} ("Stratum information not provided...") is issued and all data
+#'   is assumed to belong to a single stratum.
+#' @param ties A character string specifying the method for tie handling. Options are
+#'   "breslow", "efron", or "exact". The formal default is \code{NULL}, which the
+#'   function resolves to "breslow", so omitting \code{ties} gives Breslow handling.
 #' @param max_iter Maximum number of Newton-Raphson iterations (default = 100).
 #' @param tol Convergence tolerance for the Newton-Raphson update (default = 1e-7).
 #' @param comb_max Maximum number of combinations allowed for the "exact" method (default = 1e7).
 #'
-#' @return A list containing:
-#' \item{beta}{Estimated coefficient vector (length p).}
+#' @return A list with exactly two components:
+#' \item{beta}{Estimated coefficient vector (length p), named with \code{colnames(z)}.}
 #' \item{loglik}{The log-partial likelihood at convergence.}
-#' \item{...}{Additional outputs returned by the underlying Rcpp function.}
 #'
 #' @examples
 #' \donttest{

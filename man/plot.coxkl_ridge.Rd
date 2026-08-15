@@ -17,13 +17,13 @@
 \arguments{
 \item{x}{An object of class \code{"coxkl_ridge"}.}
 
-\item{test_z}{Matrix of test covariates.}
+\item{test_z}{Matrix of test covariates. Optional; see Details.}
 
-\item{test_time}{Vector of test survival times.}
+\item{test_time}{Vector of test survival times. Optional; see Details.}
 
-\item{test_delta}{Vector of test status indicators.}
+\item{test_delta}{Vector of test status indicators. Optional; see Details.}
 
-\item{test_stratum}{Vector of test strata.}
+\item{test_stratum}{Vector of test strata. Optional; see Details.}
 
 \item{criteria}{Metric to plot: \code{"loss"} or \code{"CIndex"}.}
 
@@ -35,6 +35,16 @@ A \code{ggplot} object.
 \description{
 Plots the validation performance against the penalty parameter \code{lambda} (on log scale).
 The optimal lambda is marked with a dashed orange line.
+}
+\details{
+The four \code{test_*} arguments act as a single unit. The training data stored
+in the fitted object are used for evaluation only when \emph{all four} of
+\code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+\code{NULL}. Supplying any one of them selects the external-test path, so
+leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+back to the training data -- it produces an error. The one exception is
+\code{test_time}: on the external-test path, if it alone is omitted all test
+times are set to 1.
 }
 \examples{
 \dontrun{
@@ -50,11 +60,11 @@ coxkl_ridge_est <- coxkl_ridge(z = train_dat_highdim$z,
                                beta = beta_external_highdim,
                                eta = 0)
 
-plot.coxkl_ridge(coxkl_ridge_est,
-                 test_z = test_dat_highdim$z,
-                 test_time = test_dat_highdim$time,
-                 test_delta = test_dat_highdim$status,
-                 test_stratum = test_dat_highdim$stratum,
-                 criteria = "CIndex")
+plot(coxkl_ridge_est,
+     test_z = test_dat_highdim$z,
+     test_time = test_dat_highdim$time,
+     test_delta = test_dat_highdim$status,
+     test_stratum = test_dat_highdim$stratum,
+     criteria = "CIndex")
 }
 }

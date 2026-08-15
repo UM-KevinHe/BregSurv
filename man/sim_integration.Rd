@@ -18,23 +18,35 @@ sim_integration(
 )
 }
 \arguments{
-\item{n_int}{Number of subjects in the internal training set.}
+\item{n_int}{Number of subjects in the internal training set. Default is 200.}
 
-\item{n_test}{Number of subjects in the internal test set.}
+\item{n_test}{Number of subjects in the internal test set. Default is 1000.}
 
-\item{n_ext}{Number of subjects in the external dataset.}
+\item{n_ext}{Number of subjects in the external dataset. Default is 1000.}
 
-\item{beta_true}{True regression coefficients.}
+\item{beta_true}{True regression coefficients. \strong{Must have length 6.} The
+simulator names the vector \code{Z1}--\code{Z6} unconditionally and its internal
+generator hard-codes exactly six covariates, so any other length fails with
+\code{"'names' attribute [6] must be the same length as the vector"}. Default is
+\code{c(0.3, -0.3, 0.3, -0.3, 0.3, -0.3)}.}
 
-\item{int_cens_target}{Target censoring rate for internal data.}
+\item{int_cens_target}{Target censoring rate for internal data. Default is 0.3.}
 
-\item{ext_cens_target}{Target censoring rate for external data.}
+\item{ext_cens_target}{Target censoring rate for external data. Default is 0.5.}
 
-\item{lambda0, nu0}{Weibull baseline hazard parameters.}
+\item{lambda0, nu0}{Weibull baseline hazard parameters. Defaults are 1 and 2.}
 
-\item{heterogeneity}{Numeric. Controls the mixture difference between cohorts.}
+\item{heterogeneity}{Numeric in \eqn{[0, 1]}, used as a Bernoulli probability.
+Default is 1.0. \strong{Note the direction, which is the opposite of what the
+name suggests:} the internal cohorts are always generated with probability 1.0,
+so \code{heterogeneity = 1.0} makes the external cohort distributionally
+\emph{identical} to the internal ones -- that is, the default corresponds to
+\emph{zero} heterogeneity. \emph{Smaller} values produce \emph{more} divergence
+between the external and internal cohorts, with \code{heterogeneity = 0} the
+most divergent. Values outside \eqn{[0, 1]} are invalid (they are passed
+straight to \code{rbinom}) but are not validated.}
 
-\item{seed}{Random seed.}
+\item{seed}{Random seed. Default \code{NULL}.}
 }
 \value{
 A list containing \code{external}, \code{internal_train}, and \code{internal_test} datasets.

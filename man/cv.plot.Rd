@@ -7,7 +7,13 @@
 cv.plot(object, line_color = "#7570B3", baseline_color = "#1B9E77", ...)
 }
 \arguments{
-\item{object}{A fitted cross-validation result object.}
+\item{object}{The S3 object returned by one of the supported \code{cv.*}
+functions listed above -- not a plain \code{data.frame}. The unpenalized
+classes are read from their \code{internal_stat} component and the
+ridge/elastic-net classes from their \code{integrated_stat.best_per_eta}
+component; the \code{criteria} component of either is used to label the axis
+and to decide whether the optimum is a minimum or a maximum. An object of any
+other class stops with an error.}
 
 \item{line_color}{Color for the CV performance curve. Default is \code{"#7570B3"}.}
 
@@ -20,11 +26,15 @@ A ggplot object (cowplot combined).
 }
 \description{
 Plots cross-validation performance across eta values for
-\code{cv.coxkl}, \code{cv.coxkl_ridge}, \code{cv.coxkl_enet},
-\code{cv.cox_MDTL}, \code{cv.cox_MDTL_ridge}, \code{cv.cox_MDTL_enet},
-\code{cv.ncckl}, \code{cv.ncckl_enet}, \code{cv.ncc_indi},
-\code{cv.ncc_MDTL}, or \code{cv.cox_indi_enet}
+\code{cv.coxkl}, \code{cv.cox_MDTL}, \code{cv.cox_indi},
+\code{cv.ncckl}, \code{cv.ncc_MDTL}, \code{cv.ncc_indi},
+\code{cv.coxkl_ridge}, \code{cv.cox_MDTL_ridge},
+\code{cv.coxkl_enet}, \code{cv.cox_MDTL_enet}, \code{cv.cox_indi_enet},
+\code{cv.ncckl_enet}, \code{cv.ncc_MDTL_enet}, or \code{cv.ncc_indi_enet}
 objects in a Biometrics-style figure. It displays the cross-validated
 performance curve (each eta at its best lambda), a baseline reference at
 \code{eta = 0}, and marks the optimal \code{eta}.
+
+The output of \code{\link{cv.coxkl_ties}} is also covered, because it carries
+class \code{"cv.coxkl"}.
 }

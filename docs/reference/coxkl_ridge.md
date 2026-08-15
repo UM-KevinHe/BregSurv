@@ -27,8 +27,7 @@ coxkl_ridge(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL,
-  ...
+  beta_initial = NULL
 )
 ```
 
@@ -54,19 +53,30 @@ coxkl_ridge(
 
 - RS:
 
-  Optional numeric vector or matrix of external risk scores. If not
-  provided, `beta` must be supplied.
+  Optional numeric vector of external risk scores, one per observation
+  (a one-column matrix is also accepted). Only a single risk score per
+  observation is supported. If not provided, `beta` must be supplied.
 
 - beta:
 
-  Optional numeric vector of externally derived coefficients (length
-  equal to `ncol(z)`). If provided, used to calculate risk scores. If
-  not provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients. If `beta` is named,
+  names are matched against `colnames(z)`: covariates absent from `beta`
+  are set to 0 (with a message) and the vector is reordered, so an
+  external source covering only a subset of the internal covariates may
+  be supplied directly. An unnamed `beta` is aligned positionally and
+  must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
+  If provided, used to calculate risk scores. If not provided, `RS` must
+  be supplied.
 
 - eta:
 
-  Non-negative scalar controlling the strength of external information
-  integration. `eta = 0` implies a standard Ridge Cox model.
+  Single finite non-negative integration weight controlling the strength
+  of external information integration. `eta = 0` implies a standard
+  Ridge Cox model. The formal default is `NULL`, which resolves to
+  `eta = 0` with the warning "eta is not provided. Setting eta = 0 (no
+  external information used)."
 
 - lambda:
 
@@ -83,6 +93,7 @@ coxkl_ridge(
   Numeric scalar in `[0, 1)`. Controls the internal mixing parameter
   used to generate the lambda sequence when `lambda = NULL`. A value
   close to 1 generates a sequence suitable for Ridge-like behavior.
+  Default is `0.999`.
 
 - tol:
 
@@ -112,10 +123,6 @@ coxkl_ridge(
   Optional numeric vector. Initial values for the coefficients. Default
   is 0.
 
-- ...:
-
-  Additional arguments.
-
 ## Value
 
 An object of class `"coxkl_ridge"` containing:
@@ -135,12 +142,14 @@ An object of class `"coxkl_ridge"` containing:
 
 - `likelihood`:
 
-  A vector of negative log-partial likelihoods for each lambda.
+  Vector of log-partial likelihoods, one per lambda (larger values
+  indicate better fit; this is *not* a loss).
 
 - `data`:
 
   A list containing the input data used (`z`, `time`, `delta`,
-  `stratum`).
+  `stratum`), as supplied by the caller (i.e. in the original row order,
+  before the internal sorting by stratum and time).
 
 ## Details
 

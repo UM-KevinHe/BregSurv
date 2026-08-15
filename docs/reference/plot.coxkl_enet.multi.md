@@ -29,26 +29,24 @@ plot(
 
 - test_z:
 
-  Optional numeric matrix of test predictors of dimension `n_test x p`.
-  If `NULL` (default), training data stored inside each source fit are
-  used for evaluation.
+  Numeric matrix of test predictors of dimension `n_test x p`. Required:
+  evaluation is always carried out on test data.
 
 - test_time:
 
-  Optional numeric vector of test survival times of length `n_test`.
-  Must be provided together with `test_z` and `test_delta` when
-  evaluating on external test data.
+  Numeric vector of test survival times of length `n_test`. Required,
+  together with `test_z` and `test_delta`.
 
 - test_delta:
 
-  Optional numeric vector of test event indicators of length `n_test`.
-  Must be provided together with `test_z` and `test_time` when
-  evaluating on external test data.
+  Numeric vector of test event indicators of length `n_test`. Required,
+  together with `test_z` and `test_time`.
 
 - test_stratum:
 
   Optional vector of stratum indicators of length `n_test` for
-  stratified Cox models. Ignored if `NULL` (default).
+  stratified Cox models. When `NULL` (default), the test set is
+  evaluated as a single stratum.
 
 - criteria:
 
@@ -76,11 +74,6 @@ value of \\\eta\\. It then calls
 on every column to compute the chosen performance metric, and overlays
 the resulting curves on a single ggplot2 figure.
 
-If all four test arguments (`test_z`, `test_time`, `test_delta`,
-`test_stratum`) are `NULL`, evaluation is performed on the training data
-embedded in each source fit object. This is useful for a quick in-sample
-diagnostic but may give optimistic estimates of performance.
-
 Colors are assigned automatically via
 [`hue_pal`](https://scales.r-lib.org/reference/pal_hue.html) and
 linetypes cycle through `"solid"`, `"dashed"`, `"dotdash"`,
@@ -105,9 +98,6 @@ fit <- coxkl_enet.multi(
   beta_list = list(beta_ext1, beta_ext2, beta_ext3),
   etas      = seq(0, 1, by = 0.1)
 )
-
-# In-sample diagnostic (uses training data stored in each source fit)
-plot(fit, criteria = "CIndex")
 
 # Out-of-sample evaluation on a held-out test set
 plot(fit,

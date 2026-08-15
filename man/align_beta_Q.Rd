@@ -9,7 +9,8 @@ align_beta_Q(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q")
 \arguments{
 \item{z}{Internal covariate matrix or data frame.}
 
-\item{beta}{External coefficient vector (optionally named).}
+\item{beta}{External coefficient vector (optionally named). A one-column matrix
+with row names is accepted as a named vector; see \code{\link{align_beta}}.}
 
 \item{Q}{Optional weighting/precision matrix (optionally with dimnames). If
 \code{NULL}, a masked identity is used.}
@@ -18,8 +19,9 @@ align_beta_Q(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q")
 }
 \value{
 A list with components \code{beta} (numeric, length \code{ncol(z)}),
-\code{Q} (\code{ncol(z)} by \code{ncol(z)} matrix), and \code{provided}
-(logical mask of covariates supplied by the external source).
+\code{Q} (\code{ncol(z)} by \code{ncol(z)} matrix, carrying \code{colnames(z)}
+as both its row and column names whenever \code{z} has column names), and
+\code{provided} (logical mask of covariates supplied by the external source).
 }
 \description{
 Extends \code{\link{align_beta}} to the Mahalanobis-distance transfer-learning
@@ -34,6 +36,34 @@ unpenalized. When \code{Q} is \code{NULL}, a \emph{masked identity} is
 returned: a diagonal matrix with 1 on covariates actually supplied by
 \code{beta} and 0 on padded positions. This ensures that padded-zero
 coefficients are not penalized as if they were genuine external information.
+
+Symmetry of \code{Q} is checked with \code{isSymmetric()} at tolerance
+\code{1e-8}, and positive semi-definiteness by requiring the smallest eigenvalue
+to be at least \code{-1e-8}; violations of either are errors. Name-based
+alignment of \code{Q} engages only when \code{rownames(Q)} is non-\code{NULL}
+\emph{and} \code{z} has column names; otherwise \code{Q} is used positionally and
+must be exactly \code{ncol(z)} by \code{ncol(z)}. Name-based alignment signals an
+error if \code{rownames(Q)} contains duplicates, if any of them is not one of
+\code{colnames(z)}, or if \code{colnames(Q)} is present but does not contain the
+same names as \code{rownames(Q)}.
+}
+\examples{
+z <- matrix(seq_len(30), nrow = 5, ncol = 6,
+            dimnames = list(NULL, paste0("Z", 1:6)))
+beta_ext <- c(Z1 = 0.30, Z3 = 0.25, Z5 = -0.10, Z6 = 0.05)
+
+# Q = NULL gives the masked identity: 1 on the covariates the external source
+# supplied, 0 on the zero-padded ones (Z2, Z4), which are left unpenalized.
+aligned <- align_beta_Q(z, beta_ext)
+aligned$beta
+diag(aligned$Q)
+aligned$provided
+
+# A named information matrix is reordered and zero-padded to colnames(z).
+Q_ext <- diag(c(4, 2, 1, 3))
+dimnames(Q_ext) <- list(names(beta_ext), names(beta_ext))
+align_beta_Q(z, beta_ext, Q = Q_ext)$Q
+
 }
 \seealso{
 \code{\link{align_beta}}

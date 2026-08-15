@@ -53,22 +53,37 @@ cox_MDTL_enet_bagging(
 
 - beta:
 
-  External coefficient vector of length `p`. Treated as fixed prior
-  information and not resampled across bootstrap replicates.
+  Numeric vector of external coefficients. If `beta` is named, names are
+  matched against `colnames(z)`: covariates absent from `beta` are set
+  to 0 (with a message) and the vector is reordered, so an external
+  source covering only a subset of the internal covariates may be
+  supplied directly. An unnamed `beta` is aligned positionally and must
+  have length `ncol(z)`. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
+  Treated as fixed prior information and not resampled across bootstrap
+  replicates.
 
 - Q:
 
-  Optional weighting matrix (`p x p`) used in the Mahalanobis distance
-  formulation.
+  Optional weighting (precision) matrix for the Mahalanobis penalty.
+  Must be symmetric and positive semi-definite (both checked to a
+  tolerance of 1e-8). If named, it is reordered and zero-padded to
+  `colnames(z)`; only an unnamed `Q` must be exactly `ncol(z)` by
+  `ncol(z)`. If `NULL`, a *masked identity* is used: 1 on covariates
+  actually supplied by `beta` and 0 on zero-padded positions, so padded
+  coefficients are left unpenalized. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  Vector of `eta` values for transfer-learning shrinkage.
+  Numeric vector of non-negative integration weights. Must be finite and
+  \\\ge 0\\.
 
 - alpha:
 
-  Elastic-net mixing parameter between `0` and `1`. `alpha = 1`
-  corresponds to lasso; `alpha = 0` to ridge. Default is `1.0`.
+  Elastic-net mixing parameter, with \\0 \< \alpha \le 1\\. `alpha = 1`
+  corresponds to lasso; values close to 0 approach ridge. Default is
+  `1.0`.
 
 - B:
 
@@ -81,20 +96,23 @@ cox_MDTL_enet_bagging(
 - nlambda:
 
   Number of `lambda` values to generate if `lambda` is not supplied.
+  Default is `100`.
 
 - lambda.min.ratio:
 
   Ratio of the smallest to the largest `lambda` when generating a
-  sequence.
+  sequence. Default is `ifelse(nrow(z) < ncol(z), 0.01, 1e-04)`.
 
 - nfolds:
 
   Number of folds for inner cross-validation via `cv.cox_MDTL_enet`.
+  Default is `5`.
 
 - cv.criteria:
 
   Cross-validation criterion used for selecting the optimal
-  `(eta, lambda)` pair.
+  `(eta, lambda)` pair. One of `"V&VH"`, `"LinPred"`, `"CIndex_pooled"`
+  or `"CIndex_foldaverage"`; the default is `"V&VH"`.
 
 - c_index_stratum:
 
@@ -107,7 +125,7 @@ cox_MDTL_enet_bagging(
 
 - seed:
 
-  Optional integer seed for reproducibility.
+  Optional integer seed for reproducibility. Default is `NULL`.
 
 - ncores:
 

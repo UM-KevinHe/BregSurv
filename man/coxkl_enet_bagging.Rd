@@ -36,14 +36,26 @@ coxkl_enet_bagging(
 \item{stratum}{Optional stratum indicator vector for stratified Cox models.}
 
 \item{RS}{Optional matrix or vector of external risk scores. If provided, it
-is resampled within each bootstrap replicate.}
+is resampled within each bootstrap replicate. If both \code{RS} and
+\code{beta} are supplied, \code{RS} takes precedence and \code{beta} is
+silently discarded.}
 
 \item{beta}{Optional vector of external coefficients. If provided, it is
-treated as fixed and not resampled.}
+treated as fixed and not resampled. It is passed through unchanged to
+\code{cv.coxkl_enet}, where a named \code{beta} is matched against
+\code{colnames(z)} and zero-padded for any covariate it does not cover,
+while an unnamed \code{beta} is aligned positionally and must have length
+\code{p} (see \code{\link{align_beta}}). Ignored when \code{RS} is supplied.}
 
-\item{etas}{Vector of \code{eta} values for transfer-learning shrinkage.}
+\item{etas}{Numeric vector of non-negative integration weights. Must be finite
+and \eqn{\ge 0}.}
 
-\item{alpha}{Elastic-net mixing parameter (between \code{0} and \code{1}).}
+\item{alpha}{Elastic-net mixing parameter, with \eqn{0 < \alpha \le 1}
+(\code{alpha = 1} is the lasso penalty; values close to 0 approach ridge).
+Default is \code{1.0}. Values outside \code{(0, 1]} are rejected by
+\code{cv.coxkl_enet}; because each replicate is wrapped in
+\code{tryCatch()}, this surfaces as every replicate failing rather than as
+an immediate error.}
 
 \item{B}{Number of bootstrap replicates. Default is \code{100}.}
 
@@ -51,16 +63,18 @@ treated as fixed and not resampled.}
 underlying elastic-net fit.}
 
 \item{nlambda}{Number of \code{lambda} values to generate if \code{lambda}
-is not supplied.}
+is not supplied. Default is \code{100}.}
 
 \item{lambda.min.ratio}{Ratio of smallest to largest \code{lambda} value
-when generating a \code{lambda} sequence.}
+when generating a \code{lambda} sequence. Defaults to \code{0.05} when
+\code{nrow(z) < ncol(z)} and \code{1e-03} otherwise.}
 
 \item{nfolds}{Number of folds for cross-validation in
-\code{cv.coxkl_enet}.}
+\code{cv.coxkl_enet}. Default is \code{5}.}
 
 \item{cv.criteria}{Cross-validation criterion used for selecting
-\code{eta}–\code{lambda} pairs.}
+\code{eta}–\code{lambda} pairs. One of \code{"V&VH"} (the default),
+\code{"LinPred"}, \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"}.}
 
 \item{c_index_stratum}{Optional stratum assignment for stratified C-index
 evaluation.}

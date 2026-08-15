@@ -29,11 +29,23 @@ test_eval(
 Required only when \code{criteria = "IBS"}.}
 
 \item{criteria}{Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex" (Concordance Index),
-"IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC).}
+"IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC). Default is "loss".}
 }
 \value{
 A numeric value representing the performance metric.
 Returns \code{NA} if the metric cannot be computed (e.g., no events in test set).
+Two silent-\code{NA} paths are worth naming explicitly, because neither raises an
+error:
+\itemize{
+\item \code{criteria = "IBS"} returns \code{NA} immediately whenever
+\code{train_baseline_obj} is \code{NULL}. Despite the wording of that
+argument's description, omitting it is not an error -- the result is simply
+missing.
+\item Both \code{"IBS"} and \code{"tdAUC"} return \code{NA} whenever the test
+set contains fewer than two distinct event times, since neither quantity can
+be integrated over a single time point. \code{"loss"} and \code{"CIndex"} are
+returned before this check and are unaffected.
+}
 }
 \description{
 Computes predictive performance metrics for stratified or unstratified Cox models.

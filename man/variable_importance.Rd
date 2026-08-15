@@ -32,11 +32,17 @@ it will be converted to a numeric matrix via \code{as.matrix(z)}.}
 
 \item{RS}{Optional external risk scores. Default NULL.}
 
-\item{beta}{Optional external coefficients. Default NULL.}
+\item{beta}{Optional numeric vector of external coefficients. Default NULL. It is
+forwarded to \code{\link{cv.coxkl_enet}}, which aligns it: if \code{beta} is
+named, names are matched against \code{colnames(z)}, covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered. An
+unnamed \code{beta} is aligned positionally and must have length
+\code{ncol(z)}. See \code{\link{align_beta}}.}
 
-\item{etas}{Numeric vector of candidate eta values.}
+\item{etas}{Numeric vector of non-negative candidate eta values. Must be finite
+and \eqn{\ge 0}; this is validated by \code{\link{cv.coxkl_enet}}.}
 
-\item{B}{Integer. Number of bootstrap replications.}
+\item{B}{Integer. Number of bootstrap replications. Default is 10.}
 
 \item{nonzero_tol}{Numeric tolerance for defining "selected". Default 1e-10.}
 
@@ -56,6 +62,7 @@ An object of class "variable_importance" with fields:
 \item{freq}{Named numeric vector of selection frequencies (length p).}
 \item{count}{Named integer vector of selection counts (length p).}
 \item{B}{Number of bootstrap replications.}
+\item{nonzero_tol}{The tolerance used to define "selected".}
 \item{call}{Matched call.}
 }
 }

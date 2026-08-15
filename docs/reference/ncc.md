@@ -33,15 +33,16 @@ ncc(
 - stratum:
 
   Numeric or factor vector defining the matched sets. This is
-  **required**    for CLR; if omitted, a warning is issued and all data
-  is treated as one stratum,    which defeats the purpose of matching.
+  **required** for CLR; if omitted, a warning is issued and all data is
+  treated as one stratum, which defeats the purpose of matching.
 
 - method:
 
   Character string specifying the tie-handling method, which determines
-     the conditional likelihood approximation. Choices are `"breslow"`,
-  `"exact"`, or `"efron"`.    Default is to use the first match, but
-  typically `"exact"` is preferred for CLR.
+  the conditional likelihood approximation. Choices are `"breslow"`,
+  `"exact"`, or `"efron"`. The default is `"breslow"`, resolved by
+  [`match.arg`](https://rdrr.io/r/base/match.arg.html) and matched
+  case-insensitively; typically `"exact"` is preferred for CLR.
 
 - max_iter:
 
@@ -60,11 +61,12 @@ ncc(
 
 ## Value
 
-A `list` containing:
+A `list` with exactly two components:
 
 - `beta`:
 
-  Estimated coefficient vector (length p).
+  Estimated coefficient vector (length p), named with `colnames(z)` when
+  `z` carries column names.
 
 - `loglik`:
 

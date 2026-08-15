@@ -18,10 +18,22 @@ representing external coefficients.}
 data(ExampleData_cc_highdim)
 }
 \description{
-A simulated 1:5 matched case-control dataset with 20 covariates,
-where 10 covariates are truly non-zero. The data are split into
-training and test sets and include both the true underlying coefficients
-and an externally supplied coefficient vector for KL-based integration.
+A simulated 1:9 matched case-control dataset with 20 covariates,
+where 10 covariates are truly non-zero. Each matched set contains ten
+subjects (one case and nine controls): the training set has 50 matched sets
+(\eqn{n = 500}) and the test set has 500 matched sets (\eqn{n = 5000}). The
+data include both the true underlying coefficients and an externally supplied
+coefficient vector for KL-based integration.
+}
+\details{
+\strong{External coefficients: name present-and-zero vs. name absent.}
+\code{beta_external} is fully populated and fully named over \code{Z1}--\code{Z20},
+so \code{\link{align_beta}} never zero-pads it and \code{\link{align_beta_Q}} with
+\code{Q = NULL} returns the full identity rather than a masked identity. In
+general, a covariate whose name is \emph{present} with value 0 asserts an external
+estimate of exactly zero and is penalized toward zero, whereas a covariate whose
+name is \emph{absent} is treated as carrying no external information -- it is
+zero-padded and, under the Mahalanobis penalty, left unpenalized.
 }
 \examples{
 data(ExampleData_cc_highdim)

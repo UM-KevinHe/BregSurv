@@ -57,6 +57,14 @@
 #'   valid indices.
 #' @param mu_Z Numeric vector or \code{NULL}. Mean vector for the continuous covariates. If
 #'   \code{NULL}, a zero vector is used. For indices in \code{binary_idx}, \code{mu_Z} is ignored.
+#' @param sd_Z Numeric or \code{NULL}. Standard deviations of the continuous covariates.
+#'   Four shapes are accepted: \code{NULL} (the default; all standard deviations set to
+#'   1), a scalar (recycled to all \code{n.beta} covariates), a vector of length
+#'   \code{n.beta} (used as-is), or a vector of length equal to the number of
+#'   continuous covariates (i.e. \code{length(setdiff(1:n.beta, binary_idx))}, applied
+#'   to those positions with 1 elsewhere). All values must be positive and finite.
+#'   Standard deviations at \code{binary_idx} positions have no effect, since binary
+#'   covariates are generated from a latent threshold model.
 #' @param stratum_size Integer or numeric vector. Stratum sample sizes. If a scalar, it is recycled
 #'   to length \code{n_stratum}; if a vector, it must have length \code{n_stratum}.
 #' @param rho Numeric. Correlation parameter in \eqn{[0,1)} for the equicorrelation covariance
@@ -102,8 +110,13 @@
 #' @details
 #' Continuous covariates (those not in \code{binary_idx}) are generated independently within each
 #' stratum from a multivariate normal distribution with mean given by \code{mu_Z} (restricted to the
-#' continuous indices) and an equicorrelation covariance matrix with diagonal 1 and off-diagonal
-#' \code{rho}.
+#' continuous indices) and covariance \eqn{D R D}, where \eqn{R} is the equicorrelation
+#' matrix with diagonal 1 and off-diagonal \code{rho} and \eqn{D} is the diagonal matrix of
+#' the standard deviations in \code{sd_Z}. With the default \code{sd_Z = NULL} all standard
+#' deviations equal 1, so the covariance reduces to \eqn{R} itself -- diagonal 1 and
+#' off-diagonal \code{rho}. When \code{sd_Z} is supplied the diagonal becomes
+#' \eqn{\sigma_j^2} and the off-diagonals \eqn{\rho \sigma_i \sigma_j}; the
+#' \emph{correlation} remains \code{rho} in either case.
 #'
 #' Stratum-specific scaling factors are sampled as \eqn{\gamma_s \sim \mathrm{Unif}(0,2)} and applied
 #' multiplicatively to the hazard.
@@ -450,15 +463,43 @@ sim.cox.highdim <- function(n_stratum = 1,
 #' Internal function to simulate stratified binary data (logistic or probit) with
 #' random intercepts and no prevalence calibration.
 #'
-#' @param n_stratum Number of strata.
-#' @param beta Numeric vector of coefficients (length p).
-#' @param stratum.size.mean Mean stratum size (Poisson distributed).
-#' @param rho Correlation parameter for Z within stratum.
-#' @param link Link function, one of "logit" or "probit".
-#' @param stratum_sd Standard deviation of stratum random intercepts.
-#' @param seed Optional RNG seed.
+#' @param n_stratum Number of strata. No default.
+#' @param beta Numeric vector of coefficients (length p). No default; must be finite.
+#' @param stratum.size.mean Mean stratum size (Poisson distributed). Default is 80.
+#' @param rho Covariance parameter for Z within stratum. Default is 0.8. See Details --
+#'   \code{rho} is \emph{not} the resulting correlation.
+#' @param link Link function, one of "logit" or "probit". Default is "logit".
+#' @param stratum_sd Standard deviation of stratum random intercepts. Default is 0.5.
+#' @param seed Optional RNG seed. Default \code{NULL}.
 #'
-#' @return A list with combined data frame, data list, and metadata.
+#' @details
+#' \strong{\code{rho} is not the correlation of \code{Z}.} The within-stratum
+#' covariance is built as \code{diag(1 - rho, p) + (rho - rho^2) * matrix(1, p, p)},
+#' whose diagonal is \eqn{1-\rho^2} and whose off-diagonal is \eqn{\rho(1-\rho)}. The
+#' implied correlation is therefore \eqn{\rho/(1+\rho)}, not \eqn{\rho}: at the
+#' default \code{rho = 0.8} the actual correlation is \eqn{0.444} and the variance of
+#' each covariate is \eqn{0.36}.
+#'
+#' \strong{Covariates are confounded with the stratum effect by construction.} The
+#' mean of \code{Z} within stratum \eqn{i} is set to
+#' \eqn{(\theta_i \rho / 0.4)\mathbf{1}}, a function of that stratum's random
+#' intercept \eqn{\theta_i}. Covariates and stratum effects are thus deliberately
+#' dependent, which is the intended design for testing stratified estimators; it is
+#' not a neutral covariate-generating mechanism.
+#'
+#' @return A list with five components:
+#' \itemize{
+#'   \item \code{data_combined}: a \code{data.frame} with columns \code{stratum},
+#'     \code{y}, and covariates \code{Z1...Zp}.
+#'   \item \code{data}: a list containing \code{stratum}, \code{Z}, and \code{y}.
+#'   \item \code{true_beta}: numeric vector of the coefficients used.
+#'   \item \code{char}: a list of column-name metadata (\code{stratum},
+#'     \code{Z.char}, \code{Outcome.char}).
+#'   \item \code{meta}: a list of simulation metadata including \code{n_stratum},
+#'     \code{stratum_size}, \code{theta_stratum}, \code{link}, \code{alpha0},
+#'     \code{stratum_sd}, \code{rho}, and the achieved prevalence
+#'     \code{actual_prev}.
+#' }
 #'
 #' @keywords internal
 #' @export
@@ -548,16 +589,30 @@ sim.binary <- function(n_stratum,
 #' The case is sampled with probability proportional to exp(eta), where
 #' eta = theta_stratum + Z %*% beta.
 #'
-#' @param n_stratum Number of matched strata (sets).
-#' @param m Number of controls per case (>=1).
-#' @param beta Numeric vector of coefficients (length p).
-#' @param rho Correlation parameter for Z within stratum (equicorrelation).
-#' @param mu_Z Mean vector for Z. Scalar or length p.
+#' @param n_stratum Number of matched strata (sets). No default; integer \eqn{\ge 1}.
+#' @param m Number of controls per case (>=1). No default.
+#' @param beta Numeric vector of coefficients (length p). No default; must be finite.
+#' @param rho Correlation parameter for Z within stratum (equicorrelation). Default
+#'   is 0.8; must lie in \eqn{[0, 1)}.
+#' @param mu_Z Mean vector for Z. Scalar or length p. Default is 0.
 #' @param sd_Z Standard deviation vector for Z. Scalar or length p, must be positive.
-#' @param stratum_sd SD of stratum random intercepts.
-#' @param seed Optional RNG seed.
+#'   Default is 1.
+#' @param stratum_sd SD of stratum random intercepts. Default is 0.5.
+#' @param seed Optional RNG seed. Default \code{NULL}.
 #'
-#' @return A list containing matched data frames and simulation metadata.
+#' @return A list with five components:
+#' \itemize{
+#'   \item \code{data_combined}: a single \code{data.frame} with columns
+#'     \code{stratum}, \code{y}, and covariates \code{Z1...Zp}, stacking all matched
+#'     sets.
+#'   \item \code{data}: a list containing \code{stratum}, \code{Z}, and \code{y}.
+#'   \item \code{true_beta}: numeric vector of the coefficients used.
+#'   \item \code{char}: a list of column-name metadata (\code{stratum},
+#'     \code{Z.char}, \code{Outcome.char}).
+#'   \item \code{meta}: a list of simulation metadata including \code{n_stratum},
+#'     \code{m}, \code{set_size}, \code{theta_stratum}, \code{stratum_sd},
+#'     \code{rho}, \code{mu_Z}, \code{sd_Z}, and \code{case_prop}.
+#' }
 #'
 #' @keywords internal
 #' @export
@@ -675,15 +730,27 @@ sim.matched_cc <- function(n_stratum,
 #' Internal function. Generates simulated low-dimensional survival datasets for internal
 #' (training/testing) and external cohorts with varying heterogeneity levels via latent groups.
 #'
-#' @param n_int Number of subjects in the internal training set.
-#' @param n_test Number of subjects in the internal test set.
-#' @param n_ext Number of subjects in the external dataset.
-#' @param beta_true True regression coefficients.
-#' @param int_cens_target Target censoring rate for internal data.
-#' @param ext_cens_target Target censoring rate for external data.
-#' @param lambda0,nu0 Weibull baseline hazard parameters.
-#' @param heterogeneity Numeric. Controls the mixture difference between cohorts.
-#' @param seed Random seed.
+#' @param n_int Number of subjects in the internal training set. Default is 200.
+#' @param n_test Number of subjects in the internal test set. Default is 1000.
+#' @param n_ext Number of subjects in the external dataset. Default is 1000.
+#' @param beta_true True regression coefficients. \strong{Must have length 6.} The
+#'   simulator names the vector \code{Z1}--\code{Z6} unconditionally and its internal
+#'   generator hard-codes exactly six covariates, so any other length fails with
+#'   \code{"'names' attribute [6] must be the same length as the vector"}. Default is
+#'   \code{c(0.3, -0.3, 0.3, -0.3, 0.3, -0.3)}.
+#' @param int_cens_target Target censoring rate for internal data. Default is 0.3.
+#' @param ext_cens_target Target censoring rate for external data. Default is 0.5.
+#' @param lambda0,nu0 Weibull baseline hazard parameters. Defaults are 1 and 2.
+#' @param heterogeneity Numeric in \eqn{[0, 1]}, used as a Bernoulli probability.
+#'   Default is 1.0. \strong{Note the direction, which is the opposite of what the
+#'   name suggests:} the internal cohorts are always generated with probability 1.0,
+#'   so \code{heterogeneity = 1.0} makes the external cohort distributionally
+#'   \emph{identical} to the internal ones -- that is, the default corresponds to
+#'   \emph{zero} heterogeneity. \emph{Smaller} values produce \emph{more} divergence
+#'   between the external and internal cohorts, with \code{heterogeneity = 0} the
+#'   most divergent. Values outside \eqn{[0, 1]} are invalid (they are passed
+#'   straight to \code{rbinom}) but are not validated.
+#' @param seed Random seed. Default \code{NULL}.
 #'
 #' @return A list containing \code{external}, \code{internal_train}, and \code{internal_test} datasets.
 #'

@@ -14,9 +14,11 @@
 #' @param time A numeric vector of observed times.
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
 #'   all subjects are assumed to be in the same stratum.
-#' @param beta A numeric vector of external coefficients. If named, the names are
-#'   matched against \code{colnames(z)} and covariates absent from \code{beta} are
-#'   zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.
+#' @param beta A numeric vector of external coefficients. The formal default is
+#'   \code{NULL}, but the argument is in practice mandatory: if it is not supplied
+#'   the function stops with the message "External beta must be provided." If named, the names
+#'   are matched against \code{colnames(z)} and covariates absent from \code{beta}
+#'   are zero-padded; if unnamed, \code{beta} must have length \code{ncol(z)}.
 #' @param Q Optional numeric matrix acting as the weighting matrix \eqn{Q} in the
 #'   Mahalanobis penalty. This should be a symmetric positive-semidefinite
 #'   \emph{precision} matrix (e.g. the inverse covariance / information matrix of
@@ -37,7 +39,6 @@
 #' @param message Logical. If \code{TRUE}, progress messages are printed.
 #' @param data_sorted Logical. If \code{TRUE}, assumes input data is already sorted by stratum and time.
 #' @param beta_initial Optional initial coefficient vector for warm start.
-#' @param ... Additional arguments passed to internal functions.
 #'
 #' @return An object of class \code{"cox_MDTL_ridge"} containing:
 #' \describe{
@@ -69,7 +70,7 @@
 cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL, eta = NULL,
                            lambda = NULL, nlambda = 100, penalty.factor = 0.999,
                            tol = 1.0e-4, Mstop = 50, backtrack = FALSE, message = FALSE, data_sorted = FALSE,
-                           beta_initial = NULL, ...) {
+                           beta_initial = NULL) {
   if (is.null(eta)) {
     warning("eta is not provided. Setting eta = 0 (no external information used).", call. = FALSE)
     eta <- 0
@@ -153,7 +154,7 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
   }
   
   if (message) {
-    cat("Cross-validation over lambda sequence:\n")
+    cat("Fitting over lambda sequence:\n")
     pb <- txtProgressBar(min = 0, max = nlambda, style = 3, width = 30)
   }
   

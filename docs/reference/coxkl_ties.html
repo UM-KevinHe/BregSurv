@@ -104,13 +104,20 @@ The function fits a model for each <code>eta</code> value provided.</p>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Numeric vector of external coefficients. Length must equal the number of columns in <code>z</code>.
+<dd><p>Numeric vector of external coefficients (required). If <code>beta</code> is
+named, names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed <code>beta</code> is aligned positionally and must
+have length <code>ncol(z)</code>. A one-column matrix with row names is accepted
+as a named vector. See <code><a href="align_beta.html">align_beta</a></code>.
 These are used to compute the external risk scores and the KL divergence term.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of tuning parameters. Controls the reliance on external information.
-The function will sort these values and fit a model for each.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights. Must be finite
+and \(\ge 0\). The values are sorted in ascending order internally, and the
+columns of the returned coefficient matrix follow that sorted order.</p></dd>
 
 
 <dt id="arg-ties">ties<a class="anchor" aria-label="anchor" href="#arg-ties"></a></dt>
@@ -155,7 +162,7 @@ preventing excessive computation time. Default is <code>1e7</code>. Only relevan
 <dd><p>Matrix of linear predictors (risk scores) for each <code>eta</code>.</p></dd>
 
 <dt><code>likelihood</code></dt>
-<dd><p>Vector of negative log-partial likelihoods for each <code>eta</code>.</p></dd>
+<dd><p>Vector of log-partial likelihoods, one per <code>eta</code> (larger values indicate better fit; this is <em>not</em> a loss).</p></dd>
 
 <dt><code>data</code></dt>
 <dd><p>List containing the input data used (<code>z</code>, <code>time</code>, <code>delta</code>, <code>stratum</code>).</p></dd>

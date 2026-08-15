@@ -20,8 +20,7 @@ coxkl_ridge(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL,
-  ...
+  beta_initial = NULL
 )
 }
 \arguments{
@@ -33,20 +32,31 @@ coxkl_ridge(
 
 \item{stratum}{Optional numeric or factor vector specifying strata. If \code{NULL}, all observations are in the same stratum.}
 
-\item{RS}{Optional numeric vector or matrix of external risk scores. If not provided, \code{beta} must be supplied.}
+\item{RS}{Optional numeric vector of external risk scores, one per observation
+(a one-column matrix is also accepted). Only a single risk score per observation
+is supported. If not provided, \code{beta} must be supplied.}
 
-\item{beta}{Optional numeric vector of externally derived coefficients (length equal to \code{ncol(z)}).
+\item{beta}{Optional numeric vector of external coefficients. If \code{beta} is
+named, names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed \code{beta} is aligned positionally and must
+have length \code{ncol(z)}. A one-column matrix with row names is accepted
+as a named vector. See \code{\link{align_beta}}.
 If provided, used to calculate risk scores. If not provided, \code{RS} must be supplied.}
 
-\item{eta}{Non-negative scalar controlling the strength of external information integration.
-\code{eta = 0} implies a standard Ridge Cox model.}
+\item{eta}{Single finite non-negative integration weight controlling the strength of
+external information integration. \code{eta = 0} implies a standard Ridge Cox model.
+The formal default is \code{NULL}, which resolves to \code{eta = 0} with the warning
+"eta is not provided. Setting eta = 0 (no external information used)."}
 
 \item{lambda}{Optional numeric scalar or vector of penalty parameters. If \code{NULL}, a sequence is generated automatically.}
 
 \item{nlambda}{Integer. Number of lambda values to generate if \code{lambda} is \code{NULL}. Default is 100.}
 
 \item{penalty.factor}{Numeric scalar in \code{[0, 1)}. Controls the internal mixing parameter used to generate
-the lambda sequence when \code{lambda = NULL}. A value close to 1 generates a sequence suitable for Ridge-like behavior.}
+the lambda sequence when \code{lambda = NULL}. A value close to 1 generates a sequence suitable for Ridge-like behavior.
+Default is \code{0.999}.}
 
 \item{tol}{Convergence tolerance for the iterative estimation algorithm. Default is 1e-4.}
 
@@ -59,8 +69,6 @@ the lambda sequence when \code{lambda = NULL}. A value close to 1 generates a se
 \item{data_sorted}{Logical. Internal optimization. If \code{TRUE}, assumes input data is already sorted by strata and time.}
 
 \item{beta_initial}{Optional numeric vector. Initial values for the coefficients. Default is 0.}
-
-\item{...}{Additional arguments.}
 }
 \value{
 An object of class \code{"coxkl_ridge"} containing:
@@ -68,8 +76,9 @@ An object of class \code{"coxkl_ridge"} containing:
 \item{\code{lambda}}{The sequence of lambda values used for estimation.}
 \item{\code{beta}}{A matrix of estimated coefficients (p x nlambda).}
 \item{\code{linear.predictors}}{A matrix of linear predictors (n x nlambda), restored to the original data order.}
-\item{\code{likelihood}}{A vector of negative log-partial likelihoods for each lambda.}
-\item{\code{data}}{A list containing the input data used (\code{z}, \code{time}, \code{delta}, \code{stratum}).}
+\item{\code{likelihood}}{Vector of log-partial likelihoods, one per lambda (larger values indicate better fit; this is \emph{not} a loss).}
+\item{\code{data}}{A list containing the input data used (\code{z}, \code{time}, \code{delta}, \code{stratum}),
+as supplied by the caller (i.e. in the original row order, before the internal sorting by stratum and time).}
 }
 }
 \description{

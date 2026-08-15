@@ -49,8 +49,9 @@ cv.coxkl_enet(
 
 - stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, a
+  warning is issued and all subjects are assumed to be in the same
+  stratum.
 
 - RS:
 
@@ -59,13 +60,22 @@ cv.coxkl_enet(
 
 - beta:
 
-  Optional numeric vector of external coefficients (length equal to
-  `ncol(z)`). If provided, it is used to compute external risk scores.
-  If not provided, `RS` must be supplied.
+  Optional numeric vector of external coefficients. If provided, it is
+  used to compute external risk scores; if not provided, `RS` must be
+  supplied. If `beta` is named, names are matched against `colnames(z)`:
+  covariates absent from `beta` are set to 0 (with a message) and the
+  vector is reordered, so an external source covering only a subset of
+  the internal covariates may be supplied directly. An unnamed `beta` is
+  aligned positionally and must have length `ncol(z)`. A one-column
+  matrix with row names is accepted as a named vector. See
+  [`align_beta`](https://um-kevinhe.github.io/BregSurv/reference/align_beta.md).
 
 - etas:
 
-  Numeric vector of candidate `eta` values to be evaluated.
+  Numeric vector of non-negative candidate `eta` values to be evaluated.
+  Must be finite and \\\ge 0\\. The values are sorted in ascending order
+  internally, and the rows of `integrated_stat.best_per_eta` / columns
+  of `integrated_stat.betahat_best` follow that sorted order.
 
 - alpha:
 
@@ -108,8 +118,10 @@ cv.coxkl_enet(
 
   Optional stratum vector. Required only when `cv.criteria` is set to
   `"CIndex_pooled"` or `"CIndex_foldaverage"`, and a stratified C-index
-  needs to be computed while the fitted model is non-stratified. Default
-  is `NULL`.
+  needs to be computed while the fitted model is non-stratified. That
+  use case is therefore only reachable when `stratum = NULL`: if
+  `stratum` is supplied and `c_index_stratum` is not identical to it,
+  the function stops with an error. Default is `NULL`.
 
 - message:
 
@@ -144,12 +156,14 @@ An object of class `"cv.coxkl_enet"`. A list containing:
 - `integrated_stat.full_results`:
 
   A `data.frame` containing the performance metric for every combination
-  of `eta` and `lambda`.
+  of `eta` and `lambda`. Besides `eta` and `lambda` it carries a single
+  metric column named after the selected criterion: `Loss` for `"V&VH"`
+  and `"LinPred"`, otherwise `CIndex_pooled` or `CIndex_foldaverage`.
 
 - `integrated_stat.best_per_eta`:
 
   A `data.frame` containing the best lambda and corresponding score for
-  each candidate `eta`.
+  each candidate `eta`, with the same criterion-named metric column.
 
 - `integrated_stat.betahat_best`:
 

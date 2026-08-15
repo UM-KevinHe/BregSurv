@@ -116,12 +116,15 @@ or <code>"CIndex_foldaverage"</code>.</p></dd>
 
 <dt id="arg-bounds-list">bounds_list<a class="anchor" aria-label="anchor" href="#arg-bounds-list"></a></dt>
 <dd><p>A named list defining the search range for <code>eta</code>,
-e.g., <code>list(eta = c(0, 10))</code>.</p></dd>
+e.g., <code>list(eta = c(0, 10))</code>. Default <code>list(eta = c(0, 10))</code>. The
+lower bound must be non-negative.</p></dd>
 
 
 <dt id="arg-init-grid-dt">init_grid_dt<a class="anchor" aria-label="anchor" href="#arg-init-grid-dt"></a></dt>
-<dd><p>A <code>data.frame</code> of initial points for the optimization.
-Default is <code>0</code> if <code>init_grid_dt</code> is provided.</p></dd>
+<dd><p>A <code>data.frame</code> of initial points at which to evaluate the
+criterion before the Bayesian search begins. Default
+<code>data.frame(eta = c(0, 1, 5))</code>. All <code>eta</code> values in it must be
+non-negative.</p></dd>
 
 
 <dt id="arg-init-points">init_points<a class="anchor" aria-label="anchor" href="#arg-init-points"></a></dt>
@@ -131,7 +134,8 @@ the Bayesian search begins, in addition to those supplied via
 
 
 <dt id="arg-n-iter">n_iter<a class="anchor" aria-label="anchor" href="#arg-n-iter"></a></dt>
-<dd><p>Number of iterations for the Bayesian Optimization process.</p></dd>
+<dd><p>Number of iterations for the Bayesian Optimization process.
+Default <code>10</code>.</p></dd>
 
 
 <dt id="arg-acq">acq<a class="anchor" aria-label="anchor" href="#arg-acq"></a></dt>
@@ -181,6 +185,17 @@ values favour exploration. Default <code>2.576</code>.</p></dd>
 
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Each objective evaluation is a call to <code><a href="cv.coxkl.html">cv.coxkl</a></code> at a single candidate
+<code>eta</code>, and this function consumes that call's S3 return directly: the scalar
+criterion is read from the metric column of <code>internal_stat</code> (its second
+column, whose name depends on <code>criteria</code>), and the coefficient vector from
+<code>beta_full</code>. Loss criteria (<code>"V&amp;VH"</code>, <code>"LinPred"</code>) are negated
+before being handed to the optimizer, which always maximizes, while the C-index
+criteria are passed through unchanged; <code>best_score</code> and <code>full_stats</code>
+report the raw, un-negated values in either case.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

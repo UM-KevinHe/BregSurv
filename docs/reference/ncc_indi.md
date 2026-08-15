@@ -54,8 +54,10 @@ ncc_indi(
 
 - etas:
 
-  Numeric vector of nonnegative external weights. `eta = 0` gives an
-  internal-only fit.
+  Numeric vector of nonnegative external weights. Must be finite and
+  \\\ge 0\\; `eta = 0` gives an internal-only fit. The values are sorted
+  in ascending order internally, and the columns of the returned
+  coefficient matrix follow that sorted order.
 
 - max_iter:
 

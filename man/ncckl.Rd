@@ -22,13 +22,28 @@ ncckl(
 
 \item{z}{Numeric matrix of covariates.}
 
-\item{stratum}{Numeric or factor vector defining the matched sets (strata). This is \strong{required} for CLR.}
+\item{stratum}{Numeric or factor vector defining the matched sets (strata). Strongly
+recommended for CLR: if omitted, a warning is issued and all observations are
+assumed to lie in a single stratum, which defeats the purpose of matching.}
 
-\item{etas}{Numeric vector of tuning parameters. Controls the strength of external information integration.}
+\item{etas}{Numeric vector of non-negative integration weights, controlling the
+strength of external information integration. Must be finite and \eqn{\ge 0}.
+The values are sorted in ascending order internally, and the columns of the
+returned coefficient matrix follow that sorted order.}
 
-\item{beta}{Numeric vector of external coefficients. Used to compute the KL divergence penalty.}
+\item{beta}{Numeric vector of external coefficients, used to compute the KL
+divergence penalty. Required. If \code{beta} is named,
+names are matched against \code{colnames(z)}: covariates absent from
+\code{beta} are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed \code{beta} is aligned positionally and must
+have length \code{ncol(z)}. A one-column matrix with row names is accepted
+as a named vector. See \code{\link{align_beta}}. The bundled external beta
+\code{ExampleData_cc_lowdim$beta_external} is named \code{Z1}--\code{Z6}, so the
+examples below already exercise the name-matching path.}
 
-\item{method}{Character string specifying the tie-handling method ("breslow" or "exact").}
+\item{method}{Character string specifying the tie-handling method, resolved by
+\code{\link[base]{match.arg}}. One of \code{"breslow"} (the default) or \code{"exact"}.}
 
 \item{Mstop}{Integer. Maximum number of Newton-Raphson iterations. Default \code{100}.}
 
@@ -39,9 +54,20 @@ ncckl(
 \item{comb_max}{Integer. Maximum number of combinations for the \code{method = "exact"} calculation. Default \code{1e7}.}
 }
 \value{
-An object of class \code{"coxkl"} (inherited from \code{\link{coxkl_ties}}) containing
-the estimation results for each \code{eta} value, including estimated coefficients,
-linear predictors, and log-partial likelihoods.
+An object of class \code{"coxkl"}, returned unchanged from \code{\link{coxkl_ties}},
+containing the estimation results for each \code{eta} value:
+\describe{
+\item{\code{eta}}{The sorted sequence of \eqn{\eta} values used. Because \code{etas}
+is sorted internally, this is the only way to recover which column of \code{beta}
+corresponds to which weight.}
+\item{\code{beta}}{Matrix of estimated coefficients (\eqn{p \times n_{etas}}); columns
+follow the sorted \code{eta} values.}
+\item{\code{linear.predictors}}{Matrix of linear predictors, in the original row order.}
+\item{\code{likelihood}}{Vector of log-partial likelihoods, one per \code{eta}.}
+\item{\code{data}}{List of the input data used (\code{z}, \code{time}, \code{delta},
+\code{stratum}). Note the CLR-to-Cox mapping: the outcome \code{y} is stored under
+\code{delta}, and \code{time} is a vector of 1s.}
+}
 }
 \description{
 Fits a series of Conditional Logistic Regression models that integrate external

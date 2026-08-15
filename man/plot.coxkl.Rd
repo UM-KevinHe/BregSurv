@@ -17,13 +17,13 @@
 \arguments{
 \item{x}{An object of class \code{"coxkl"}.}
 
-\item{test_z}{Matrix of test covariates. If NULL, training data is used.}
+\item{test_z}{Matrix of test covariates. Optional; see Details.}
 
-\item{test_time}{Vector of test survival times.}
+\item{test_time}{Vector of test survival times. Optional; see Details.}
 
-\item{test_delta}{Vector of test status indicators.}
+\item{test_delta}{Vector of test status indicators. Optional; see Details.}
 
-\item{test_stratum}{Vector of test strata (optional).}
+\item{test_stratum}{Vector of test strata. Optional; see Details.}
 
 \item{criteria}{Metric to plot: \code{"loss"} or \code{"CIndex"}.}
 
@@ -35,6 +35,19 @@ A \code{ggplot} object.
 \description{
 Plots the validation performance (Loss or C-Index) against the tuning parameter \code{eta}.
 Compares the "Integrated" estimator (solid line) against the "Internal" baseline (dotted line, eta=0).
+
+The output of \code{\link{coxkl_ties}} also carries class \code{"coxkl"} and is
+therefore served by this same method.
+}
+\details{
+The four \code{test_*} arguments act as a single unit. The training data stored
+in the fitted object are used for evaluation only when \emph{all four} of
+\code{test_z}, \code{test_time}, \code{test_delta} and \code{test_stratum} are
+\code{NULL}. Supplying any one of them selects the external-test path, so
+leaving \code{test_z} \code{NULL} while passing any of the others does not fall
+back to the training data -- it produces an error. The one exception is
+\code{test_time}: on the external-test path, if it alone is omitted all test
+times are set to 1.
 }
 \examples{
 \dontrun{
@@ -51,11 +64,11 @@ coxkl_est <- coxkl(z = train_dat_lowdim$z,
                    beta = beta_external_lowdim,
                    etas = eta_list)
 
-plot.coxkl(coxkl_est,
-           test_z = test_dat_lowdim$z,
-           test_time = test_dat_lowdim$time,
-           test_delta = test_dat_lowdim$status,
-           test_stratum = test_dat_lowdim$stratum,
-           criteria = "CIndex")
+plot(coxkl_est,
+     test_z = test_dat_lowdim$z,
+     test_time = test_dat_lowdim$time,
+     test_delta = test_dat_lowdim$status,
+     test_stratum = test_dat_lowdim$stratum,
+     criteria = "CIndex")
 }
 }

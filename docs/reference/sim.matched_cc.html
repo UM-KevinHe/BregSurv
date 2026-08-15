@@ -74,41 +74,52 @@ eta = theta_stratum + Z %*% beta.</p>
 
 
 <dl><dt id="arg-n-stratum">n_stratum<a class="anchor" aria-label="anchor" href="#arg-n-stratum"></a></dt>
-<dd><p>Number of matched strata (sets).</p></dd>
+<dd><p>Number of matched strata (sets). No default; integer \(\ge 1\).</p></dd>
 
 
 <dt id="arg-m">m<a class="anchor" aria-label="anchor" href="#arg-m"></a></dt>
-<dd><p>Number of controls per case (&gt;=1).</p></dd>
+<dd><p>Number of controls per case (&gt;=1). No default.</p></dd>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Numeric vector of coefficients (length p).</p></dd>
+<dd><p>Numeric vector of coefficients (length p). No default; must be finite.</p></dd>
 
 
 <dt id="arg-rho">rho<a class="anchor" aria-label="anchor" href="#arg-rho"></a></dt>
-<dd><p>Correlation parameter for Z within stratum (equicorrelation).</p></dd>
+<dd><p>Correlation parameter for Z within stratum (equicorrelation). Default
+is 0.8; must lie in \([0, 1)\).</p></dd>
 
 
 <dt id="arg-mu-z">mu_Z<a class="anchor" aria-label="anchor" href="#arg-mu-z"></a></dt>
-<dd><p>Mean vector for Z. Scalar or length p.</p></dd>
+<dd><p>Mean vector for Z. Scalar or length p. Default is 0.</p></dd>
 
 
 <dt id="arg-sd-z">sd_Z<a class="anchor" aria-label="anchor" href="#arg-sd-z"></a></dt>
-<dd><p>Standard deviation vector for Z. Scalar or length p, must be positive.</p></dd>
+<dd><p>Standard deviation vector for Z. Scalar or length p, must be positive.
+Default is 1.</p></dd>
 
 
 <dt id="arg-stratum-sd">stratum_sd<a class="anchor" aria-label="anchor" href="#arg-stratum-sd"></a></dt>
-<dd><p>SD of stratum random intercepts.</p></dd>
+<dd><p>SD of stratum random intercepts. Default is 0.5.</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Optional RNG seed.</p></dd>
+<dd><p>Optional RNG seed. Default <code>NULL</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A list containing matched data frames and simulation metadata.</p>
-    </div>
+    <p>A list with five components:</p><ul><li><p><code>data_combined</code>: a single <code>data.frame</code> with columns
+<code>stratum</code>, <code>y</code>, and covariates <code>Z1...Zp</code>, stacking all matched
+sets.</p></li>
+<li><p><code>data</code>: a list containing <code>stratum</code>, <code>Z</code>, and <code>y</code>.</p></li>
+<li><p><code>true_beta</code>: numeric vector of the coefficients used.</p></li>
+<li><p><code>char</code>: a list of column-name metadata (<code>stratum</code>,
+<code>Z.char</code>, <code>Outcome.char</code>).</p></li>
+<li><p><code>meta</code>: a list of simulation metadata including <code>n_stratum</code>,
+<code>m</code>, <code>set_size</code>, <code>theta_stratum</code>, <code>stratum_sd</code>,
+<code>rho</code>, <code>mu_Z</code>, <code>sd_Z</code>, and <code>case_prop</code>.</p></li>
+</ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

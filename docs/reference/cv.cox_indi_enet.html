@@ -100,7 +100,8 @@ the external weight <code>eta</code> and the regularisation parameter <code>lamb
 
 <dt id="arg-stratum-int">stratum_int<a class="anchor" aria-label="anchor" href="#arg-stratum-int"></a></dt>
 <dd><p>Optional stratum identifiers for the internal dataset.
-Default <code>NULL</code> assigns all internal observations to a single stratum.</p></dd>
+Default <code>NULL</code> assigns all internal observations to a single stratum and
+issues a warning to that effect.</p></dd>
 
 
 <dt id="arg-z-ext">z_ext<a class="anchor" aria-label="anchor" href="#arg-z-ext"></a></dt>
@@ -162,10 +163,13 @@ One of <code>"V&amp;VH"</code> (default), <code>"LinPred"</code>, <code>"CIndex_
 
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
-<dd><p>Optional stratum vector for the internal dataset.
-Only needed when <code>cv.criteria</code> is <code>"CIndex_pooled"</code> or
-<code>"CIndex_foldaverage"</code> and a stratified C-index is desired while the
-fitted model uses a different (or no) stratification. Default <code>NULL</code>.</p></dd>
+<dd><p>Optional stratum vector for the internal dataset,
+used when <code>cv.criteria</code> is <code>"CIndex_pooled"</code> or
+<code>"CIndex_foldaverage"</code>. When supplied it must be identical to
+<code>stratum_int</code>, otherwise the function stops with an error. Because
+<code>stratum_int</code> is defaulted to a single stratum before this check, a
+<code>c_index_stratum</code> that differs from the stratification used for fitting
+is never accepted. Default <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-message">message<a class="anchor" aria-label="anchor" href="#arg-message"></a></dt>
@@ -193,11 +197,15 @@ Default <code>FALSE</code>.</p></dd>
 
 <dt><code>integrated_stat.full_results</code></dt>
 <dd><p>A <code>data.frame</code> with the cross-validation
-score for every (<code>eta</code>, <code>lambda</code>) combination evaluated.</p></dd>
+score for every (<code>eta</code>, <code>lambda</code>) combination evaluated. Besides
+<code>eta</code> and <code>lambda</code> it carries a single metric column named after the
+selected criterion: <code>Loss</code> for <code>"V&amp;VH"</code> and <code>"LinPred"</code>, otherwise
+<code>CIndex_pooled</code> or <code>CIndex_foldaverage</code>.</p></dd>
 
 <dt><code>integrated_stat.best_per_eta</code></dt>
 <dd><p>A <code>data.frame</code> with the best
-<code>lambda</code> and corresponding score for each candidate <code>eta</code>.</p></dd>
+<code>lambda</code> and corresponding score for each candidate <code>eta</code>, with the
+same criterion-named metric column.</p></dd>
 
 <dt><code>integrated_stat.betahat_best</code></dt>
 <dd><p>A coefficient matrix

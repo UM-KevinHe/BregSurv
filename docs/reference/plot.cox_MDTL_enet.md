@@ -26,19 +26,19 @@ plot(
 
 - test_z:
 
-  Matrix of test covariates.
+  Matrix of test covariates. Optional; see Details.
 
 - test_time:
 
-  Vector of test survival times.
+  Vector of test survival times. Optional; see Details.
 
 - test_delta:
 
-  Vector of test status indicators.
+  Vector of test status indicators. Optional; see Details.
 
 - test_stratum:
 
-  Vector of test strata.
+  Vector of test strata. Optional; see Details.
 
 - criteria:
 
@@ -51,6 +51,17 @@ plot(
 ## Value
 
 A `ggplot` object.
+
+## Details
+
+The four `test_*` arguments act as a single unit. The training data
+stored in the fitted object are used for evaluation only when *all four*
+of `test_z`, `test_time`, `test_delta` and `test_stratum` are `NULL`.
+Supplying any one of them selects the external-test path, so leaving
+`test_z` `NULL` while passing any of the others does not fall back to
+the training data – it produces an error. The one exception is
+`test_time`: on the external-test path, if it alone is omitted all test
+times are set to 1.
 
 ## Examples
 
@@ -68,11 +79,11 @@ cox_MDTL_enet_est <- cox_MDTL_enet(z = train_dat_highdim$z,
                                    Q = NULL,
                                    eta = 0)
 
-plot.cox_MDTL_enet(cox_MDTL_enet_est,
-                   test_z = test_dat_highdim$z,
-                   test_time = test_dat_highdim$time,
-                   test_delta = test_dat_highdim$status,
-                   test_stratum = test_dat_highdim$stratum,
-                   criteria = "CIndex")
+plot(cox_MDTL_enet_est,
+     test_z = test_dat_highdim$z,
+     test_time = test_dat_highdim$time,
+     test_delta = test_dat_highdim$status,
+     test_stratum = test_dat_highdim$stratum,
+     criteria = "CIndex")
 } # }
 ```

@@ -3,8 +3,8 @@
 #' Produces a numeric vector of `eta` values to be used in Cox–KL model.
 #'
 #' @param method Character string selecting how to generate \code{eta}:
-#'   \dQuote{linear} or \dQuote{exponential}. Default is \dQuote{exponential}.
-#'   for an exponentially spaced sequence scaled to `max_eta`. Default is `"exponential"`.
+#'   \dQuote{linear} for an evenly spaced sequence, or \dQuote{exponential} for an
+#'   exponentially spaced sequence. Default is \dQuote{exponential}.
 #' @param n Integer, the number of `eta` values to generate. Default is 10.
 #' @param max_eta Numeric, the maximum value of `eta` in the sequence. Default is 5.
 #' @param min_eta Numeric, the minimum value of `eta` in the sequence. Default is 0.
@@ -13,17 +13,22 @@
 #' \itemize{
 #'   \item \emph{Exponential}: values are formed by exponentiating a grid from
 #'     \code{log(1)} to \code{log(100)}, then linearly rescaling to the interval
-#'     \code{[0, max_eta]}. Thus the smallest value equals \code{0} and the largest
-#'     equals \code{max_eta}.
-#'   \item \emph{Linear}: the current implementation calls
-#'     \code{seq(min_eta, max_eta, length.out = n)} and therefore assumes a
-#'     numeric object \code{min_eta} exists in the calling environment.
+#'     \code{[min_eta, max_eta]}. Thus the smallest value equals \code{min_eta} and
+#'     the largest equals \code{max_eta}.
+#'   \item \emph{Linear}: values are \code{seq(min_eta, max_eta, length.out = n)}.
 #' }
+#' Both \code{min_eta} and \code{max_eta} must be single finite numbers with
+#' \code{min_eta <= max_eta}; otherwise an error is signalled.
+#'
 #' Only the exact strings \dQuote{linear} and \dQuote{exponential} are supported;
 #' other values for \code{method} will result in an error because \code{eta_values}
 #' is never created.
 #'
-#' @return Numeric vector of length \code{n} containing the generated \code{eta} values.
+#' @return Numeric vector of length \code{n} containing the generated \code{eta}
+#'   values, spanning \code{[min_eta, max_eta]}. These values are external-borrowing
+#'   weights and are meaningful only when non-negative: the model-fitting and
+#'   cross-validation functions of this package validate \code{eta}/\code{etas} and
+#'   reject negative values, so \code{min_eta} should not be set below 0.
 #'
 #' @examples
 #' # Generate 10 exponentially spaced eta values up to 5
@@ -32,13 +37,26 @@
 #' # Generate 5 linearly spaced eta values up to 3
 #' generate_eta(method = "linear", n = 5, min_eta= 0, max_eta = 3)
 #'
+#' # Exponential spacing that starts at 0.1 rather than 0
+#' generate_eta(method = "exponential", n = 5, min_eta = 0.1, max_eta = 3)
+#'
 #' @export
 generate_eta <- function(method = "exponential", n = 10, max_eta = 5, min_eta = 0) {
+  if (!is.numeric(min_eta) || length(min_eta) != 1L || !is.finite(min_eta)) {
+    stop("'min_eta' must be a single finite numeric value.", call. = FALSE)
+  }
+  if (!is.numeric(max_eta) || length(max_eta) != 1L || !is.finite(max_eta)) {
+    stop("'max_eta' must be a single finite numeric value.", call. = FALSE)
+  }
+  if (min_eta > max_eta) {
+    stop("'min_eta' must not be greater than 'max_eta'.", call. = FALSE)
+  }
   if (method == "linear") {
     eta_values <- seq(min_eta, max_eta, length.out = n)
   } else if (method == "exponential") {
     eta_values <- exp(seq(log(1), log(100), length.out = n))
-    eta_values <- (eta_values - min(eta_values)) / (max(eta_values) - min(eta_values)) * max_eta
+    eta_values <- (eta_values - min(eta_values)) / (max(eta_values) - min(eta_values)) *
+      (max_eta - min_eta) + min_eta
   }
   return(eta_values)
 }
@@ -135,13 +153,41 @@ check_etas <- function(etas, scalar = FALSE, arg = "etas") {
 #' unnamed (or \code{z} has no column names), it is aligned positionally and must
 #' already have length \code{ncol(z)}.
 #'
+#' Name-based alignment signals an error if \code{beta} has duplicated names, or if
+#' any name in \code{beta} is not one of \code{colnames(z)} (covariates that exist
+#' only in the external source must be dropped by the caller). Whenever at least one
+#' covariate is zero-padded, a \code{message()} listing the padded covariates is
+#' emitted.
+#'
 #' @param z Internal covariate matrix or data frame. Its columns define the
 #'   target coefficient space; column names, when present, are used for matching.
-#' @param beta External coefficient vector (optionally named).
+#' @param beta External coefficient vector (optionally named). A one-column matrix is
+#'   also accepted -- the shape in which a \code{coef()} result or a stored
+#'   external-model artifact typically arrives -- and its row names are promoted to
+#'   the names of the resulting vector.
 #' @param arg Name used for \code{beta} in error messages.
 #'
-#' @return A numeric vector of length \code{ncol(z)}, ordered to \code{colnames(z)}.
+#' @return A numeric vector of length \code{ncol(z)}, ordered to \code{colnames(z)}
+#'   and named with \code{colnames(z)} whenever \code{z} carries column names.
 #' @seealso \code{\link{align_beta_Q}} for the Mahalanobis-distance setting.
+#'
+#' @examples
+#' # Six internal covariates; the external source estimated only four of them.
+#' z <- matrix(seq_len(30), nrow = 5, ncol = 6,
+#'             dimnames = list(NULL, paste0("Z", 1:6)))
+#' beta_ext <- c(Z1 = 0.30, Z3 = 0.25, Z5 = -0.10, Z6 = 0.05)
+#'
+#' # Z2 and Z4 are absent from the external vector and are zero-padded.
+#' align_beta(z, beta_ext)
+#'
+#' # A one-column matrix is accepted; its row names are used as the names.
+#' beta_mat <- matrix(c(0.30, 0.25, -0.10, 0.05), ncol = 1,
+#'                    dimnames = list(c("Z1", "Z3", "Z5", "Z6"), "coef"))
+#' align_beta(z, beta_mat)
+#'
+#' # An unnamed beta is aligned positionally and must have length ncol(z).
+#' align_beta(z, c(0.30, 0, 0.25, 0, -0.10, 0.05))
+#'
 #' @export
 align_beta <- function(z, beta, arg = "beta") {
   .align_beta(z, beta, arg = arg)$beta
@@ -164,16 +210,46 @@ align_beta <- function(z, beta, arg = "beta") {
 #' \code{beta} and 0 on padded positions. This ensures that padded-zero
 #' coefficients are not penalized as if they were genuine external information.
 #'
+#' Symmetry of \code{Q} is checked with \code{isSymmetric()} at tolerance
+#' \code{1e-8}, and positive semi-definiteness by requiring the smallest eigenvalue
+#' to be at least \code{-1e-8}; violations of either are errors. Name-based
+#' alignment of \code{Q} engages only when \code{rownames(Q)} is non-\code{NULL}
+#' \emph{and} \code{z} has column names; otherwise \code{Q} is used positionally and
+#' must be exactly \code{ncol(z)} by \code{ncol(z)}. Name-based alignment signals an
+#' error if \code{rownames(Q)} contains duplicates, if any of them is not one of
+#' \code{colnames(z)}, or if \code{colnames(Q)} is present but does not contain the
+#' same names as \code{rownames(Q)}.
+#'
 #' @param z Internal covariate matrix or data frame.
-#' @param beta External coefficient vector (optionally named).
+#' @param beta External coefficient vector (optionally named). A one-column matrix
+#'   with row names is accepted as a named vector; see \code{\link{align_beta}}.
 #' @param Q Optional weighting/precision matrix (optionally with dimnames). If
 #'   \code{NULL}, a masked identity is used.
 #' @param arg_beta,arg_Q Names used for \code{beta} and \code{Q} in error messages.
 #'
 #' @return A list with components \code{beta} (numeric, length \code{ncol(z)}),
-#'   \code{Q} (\code{ncol(z)} by \code{ncol(z)} matrix), and \code{provided}
-#'   (logical mask of covariates supplied by the external source).
+#'   \code{Q} (\code{ncol(z)} by \code{ncol(z)} matrix, carrying \code{colnames(z)}
+#'   as both its row and column names whenever \code{z} has column names), and
+#'   \code{provided} (logical mask of covariates supplied by the external source).
 #' @seealso \code{\link{align_beta}}
+#'
+#' @examples
+#' z <- matrix(seq_len(30), nrow = 5, ncol = 6,
+#'             dimnames = list(NULL, paste0("Z", 1:6)))
+#' beta_ext <- c(Z1 = 0.30, Z3 = 0.25, Z5 = -0.10, Z6 = 0.05)
+#'
+#' # Q = NULL gives the masked identity: 1 on the covariates the external source
+#' # supplied, 0 on the zero-padded ones (Z2, Z4), which are left unpenalized.
+#' aligned <- align_beta_Q(z, beta_ext)
+#' aligned$beta
+#' diag(aligned$Q)
+#' aligned$provided
+#'
+#' # A named information matrix is reordered and zero-padded to colnames(z).
+#' Q_ext <- diag(c(4, 2, 1, 3))
+#' dimnames(Q_ext) <- list(names(beta_ext), names(beta_ext))
+#' align_beta_Q(z, beta_ext, Q = Q_ext)$Q
+#'
 #' @export
 align_beta_Q <- function(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q") {
   al <- .align_beta(z, beta, arg = arg_beta)

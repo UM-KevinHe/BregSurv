@@ -31,19 +31,30 @@ one case.}
 \item{stratum}{Numeric or factor vector defining the matched sets (strata).
 Each unique value identifies one matched set.}
 
-\item{beta}{Numeric vector of external coefficients. \strong{Required}.
-Length must equal the number of columns in \code{z}. These are used by
-\code{\link{ncckl}} / \code{\link{coxkl_ties}} to construct the KL
-divergence penalty.}
+\item{beta}{Numeric vector of external coefficients. \strong{Required}. These
+are used by \code{\link{ncckl}} / \code{\link{coxkl_ties}} to construct the
+KL divergence penalty. If \code{beta} is named, names are matched against
+\code{colnames(z)}: covariates absent from \code{beta} are set to 0 (with a
+message) and the vector is reordered, so an external source covering only a
+subset of the internal covariates may be supplied directly. An unnamed
+\code{beta} is aligned positionally and must have length \code{ncol(z)}. A
+one-column matrix with row names is accepted as a named vector. See
+\code{\link{align_beta}}. The bundled fixture
+\code{ExampleData_cc_lowdim$beta_external} is named \code{Z1}--\code{Z6} and
+therefore takes the name-matching path.}
 
-\item{etas}{Numeric vector of candidate tuning values for the integration
-parameter \eqn{\eta} to be cross-validated. The values will be sorted in
-ascending order.}
+\item{etas}{Numeric vector of non-negative integration weights for the
+parameter \eqn{\eta} to be cross-validated. \strong{Required}; the function
+stops if \code{etas} is \code{NULL}. Must be finite and \eqn{\ge 0}. The
+values are sorted in ascending order internally, and the rows of
+\code{internal_stat} / columns of \code{beta_full} follow that sorted order.}
 
 \item{method}{Character string specifying the tie-handling method used in the
-underlying Cox partial likelihood. Must be one of \code{"breslow"} or
-\code{"exact"}. For 1:m matched sets, these yield identical parameter
-estimates, but \code{"exact"} is theoretically preferable.}
+underlying Cox partial likelihood. Must be one of \code{"breslow"} (the
+default) or \code{"exact"}. The value is passed through \code{tolower()}
+before matching, so \code{"Breslow"} / \code{"EXACT"} are also accepted. For
+1:m matched sets, these yield identical parameter estimates, but
+\code{"exact"} is theoretically preferable.}
 
 \item{tol}{Convergence tolerance for the optimizer used inside
 \code{\link{ncckl}} / \code{\link{coxkl_ties}}. Default \code{1e-4}.}
@@ -88,7 +99,8 @@ and the CV metric results for the chosen \code{cv.criteria}.}
 \item{\code{beta_full}}{The matrix of coefficients from the full-data fit
 (columns correspond to \code{etas}).}
 \item{\code{best}}{A list containing the \code{best_eta}, the corresponding
-\code{best_beta} from the full-data fit, and the \code{cv.criteria} used.}
+\code{best_beta} from the full-data fit, and \code{criteria} (the CV
+criterion used).}
 \item{\code{criteria}}{The criterion used for selection.}
 \item{\code{nfolds}}{The number of folds used.}
 }
@@ -108,15 +120,17 @@ uses \code{\link{coxkl_ties}} as the core engine.
 
 Cross-validation is performed at the stratum level: each matched set is
 treated as an indivisible unit and assigned to a single fold using
-\code{\link{get_fold_cc}}. This ensures that the conditional likelihood is
+\code{get_fold_cc}. This ensures that the conditional likelihood is
 well-defined within each training and test split.
 
 The \code{cv.criteria} argument controls the CV performance metric:
 \itemize{
-\item \code{"loss"}: Average negative conditional log-likelihood on held-out
-strata. For each fold, the conditional log-likelihood is computed over
-the test matched sets using the fitted \eqn{\hat\beta} from the
-corresponding training data; the fold-wise losses are then averaged.
+\item \code{"loss"}: Average negative conditional log-likelihood on the
+held-out data, normalized per observation. For each fold, the conditional
+log-likelihood is computed over the test matched sets using the fitted
+\eqn{\hat\beta} from the corresponding training data and divided by the
+number of held-out \emph{observations} in that fold; the resulting
+fold-wise losses are then averaged (unweighted) across folds.
 \item \code{"AUC"}: A matched-set AUC based on within-stratum comparisons.
 For each stratum, the case score is compared to the control scores,
 counting concordant/discordant/tied pairs and aggregating across all

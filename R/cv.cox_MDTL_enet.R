@@ -13,23 +13,39 @@
 #' @param delta A numeric vector of event indicators (1 = event, 0 = censored).
 #' @param time A numeric vector of observed times.
 #' @param stratum Optional numeric or factor vector indicating strata. If \code{NULL},
-#'   all subjects are assumed to be in the same stratum.
-#' @param beta A numeric vector of external coefficients (length p).
-#' @param Q Optional numeric matrix (p x p) representing the weighting matrix \eqn{Q}
-#'   for the Mahalanobis penalty. This should be a symmetric positive-semidefinite
-#'   \emph{precision} matrix (typically the inverse covariance / information matrix of
-#'   the external estimator). If named, it is reordered and zero-padded to
-#'   \code{colnames(z)}. If \code{NULL}, a masked identity is used.
-#' @param etas A numeric vector of candidate \code{eta} values to be evaluated.
-#' @param alpha The Elastic Net mixing parameter, with \eqn{0 \le \alpha \le 1}.
-#'   \code{alpha = 1} is the Lasso penalty, and \code{alpha = 0} is the Ridge penalty.
-#'   If \code{NULL}, defaults to 1 (Lasso).
+#'   a warning is issued and all subjects are assumed to be in the same stratum.
+#' @param beta A numeric vector of external coefficients. **Required**. If \code{beta}
+#'   is named, names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered, so an
+#'   external source covering only a subset of the internal covariates may be supplied
+#'   directly. An unnamed \code{beta} is aligned positionally and must have length
+#'   \code{ncol(z)}. A one-column matrix with row names is accepted as a named vector.
+#'   See \code{\link{align_beta_Q}}.
+#' @param Q Optional weighting (precision) matrix for the Mahalanobis penalty
+#'   (typically the inverse covariance / information matrix of the external
+#'   estimator). Must be symmetric and positive semi-definite; both are checked to a
+#'   tolerance of 1e-8 and violations are errors. If named, it is reordered and
+#'   zero-padded to \code{colnames(z)}; only an unnamed \code{Q} must be exactly
+#'   \code{ncol(z)} by \code{ncol(z)}. If \code{NULL}, a \emph{masked identity} is
+#'   used: 1 on covariates actually supplied by \code{beta} and 0 on zero-padded
+#'   positions, so padded coefficients are left unpenalized. See
+#'   \code{\link{align_beta_Q}}.
+#' @param etas A numeric vector of non-negative candidate \code{eta} values to be
+#'   evaluated. Must be finite and \eqn{\ge 0}. This argument is **required**: leaving
+#'   it at its \code{NULL} default is an error. The values are sorted in ascending
+#'   order internally, and the rows of \code{integrated_stat.best_per_eta} / columns of
+#'   \code{integrated_stat.betahat_best} follow that sorted order.
+#' @param alpha The Elastic Net mixing parameter, with \eqn{0 < \alpha \le 1}.
+#'   \code{alpha = 1} is the Lasso penalty, and \code{alpha} close to 0 approaches
+#'   ridge. Values outside \eqn{(0, 1]} are an error. If \code{NULL} (the default),
+#'   \code{alpha} is set to 1 (Lasso) and a warning is issued.
 #' @param lambda Optional user-supplied lambda sequence. If \code{NULL}, typical usage
 #'   is to have the program compute its own \code{lambda} sequence based on \code{nlambda}
 #'   and \code{lambda.min.ratio}.
 #' @param nlambda The number of \code{lambda} values. Default is 100.
 #' @param lambda.min.ratio Smallest value for \code{lambda}, as a fraction of \code{lambda.max}.
-#'   Default depends on the sample size relative to the number of predictors.
+#'   Defaults to \code{ifelse(n < p, 0.05, 1e-03)}, i.e. 0.05 when the number of
+#'   observations is smaller than the number of predictors and 1e-03 otherwise.
 #' @param nfolds Integer. Number of cross-validation folds. Default is 5.
 #' @param cv.criteria Character string specifying the cross-validation criterion. Choices are:
 #'   \itemize{
@@ -39,7 +55,9 @@
 #'     \item \code{"CIndex_foldaverage"}: Harrell's C-index computed within each fold and averaged.
 #'   }
 #' @param c_index_stratum Optional stratum vector. Required only when \code{cv.criteria} involves
-#'   stratified C-index calculation but the model itself is unstratified.
+#'   stratified C-index calculation but the model itself is unstratified. That use case is
+#'   therefore only reachable when \code{stratum = NULL}: if \code{stratum} is supplied and
+#'   \code{c_index_stratum} is not identical to it, the function stops with an error.
 #' @param message Logical. If \code{TRUE}, progress messages are printed.
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
 #' @param ... Additional arguments passed to the underlying fitting function.
@@ -54,8 +72,12 @@
 #'       \item \code{criteria}: The selection criterion used.
 #'     }
 #'   }
-#'   \item{\code{integrated_stat.full_results}}{A data frame of performance metrics for all combinations of eta and lambda.}
-#'   \item{\code{integrated_stat.best_per_eta}}{A data frame summarizing the best lambda and performance metric for each eta.}
+#'   \item{\code{integrated_stat.full_results}}{A data frame of performance metrics for all combinations of eta and lambda.
+#'     Besides \code{eta} and \code{lambda} it carries a single metric column named after the
+#'     selected criterion: \code{Loss} for \code{"V&VH"} and \code{"LinPred"}, otherwise
+#'     \code{CIndex_pooled} or \code{CIndex_foldaverage}.}
+#'   \item{\code{integrated_stat.best_per_eta}}{A data frame summarizing the best lambda and performance metric for each eta,
+#'     with the same criterion-named metric column.}
 #'   \item{\code{integrated_stat.betahat_best}}{A matrix of coefficients for the best lambda at each eta.}
 #'   \item{\code{criteria}}{The selection criterion used.}
 #'   \item{\code{alpha}}{The elastic net mixing parameter used.}

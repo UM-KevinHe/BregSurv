@@ -16,24 +16,38 @@ sim.matched_cc(
 )
 }
 \arguments{
-\item{n_stratum}{Number of matched strata (sets).}
+\item{n_stratum}{Number of matched strata (sets). No default; integer \eqn{\ge 1}.}
 
-\item{m}{Number of controls per case (>=1).}
+\item{m}{Number of controls per case (>=1). No default.}
 
-\item{beta}{Numeric vector of coefficients (length p).}
+\item{beta}{Numeric vector of coefficients (length p). No default; must be finite.}
 
-\item{rho}{Correlation parameter for Z within stratum (equicorrelation).}
+\item{rho}{Correlation parameter for Z within stratum (equicorrelation). Default
+is 0.8; must lie in \eqn{[0, 1)}.}
 
-\item{mu_Z}{Mean vector for Z. Scalar or length p.}
+\item{mu_Z}{Mean vector for Z. Scalar or length p. Default is 0.}
 
-\item{sd_Z}{Standard deviation vector for Z. Scalar or length p, must be positive.}
+\item{sd_Z}{Standard deviation vector for Z. Scalar or length p, must be positive.
+Default is 1.}
 
-\item{stratum_sd}{SD of stratum random intercepts.}
+\item{stratum_sd}{SD of stratum random intercepts. Default is 0.5.}
 
-\item{seed}{Optional RNG seed.}
+\item{seed}{Optional RNG seed. Default \code{NULL}.}
 }
 \value{
-A list containing matched data frames and simulation metadata.
+A list with five components:
+\itemize{
+\item \code{data_combined}: a single \code{data.frame} with columns
+\code{stratum}, \code{y}, and covariates \code{Z1...Zp}, stacking all matched
+sets.
+\item \code{data}: a list containing \code{stratum}, \code{Z}, and \code{y}.
+\item \code{true_beta}: numeric vector of the coefficients used.
+\item \code{char}: a list of column-name metadata (\code{stratum},
+\code{Z.char}, \code{Outcome.char}).
+\item \code{meta}: a list of simulation metadata including \code{n_stratum},
+\code{m}, \code{set_size}, \code{theta_stratum}, \code{stratum_sd},
+\code{rho}, \code{mu_Z}, \code{sd_Z}, and \code{case_prop}.
+}
 }
 \description{
 Internal function to simulate 1:m matched data. Each stratum contains exactly one case.

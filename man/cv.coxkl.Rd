@@ -30,16 +30,25 @@ cv.coxkl(
 
 \item{time}{Numeric vector of observed event or censoring times.}
 
-\item{stratum}{Optional numeric or factor vector defining strata.}
+\item{stratum}{Optional numeric or factor vector defining strata. If \code{NULL}, a
+warning is issued and all observations are treated as a single stratum.}
 
 \item{RS}{Optional numeric vector or matrix of external risk scores. If omitted,
 \code{beta} must be supplied.}
 
 \item{beta}{Optional numeric vector of external coefficients. If omitted, \code{RS}
-must be supplied.}
+must be supplied. If \code{beta} is named, names are matched against
+\code{colnames(z)}: covariates absent from \code{beta} are set to 0 (with a message)
+and the vector is reordered, so an external source covering only a subset of
+the internal covariates may be supplied directly. An unnamed \code{beta} is
+aligned positionally and must have length \code{ncol(z)}. A one-column matrix with
+row names is accepted as a named vector. See \code{\link[=align_beta]{align_beta()}}.}
 
-\item{etas}{Numeric vector of candidate tuning values to be cross-validated.
-Default is \code{NULL}, which sets \code{etas = 0}.}
+\item{etas}{Numeric vector of non-negative candidate tuning values to be
+cross-validated. Must be finite and \eqn{\ge 0}. This argument is
+\strong{required}: leaving it at its \code{NULL} default is an error. The values are
+sorted in ascending order internally, and the rows of \code{internal_stat} /
+columns of \code{beta_full} follow that sorted order.}
 
 \item{tol}{Convergence tolerance for the optimizer used inside \code{coxkl}. Default \code{1e-4}.}
 
@@ -57,7 +66,9 @@ Default \code{"V&VH"}.}
 \item{c_index_stratum}{Optional stratum vector. Only required when
 \code{cv.criteria} is set to \code{"CIndex_pooled"} or \code{"CIndex_foldaverage"},
 and a stratified C-index is desired while the fitted model is non-stratified.
-Default \code{NULL}.}
+That use case is therefore only reachable when \code{stratum = NULL}: if \code{stratum}
+is supplied and \code{c_index_stratum} is not identical to it, the function stops
+with an error. Default \code{NULL}.}
 
 \item{message}{Logical; if \code{TRUE}, prints progress messages. Default \code{FALSE}.}
 
@@ -66,13 +77,26 @@ Default \code{NULL}.}
 \item{...}{Additional arguments passed to \code{\link{coxkl}}.}
 }
 \value{
-A \code{data.frame} with one row per candidate \code{eta} and columns:
+An object of class \code{"cv.coxkl"}: a list with the following five
+components.
 \describe{
-\item{\code{eta}}{The candidate \code{eta} values.}
-\item{\code{VVH_Loss}}{If \code{cv.criteria = "V&VH"}, the cross-validated V&VH loss.}
-\item{\code{LinPred_Loss}}{If \code{cv.criteria = "LinPred"}, the loss based on linear predictors.}
-\item{\code{CIndex_pooled}}{If \code{cv.criteria = "CIndex_pooled"}, the pooled cross-validated C-index.}
-\item{\code{CIndex_foldaverage}}{If \code{cv.criteria = "CIndex_foldaverage"}, the average fold-wise C-index.}
+\item{\code{internal_stat}}{A \code{data.frame} with one row per candidate \code{eta},
+in ascending \code{eta} order. It has a column \code{eta} plus \emph{exactly one} metric
+column, whose name is determined by \code{cv.criteria}: \code{VVH_Loss} for
+\code{"V&VH"} (cross-validated V&VH loss), \code{LinPred_Loss} for \code{"LinPred"} (loss
+based on the cross-validated linear predictors), \code{CIndex_pooled} for
+\code{"CIndex_pooled"} (pooled cross-validated C-index), or \code{CIndex_foldaverage}
+for \code{"CIndex_foldaverage"} (average fold-wise C-index). The other three
+metrics are never computed, so only one of them ever appears.}
+\item{\code{beta_full}}{A \code{ncol(z)} by \code{length(etas)} matrix of
+coefficients from the full-data fit, one column per candidate \code{eta} (in the
+same sorted order as \code{internal_stat}).}
+\item{\code{best}}{A list with three components: \code{best_eta}, the selected
+\code{eta} (the loss is minimized for \code{"V&VH"} / \code{"LinPred"}, the C-index is
+maximized otherwise); \code{best_beta}, the corresponding column of
+\code{beta_full}; and \code{criteria}, the criterion used.}
+\item{\code{criteria}}{The criterion used for selection.}
+\item{\code{nfolds}}{The number of cross-validation folds used.}
 }
 }
 \description{

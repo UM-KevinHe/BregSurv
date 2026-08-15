@@ -20,12 +20,13 @@ ncc(
 \item{z}{Numeric matrix of covariates (rows = observations, columns = variables).}
 
 \item{stratum}{Numeric or factor vector defining the matched sets. This is \strong{required}
-   for CLR; if omitted, a warning is issued and all data is treated as one stratum,
-   which defeats the purpose of matching.}
+for CLR; if omitted, a warning is issued and all data is treated as one stratum,
+which defeats the purpose of matching.}
 
 \item{method}{Character string specifying the tie-handling method, which determines
-   the conditional likelihood approximation. Choices are \code{"breslow"}, \code{"exact"}, or \code{"efron"}.
-   Default is to use the first match, but typically \code{"exact"} is preferred for CLR.}
+the conditional likelihood approximation. Choices are \code{"breslow"}, \code{"exact"}, or \code{"efron"}.
+The default is \code{"breslow"}, resolved by \code{\link[base]{match.arg}} and
+matched case-insensitively; typically \code{"exact"} is preferred for CLR.}
 
 \item{max_iter}{Maximum number of Newton-Raphson iterations passed to \code{cox}. Default \code{100}.}
 
@@ -34,8 +35,9 @@ ncc(
 \item{comb_max}{Maximum number of combinations allowed for the \code{method = "exact"} calculation. Default \code{1e7}.}
 }
 \value{
-A \code{list} containing:
-\item{\code{beta}}{Estimated coefficient vector (length p).}
+A \code{list} with exactly two components:
+\item{\code{beta}}{Estimated coefficient vector (length p), named with \code{colnames(z)}
+when \code{z} carries column names.}
 \item{\code{loglik}}{The log-conditional likelihood (which is the log-partial likelihood from \code{cox}) at convergence.}
 }
 \description{

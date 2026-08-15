@@ -27,13 +27,20 @@ coxkl_enet.multi(
 
 \item{stratum}{Optional stratum indicator vector for stratified Cox models.}
 
-\item{beta_list}{A list of external coefficient vectors. Each element must have
-length \code{p}. If provided, \code{RS_list} should be \code{NULL}.}
+\item{beta_list}{A list of external coefficient vectors, one per external source.
+Each element is aligned to the internal covariate space independently: if the
+element is named, names are matched against \code{colnames(z)}, covariates absent
+from that element are set to 0 (with a message) and the vector is reordered, so
+different sources may cover different subsets of the internal covariates. An
+unnamed element is aligned positionally and must have length \code{p}. A
+one-column matrix with row names is accepted as a named vector. See
+\code{\link{align_beta}}. If provided, \code{RS_list} should be \code{NULL}.}
 
 \item{RS_list}{Optional list of external risk score vectors/matrices. Each element
 should be conformable with \code{n}. If provided, \code{beta_list} is ignored.}
 
-\item{etas}{Vector of \code{eta} values for transfer-learning shrinkage.}
+\item{etas}{Numeric vector of non-negative integration weights. Must be finite
+and \eqn{\ge 0}.}
 
 \item{combine}{How to combine coefficients across sources. Either \code{"mean"} (default)
 or \code{"median"}.}
@@ -52,10 +59,14 @@ An object of class \code{"coxkl_enet.multi"}, which is a list containing:
 \item \code{best_beta} — combined coefficient estimate across sources.
 \item \code{all_betas} — matrix of dimension \code{p x K_valid} of coefficient vectors
 from each successful fit.
+\item \code{etas} — the \code{etas} argument exactly as supplied by the caller (raw and
+unsorted); each \code{cv.coxkl_enet()} run sorts its own copy internally.
 \item \code{K} — total number of external sources provided.
 \item \code{valid_sources} — number of successful (non-error) fits used in aggregation.
 \item \code{combine} — combination rule used.
 \item \code{seed} — seed used (if any).
+\item \code{source_fits} — list of the \code{cv.coxkl_enet} fit objects for the valid
+sources, in the same order as the columns of \code{all_betas}.
 }
 }
 \description{

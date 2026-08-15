@@ -45,6 +45,15 @@ valid indices.}
 \item{mu_Z}{Numeric vector or \code{NULL}. Mean vector for the continuous covariates. If
 \code{NULL}, a zero vector is used. For indices in \code{binary_idx}, \code{mu_Z} is ignored.}
 
+\item{sd_Z}{Numeric or \code{NULL}. Standard deviations of the continuous covariates.
+Four shapes are accepted: \code{NULL} (the default; all standard deviations set to
+1), a scalar (recycled to all \code{n.beta} covariates), a vector of length
+\code{n.beta} (used as-is), or a vector of length equal to the number of
+continuous covariates (i.e. \code{length(setdiff(1:n.beta, binary_idx))}, applied
+to those positions with 1 elsewhere). All values must be positive and finite.
+Standard deviations at \code{binary_idx} positions have no effect, since binary
+covariates are generated from a latent threshold model.}
+
 \item{stratum_size}{Integer or numeric vector. Stratum sample sizes. If a scalar, it is recycled
 to length \code{n_stratum}; if a vector, it must have length \code{n_stratum}.}
 
@@ -151,8 +160,13 @@ quantiles) and replaced by bin midpoints to induce tied event/censoring times. S
 \details{
 Continuous covariates (those not in \code{binary_idx}) are generated independently within each
 stratum from a multivariate normal distribution with mean given by \code{mu_Z} (restricted to the
-continuous indices) and an equicorrelation covariance matrix with diagonal 1 and off-diagonal
-\code{rho}.
+continuous indices) and covariance \eqn{D R D}, where \eqn{R} is the equicorrelation
+matrix with diagonal 1 and off-diagonal \code{rho} and \eqn{D} is the diagonal matrix of
+the standard deviations in \code{sd_Z}. With the default \code{sd_Z = NULL} all standard
+deviations equal 1, so the covariance reduces to \eqn{R} itself -- diagonal 1 and
+off-diagonal \code{rho}. When \code{sd_Z} is supplied the diagonal becomes
+\eqn{\sigma_j^2} and the off-diagonals \eqn{\rho \sigma_i \sigma_j}; the
+\emph{correlation} remains \code{rho} in either case.
 
 Stratum-specific scaling factors are sampled as \eqn{\gamma_s \sim \mathrm{Unif}(0,2)} and applied
 multiplicatively to the hazard.

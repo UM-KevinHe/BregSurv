@@ -3,11 +3,21 @@
 eta for Conditional Logistic Regression with individual-level external
 data integration, implemented via ncc_indi.
 This function is designed for 1:m matched case-control settings where each
-stratum (matched set) contains exactly one case and \(m\) controls."><meta property="og:description" content="Performs K-fold cross-validation (CV) to select the integration parameter
+stratum (matched set) contains exactly one case and \(m\) controls. Note
+that this precondition is enforced only on the internal cohort (and on
+each internal training and test fold): stratum_ext is not coerced to a
+factor and the external cohort's matched-set structure is never checked, so
+supplying a correctly matched external dataset is the caller's
+responsibility."><meta property="og:description" content="Performs K-fold cross-validation (CV) to select the integration parameter
 eta for Conditional Logistic Regression with individual-level external
 data integration, implemented via ncc_indi.
 This function is designed for 1:m matched case-control settings where each
-stratum (matched set) contains exactly one case and \(m\) controls."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
+stratum (matched set) contains exactly one case and \(m\) controls. Note
+that this precondition is enforced only on the internal cohort (and on
+each internal training and test fold): stratum_ext is not coerced to a
+factor and the external cohort's matched-set structure is never checked, so
+supplying a correctly matched external dataset is the caller's
+responsibility."><!-- Global site tag (gtag.js) - Google Analytics --><script async src="https://www.googletagmanager.com/gtag/js?id=UA-54921687-5"></script><script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
@@ -58,7 +68,12 @@ stratum (matched set) contains exactly one case and \(m\) controls."><!-- Global
 <code>eta</code> for Conditional Logistic Regression with individual-level external
 data integration, implemented via <code><a href="ncc_indi.html">ncc_indi</a></code>.</p>
 <p>This function is designed for 1:m matched case-control settings where each
-stratum (matched set) contains exactly one case and \(m\) controls.</p>
+stratum (matched set) contains exactly one case and \(m\) controls. Note
+that this precondition is <em>enforced</em> only on the internal cohort (and on
+each internal training and test fold): <code>stratum_ext</code> is not coerced to a
+factor and the external cohort's matched-set structure is never checked, so
+supplying a correctly matched external dataset is the caller's
+responsibility.</p>
     </div>
 
     <div class="section level2">
@@ -105,11 +120,17 @@ stratum (matched set) contains exactly one case and \(m\) controls.</p>
 
 
 <dt id="arg-stratum-ext">stratum_ext<a class="anchor" aria-label="anchor" href="#arg-stratum-ext"></a></dt>
-<dd><p>Numeric or factor vector defining the external matched sets. <strong>Required</strong>.</p></dd>
+<dd><p>Numeric or factor vector defining the external matched sets. <strong>Required</strong>.
+Unlike <code>stratum_int</code> it is passed on unchanged (not coerced to a factor)
+and its 1:m structure is not validated.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Numeric vector of candidate tuning values for \(\eta\). <strong>Required</strong>.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights for
+\(\eta\). <strong>Required</strong>; the function stops if <code>etas</code> is
+<code>NULL</code>. Must be finite and \(\ge 0\). The values are sorted in
+ascending order internally, and the rows of <code>internal_stat</code> / columns
+of <code>beta_full</code> follow that sorted order.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>

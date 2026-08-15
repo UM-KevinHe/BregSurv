@@ -83,6 +83,20 @@ length-50 coefficient vectors, with additional variants constructed
 to represent different forms of coefficient perturbation and
 distributional shift.
 }
+
+\strong{External coefficients: name present-and-zero vs. name absent.} Every
+external coefficient vector bundled here is fully populated and fully named over
+the complete covariate space \code{Z1}--\code{Z50}. Consequently
+\code{\link{align_beta}} never zero-pads them, and \code{\link{align_beta_Q}}
+with \code{Q = NULL} returns the full identity rather than a masked identity.
+The distinction is semantic: a covariate whose name is \emph{present} with value
+0 asserts an external estimate of exactly zero and is penalized toward zero like
+any other external coefficient, whereas a covariate whose name is \emph{absent}
+is treated as carrying no external information -- it is zero-padded and, under
+the Mahalanobis penalty, left unpenalized. The structural zeros in these vectors
+(for example \code{Z7}--\code{Z50} in \code{beta_external}, which the external
+model did not fit) are therefore of the first kind: they are borrowed as genuine
+external estimates of zero.
 }
 \examples{
 data(ExampleData_highdim)

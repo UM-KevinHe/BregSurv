@@ -26,18 +26,27 @@
 #' @param delta Numeric vector of event indicators (1 = event, 0 = censored).
 #' @param time Numeric vector of observed event or censoring times.
 #' @param stratum Optional numeric or factor vector defining strata.
-#' @param RS Optional numeric vector or matrix of external risk scores. Length must equal the number of observations.
+#' @param RS Optional numeric vector of external risk scores, one per observation
+#'   (a one-column matrix is also accepted); its length must equal the number of
+#'   observations. Only a single risk score per observation is supported.
 #'   If not supplied, \code{beta} must be provided.
-#' @param beta Optional numeric vector of external coefficients. Length must equal the number of columns in \code{z}.
-#'   If provided, these are used to calculate risk scores internally. If not supplied, \code{RS} must be provided.
-#' @param etas Numeric vector of tuning parameters. Controls the reliance on external information.
-#'   The function will sort these values and fit a model for each.
+#' @param beta Optional numeric vector of external coefficients. If \code{beta} is
+#'   named, names are matched against \code{colnames(z)}: covariates absent from
+#'   \code{beta} are set to 0 (with a message) and the vector is reordered, so an
+#'   external source covering only a subset of the internal covariates may be
+#'   supplied directly. An unnamed \code{beta} is aligned positionally and must
+#'   have length \code{ncol(z)}. A one-column matrix with row names is accepted
+#'   as a named vector. See \code{\link{align_beta}}.
+#'   If provided, it is used to calculate risk scores internally. If not supplied, \code{RS} must be provided.
+#' @param etas Numeric vector of non-negative integration weights. Must be finite
+#'   and \eqn{\ge 0}. The values are sorted in ascending order internally, and the
+#'   columns of the returned coefficient matrix follow that sorted order.
 #' @param tol Numeric. Convergence tolerance for the optimization algorithm. Default is \code{1e-4}.
 #' @param Mstop Integer. Maximum number of iterations for the optimization. Default is \code{100}.
 #' @param backtrack Logical. If \code{TRUE}, applies backtracking line search during optimization. Default is \code{FALSE}.
 #' @param message Logical. If \code{TRUE}, prints progress messages (e.g., progress bar) during fitting. Default is \code{FALSE}.
 #' @param data_sorted Logical. Internal use. If \code{TRUE}, assumes data is already sorted by stratum and time.
-#' @param beta_initial Optional numeric vector. Initial values for the coefficients for the first \code{eta}.
+#' @param beta_initial Optional numeric vector. Initial values for the coefficients for the first \code{eta}. Default is a zero vector.
 #'
 #' @return
 #' An object of class \code{"coxkl"} containing:
@@ -45,7 +54,7 @@
 #'   \item{\code{eta}}{The sorted sequence of \eqn{\eta} values used.}
 #'   \item{\code{beta}}{Matrix of estimated coefficients (\eqn{p \times n_{etas}}). Columns correspond to \code{eta} values.}
 #'   \item{\code{linear.predictors}}{Matrix of linear predictors (risk scores) for each \code{eta}.}
-#'   \item{\code{likelihood}}{Vector of negative log-partial likelihoods for each \code{eta}.}
+#'   \item{\code{likelihood}}{Vector of log-partial likelihoods, one per \code{eta} (larger values indicate better fit; this is \emph{not} a loss).}
 #'   \item{\code{data}}{List containing the input data used (\code{z}, \code{time}, \code{delta}, \code{stratum}, \code{RS}).}
 #' }
 #'

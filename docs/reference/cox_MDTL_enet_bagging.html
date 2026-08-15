@@ -107,22 +107,34 @@ sampling variability and improves robustness relative to a single data split.</p
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>External coefficient vector of length <code>p</code>. Treated as fixed
+<dd><p>Numeric vector of external coefficients. If <code>beta</code> is named,
+names are matched against <code>colnames(z)</code>: covariates absent from
+<code>beta</code> are set to 0 (with a message) and the vector is reordered, so an
+external source covering only a subset of the internal covariates may be
+supplied directly. An unnamed <code>beta</code> is aligned positionally and must
+have length <code>ncol(z)</code>. See <code><a href="align_beta_Q.html">align_beta_Q</a></code>. Treated as fixed
 prior information and not resampled across bootstrap replicates.</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
-<dd><p>Optional weighting matrix (<code>p x p</code>) used in the Mahalanobis
-distance formulation.</p></dd>
+<dd><p>Optional weighting (precision) matrix for the Mahalanobis penalty.
+Must be symmetric and positive semi-definite (both checked to a tolerance of
+1e-8). If named, it is reordered and zero-padded to <code>colnames(z)</code>; only
+an unnamed <code>Q</code> must be exactly <code>ncol(z)</code> by <code>ncol(z)</code>. If
+<code>NULL</code>, a <em>masked identity</em> is used: 1 on covariates actually
+supplied by <code>beta</code> and 0 on zero-padded positions, so padded
+coefficients are left unpenalized. See <code><a href="align_beta_Q.html">align_beta_Q</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
-<dd><p>Vector of <code>eta</code> values for transfer-learning shrinkage.</p></dd>
+<dd><p>Numeric vector of non-negative integration weights. Must be finite
+and \(\ge 0\).</p></dd>
 
 
 <dt id="arg-alpha">alpha<a class="anchor" aria-label="anchor" href="#arg-alpha"></a></dt>
-<dd><p>Elastic-net mixing parameter between <code>0</code> and <code>1</code>.
-<code>alpha = 1</code> corresponds to lasso; <code>alpha = 0</code> to ridge. Default is <code>1.0</code>.</p></dd>
+<dd><p>Elastic-net mixing parameter, with \(0 &lt; \alpha \le 1\).
+<code>alpha = 1</code> corresponds to lasso; values close to 0 approach ridge.
+Default is <code>1.0</code>.</p></dd>
 
 
 <dt id="arg-b">B<a class="anchor" aria-label="anchor" href="#arg-b"></a></dt>
@@ -134,20 +146,25 @@ distance formulation.</p></dd>
 
 
 <dt id="arg-nlambda">nlambda<a class="anchor" aria-label="anchor" href="#arg-nlambda"></a></dt>
-<dd><p>Number of <code>lambda</code> values to generate if <code>lambda</code> is not supplied.</p></dd>
+<dd><p>Number of <code>lambda</code> values to generate if <code>lambda</code> is not supplied.
+Default is <code>100</code>.</p></dd>
 
 
 <dt id="arg-lambda-min-ratio">lambda.min.ratio<a class="anchor" aria-label="anchor" href="#arg-lambda-min-ratio"></a></dt>
-<dd><p>Ratio of the smallest to the largest <code>lambda</code> when generating a sequence.</p></dd>
+<dd><p>Ratio of the smallest to the largest <code>lambda</code> when generating a sequence.
+Default is <code>ifelse(nrow(z) &lt; ncol(z), 0.01, 1e-04)</code>.</p></dd>
 
 
 <dt id="arg-nfolds">nfolds<a class="anchor" aria-label="anchor" href="#arg-nfolds"></a></dt>
-<dd><p>Number of folds for inner cross-validation via <code>cv.cox_MDTL_enet</code>.</p></dd>
+<dd><p>Number of folds for inner cross-validation via <code>cv.cox_MDTL_enet</code>.
+Default is <code>5</code>.</p></dd>
 
 
 <dt id="arg-cv-criteria">cv.criteria<a class="anchor" aria-label="anchor" href="#arg-cv-criteria"></a></dt>
 <dd><p>Cross-validation criterion used for selecting the optimal
-<code>(eta, lambda)</code> pair.</p></dd>
+<code>(eta, lambda)</code> pair. One of <code>"V&amp;VH"</code>, <code>"LinPred"</code>,
+<code>"CIndex_pooled"</code> or <code>"CIndex_foldaverage"</code>; the default is
+<code>"V&amp;VH"</code>.</p></dd>
 
 
 <dt id="arg-c-index-stratum">c_index_stratum<a class="anchor" aria-label="anchor" href="#arg-c-index-stratum"></a></dt>
@@ -160,7 +177,7 @@ evaluation (may differ from model stratification).</p></dd>
 
 
 <dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
-<dd><p>Optional integer seed for reproducibility.</p></dd>
+<dd><p>Optional integer seed for reproducibility. Default is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-ncores">ncores<a class="anchor" aria-label="anchor" href="#arg-ncores"></a></dt>

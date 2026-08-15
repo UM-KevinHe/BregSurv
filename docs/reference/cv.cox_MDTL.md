@@ -47,25 +47,41 @@ cv.cox_MDTL(
 
 - stratum:
 
-  Optional numeric or factor vector indicating strata. If `NULL`, all
-  subjects are assumed to be in the same stratum.
+  Optional numeric or factor vector indicating strata. If `NULL`, a
+  warning is issued and all subjects are assumed to be in the same
+  stratum.
 
 - beta:
 
-  A numeric vector of external coefficients (length p).
+  A numeric vector of external coefficients. **Required**. If `beta` is
+  named, names are matched against `colnames(z)`: covariates absent from
+  `beta` are set to 0 (with a message) and the vector is reordered, so
+  an external source covering only a subset of the internal covariates
+  may be supplied directly. An unnamed `beta` is aligned positionally
+  and must have length `ncol(z)`. A one-column matrix with row names is
+  accepted as a named vector. See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - Q:
 
-  Optional numeric matrix (p x p) representing the weighting matrix
-  \\Q\\ for the Mahalanobis penalty. This should be a symmetric
-  positive-semidefinite *precision* matrix (typically the inverse
-  covariance / information matrix of the external estimator). If named,
-  it is reordered and zero-padded to `colnames(z)`. If `NULL`, a masked
-  identity is used.
+  Optional weighting (precision) matrix for the Mahalanobis penalty
+  (typically the inverse covariance / information matrix of the external
+  estimator). Must be symmetric and positive semi-definite; both are
+  checked to a tolerance of 1e-8 and violations are errors. If named, it
+  is reordered and zero-padded to `colnames(z)`; only an unnamed `Q`
+  must be exactly `ncol(z)` by `ncol(z)`. If `NULL`, a *masked identity*
+  is used: 1 on covariates actually supplied by `beta` and 0 on
+  zero-padded positions, so padded coefficients are left unpenalized.
+  See
+  [`align_beta_Q`](https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.md).
 
 - etas:
 
-  A numeric vector of candidate `eta` values to be evaluated.
+  A numeric vector of non-negative candidate `eta` values to be
+  evaluated. Must be finite and \\\ge 0\\. This argument is
+  **required**: leaving it at its `NULL` default is an error. The values
+  are sorted in ascending order internally, and the rows of
+  `internal_stat` / columns of `beta_full` follow that sorted order.
 
 - tol:
 
@@ -100,6 +116,9 @@ cv.cox_MDTL(
 
   Optional stratum vector. Required only when `cv.criteria` involves
   stratified C-index calculation but the model itself is unstratified.
+  That use case is therefore only reachable when `stratum = NULL`: if
+  `stratum` is supplied and `c_index_stratum` is not identical to it,
+  the function stops with an error.
 
 - message:
 
@@ -116,12 +135,21 @@ cv.cox_MDTL(
 
 ## Value
 
-An object of class `"cv.Cox_MDTL"` containing:
+An object of class `"cv.cox_MDTL"` containing:
 
 - `internal_stat`:
 
-  A `data.frame` summarizing the performance metric (loss or C-index)
-  for each candidate `eta`.
+  A `data.frame` with one row per candidate `eta`, in ascending `eta`
+  order. It has a column `eta` plus *exactly one* metric column, whose
+  name is determined by `cv.criteria`: `VVH_Loss` for `"V&VH"`,
+  `LinPred_Loss` for `"LinPred"`, `CIndex_pooled` for `"CIndex_pooled"`,
+  or `CIndex_foldaverage` for `"CIndex_foldaverage"`. The other three
+  metrics are never computed.
+
+- `beta_full`:
+
+  A `ncol(z)` by `length(etas)` matrix of coefficients from the
+  full-data fit, one column per candidate `eta`.
 
 - `best`:
 
