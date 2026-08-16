@@ -299,10 +299,25 @@ predict_surv_prob <- function(test_RS, eval_times, train_baseline_obj, test_stra
 #' @description
 #' Computes the Breslow estimator of the baseline cumulative hazard
 #' \eqn{\hat\Lambda_0(t)} corresponding to a coefficient vector \code{beta},
-#' optionally stratified, by fitting an offset-only Cox model on the supplied
-#' training data. Returns a closure that evaluates \eqn{\hat\Lambda_0(t)} at
-#' arbitrary times. Used internally by \code{\link{test_eval}} (criterion
-#' \code{"IBS"}).
+#' optionally stratified. Returns a closure that evaluates
+#' \eqn{\hat\Lambda_0(t)} at arbitrary times. Used by \code{\link{test_eval}}
+#' (criterion \code{"IBS"}).
+#'
+#' @details
+#' Within each stratum the estimator is
+#' \deqn{\hat\Lambda_0(t) = \sum_{t_k \le t}
+#'       \frac{d_k}{\sum_{j:\, T_j \ge t_k} \exp(Z_j^\top \beta)},}
+#' where \eqn{t_1 < t_2 < \cdots} are the distinct observed event times and
+#' \eqn{d_k} is the number of events at \eqn{t_k} (Breslow handling of ties).
+#' Each risk set is weighted by \eqn{\exp(Z^\top\beta)}, so the returned
+#' quantity is the baseline hazard of the supplied model rather than the
+#' marginal (Nelson-Aalen) hazard of the sample; the two coincide only when
+#' \code{beta} is zero.
+#'
+#' The returned function is a right-continuous step function: it is \eqn{0}
+#' before the first event time and constant at \eqn{\hat\Lambda_0} of the last
+#' event time thereafter. A stratum containing no events yields an
+#' identically-zero baseline rather than an error.
 #'
 #' @param z Numeric matrix of training covariates.
 #' @param delta Numeric event-indicator vector (1 = event, 0 = censored).
@@ -313,57 +328,59 @@ predict_surv_prob <- function(test_RS, eval_times, train_baseline_obj, test_stra
 #'
 #' @return A list with one element, \code{predict_baseline}, a function with
 #'   signature \code{function(times, strat_id = NULL)} returning
-#'   \eqn{\hat\Lambda_0(\text{times})} for the requested stratum.
+#'   \eqn{\hat\Lambda_0(\text{times})} for the requested stratum. When
+#'   \code{stratum} is \code{NULL} the \code{strat_id} argument is ignored;
+#'   otherwise an unseen \code{strat_id} is an error.
 #'
 #' @keywords internal
 #' @export
 get_baseline_hazard <- function(z, delta, time, beta, stratum = NULL) {
-  lp <- drop(as.matrix(z) %*% as.matrix(beta))
+  lp <- as.vector(as.matrix(z) %*% as.matrix(beta))
+  time <- as.numeric(time)
+  delta <- as.numeric(delta)
 
-  if (is.null(stratum)) {
-    df <- data.frame(time = as.numeric(time), status = as.numeric(delta))
-    fit_fixed <- survival::coxph(Surv(time, status) ~ offset(lp), data = df)
-    bh <- survival::basehaz(fit_fixed, centered = FALSE)
+  if (length(lp) != length(time) || length(time) != length(delta)) {
+    stop("`z`, `time` and `delta` must refer to the same number of subjects.")
+  }
 
-    fun <- approxfun(
-      x = bh$time,
-      y = bh$hazard,
-      method = "constant",
-      yleft = 0,
-      rule = 2
-    )
+  make_baseline_fun <- function(idx) {
+    ord <- order(time[idx])
+    tm <- time[idx][ord]
+    st <- delta[idx][ord]
+    el <- exp(lp[idx][ord])
 
-    predict_baseline <- function(times, strat_id = NULL) {
-      fun(times)
+    ev_all <- tm[st == 1]
+    if (length(ev_all) == 0L) {
+      return(function(times, strat_id = NULL) numeric(length(times)))
     }
 
-    return(list(predict_baseline = predict_baseline))
-  }
+    ev <- unique(ev_all)
+    d_k <- tabulate(match(ev_all, ev), nbins = length(ev))
+    S0 <- rev(cumsum(rev(el)))[match(ev, tm)]
+    H0 <- cumsum(d_k / S0)
 
-  str_raw <- stratum
-  u <- sort(unique(str_raw))
+    if (length(ev) == 1L) {
+      return(function(times, strat_id = NULL) H0 * (times >= ev))
+    }
 
-  baseline_funs <- vector("list", length(u))
-  names(baseline_funs) <- as.character(u)
-
-  for (s in u) {
-    idx <- which(str_raw == s)
-    df_s <- data.frame(time = as.numeric(time[idx]), status = as.numeric(delta[idx]))
-
-    fit_s <- survival::coxph(
-      Surv(time, status) ~ offset(lp[idx]),
-      data = df_s
-    )
-    bh_s <- survival::basehaz(fit_s, centered = FALSE)
-
-    baseline_funs[[as.character(s)]] <- approxfun(
-      x = bh_s$time,
-      y = bh_s$hazard,
+    fun <- approxfun(
+      x = ev,
+      y = H0,
       method = "constant",
       yleft = 0,
       rule = 2
     )
+
+    function(times, strat_id = NULL) fun(times)
   }
+
+  if (is.null(stratum)) {
+    return(list(predict_baseline = make_baseline_fun(seq_along(lp))))
+  }
+
+  u <- sort(unique(stratum))
+  baseline_funs <- lapply(u, function(s) make_baseline_fun(which(stratum == s)))
+  names(baseline_funs) <- as.character(u)
 
   predict_baseline <- function(times, strat_id = NULL) {
     sid <- as.character(strat_id)
