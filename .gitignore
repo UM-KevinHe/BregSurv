@@ -9,3 +9,4 @@ src/*.dll
 *.tar.gz
 .DS_Store
 CLAUDE.md
+Rplots.pdf
