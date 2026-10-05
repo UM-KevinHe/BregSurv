@@ -624,26 +624,6 @@ def _missing_columns(session: Session) -> List[str]:
     return out
 
 
-# A column the analyst named is not in the file and the run stopped on it; a
-# reply such as "leave it out" removes that column from the covariates the
-# reading settled, and nothing else.
-_DROP_WORDS = re.compile(r"\b(leave (it|that|this|them|those)( one| column)?s? out|leave out|drop (it|that|this|them)|"
-                         r"remove (it|that|this|them)|without (it|that|them)|skip (it|that|them)|"
-                         r"ignore (it|that|them)|not needed|don'?t (need|use) (it|that|them))\b", re.I)
-
-
-def _drop_missing_reply(msg: str, session, given: Dict[str, str]) -> Dict[str, str]:
-    gone = _missing_columns(session)
-    cov = given.get("covariates")
-    if not gone or not cov or not _DROP_WORDS.search(msg or ""):
-        return {}
-    names = [c.strip() for c in str(cov).split(",") if c.strip()]
-    kept = [c for c in names if c not in gone]
-    if len(kept) == len(names) or not kept:
-        return {}
-    return {"covariates": ", ".join(kept)}
-
-
 def _take_calls(session: Session) -> Session:
     return session.take_calls(boundary.call_log(clear=True))
 
@@ -722,15 +702,13 @@ def _result_reply(session, question: str = "", client=None,
              + "; ".join(_plain_label(k["key"]) for k in ok) + ".",
              "It tried each approach while repeatedly setting part of the patients aside, "
              "and checked how well each one anticipated what happened to those patients.",
-             "It kept [selected_label], because that did best in this check."]
+             "The approach it kept was [selected_label], because it did best in this check."]
     facts += [x for x in (_vs("internal", "using your data alone"),
                           _vs("external", "using the external model as it is")) if x]
     k0 = sel.get("key", "")
     if not (k0.startswith("internal") or k0.startswith("external")):
         facts.append("So borrowing from the external information helped.")
-    # the short form: the clauses after the first comma made the answer read
-    # "The chosen approach, the approach of combining ..., with ..., did better"
-    refs = {"selected_label": _plain_label(k0).split(",")[0]}
+    refs = {"selected_label": _plain_label(k0)}
     out = boundary.explain(client, model, question, {
         "references": refs, "result": c, "declaration": res.declaration,
         "plain_facts": facts})
@@ -966,7 +944,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
     used_model = False
     session = session.start_turn(msg)
     try:
-        answers = _answers_from_reply(msg) or _drop_missing_reply(msg, session, given)
+        answers = _answers_from_reply(msg)
         if answers:
             # a numbered reply never reaches the model
             if not given and session.declaration is not None:
@@ -1967,29 +1945,6 @@ def _new_result(before, after) -> bool:
         before is None or before.result is not after.result)
 
 
-_EXT_CARD = re.compile(r"This is the external information I have read:\n\n```.*?```\n\n"
-                       r"It is borrowed from only if that lowers the held-out loss; the "
-                       r"report shows the comparison either way\.\s*", re.S)
-
-
-def _plain_turn(text: str) -> str:
-    """The chat page's wording of a turn that stops before a result: the release
-    card is dropped (the opening already said what the file holds), and a column
-    the file lacks is asked about in plain words."""
-    t = _EXT_CARD.sub("", text)
-    m = _NO_COLUMN.search(t)
-    if m and "**I could not use that.**" in t:
-        t = (t[:t.index("**I could not use that.**")]
-             + f"Your data has no column called `{m.group(1)}`. Should I leave it out, "
-               "or did you mean another column? You can answer in your own words, "
-               "for example \"leave it out\".")
-    elif "**I could not use that.**\n\n" in t:
-        head, rest = t.split("**I could not use that.**\n\n", 1)
-        t = head + "I could not use that: " + rest[:1].lower() + rest[1:]
-    t = t.strip()
-    return t or "I have read the external file. Tell me what you want to analyse."
-
-
 def chat_turn(mm, history, session, ui):
     """One turn of the chat page: files first (loaded, each given a role), then
     the words. Returns (chat, box, session, ui)."""
@@ -2103,10 +2058,6 @@ def chat_turn(mm, history, session, ui):
     n0 = len(history)
     out = submit_answer(text, history, session, ep, mdl, key, True, bool(ui.get("tz_ok")))
     history, session = list(out[0]), out[2]
-    if not _new_result(before, session):
-        for i in range(n0, len(history)):
-            if isinstance(history[i][1], str):
-                history[i][1] = _plain_turn(history[i][1])
     if answered_yes and len(history) > n0:
         # the request was already shown; the reply follows the analyst's "yes"
         history[n0] = ["yes", history[n0][1]]
