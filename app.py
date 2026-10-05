@@ -2133,7 +2133,7 @@ GREETING = "📊 What external data should your cohort learn from today?"
 EXAMPLE_REQUEST = EXAMPLE_QUERY + " All of these were recorded at transplant."
 
 
-_WAIT = "⏳ Working on it. A full analysis usually takes one to three minutes."
+_WAIT = "→ Working on it. A full analysis usually takes one to three minutes."
 
 
 def show_pending(mm, history):
@@ -2151,9 +2151,9 @@ def show_pending(mm, history):
 
 def _render_progress(steps: List[str]) -> str:
     if not steps:
-        return "⏳ Starting…"
+        return "→ Starting…"
     done = [f"✓ {x}" for x in steps[:-1]]
-    return "\n\n".join(done + [f"⏳ {steps[-1]}…"])
+    return "\n\n".join(done + [f"→ {steps[-1]}…"])
 
 
 def chat_turn_ui(mm, history, session, ui):
