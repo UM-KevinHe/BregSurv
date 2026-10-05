@@ -1,11 +1,11 @@
 # Line-ending policy for the BregSurv repo.
-# Added for the Windows working copy so scripts that run on Great Lakes /
+# Line endings are normalised so scripts run on Linux /
 # Docker (bash) and the R/Python sources keep LF regardless of local platform.
 
 # Auto-normalize text files; git auto-detects and leaves true binaries alone.
 * text=auto
 
-# Code & scripts pinned to LF (must stay LF for GL/Docker bash and R/Python).
+# Code & scripts pinned to LF (must stay LF for Docker, bash, R and Python).
 *.sh      text eol=lf
 *.sbatch  text eol=lf
 *.R       text eol=lf

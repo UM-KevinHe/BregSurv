@@ -138,7 +138,7 @@ ncc_MDTL_enet <- function(y, z, stratum,
                               ...) {
 
   z <- as.matrix(z)
-  y <- as.numeric(y)
+  y <- .check_event(y, "y")
 
   if (missing(stratum) || is.null(stratum)) {
     stop("stratum must be provided for ncc_MDTL_enet in 1:m matched settings.", call. = FALSE)

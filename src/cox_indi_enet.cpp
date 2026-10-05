@@ -65,10 +65,16 @@ double gd_stratCox_BetaChange(arma::mat &Z, arma::vec &r, int g, arma::vec &K1, 
 tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &delta_obs, arma::mat &Z, arma::vec &weight, arma::vec &n_each_prov, arma::vec beta, arma::vec eta, int K0, arma::vec &K1,
                                                                     double lambda, int &tol_iter, int max_total_iter, int max_each_iter, arma::vec &group_multiplier, int count_stratum,
                                                                     double tol, arma::vec &ind_start, arma::vec &active_group, int n_obs, int n_group,
-                                                                    bool actSet, int actIter, int activeGroupNum, bool actSetRemove){
+                                                                    bool actSet, int actIter, int activeGroupNum, bool actSetRemove,
+                                                                    const arma::uvec &tf, const arma::uvec &tl, const bool use_ties){
 
-  // const double n_eff = arma::accu(weight);
-  const int n_eff = Z.n_rows;
+  // The coordinate step z_j' r / n_eff majorises the weighted partial likelihood only if
+  // n_eff is at least the total weight: with the external rows weighted by eta > 1 the
+  // curvature grows with eta, and dividing by the row count alone made every step about
+  // eta times too long -- the path drifted at eta ~ 3, was garbage at eta = 20 and NaN at
+  // eta = 200 (public benchmark B1, 2026-09-21). The larger of the two denominators keeps
+  // every fit at eta <= 1 exactly as before and restores convergence above it.
+  const double n_eff = std::max(arma::accu(weight), (double) Z.n_rows);
 
   arma::vec old_beta = beta, r(n_obs), r_shift;
   arma::vec haz(n_obs), rsk(n_obs), h(n_obs);
@@ -97,6 +103,8 @@ tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &d
         }
       }
 
+      if (use_ties) rsk = rsk.elem(tf);   // Breslow (1.3.0): the tie group's risk set
+
       // calculate l'(eta)
       for (int j = 0; j < count_stratum; j++) {
         int first_idx = ind_start(j);
@@ -106,6 +114,7 @@ tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &d
         }
       }
 
+      if (use_ties) h = h.elem(tl);       // a row's cumulative hazard to the end of its tie group
       for (int i = 0; i < n_obs; i++) {
         r(i) = weight(i) * delta_obs(i) - haz(i) * h(i);
       }
@@ -191,7 +200,11 @@ tuple<arma::vec, arma::vec, double, double, int> StratCox_lasso_fit(arma::vec &d
 List StratCox_lasso(arma::vec &delta_obs, arma::mat &Z, arma::vec &weight, arma::vec &n_each_prov, arma::vec &beta, int K0, arma::vec &K1,
                     arma::vec &lambda_seq, bool lambda_early_stop, double stop_loss_ratio, arma::vec &group_multiplier,
                     int max_total_iter, int max_each_iter, double tol, int initial_active_group, double nvar_max,
-                    double group_max, bool trace_lambda, bool actSet, int actIter, int activeGroupNum, bool actSetRemove) {
+                    double group_max, bool trace_lambda, bool actSet, int actIter, int activeGroupNum, bool actSetRemove,
+                    Rcpp::Nullable<Rcpp::IntegerVector> tie_first = R_NilValue,
+                    Rcpp::Nullable<Rcpp::IntegerVector> tie_last = R_NilValue) {
+  const bool use_ties = tie_first.isNotNull() && tie_last.isNotNull();
+  const arma::uvec tf = tie_index(tie_first, Z.n_rows), tl = tie_index(tie_last, Z.n_rows);
   int n_obs = Z.n_rows, n_beta = Z.n_cols, n_lambda = lambda_seq.n_elem, n_group = K1.n_elem - 1;
   int tol_iter = 0;
   int count_stratum = n_each_prov.n_elem;
@@ -226,7 +239,7 @@ List StratCox_lasso(arma::vec &delta_obs, arma::mat &Z, arma::vec &weight, arma:
     }
     double lambda = lambda_seq(l);
 
-    auto fit = StratCox_lasso_fit(delta_obs, Z, weight, n_each_prov, beta, eta, K0, K1, lambda, tol_iter, max_total_iter, max_each_iter, group_multiplier, count_stratum, tol, ind_start, active_group, n_obs, n_group, actSet, actIter, activeGroupNum, actSetRemove);
+    auto fit = StratCox_lasso_fit(delta_obs, Z, weight, n_each_prov, beta, eta, K0, K1, lambda, tol_iter, max_total_iter, max_each_iter, group_multiplier, count_stratum, tol, ind_start, active_group, n_obs, n_group, actSet, actIter, activeGroupNum, actSetRemove, tf, tl, use_ties);
     double loss_l, df_l;
     int iter_l;
     tie(beta, eta, loss_l, df_l, iter_l) = fit;

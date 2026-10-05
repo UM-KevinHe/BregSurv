@@ -1,0 +1,9 @@
+predictor,level,coefficient
+Candidate blood type,A,0.006
+Candidate blood type,AB,0.0
+Candidate blood type,B,0.05
+Candidate blood type,O,-0.02
+Donor age,A,0.006
+Donor age,AB,0.0
+Donor age,B,0.05
+Donor age,O,-0.02

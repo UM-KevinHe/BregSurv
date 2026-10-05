@@ -71,6 +71,7 @@
 #' @param message Logical. If \code{TRUE}, shows a progress bar over the \code{etas} loop. Default \code{FALSE}.
 #' @param ... Additional arguments (currently unused).
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return
 #' An object of class \code{"cox_indi_enet"} containing:
 #' \describe{
@@ -146,12 +147,13 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
                            actSet = TRUE, actIter = Mstop,
                            actGroupNum = NULL, actSetRemove = FALSE,
                            returnX = FALSE, trace.lambda = FALSE,
-                           message = FALSE, ...) {
+                           message = FALSE, ties = c("none", "breslow"), ...) {
+  ties <- .check_ties(match.arg(ties))
 
   z_int   <- as.matrix(z_int)
   z_ext   <- as.matrix(z_ext)
-  delta_int <- as.numeric(delta_int)
-  delta_ext <- as.numeric(delta_ext)
+  delta_int <- .check_event(delta_int, "delta_int")
+  delta_ext <- .check_event(delta_ext, "delta_ext")
   time_int  <- as.numeric(time_int)
   time_ext  <- as.numeric(time_ext)
 
@@ -212,9 +214,11 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   stratum_all <- c(stratum_int_s, stratum_ext_s)
 
   n_each_stratum <- as.numeric(table(stratum_all))
+  ## the external cohort sits in strata of its own, so a tie group never mixes the two cohorts
+  tm <- .tie_maps(time_all, n_each_stratum, ties)
 
 
-  initial_group <- group          # keep original for output
+  initial_group <- group         # keep original for output
   group.multiplier <- if (is.null(group.multiplier)) {
     rep(1, length(unique(group)))
   } else {
@@ -227,11 +231,11 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     std.Z <- newZG.Unstd(z_all, group, group.multiplier)
   }
 
-  Z_std        <- std.Z$std.Z          # standardized + orthogonalized matrix
-  group_std    <- std.Z$g              # (possibly reordered) group vector
-  grp_mult_std <- as.double(std.Z$m)  # group multipliers after orthogonalization
+  Z_std        <- std.Z$std.Z         # standardized + orthogonalized matrix
+  group_std    <- std.Z$g             # (possibly reordered) group vector
+  grp_mult_std <- as.double(std.Z$m) # group multipliers after orthogonalization
 
-  p_std <- ncol(Z_std)                 # may differ from p if constant cols removed
+  p_std <- ncol(Z_std)                # may differ from p if constant cols removed
 
   K_tab <- as.integer(table(group_std))
   K0    <- as.integer(if (min(group_std) == 0) K_tab[1] else 0)
@@ -249,10 +253,10 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   beta_list <- vector("list", n_eta)
   names(beta_list) <- round(etas, 6)
 
-  lp_int_list <- vector("list", n_eta)   # linear predictors, internal, original order
+  lp_int_list <- vector("list", n_eta)  # linear predictors, internal, original order
   lp_ext_list <- vector("list", n_eta)
 
-  lambda_list <- vector("list", n_eta)   # actual lambda path used per eta
+  lambda_list <- vector("list", n_eta)  # actual lambda path used per eta
 
   if (message) {
     pb <- utils::txtProgressBar(min = 0, max = n_eta, style = 3, width = 30)
@@ -279,7 +283,8 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
         n.each_prov      = n_each_stratum,
         alpha            = alpha,
         nlambda          = nlambda,
-        lambda.min.ratio = lambda.min.ratio
+        lambda.min.ratio = lambda.min.ratio,
+        tm               = tm
       )
       lambda_seq  <- lambda_fit$lambda.seq
       beta_start  <- lambda_fit$beta
@@ -313,11 +318,13 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       actSet           = actSet,
       actIter          = actIter,
       activeGroupNum   = actGroupNum,
-      actSetRemove     = actSetRemove
+      actSetRemove     = actSetRemove,
+      tie_first        = tm$first,
+      tie_last         = tm$last
     )
 
-    beta_std  <- fit$beta        # p_std  x nlambda_actual  (standardized space)
-    eta_mat   <- fit$Eta         # n_all  x nlambda_actual  (linear predictors, std space)
+    beta_std  <- fit$beta       # p_std x nlambda_actual (standardized space)
+    eta_mat   <- fit$Eta        # n_all x nlambda_actual (linear predictors, std space)
     iter_vec  <- fit$iter
 
     # Drop saturated lambdas (iter == NA)
@@ -342,8 +349,8 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     colnames(beta_orig) <- round(lambda_seq, digits = 4)
 
 
-    lp_int_sorted <- eta_mat[seq_len(n_int),          , drop = FALSE]  # sorted internal LP
-    lp_ext_sorted <- eta_mat[n_int + seq_len(n_ext),  , drop = FALSE]  # sorted external LP
+    lp_int_sorted <- eta_mat[seq_len(n_int),          , drop = FALSE] # sorted internal LP
+    lp_ext_sorted <- eta_mat[n_int + seq_len(n_ext),  , drop = FALSE] # sorted external LP
 
     lp_int_orig <- matrix(NA_real_, nrow = n_int, ncol = ncol(eta_mat))
     lp_ext_orig <- matrix(NA_real_, nrow = n_ext, ncol = ncol(eta_mat))
@@ -379,6 +386,7 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       linear.predictors_ext = lp_ext_list,
       group            = factor(initial_group),
       group.multiplier = grp_mult_std,
+      ties             = ties,
       data             = input_data
     ),
     class = "cox_indi_enet"

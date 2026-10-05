@@ -30,7 +30,9 @@ double coxkl_loglik(const double N,
                     const arma::uvec& ind_start,
                     const arma::vec& n_each_stratum,
                     const arma::vec& beta,
-                    const double lambda = 0.0) {
+                    const double lambda,
+                    const arma::uvec& tf,
+                    const bool use_ties) {
 
   const arma::uword S = ind_start.n_elem;
   double loglik = 0.0;
@@ -54,7 +56,8 @@ double coxkl_loglik(const double N,
       const double w_i = delta_eta_s(i);
       loglik += w_i * lp_s(i);
       if (delta_s(i) > 0) {
-        loglik -= std::log(S0_s(i)) + m;
+        const arma::uword k = use_ties ? tf(start + i) - start : i;   // Breslow: the tie group's risk set
+        loglik -= std::log(S0_s(k)) + m;
       }
     }
   }
@@ -95,8 +98,10 @@ arma::vec BetaUpdate(const double N,
                      const double eta,
                      const arma::uvec& ind_start,
                      const arma::vec& n_each_stratum,
-                     const double lambda = 0.0,
-                     bool backtrack = false) {
+                     const double lambda,
+                     bool backtrack,
+                     const arma::uvec& tf,
+                     const bool use_ties) {
 
   const arma::uword p = Z.n_cols;
   const arma::uword S = n_each_stratum.n_elem;
@@ -138,17 +143,18 @@ arma::vec BetaUpdate(const double N,
     for (arma::uword i = 0; i < len; ++i) {
       const double d_i = delta_s(i);
       const double deta_i = delta_eta_s(i);
-      const double s0_i = S0_s(i);
+      const arma::uword k = use_ties ? tf(start + i) - start : i;   // Breslow: the tie group's risk set
+      const double s0_i = S0_s(k);
 
       arma::rowvec z_i = Z_s.row(i);
-      arma::rowvec s1_i = S1_s.row(i);
+      arma::rowvec s1_i = S1_s.row(k);
 
       L1 += deta_i * z_i.t() - d_i * (s1_i / s0_i).t();
 
       if (d_i > 0) {
         arma::mat s2_i(p, p);
         for (arma::uword j = 0; j < p; ++j) {
-          s2_i.col(j) = S2_s.slice(j).row(i).t();
+          s2_i.col(j) = S2_s.slice(j).row(k).t();
         }
         arma::vec s1_div_s0 = s1_i.t() / s0_i;
         arma::mat outer = s1_div_s0 * s1_div_s0.t();
@@ -183,13 +189,13 @@ arma::vec BetaUpdate(const double N,
     const int max_bt = 10;
     double step_size = 1.0;
 
-    double f0 = coxkl_loglik(N, theta, delta, delta_eta, eta, ind_start, n_each_stratum, beta, lambda);
+    double f0 = coxkl_loglik(N, theta, delta, delta_eta, eta, ind_start, n_each_stratum, beta, lambda, tf, use_ties);
     double slope = arma::dot(L1_pen, d_beta);
     for (int bt = 0; bt < max_bt; ++bt) {
       arma::vec beta_try = beta + step_size * d_beta;
       arma::vec theta_try = Z * beta_try;
 
-      double f_try = coxkl_loglik(N, theta_try, delta, delta_eta, eta, ind_start, n_each_stratum, beta_try, lambda);
+      double f_try = coxkl_loglik(N, theta_try, delta, delta_eta, eta, ind_start, n_each_stratum, beta_try, lambda, tf, use_ties);
       if (f_try >= f0 + armijo_s * step_size * slope) break;
       step_size *= shrink_t;
     }
@@ -231,8 +237,11 @@ arma::vec KL_Cox_Estimate_cpp(const double N,
                               const int maxit = 50,
                               const double lambda = 0.0,
                               bool backtrack = false,
-                              bool message = false){
+                              bool message = false,
+                              Rcpp::Nullable<Rcpp::IntegerVector> tie_first = R_NilValue){
   arma::vec beta = beta_initial;
+  const bool use_ties = tie_first.isNotNull();
+  const arma::uvec tf = tie_index(tie_first, Z.n_rows);
 
   const arma::uword S = n_each_stratum.n_elem;
   arma::uvec ind_start(S);
@@ -242,7 +251,7 @@ arma::vec KL_Cox_Estimate_cpp(const double N,
   }
 
   for (int iter = 0; iter < maxit; ++iter) {
-    arma::vec d_beta = BetaUpdate(N, Z, delta, delta_eta, beta, eta, ind_start, n_each_stratum, lambda, backtrack);
+    arma::vec d_beta = BetaUpdate(N, Z, delta, delta_eta, beta, eta, ind_start, n_each_stratum, lambda, backtrack, tf, use_ties);
 
     double step_size = 1.0;
     if (!backtrack && arma::abs(d_beta).max() > 1.0) {

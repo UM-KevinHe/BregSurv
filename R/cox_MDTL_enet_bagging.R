@@ -52,6 +52,7 @@
 #' @param ncores Integer. Number of parallel cores. Default 1 (sequential execution).
 #' @param ... Additional arguments passed to \code{cv.cox_MDTL_enet}.
 #'
+#'   Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @return
 #' An object of class \code{"cox_MDTL_bagging"} containing:
 #' \itemize{
@@ -104,7 +105,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
   p <- ncol(z)
 
   # Input checks specific to MDTL. The length/name reconciliation of 'beta' (and
-  # 'Q') is delegated to align_beta_Q() inside cv.cox_MDTL_enet(), so a named
+  # 'Q') is delegated to align_beta_Q inside cv.cox_MDTL_enet, so a named
   # partial external vector is accepted here exactly as it is there.
   if (is.null(beta)) {
     stop("External beta must be provided for Cox MDTL.")
@@ -226,7 +227,7 @@ cox_MDTL_enet_bagging <- function(z, delta, time, stratum = NULL, beta = NULL, Q
 
   if (message) cat("Done.\n")
 
-  # First error raised by any replicate (attached by boot_one); cbind() drops
+  # First error raised by any replicate (attached by boot_one); cbind drops
   # attributes, so it must be read off res_list before aggregation.
   first_err <- NA_character_
   for (res_i in res_list) {

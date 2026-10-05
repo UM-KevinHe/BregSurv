@@ -16,7 +16,8 @@ cox_indi(
   etas,
   max_iter = 100,
   tol = 1e-07,
-  message = FALSE
+  message = FALSE,
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -43,6 +44,8 @@ cox_indi(
 \item{tol}{Convergence tolerance (default 1e-7).}
 
 \item{message}{Logical; if \code{TRUE}, show a progress bar. Default \code{FALSE}.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
 }
 \value{
 An object of class \code{"cox_indi"} containing:

@@ -1,41 +1,34 @@
-"""BregSurv local Qwen agent (bregsurv_agent).
+"""BregSurv agent — Cox transfer learning with a language model at two edges.
 
-Thin Python coordination layer over the BregSurv R package + an
-OpenAI-compatible LLM endpoint (vLLM / Together / OpenRouter). Mirrors
-``mcp/server.py``'s tool surface without depending on the ``mcp``
-library; safe to ship to HF Space, Docker, or any Python 3.8+ host.
+WHAT THIS PACKAGE IS, after the V2 stack was retired on 2026-08-19.
 
-Typical usage::
+The model acts in exactly two places and is OPTIONAL in both:
 
-    from bregsurv_agent import BregSurvAgent
+  boundary 1  read which column the analyst named for which role, and ONLY when
+              they wrote it in prose. A numbered answer is parsed deterministically
+              and the model is never called.
+  boundary 2  write the report's connective prose, in named references and not a
+              single digit.
 
-    agent = BregSurvAgent(
-        model_endpoint="http://localhost:8000/v1",
-        model_name="qwen2.5-7b-awq",
-        api_key="EMPTY",  # vLLM ignores key value
-    )
-    response = agent.query(
-        "Fit Cox KL on ExampleData_lowdim with eta=0.5",
-        data_path="/path/to/ExampleData_lowdim.rda",
-    )
-    print(response.text)
-    response.trace.save("trace.json")
-    response.write_repro_r("repro.R")
+Everything else -- which methods are admissible, which one wins, every number in
+the report -- is deterministic. The V2 modules that let a model choose an
+estimator from 32 tool schemas were removed, because the claim this work rests on
+is that it must not.
+
+    from bregsurv_agent import pipeline, boundary
+    from bregsurv_agent.declaration import render_question, parse_reply, verify
+    from bregsurv_agent.rbridge import run_r
 """
-from __future__ import annotations
-
-from .agent import BregSurvAgent, AgentResponse
-from .trace import AgentTrace, TraceEvent
-from .tools import TOOL_REGISTRY, load_schemas, dispatch
+from .declaration import (Declaration, DeclarationError, Verification,
+                          from_dictionary, parse_reply, render_question, verify)
+from .pipeline import (PipelineRefusal, RunResult, canonical_config,
+                       config_hash, derive_candidate_keys, render_repro, run)
+from .rbridge import DEFAULT_CV_SEED, R_SCRIPTS, find_rscript, run_r
 
 __all__ = [
-    "BregSurvAgent",
-    "AgentResponse",
-    "AgentTrace",
-    "TraceEvent",
-    "TOOL_REGISTRY",
-    "load_schemas",
-    "dispatch",
+    "Declaration", "DeclarationError", "Verification",
+    "render_question", "parse_reply", "verify", "from_dictionary",
+    "run", "RunResult", "PipelineRefusal", "render_repro",
+    "canonical_config", "config_hash", "derive_candidate_keys",
+    "run_r", "find_rscript", "R_SCRIPTS", "DEFAULT_CV_SEED",
 ]
-
-__version__ = "0.1.0"

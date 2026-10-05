@@ -35,6 +35,7 @@ cox_indi_enet(
   returnX = FALSE,
   trace.lambda = FALSE,
   message = FALSE,
+  ties = c("none", "breslow"),
   ...
 )
 }
@@ -114,6 +115,8 @@ included in the returned result. Default \code{FALSE}.}
 \item{message}{Logical. If \code{TRUE}, shows a progress bar over the \code{etas} loop. Default \code{FALSE}.}
 
 \item{...}{Additional arguments (currently unused).}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
 }
 \value{
 An object of class \code{"cox_indi_enet"} containing:

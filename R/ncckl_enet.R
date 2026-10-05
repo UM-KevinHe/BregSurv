@@ -186,7 +186,7 @@ ncckl_enet <- function(y,
                           ...) {
 
   z <- as.matrix(z)
-  y <- as.numeric(y)
+  y <- .check_event(y, "y")
 
   if (missing(stratum)) {
     warning("Stratum not provided; all data assumed in one stratum", call. = FALSE)

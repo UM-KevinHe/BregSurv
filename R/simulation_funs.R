@@ -522,7 +522,7 @@ sim.binary <- function(n_stratum,
   if (!is.finite(rho)) stop("rho must be finite.")
 
   # --- stratum sizes (may be zero) & random intercepts ---
-  stratum_size <- rpois(n_stratum, stratum.size.mean)   # no lower bound
+  stratum_size <- rpois(n_stratum, stratum.size.mean)  # no lower bound
   N <- sum(stratum_size)
   if (N == 0L) stop("All strata have size 0; increase stratum.size.mean or n_stratum.")
 
@@ -542,7 +542,7 @@ sim.binary <- function(n_stratum,
   colnames(Z) <- paste0("Z", seq_len(p))
 
   # --- probabilities (alpha0 fixed at 0) & sampling ---
-  linpred <- as.numeric(theta_subject + Z %*% beta)  # alpha0 = 0
+  linpred <- as.numeric(theta_subject + Z %*% beta) # alpha0 = 0
   inv_link <- switch(link, logit = plogis, probit = pnorm)
   p_hat <- inv_link(linpred)
   y <- rbinom(N, size = 1, prob = p_hat)
@@ -792,8 +792,8 @@ sim <- function(n, target_cens, beta_true, pL_group = 1.0, lambda0 = 1, nu0 = 2)
   colnames(Z1Z2) <- c("Z1","Z2")
   Z3   <- rbinom(n, 1, 0.5)
   Z4   <- rbinom(n, 1, 0.5)
-  L    <- rbinom(n, 1, pL_group)  # a length-n vector of latent group indicator (0/1)
-  Z5   <- rnorm(n, mean= 2*L, sd=1)  # Z5 & Z6 from a mixture of two populations
+  L    <- rbinom(n, 1, pL_group) # a length-n vector of latent group indicator (0/1)
+  Z5   <- rnorm(n, mean= 2*L, sd=1) # Z5 & Z6 from a mixture of two populations
   Z6   <- rnorm(n, mean=-2*L, sd=1)
   X    <- cbind(Z1Z2, Z3=Z3, Z4=Z4, Z5=Z5, Z6=Z6)
   eta  <- drop(as.matrix(X) %*% beta_true)

@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
 # cv_cox_MDTL_enet.R - dispatcher for the cv_cox_MDTL_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_enet().
-# Same return shape as cv_coxkl_enet, plus `vcov_used`.
+# K-fold CV of (eta, lambda) for BregSurv::cox_MDTL_enet.
+# Same return shape as cv_coxkl_enet, plus `Q_used`.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional
-# `vcov`).
+# `Q`).
 
 suppressPackageStartupMessages({
   library(jsonlite)
@@ -33,6 +33,48 @@ metric_colname <- function(best_per_eta) {
                  paste(colnames(best_per_eta), collapse = ", ")))
   }
   candidates
+}
+
+# --- External-coefficient linkage (requirement R2) ---------------------------
+# The external coefficient vector is matched to the internal covariates BY NAME.
+# `as.numeric` used to strip those names here, which disabled the package's
+# aligner and silently reintroduced POSITIONAL borrowing whenever the two
+# lengths happened to agree. Keep the names.
+as_named_numeric <- function(x) {
+  if (is.null(x)) return(NULL)
+  nm <- names(x)
+  if (is.null(nm) && is.matrix(x) && ncol(x) == 1L) nm <- rownames(x)
+  v <- as.numeric(unlist(x, use.names = FALSE))
+  if (!is.null(nm) && length(nm) == length(v)) names(v) <- nm
+  v
+}
+
+# BregSurv zero-pads internal covariates the external model does not cover, but
+# HARD-ERRORS on external names with no internal counterpart. R2 calls for those
+# to be dropped, so drop them here and report exactly what was dropped.
+link_external <- function(z, beta, Q = NULL) {
+  zn <- colnames(z)
+  bn <- names(beta)
+  if (is.null(beta) || is.null(bn) || is.null(zn)) {
+    return(list(beta = beta, Q = Q, linkage = list(
+      matched_by = "position", n_internal = ncol(z),
+      n_external = length(beta),
+      covered = list(), zero_padded = list(), dropped = list())))
+  }
+  keep    <- bn %in% zn
+  dropped <- bn[!keep]
+  beta    <- beta[keep]
+  if (!is.null(Q) && !is.null(rownames(Q))) {
+    qk <- rownames(Q) %in% zn
+    Q  <- Q[qk, qk, drop = FALSE]
+  }
+  list(beta = beta, Q = Q, linkage = list(
+    matched_by  = "name",
+    n_internal  = ncol(z),
+    n_external  = length(bn),
+    covered     = as.list(intersect(zn, bn)),
+    zero_padded = as.list(setdiff(zn, bn)),
+    dropped     = as.list(dropped)))
 }
 
 result <- tryCatch({
@@ -69,11 +111,11 @@ result <- tryCatch({
   beta <- NULL
   beta_sources <- character(0)
   if (!is.null(input$beta_expr) && nzchar(input$beta_expr)) {
-    beta <- as.numeric(eval_in(input$beta_expr, e))
+    beta <- as_named_numeric(eval_in(input$beta_expr, e))
     beta_sources <- c(beta_sources, "beta_expr")
   }
   if (!is.null(input$beta_inline)) {
-    beta <- as.numeric(unlist(input$beta_inline))
+    beta <- as_named_numeric(input$beta_inline)
     beta_sources <- c(beta_sources, "beta_inline")
   }
   if (length(beta_sources) == 0L) stop("Must provide exactly one of: beta_expr, beta_inline")
@@ -81,31 +123,36 @@ result <- tryCatch({
     stop(sprintf("Provide only one of: beta_expr, beta_inline (got %d: %s)",
                  length(beta_sources), paste(beta_sources, collapse = ", ")))
   }
-  if (length(beta) != ncol(z)) {
-    stop(sprintf("Length of external beta (%d) does not match number of covariates in z (%d)",
-                 length(beta), ncol(z)))
+  # A NAMED beta may cover only a subset of the internal covariates: the package
+  # aligns it by name and zero-pads the rest. Only an UNNAMED beta, which is
+  # borrowed positionally, has to match ncol(z) exactly.
+  if (!is.null(beta) && is.null(names(beta)) && length(beta) != ncol(z)) {
+    stop(sprintf(
+      paste0("Length of external beta (%d) does not match number of covariates ",
+             "in z (%d). Supply a NAMED beta, with names matching the covariate ",
+             "columns, to align a partial external model automatically."),
+      length(beta), ncol(z)
+    ))
   }
 
-  vcov <- NULL
-  vcov_sources <- character(0)
-  if (!is.null(input$vcov_expr) && nzchar(input$vcov_expr)) {
-    vcov <- as.matrix(eval_in(input$vcov_expr, e))
-    storage.mode(vcov) <- "double"
-    vcov_sources <- c(vcov_sources, "vcov_expr")
+  Q <- NULL
+  Q_sources <- character(0)
+  if (!is.null(input$Q_expr) && nzchar(input$Q_expr)) {
+    Q <- as.matrix(eval_in(input$Q_expr, e))
+    storage.mode(Q) <- "double"
+    Q_sources <- c(Q_sources, "Q_expr")
   }
-  if (!is.null(input$vcov_inline)) {
-    raw <- input$vcov_inline
+  if (!is.null(input$Q_inline)) {
+    raw <- input$Q_inline
     mat <- do.call(rbind, lapply(raw, function(row) as.numeric(unlist(row))))
-    vcov <- as.matrix(mat); storage.mode(vcov) <- "double"
-    vcov_sources <- c(vcov_sources, "vcov_inline")
+    Q <- as.matrix(mat); storage.mode(Q) <- "double"
+    Q_sources <- c(Q_sources, "Q_inline")
   }
-  if (length(vcov_sources) > 1L) stop("Provide only one of: vcov_expr, vcov_inline")
-  if (!is.null(vcov)) {
-    if (nrow(vcov) != ncol(z) || ncol(vcov) != ncol(z)) {
-      stop(sprintf("vcov must be %d x %d to match z (got %d x %d)",
-                   ncol(z), ncol(z), nrow(vcov), ncol(vcov)))
-    }
-  }
+  if (length(Q_sources) > 1L) stop("Provide only one of: Q_expr, Q_inline")
+  # Shape / symmetry / PSD / name validation is delegated to the package's
+  # align_beta_Q: a NAMED Q may cover a subset of colnames(z) and is
+  # zero-padded; only an UNNAMED Q must be exactly ncol(z) x ncol(z).
+  # Do not re-check it here -- the bridge cannot express that contract.
 
   cv_criteria <- if (!is.null(input$cv_criteria)) as.character(input$cv_criteria) else "V&VH"
   if (!(cv_criteria %in% c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))) {
@@ -128,11 +175,24 @@ result <- tryCatch({
   stratum         <- eval_in(input$stratum_expr, e)
   c_index_stratum <- eval_in(input$c_index_stratum_expr, e)
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  seed   <- if (!is.null(input$seed))   as.integer(input$seed)   else NULL
+  # A4: the seed is never NULL. Fold assignment is drawn with sample, so an
+  # absent seed hands the cross-validated loss -- and therefore the choice
+  # between candidates -- to the ambient RNG. over 30
+  # unseeded rounds the recommended estimator flipped 8 times out of 30,
+  # because the run-to-run wobble in the loss was four times the gap between
+  # the candidates. A fixed documented default costs nothing statistically
+  # (the partition is arbitrary) and makes the run repeatable by default.
+  DEFAULT_CV_SEED <- 20260818L
+  seed   <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED
+  seed_source <- if (!is.null(input$seed)) "caller" else "bridge_default"
+
+  .lk  <- link_external(z, beta, Q)
+  beta <- .lk$beta
+  Q    <- .lk$Q
 
   cv_args <- list(
     z = z, delta = delta, time = time, stratum = stratum,
-    beta = beta, vcov = vcov, etas = etas,
+    beta = beta, Q = Q, etas = etas,
     alpha = alpha, lambda = lambda, nlambda = nlambda,
     nfolds = nfolds, cv.criteria = cv_criteria,
     c_index_stratum = c_index_stratum,
@@ -147,9 +207,14 @@ result <- tryCatch({
 
   list(
     status              = "ok",
+    linkage             = .lk$linkage,
     criteria            = cv_fit$criteria,
     alpha               = as.numeric(cv_fit$alpha),
     nfolds              = cv_fit$nfolds,
+    seed                = seed,
+    seed_source         = seed_source,
+    rng_kind            = if (!is.null(cv_fit$rng_kind)) cv_fit$rng_kind else NA,
+    folds               = if (!is.null(cv_fit$folds)) as.integer(cv_fit$folds) else NA,
     etas                = as.numeric(best_per_eta$eta),
     cv_metric           = list(name = metric_name,
                                values = as.numeric(best_per_eta[[metric_name]])),
@@ -164,7 +229,7 @@ result <- tryCatch({
     n_obs               = nrow(z),
     n_covariates        = ncol(z),
     n_etas              = length(etas),
-    vcov_used           = if (length(vcov_sources) == 0L) "identity" else vcov_sources
+    Q_used           = if (length(Q_sources) == 0L) "masked_identity" else Q_sources
   )
 }, error = function(err) {
   list(

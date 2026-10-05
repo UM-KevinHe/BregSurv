@@ -163,7 +163,7 @@ cv.ncckl_enet <- function(y, z, stratum,
 
   cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 
-  y <- as.numeric(y)
+  y <- .check_event(y, "y")
   z <- as.matrix(z)
 
   if (missing(stratum) || is.null(stratum)) {
@@ -181,7 +181,7 @@ cv.ncckl_enet <- function(y, z, stratum,
   }
   if (!is.null(RS)) {
     ## Coerce once so that the documented plain-vector form of RS also supports
-    ## the fold-wise row subsetting RS[train_idx, , drop = FALSE] used below.
+    ## the fold-wise row subsetting RS[train_idx,, drop = FALSE] used below.
     RS <- as.matrix(RS)
   }
   if (!is.null(beta)) {
@@ -247,7 +247,20 @@ cv.ncckl_enet <- function(y, z, stratum,
   if (message) close(pb_full)
 
   ## CV fold assignment at stratum level
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold_cc(nfolds = nfolds, delta = y, stratum = stratum)
   if (length(folds) != n) {
     stop("get_fold_cc must return a fold assignment of length equal to length(y).", call. = FALSE)
@@ -323,10 +336,10 @@ cv.ncckl_enet <- function(y, z, stratum,
         ...
       )
 
-      beta_mat_fold <- fold_fit$beta  # p x L
+      beta_mat_fold <- fold_fit$beta # p x L
 
       ## For each lambda, compute test linear predictors
-      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold  # n_test x L
+      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold # n_test x L
 
       if (cv.criteria == "loss") {
         for (j in seq_len(L)) {
@@ -393,7 +406,7 @@ cv.ncckl_enet <- function(y, z, stratum,
 
   ## Extract full-data betas at best lambda for each eta
   beta_best_mat <- sapply(seq_len(n_eta), function(i) {
-    beta_mat   <- beta_full_list[[i]]      # p x L_i
+    beta_mat   <- beta_full_list[[i]]     # p x L_i
     lambda_seq <- lambda_list[[i]]
 
     lambda_target <- best_per_eta$lambda[i]
@@ -409,6 +422,7 @@ cv.ncckl_enet <- function(y, z, stratum,
     best_eta    = best_per_eta$eta[best.idx],
     best_lambda = best_per_eta$lambda[best.idx],
     best_beta   = beta_best_mat[, best.idx],
+    best_value  = .best_value(best_per_eta, best.idx),
     criteria    = cv.criteria
   )
 
@@ -420,7 +434,17 @@ cv.ncckl_enet <- function(y, z, stratum,
       integrated_stat.betahat_best = beta_best_mat,
       criteria                    = cv.criteria,
       alpha                       = alpha,
-      nfolds                      = nfolds
+      nfolds                      = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. this is `get_fold_cc`, NOT `get_fold`,
+      ## and it is assigned on the CALLER'S row order -- these drivers never
+      ## reorder. The cohort claim this comment used to make was copied from
+      ## cv.coxkl and was wrong here. `get_fold_cc` is also fully deterministic
+      ## (it contains no RNG call at all), so it assigns whole matched sets by
+      ## a fixed rule and `seed` below is provenance only.
+      folds                      = folds,
+      seed                      = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind                      = .rng_kind
     ),
     class = "cv.ncckl_enet"
   )

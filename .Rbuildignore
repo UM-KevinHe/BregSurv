@@ -1,0 +1,14 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^app\.py$
+^bregsurv_agent$
+^demo$
+^mcp$
+^tests$
+^deploy$
+^assets$
+^Dockerfile$
+^docker-compose\.yml$
+^\.dockerignore$
+^requirements\.txt$
+^README\.md$

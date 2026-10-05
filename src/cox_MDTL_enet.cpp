@@ -66,7 +66,8 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
                   const arma::vec &group_multiplier, const int count_stratum,
                   const double tol, const arma::vec &ind_start, arma::vec &active_group,
                   const int n_obs, const int n_group, const bool actSet, const int actIter,
-                  const int activeGroupNum, const bool actSetRemove) {
+                  const int activeGroupNum, const bool actSetRemove,
+                  const arma::uvec &tf, const arma::uvec &tl, const bool use_ties) {
 
   arma::vec old_beta = beta, r(n_obs), rsk(n_obs), h(n_obs);
   arma::vec Qbeta = Q * beta;
@@ -94,12 +95,14 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
           rsk(i) = rsk(i + 1) + haz(i);
         }
       }
+      if (use_ties) rsk = rsk.elem(tf);   // Breslow (1.3.0): the tie group's risk set
       for (int j = 0; j < count_stratum; j++) {
         h(ind_start(j)) = delta(ind_start(j)) / rsk(ind_start(j));
         for (int i = ind_start(j) + 1; i < ind_start(j) + n_each_prov(j); i++) {
           h(i) = h(i - 1) + delta(i) / rsk(i);
         }
       }
+      if (use_ties) h = h.elem(tl);       // a row's cumulative hazard to the end of its tie group
 
       double a;
       for (int i = 0; i < n_obs; i++) {
@@ -196,7 +199,11 @@ List cox_MDTL_enet_cpp(const arma::vec &delta, const arma::mat &Z, const arma::v
                        const double tol, const int initial_active_group, const double nvar_max,
                        const double group_max, const bool trace_lambda, const bool actSet, const int actIter,
                        const int activeGroupNum, const bool actSetRemove, const double alpha, const double eta_mdtl,
-                       const arma::mat &vcov, const arma::vec &Qbeta_ext) {
+                       const arma::mat &vcov, const arma::vec &Qbeta_ext,
+                       Rcpp::Nullable<Rcpp::IntegerVector> tie_first = R_NilValue,
+                       Rcpp::Nullable<Rcpp::IntegerVector> tie_last = R_NilValue) {
+  const bool use_ties = tie_first.isNotNull() && tie_last.isNotNull();
+  const arma::uvec tf = tie_index(tie_first, Z.n_rows), tl = tie_index(tie_last, Z.n_rows);
 
   const int n_obs = Z.n_rows, n_beta = Z.n_cols, n_lambda = lambda_seq.n_elem, n_group = K1.n_elem - 1;
   int tol_iter = 0;
@@ -241,7 +248,7 @@ List cox_MDTL_enet_cpp(const arma::vec &delta, const arma::mat &Z, const arma::v
       Cox_MDTL_enet_fit(delta, Z, n_each_prov, beta_l, eta_l, K0, K1, lambda, alpha, eta_mdtl,
                         vcov, Qbeta_ext, tol_iter, max_total_iter, max_each_iter, group_multiplier,
                         count_stratum, tol, ind_start, active_group, n_obs, n_group,
-                        actSet, actIter, activeGroupNum, actSetRemove);
+                        actSet, actIter, activeGroupNum, actSetRemove, tf, tl, use_ties);
 
     beta = beta_l;
     eta = eta_l;

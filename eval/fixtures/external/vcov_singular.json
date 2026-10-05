@@ -1,0 +1,66 @@
+{
+ "coefficients": [
+  {
+   "name": "age",
+   "coef": 0.51,
+   "se": 0.08
+  },
+  {
+   "name": "bmi",
+   "coef": -0.27,
+   "se": 0.1
+  },
+  {
+   "name": "egfr",
+   "coef": -0.42,
+   "se": 0.09
+  },
+  {
+   "name": "donor_age",
+   "coef": 0.26,
+   "se": 0.08
+  },
+  {
+   "name": "cold_ischemia",
+   "coef": 0.11,
+   "se": 0.06
+  }
+ ],
+ "vcov": {
+  "age": {
+   "age": 0.0064,
+   "bmi": 0.008,
+   "egfr": 0.0072,
+   "donor_age": 0.0064,
+   "cold_ischemia": 0.0048
+  },
+  "bmi": {
+   "age": 0.008,
+   "bmi": 0.010000000000000002,
+   "egfr": 0.009,
+   "donor_age": 0.008,
+   "cold_ischemia": 0.006
+  },
+  "egfr": {
+   "age": 0.0072,
+   "bmi": 0.009,
+   "egfr": 0.0081,
+   "donor_age": 0.0072,
+   "cold_ischemia": 0.005399999999999999
+  },
+  "donor_age": {
+   "age": 0.0064,
+   "bmi": 0.008,
+   "egfr": 0.0072,
+   "donor_age": 0.0064,
+   "cold_ischemia": 0.0048
+  },
+  "cold_ischemia": {
+   "age": 0.0048,
+   "bmi": 0.006,
+   "egfr": 0.005399999999999999,
+   "donor_age": 0.0048,
+   "cold_ischemia": 0.0036
+  }
+ }
+}

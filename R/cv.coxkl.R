@@ -17,7 +17,7 @@
 #'   and the vector is reordered, so an external source covering only a subset of
 #'   the internal covariates may be supplied directly. An unnamed `beta` is
 #'   aligned positionally and must have length `ncol(z)`. A one-column matrix with
-#'   row names is accepted as a named vector. See [align_beta()].
+#'   row names is accepted as a named vector. See [align_beta].
 #' @param etas Numeric vector of non-negative candidate tuning values to be
 #'   cross-validated. Must be finite and \eqn{\ge 0}. This argument is
 #'   **required**: leaving it at its `NULL` default is an error. The values are
@@ -41,6 +41,7 @@
 #' @param seed Optional integer seed for reproducible fold assignment. Default `NULL`.
 #' @param ... Additional arguments passed to \code{\link{coxkl}}.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.
 #' @return An object of class \code{"cv.coxkl"}: a list with the following five
 #'   components.
 #' \describe{
@@ -89,7 +90,8 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
                      cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                      c_index_stratum = NULL,
                      message = FALSE,
-                     seed = NULL, ...) {
+                     seed = NULL, ties = c("none", "breslow"), ...) {
+  ties <- .check_ties(match.arg(ties))
 
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
 
@@ -125,7 +127,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
   time <- as.numeric(time[time_order])
   stratum <- as.numeric(stratum[time_order])
   z <- as.matrix(z)[time_order, , drop = FALSE]
-  delta <- as.numeric(delta[time_order])
+  delta <- .check_event(delta[time_order], "delta")
   RS <- RS[time_order, , drop = FALSE]
 
   n <- nrow(z)
@@ -135,7 +137,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
   n.each_stratum_full <- as.numeric(table(stratum))
 
   #fit a full model:
-  full_estimate <- coxkl(z = z,
+  full_estimate <- coxkl(ties = ties, z = z,
                          delta = delta,
                          time = time,
                          stratum = stratum,
@@ -151,7 +153,20 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
 
 
   ## Fix seed for reproducibility and create folds
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold(nfolds = nfolds, delta = delta, stratum = stratum)
 
   ## Storage for internal CV results
@@ -159,13 +174,13 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
   if (cv.criteria == "LinPred") {
     cv_all_linpred <- matrix(NA, nrow = n, ncol = n_eta)
   } else if (cv.criteria == "CIndex_pooled") {
-    cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2))  # [fold, eta, numer/denom]
+    cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2)) # [fold, eta, numer/denom]
   }
 
   ## Storage for external baseline, matched to each criteria
   if (cv.criteria == "V&VH") {
     # For VVH we need fold-wise: pl_full(RS) - pl_train(RS)
-    pl_full_RS <- pl_cal_theta(as.vector(RS), delta, n.each_stratum_full)
+    pl_full_RS <- .pl_ties(as.vector(RS), delta, time, n.each_stratum_full, ties)
     ext_vvh_per_fold <- numeric(nfolds)
   } else if (cv.criteria == "LinPred") {
     # For LinPred the assembled CV linear predictor equals RS itself
@@ -192,7 +207,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
     stratum_train <- stratum[train_idx]
     RS_train <- RS[train_idx, , drop = FALSE]
 
-    beta_initial <- rep(0, ncol(z))  # warm start for each fold
+    beta_initial <- rep(0, ncol(z)) # warm start for each fold
 
     if (message) {
       cat("Cross-validation over eta sequence:\n")
@@ -201,7 +216,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
 
     for (i in seq_along(etas)) {
       eta <- etas[i]
-      cox_estimate <- coxkl(z = z_train,
+      cox_estimate <- coxkl(ties = ties, z = z_train,
                             delta = delta_train,
                             time = time_train,
                             stratum = stratum_train,
@@ -215,7 +230,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
                             beta_initial = beta_initial)
 
       beta_train <- cox_estimate$beta
-      beta_initial <- beta_train  # warm start
+      beta_initial <- beta_train # warm start
 
       z_test <- z[test_idx, , drop = FALSE]
       delta_test <- delta[test_idx]
@@ -226,11 +241,11 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
         LP_train <- as.matrix(z_train) %*% as.matrix(beta_train)
         LP_internal <- as.matrix(z) %*% as.matrix(beta_train)
         n.each_stratum_train <- as.numeric(table(stratum_train))
-        n.each_stratum_full  <- n.each_stratum_full  # already computed
+        n.each_stratum_full  <- n.each_stratum_full # already computed
 
         result_mat[f, i] <-
-          pl_cal_theta(LP_internal, delta, n.each_stratum_full) -
-          pl_cal_theta(LP_train,    delta_train, n.each_stratum_train)
+          .pl_ties(LP_internal, delta, time, n.each_stratum_full, ties) -
+          .pl_ties(LP_train, delta_train, time_train, n.each_stratum_train, ties)
 
       } else if (cv.criteria == "LinPred") {
         cv_all_linpred[test_idx, i] <- LP_test
@@ -259,7 +274,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
     result_vec <- colSums(as.matrix(result_mat), na.rm = TRUE)
   } else if (cv.criteria == "LinPred") {
     result_vec <- apply(as.matrix(cv_all_linpred), 2,
-                        function(lp) pl_cal_theta(lp, delta, as.numeric(table(stratum))))
+                        function(lp) .pl_ties(lp, delta, time, as.numeric(table(stratum)), ties))
   } else if (cv.criteria == "CIndex_foldaverage") {
     result_vec <- colMeans(as.matrix(result_mat), na.rm = TRUE)
   } else if (cv.criteria == "CIndex_pooled") {
@@ -286,6 +301,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
 
   best_res <- list(best_eta = etas[best_eta.idx],
                    best_beta = beta_full[, best_eta.idx],
+                   best_value = .best_value(results, best_eta.idx),
                    criteria = cv.criteria)
   structure(
     list(
@@ -293,7 +309,13 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
       beta_full = beta_full,
       best = best_res,
       criteria = cv.criteria,
-      nfolds = nfolds
+      nfolds = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. Assigned on the internally sorted data, not the caller's
+      ## row order. `get_fold` is not exported, so this is the only route to it.
+      folds = folds,
+      seed = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind = .rng_kind
     ),
     class = "cv.coxkl"
   )

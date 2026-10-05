@@ -48,6 +48,7 @@
 #' @param data_sorted Logical. Internal use. If \code{TRUE}, assumes data is already sorted by stratum and time.
 #' @param beta_initial Optional numeric vector. Initial values for the coefficients for the first \code{eta}. Default is a zero vector.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return
 #' An object of class \code{"coxkl"} containing:
 #' \describe{
@@ -88,7 +89,9 @@ coxkl <- function(z, delta, time, stratum = NULL,
                   backtrack = FALSE,
                   message = FALSE,
                   data_sorted = FALSE,
-                  beta_initial = NULL){
+                  beta_initial = NULL,
+                  ties = c("none", "breslow")){
+  ties <- .check_ties(match.arg(ties))
 
   if (is.null(RS) && is.null(beta)) {
     stop("No external information is provided. Either RS or beta must be provided.")
@@ -115,12 +118,12 @@ coxkl <- function(z, delta, time, stratum = NULL,
     time <- as.numeric(time[time_order])
     stratum <- as.numeric(stratum[time_order])
     z_mat <- as.matrix(z)[time_order, , drop = FALSE]
-    delta <- as.numeric(delta[time_order])
+    delta <- .check_event(delta[time_order], "delta")
     RS <- as.numeric(RS[time_order, , drop = FALSE])
   } else {
     z_mat <- as.matrix(z)
     time <- as.numeric(time)
-    delta <- as.numeric(delta)
+    delta <- .check_event(delta, "delta")
     stratum <- as.numeric(stratum)
     RS <- as.numeric(RS)
   }
@@ -138,7 +141,8 @@ coxkl <- function(z, delta, time, stratum = NULL,
   names(likelihood_mat) <- eta_names
 
   n.each_stratum <- as.numeric(table(stratum))
-  delta_tilde <- calculateDeltaTilde(delta, time, RS, n.each_stratum)
+  tm <- .tie_maps(time, n.each_stratum, ties)
+  delta_tilde <- calculateDeltaTilde(delta, time, RS, n.each_stratum, tie_first = tm$first)
 
   N <- nrow(z_mat)
 
@@ -151,18 +155,19 @@ coxkl <- function(z, delta, time, stratum = NULL,
     pb <- txtProgressBar(min = 0, max = n_eta, style = 3, width = 30)
   }
 
-  for (i in seq_along(etas)){  #"etas" already in ascending order
+  for (i in seq_along(etas)){ #"etas" already in ascending order
     eta <- etas[i]
     delta_eta <- (eta * delta_tilde + delta)/(1 + eta)
 
     beta_est <- KL_Cox_Estimate_cpp(N = N, z_mat, delta, delta_eta, n.each_stratum, eta, beta_initial,
-                                    tol, Mstop, lambda = 0, backtrack = backtrack, message = message)
+                                    tol, Mstop, lambda = 0, backtrack = backtrack, message = message,
+                                    tie_first = tm$first)
     LP <- z_mat %*% as.matrix(beta_est)
     LP_mat[, i] <- LP
     beta_mat[, i] <- beta_est
-    likelihood_mat[i] <- pl_cal_theta(LP, delta, n.each_stratum)
+    likelihood_mat[i] <- .pl_ties(LP, delta, time, n.each_stratum, ties)
 
-    beta_initial <- beta_est  # "warm start"
+    beta_initial <- beta_est # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   if (message) close(pb)
@@ -181,6 +186,7 @@ coxkl <- function(z, delta, time, stratum = NULL,
     beta = beta_mat,
     linear.predictors = LinPred_original,
     likelihood = likelihood_mat,
+    ties = ties,
     data = input_data
   ), class = "coxkl")
 }

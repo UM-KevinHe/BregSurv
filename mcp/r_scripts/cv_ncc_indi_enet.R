@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncc_indi_enet.R - dispatcher for the cv_ncc_indi_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet().
+# K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet.
 # NCC-family CV criteria whitelist enforced at dispatcher level.
 #
 # Internal data are split at the stratum level; the external cohort is fully
@@ -104,7 +104,17 @@ result <- tryCatch({
   lambda.min.ratio <- if (!is.null(input$lambda_min_ratio)) as.numeric(input$lambda_min_ratio) else NULL
 
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  seed   <- if (!is.null(input$seed))   as.integer(input$seed)   else NULL
+  # A4: the seed is never NULL. on the NCC side the
+  # fold assignment is NOT drawn with sample. `get_fold_cc` contains no RNG
+  # call -- it assigns whole matched sets by a deterministic rule -- so the seed
+  # changes nothing here and the split is reproducible without it. The A4
+  # measurement this comment cited (8 flips in 30 unseeded rounds) was made on
+  # the COHORT drivers, where get_fold does draw, and was copied across. The
+  # default is kept anyway so every bridge reports the same provenance fields
+  # and a caller cannot tell the two families apart by accident.
+  DEFAULT_CV_SEED <- 20260818L
+  seed   <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED
+  seed_source <- if (!is.null(input$seed)) "caller" else "bridge_default"
 
   cv_args <- list(
     y_int = y_int, z_int = z_int, stratum_int = stratum_int,
@@ -125,6 +135,10 @@ result <- tryCatch({
     criteria            = cv_fit$criteria,
     alpha               = as.numeric(cv_fit$alpha),
     nfolds              = cv_fit$nfolds,
+    seed                = seed,
+    seed_source         = seed_source,
+    rng_kind            = if (!is.null(cv_fit$rng_kind)) cv_fit$rng_kind else NA,
+    folds               = if (!is.null(cv_fit$folds)) as.integer(cv_fit$folds) else NA,
     etas                = as.numeric(best_per_eta$eta),
     cv_metric           = list(name = metric_name,
                                values = as.numeric(best_per_eta[[metric_name]])),

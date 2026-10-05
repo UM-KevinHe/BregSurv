@@ -20,6 +20,7 @@ cv.coxkl(
   c_index_stratum = NULL,
   message = FALSE,
   seed = NULL,
+  ties = c("none", "breslow"),
   ...
 )
 }
@@ -75,6 +76,8 @@ with an error. Default \code{NULL}.}
 \item{seed}{Optional integer seed for reproducible fold assignment. Default \code{NULL}.}
 
 \item{...}{Additional arguments passed to \code{\link{coxkl}}.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.}
 }
 \value{
 An object of class \code{"cv.coxkl"}: a list with the following five

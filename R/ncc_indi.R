@@ -74,8 +74,8 @@ ncc_indi <- function(y_int, z_int, stratum_int,
 
   z_int <- as.matrix(z_int)
   z_ext <- as.matrix(z_ext)
-  y_int <- as.numeric(y_int)
-  y_ext <- as.numeric(y_ext)
+  y_int <- .check_event(y_int, "y_int")
+  y_ext <- .check_event(y_ext, "y_ext")
 
   if (missing(stratum_int) || is.null(stratum_int)) {
     stop("stratum_int must be provided for ncc_indi in 1:m matched settings.", call. = FALSE)

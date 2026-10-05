@@ -109,11 +109,28 @@ double pl_cal_theta(const arma::vec& lp,
  * Returns:
  *   A vector of adjusted risk scores (delta_tilde)
  */
+arma::uvec tie_index(const Rcpp::Nullable<Rcpp::IntegerVector>& v, const arma::uword n) {
+  if (v.isNull()) return arma::regspace<arma::uvec>(0, n == 0 ? 0 : n - 1);
+  Rcpp::IntegerVector x(v.get());
+  if ((arma::uword) x.size() != n) Rcpp::stop("tie map has length %d, expected %d", (int) x.size(), (int) n);
+  arma::uvec out(n);
+  for (arma::uword i = 0; i < n; ++i) {
+    if (x[i] < 0 || (arma::uword) x[i] >= n) Rcpp::stop("tie map index out of range");
+    out(i) = (arma::uword) x[i];
+  }
+  return out;
+}
+
 // [[Rcpp::export]]
 arma::vec calculateDeltaTilde(const arma::vec& event,
                               const arma::vec& time,
                               const arma::vec& RS,
-                              const arma::vec& n_each_stratum) {
+                              const arma::vec& n_each_stratum,
+                              Rcpp::Nullable<Rcpp::IntegerVector> tie_first = R_NilValue) {
+  // Breslow (1.3.0): the external risk set at an event time is everyone with that time or later, so the
+  // denominator is the reverse cumulative sum at the FIRST row of the event's tie group
+  const bool use_ties = tie_first.isNotNull();
+  const arma::uvec tf = tie_index(tie_first, event.n_elem);
   const arma::uword n = event.n_elem;
   arma::vec delta_tilde(n, arma::fill::zeros);
   arma::vec exp_theta_tilde = arma::exp(RS);
@@ -146,7 +163,7 @@ arma::vec calculateDeltaTilde(const arma::vec& event,
       arma::uvec at_risk = arma::find(time_s >= time_s(f));
       if (at_risk.is_empty()) continue;
 
-      const double denom = denom_s(f);
+      const double denom = use_ties ? denom_s(tf(start + f) - start) : denom_s(f);
       if (denom <= 0.0) continue;
 
       arma::uvec at_risk_global = at_risk + start;

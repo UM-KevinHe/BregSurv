@@ -68,6 +68,7 @@
 #' @param returnX Logical. If \code{TRUE}, returns the standardized design matrix and data in the result.
 #' @param ... Additional arguments.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return An object of class \code{"coxkl_enet"}. A list containing:
 #' \describe{
 #'   \item{\code{beta}}{Matrix of coefficient estimates (p x nlambda).}
@@ -115,7 +116,9 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
                        group = 1:ncol(z), group.multiplier = NULL, standardize = T, 
                        nvar.max = ncol(z), group.max = length(unique(group)), stop.loss.ratio = 1e-2, 
                        actSet = TRUE, actIter = Mstop, actGroupNum = sum(unique(group) != 0), actSetRemove = F,
-                       returnX = FALSE, trace.lambda = FALSE, message = FALSE, data_sorted = FALSE, ...){
+                       returnX = FALSE, trace.lambda = FALSE, message = FALSE, data_sorted = FALSE,
+                       ties = c("none", "breslow"), ...){
+  ties <- .check_ties(match.arg(ties))
   
   if (is.null(alpha)){
     warning("alpha is not provided. Setting alpha = 1 (lasso penalty).", call. = FALSE)
@@ -143,7 +146,7 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
   }
   
   z <- as.matrix(z)
-  delta <- as.numeric(delta)
+  delta <- .check_event(delta, "delta")
   time <- as.numeric(time)
   
   input_data <- list(z = z, time = time, delta = delta, stratum = stratum, RS = RS)
@@ -160,17 +163,18 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
     time <- as.numeric(time[time_order])
     stratum <- as.numeric(stratum[time_order])
     z <- as.matrix(z)[time_order, , drop = FALSE]
-    delta <- as.numeric(delta[time_order])
+    delta <- .check_event(delta[time_order], "delta")
     RS <- as.numeric(RS[time_order, , drop = FALSE])
   } else {
     z <- as.matrix(z)
     time <- as.numeric(time)
-    delta <- as.numeric(delta)
+    delta <- .check_event(delta, "delta")
     stratum <- as.numeric(stratum)
     RS <- as.numeric(RS)
   }
   
   n.each_stratum <- as.numeric(table(stratum))
+  tm <- .tie_maps(time, n.each_stratum, ties)
   
   initial.group <- group
   if (standardize == T){
@@ -188,7 +192,7 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
   group.max <- as.integer(group.max)
   
   beta.init <- rep(0, ncol(Z)) #initial value of beta
-  delta_tilde <- calculateDeltaTilde(delta, time, RS, n.each_stratum)
+  delta_tilde <- calculateDeltaTilde(delta, time, RS, n.each_stratum, tie_first = tm$first)
   
   if (is.null(lambda)) {
     if (nlambda < 2) {
@@ -198,11 +202,11 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
     }
     lambda.fit <- setupLambdaCoxKL(Z, time, delta, delta_tilde, RS, beta.init, stratum, 
                                    group, group.multiplier, n.each_stratum, alpha,
-                                   eta, nlambda, lambda.min.ratio)
+                                   eta, nlambda, lambda.min.ratio, tm = tm)
     lambda.seq <- lambda.fit$lambda.seq
     beta <- lambda.fit$beta
   } else {
-    nlambda <- length(lambda)  # Note: lambda can be a single value
+    nlambda <- length(lambda) # Note: lambda can be a single value
     lambda.seq <- as.vector(sort(lambda, decreasing = TRUE))
     beta <- beta.init
   }
@@ -224,7 +228,8 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
                         lambda.seq, alpha, lambda.early.stop, stop.loss.ratio, 
                         group.multiplier, max.total.iter, Mstop, tol, 
                         initial.active.group, nvar.max, group.max, trace.lambda, 
-                        actSet, actIter, actGroupNum, actSetRemove)
+                        actSet, actIter, actGroupNum, actSetRemove,
+                        tie_first = tm$first, tie_last = tm$last)
   # colSums(fit$beta != 0)   #internal check for non-zero coefficients (when at lambda_max, beta should be all zeros)
   
   beta <- fit$beta
@@ -253,7 +258,7 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
   # Original scale
   beta <- unorthogonalize(beta, std.Z$std.Z, group)
   rownames(beta) <- colnames(Z)
-  if (std.Z$reorder == TRUE){  # original order of beta
+  if (std.Z$reorder == TRUE){ # original order of beta
     beta <- beta[std.Z$ord.inv, , drop = F]
   }
   if (standardize == T) {
@@ -286,6 +291,7 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
     iter = iter,
     W = exp(LinPred_original),
     group.multiplier = group.multiplier,
+    ties = ties,
     data = input_data
   ), class = "coxkl_enet")
   

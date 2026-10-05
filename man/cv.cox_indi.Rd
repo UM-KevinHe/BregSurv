@@ -20,7 +20,8 @@ cv.cox_indi(
   max_iter = 100,
   tol = 1e-07,
   message = FALSE,
-  seed = NULL
+  seed = NULL,
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ the \code{1e-4} used elsewhere in the package.}
 \item{message}{Logical; print progress (default FALSE).}
 
 \item{seed}{Optional seed for reproducible folds.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.}
 }
 \value{
 An object of class \code{"cv.cox_indi"} with components:

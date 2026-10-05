@@ -121,11 +121,11 @@ coxkl_ties <- function(z, delta, time, stratum = NULL, beta,
     time <- as.numeric(time[time_order])
     stratum <- as.numeric(stratum[time_order])
     z_mat <- as.matrix(z)[time_order, , drop = FALSE]
-    delta <- as.numeric(delta[time_order])
+    delta <- .check_event(delta[time_order], "delta")
   } else {
     z_mat <- as.matrix(z)
     time <- as.numeric(time)
-    delta <- as.numeric(delta)
+    delta <- .check_event(delta, "delta")
     stratum <- as.numeric(stratum)
   }
   
@@ -174,7 +174,7 @@ coxkl_ties <- function(z, delta, time, stratum = NULL, beta,
     pb <- txtProgressBar(min = 0, max = n_eta, style = 3, width = 30)
   }
   
-  for (i in seq_along(etas)){  #"etas" already in ascending order
+  for (i in seq_along(etas)){ #"etas" already in ascending order
     eta <- etas[i]
     
     if (ties == "exact") {
@@ -214,7 +214,7 @@ coxkl_ties <- function(z, delta, time, stratum = NULL, beta,
       likelihood_mat[i] <- pl_cal_breslow(LP, delta, time, n.each_stratum)
     }
     
-    beta_initial <- beta_hat  # "warm start"
+    beta_initial <- beta_hat # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   if (message) close(pb)

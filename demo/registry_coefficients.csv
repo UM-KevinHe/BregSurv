@@ -1,0 +1,7 @@
+"variable","coefficient"
+"age",0.03901
+"bmi",-0.01353
+"egfr",-0.02313
+"donor_age",0.01115
+"cold_ischemia",0.02737
+"hla_mismatch",0.1148

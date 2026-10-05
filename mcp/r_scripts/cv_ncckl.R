@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncckl.R - dispatcher for the cv_ncckl MCP tool.
 #
-# Cross-validates BregSurv::ncckl() over a candidate `etas` grid and
+# Cross-validates BregSurv::ncckl over a candidate `etas` grid and
 # selects the best eta under the chosen cv.criteria.
 #
 # CV folds are constructed at the stratum level (via get_fold_cc) so the
@@ -41,6 +41,48 @@ extract_metric <- function(internal_stat) {
   list(name = cn, values = as.numeric(internal_stat[[cn]]))
 }
 
+# --- External-coefficient linkage (requirement R2) ---------------------------
+# The external coefficient vector is matched to the internal covariates BY NAME.
+# `as.numeric` used to strip those names here, which disabled the package's
+# aligner and silently reintroduced POSITIONAL borrowing whenever the two
+# lengths happened to agree. Keep the names.
+as_named_numeric <- function(x) {
+  if (is.null(x)) return(NULL)
+  nm <- names(x)
+  if (is.null(nm) && is.matrix(x) && ncol(x) == 1L) nm <- rownames(x)
+  v <- as.numeric(unlist(x, use.names = FALSE))
+  if (!is.null(nm) && length(nm) == length(v)) names(v) <- nm
+  v
+}
+
+# BregSurv zero-pads internal covariates the external model does not cover, but
+# HARD-ERRORS on external names with no internal counterpart. R2 calls for those
+# to be dropped, so drop them here and report exactly what was dropped.
+link_external <- function(z, beta, Q = NULL) {
+  zn <- colnames(z)
+  bn <- names(beta)
+  if (is.null(beta) || is.null(bn) || is.null(zn)) {
+    return(list(beta = beta, Q = Q, linkage = list(
+      matched_by = "position", n_internal = ncol(z),
+      n_external = length(beta),
+      covered = list(), zero_padded = list(), dropped = list())))
+  }
+  keep    <- bn %in% zn
+  dropped <- bn[!keep]
+  beta    <- beta[keep]
+  if (!is.null(Q) && !is.null(rownames(Q))) {
+    qk <- rownames(Q) %in% zn
+    Q  <- Q[qk, qk, drop = FALSE]
+  }
+  list(beta = beta, Q = Q, linkage = list(
+    matched_by  = "name",
+    n_internal  = ncol(z),
+    n_external  = length(bn),
+    covered     = as.list(intersect(zn, bn)),
+    zero_padded = as.list(setdiff(zn, bn)),
+    dropped     = as.list(dropped)))
+}
+
 result <- tryCatch({
   input <- fromJSON(input_path, simplifyVector = FALSE)
 
@@ -77,11 +119,11 @@ result <- tryCatch({
   beta <- NULL
   beta_sources <- character(0)
   if (!is.null(input$beta_expr) && nzchar(input$beta_expr)) {
-    beta <- as.numeric(eval_in(input$beta_expr, e))
+    beta <- as_named_numeric(eval_in(input$beta_expr, e))
     beta_sources <- c(beta_sources, "beta_expr")
   }
   if (!is.null(input$beta_inline)) {
-    beta <- as.numeric(unlist(input$beta_inline))
+    beta <- as_named_numeric(input$beta_inline)
     beta_sources <- c(beta_sources, "beta_inline")
   }
   if (length(beta_sources) == 0L) {
@@ -108,7 +150,20 @@ result <- tryCatch({
   tol      <- if (!is.null(input$tol))      as.numeric(input$tol)       else 1e-4
   Mstop    <- if (!is.null(input$Mstop))    as.integer(input$Mstop)     else 100L
   nfolds   <- if (!is.null(input$nfolds))   as.integer(input$nfolds)    else 5L
-  seed     <- if (!is.null(input$seed))     as.integer(input$seed)      else NULL
+  # A4: the seed is never NULL. on the NCC side the
+  # fold assignment is NOT drawn with sample. `get_fold_cc` contains no RNG
+  # call -- it assigns whole matched sets by a deterministic rule -- so the seed
+  # changes nothing here and the split is reproducible without it. The A4
+  # measurement this comment cited (8 flips in 30 unseeded rounds) was made on
+  # the COHORT drivers, where get_fold does draw, and was copied across. The
+  # default is kept anyway so every bridge reports the same provenance fields
+  # and a caller cannot tell the two families apart by accident.
+  DEFAULT_CV_SEED <- 20260818L
+  seed     <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED
+  seed_source <- if (!is.null(input$seed)) "caller" else "bridge_default"
+
+  .lk  <- link_external(z, beta)
+  beta <- .lk$beta
 
   cv_fit <- cv.ncckl(
     y           = y,
@@ -129,8 +184,13 @@ result <- tryCatch({
 
   list(
     status       = "ok",
+    linkage      = .lk$linkage,
     criteria     = cv_fit$criteria,
     nfolds       = cv_fit$nfolds,
+    seed         = seed,
+    seed_source  = seed_source,
+    rng_kind     = if (!is.null(cv_fit$rng_kind)) cv_fit$rng_kind else NA,
+    folds        = if (!is.null(cv_fit$folds)) as.integer(cv_fit$folds) else NA,
     etas         = as.numeric(cv_fit$internal_stat$eta),
     cv_metric    = metric,
     best         = list(

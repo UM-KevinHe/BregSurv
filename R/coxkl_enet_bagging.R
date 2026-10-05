@@ -32,7 +32,7 @@
 #'   (\code{alpha = 1} is the lasso penalty; values close to 0 approach ridge).
 #'   Default is \code{1.0}. Values outside \code{(0, 1]} are rejected by
 #'   \code{cv.coxkl_enet}; because each replicate is wrapped in
-#'   \code{tryCatch()}, this surfaces as every replicate failing rather than as
+#'   \code{tryCatch}, this surfaces as every replicate failing rather than as
 #'   an immediate error.
 #' @param B Number of bootstrap replicates. Default is \code{100}.
 #' @param lambda Optional user-specified \code{lambda} sequence for the
@@ -54,6 +54,7 @@
 #' @param ncores Integer. Number of parallel cores. Default 1 (sequential execution).
 #' @param ... Additional arguments passed to \code{cv.coxkl_enet}.
 #'
+#'   Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @return
 #' An object of class \code{"bagging"}, which is a list containing:
 #' \itemize{

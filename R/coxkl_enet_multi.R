@@ -4,8 +4,8 @@
 #' external sources, and combines the fitted coefficient vectors across sources to
 #' produce a single aggregated estimate.
 #'
-#' Unlike \code{coxkl_enet_bagging()}, this function does not bootstrap the data.
-#' Instead, it runs \code{cv.coxkl_enet()} once per external source on the full dataset.
+#' Unlike \code{coxkl_enet_bagging}, this function does not bootstrap the data.
+#' Instead, it runs \code{cv.coxkl_enet} once per external source on the full dataset.
 #' The resulting coefficient vectors are then aggregated (by default, averaged) to
 #' obtain a combined estimate.
 #'
@@ -29,10 +29,11 @@
 #'   or \code{"median"}.
 #' @param message Logical indicating whether to print progress.
 #' @param seed Optional seed for reproducibility (passed to each CV run with an offset).
-#' @param ... Additional arguments passed to \code{cv.coxkl_enet()} (e.g., \code{alpha},
+#' @param ... Additional arguments passed to \code{cv.coxkl_enet} (e.g., \code{alpha},
 #'   \code{lambda}, \code{nlambda}, \code{lambda.min.ratio}, \code{nfolds},
 #'   \code{cv.criteria}, \code{c_index_stratum}, etc.).
 #'
+#'   Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @return
 #' An object of class \code{"coxkl_enet.multi"}, which is a list containing:
 #' \itemize{
@@ -40,7 +41,7 @@
 #'   \item \code{all_betas} — matrix of dimension \code{p x K_valid} of coefficient vectors
 #'     from each successful fit.
 #'   \item \code{etas} — the \code{etas} argument exactly as supplied by the caller (raw and
-#'     unsorted); each \code{cv.coxkl_enet()} run sorts its own copy internally.
+#'     unsorted); each \code{cv.coxkl_enet} run sorts its own copy internally.
 #'   \item \code{K} — total number of external sources provided.
 #'   \item \code{valid_sources} — number of successful (non-error) fits used in aggregation.
 #'   \item \code{combine} — combination rule used.
@@ -95,8 +96,8 @@ coxkl_enet.multi <- function(
     pb <- txtProgressBar(min = 0, max = K, style = 3, width = 30)
   }
 
-  res_list      <- vector("list", K)  # stores best_beta per source (or NA vector)
-  fit_res_list  <- vector("list", K)  # stores full cv.coxkl_enet fit objects
+  res_list      <- vector("list", K) # stores best_beta per source (or NA vector)
+  fit_res_list  <- vector("list", K) # stores full cv.coxkl_enet fit objects
 
   for (k in seq_len(K)) {
     RS_k   <- NULL
@@ -128,10 +129,10 @@ coxkl_enet.multi <- function(
 
     if (!is.null(fit_res)) {
       res_list[[k]]     <- as.vector(fit_res$best$best_beta)
-      fit_res_list[[k]] <- fit_res   # save full fit object
+      fit_res_list[[k]] <- fit_res  # save full fit object
     } else {
       res_list[[k]]     <- rep(NA_real_, p)
-      fit_res_list[k]   <- list(NULL)   # store NULL WITHOUT deleting the element
+      fit_res_list[k]   <- list(NULL)  # store NULL WITHOUT deleting the element
     }
 
     if (message) setTxtProgressBar(pb, k)
@@ -148,7 +149,7 @@ coxkl_enet.multi <- function(
       sum(valid_cols), K
     ))
     res_mat      <- res_mat[, valid_cols, drop = FALSE]
-    fit_res_list <- fit_res_list[valid_cols]   # keep only valid fits
+    fit_res_list <- fit_res_list[valid_cols]  # keep only valid fits
   }
 
   if (ncol(res_mat) == 0) stop("No successful fits were obtained.", call. = FALSE)
@@ -168,7 +169,8 @@ coxkl_enet.multi <- function(
       seed         = seed,
       valid_sources = sum(valid_cols),
       combine      = combine,
-      source_fits  = fit_res_list   # full fit objects for each valid source
+      ties         = .fit_ties(list(ties = list(...)$ties)),  # what `...` passed to cv.coxkl_enet
+      source_fits  = fit_res_list  # full fit objects for each valid source
     ),
     class = "coxkl_enet.multi"
   )
@@ -207,7 +209,7 @@ coxkl_enet.multi <- function(
 #' For each valid source fit stored in \code{x$source_fits}, the function
 #' extracts the \code{p x n_eta} coefficient matrix
 #' \code{integrated_stat.betahat_best}, where each column corresponds to one
-#' value of \eqn{\eta}. It then calls \code{test_eval()} on every column to
+#' value of \eqn{\eta}. It then calls \code{test_eval} on every column to
 #' compute the chosen performance metric, and overlays the resulting curves on
 #' a single \pkg{ggplot2} figure.
 #'
@@ -263,7 +265,7 @@ plot.coxkl_enet.multi <- function(x, test_z = NULL, test_time = NULL, test_delta
     fit_k <- source_fits[[k]]
     if (is.null(fit_k)) return(NULL)
 
-    beta_mat_k <- fit_k$integrated_stat.betahat_best  # p x n_eta
+    beta_mat_k <- fit_k$integrated_stat.betahat_best # p x n_eta
     etas_k     <- object$etas
 
     if (is.null(beta_mat_k) || is.null(etas_k)) return(NULL)
@@ -280,7 +282,8 @@ plot.coxkl_enet.multi <- function(x, test_z = NULL, test_time = NULL, test_delta
         test_time    = eval_time,
         test_stratum = eval_stratum,
         betahat      = beta_mat_k[, i],
-        criteria     = criteria
+        criteria     = criteria,
+        ties         = .fit_ties(object)
       ))
     })
 

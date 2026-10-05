@@ -66,7 +66,7 @@ values favour exploration. Default \code{2.576}.}
 
 \item{verbose}{Logical; if \code{TRUE}, progress of the optimization is printed.}
 
-\item{...}{Additional arguments passed to \code{\link{cv.coxkl}} and \code{\link{coxkl}}.}
+\item{...}{Additional arguments passed to \code{\link{cv.coxkl}} and \code{\link{coxkl}}. Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).}
 }
 \value{
 A list containing:

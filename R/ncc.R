@@ -56,14 +56,14 @@ ncc <- function(y, z, stratum,
                    method = c("breslow","exact","efron"),
                    max_iter = 100, tol = 1e-7, comb_max = 1e7) {
 
-  # Lower-case first, then let match.arg() take the choices from the formal default
+  # Lower-case first, then let match.arg take the choices from the formal default
   # only (do not repeat the choice vector here: a reordered copy would desync and
   # make the default call fail with "'arg' must be of length 1").
   method <- tolower(method)
   method <- match.arg(method)
 
   z <- as.matrix(z)
-  y <- as.numeric(y)
+  y <- .check_event(y, "y")
 
   if (missing(stratum)) {
     warning("Stratum not provided; all data assumed in one stratum. This may be inappropriate for matched case-control studies.", call. = FALSE)

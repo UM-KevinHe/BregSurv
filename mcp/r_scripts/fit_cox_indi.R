@@ -5,7 +5,7 @@
 #   Rscript fit_cox_indi.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions
-# for both internal and external cohorts, calls BregSurv::cox_indi(), writes
+# for both internal and external cohorts, calls BregSurv::cox_indi, writes
 # results as JSON. On any error, writes a structured {status:"error",...} payload.
 
 suppressPackageStartupMessages({
@@ -93,7 +93,7 @@ result <- tryCatch({
   max_iter    <- if (!is.null(input$max_iter)) as.integer(input$max_iter) else 100L
   tol         <- if (!is.null(input$tol))      as.numeric(input$tol)      else 1e-7
 
-  # --- Call cox_indi() ---
+  # --- Call cox_indi ---
   fit <- cox_indi(
     z_int       = z_int,
     delta_int   = delta_int,

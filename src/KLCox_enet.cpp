@@ -17,7 +17,8 @@ tuple<arma::vec, arma::vec, double, double, int> KL_Cox_highdim_fit(const arma::
                                                                     const arma::vec &ind_start, const arma::vec &n_each_stratum, arma::vec LinPred, const int &K0, const arma::vec &K1, 
                                                                     const double &lambda, const double &alpha, int &total_iter, const int &max_total_iter, const int &max_each_iter, 
                                                                     const arma::vec &group_multiplier, const arma::uword S, const double &tol, arma::vec &active_group, 
-                                                                    const int &n_obs, const int &n_group, const bool &actSet, const int &actIter, const int &activeGroupNum, const bool &actSetRemove){
+                                                                    const int &n_obs, const int &n_group, const bool &actSet, const int &actIter, const int &activeGroupNum, const bool &actSetRemove,
+                                                                    const arma::uvec &tf, const arma::uvec &tl, const bool use_ties){
 
   arma::vec old_beta = beta, r(n_obs), r_shift;
   arma::vec haz(n_obs), rsk(n_obs), h(n_obs); // (1) haz: exp(LinPred); (2) rsk: sum(haz); (3) h: sum(delta/sum(haz));
@@ -47,9 +48,19 @@ tuple<arma::vec, arma::vec, double, double, int> KL_Cox_highdim_fit(const arma::
         const arma::uword len = n_each_stratum(j);
         const arma::uword end = start + len - 1;
 
+        if (use_ties) {
+          // Breslow (1.3.0): the risk set of a tie group starts at its first row, and a row's cumulative
+          // hazard runs to the last row of its tie group
+          arma::vec rsk_s = rev_cumsum(haz.subvec(start, end));
+          rsk_s = rsk_s.elem(tf.subvec(start, end) - start);
+          rsk.subvec(start, end) = rsk_s;
+          arma::vec H_s = arma::cumsum(delta.subvec(start, end) / rsk_s);
+          h.subvec(start, end) = H_s.elem(tl.subvec(start, end) - start);
+        } else {
         rsk.subvec(start, end) = rev_cumsum(haz.subvec(start, end));
         arma::vec h_i = delta.subvec(start, end) / rsk.subvec(start, end);
         h.subvec(start, end) = arma::cumsum(h_i);
+        }
       }
 
 
@@ -149,7 +160,11 @@ List KL_Cox_highdim(const arma::mat& Z, const arma::vec& delta, const arma::vec&
                     const arma::vec &lambda_seq, const double &alpha, bool lambda_early_stop, double stop_loss_ratio, 
                     const arma::vec &group_multiplier, const int &max_total_iter, const int &max_each_iter, const double &tol, 
                     const int &initial_active_group, const double &nvar_max, const double &group_max, const bool &trace_lambda, 
-                    const bool &actSet, const int &actIter, const int &activeGroupNum, const bool &actSetRemove) {
+                    const bool &actSet, const int &actIter, const int &activeGroupNum, const bool &actSetRemove,
+                    Rcpp::Nullable<Rcpp::IntegerVector> tie_first = R_NilValue,
+                    Rcpp::Nullable<Rcpp::IntegerVector> tie_last = R_NilValue) {
+  const bool use_ties = tie_first.isNotNull() && tie_last.isNotNull();
+  const arma::uvec tf = tie_index(tie_first, Z.n_rows), tl = tie_index(tie_last, Z.n_rows);
   int n_obs = delta.n_elem, n_beta = Z.n_cols, n_lambda = lambda_seq.n_elem, n_group = K1.n_elem - 1;
   int total_iter = 0;
   const arma::uword S = n_each_stratum.n_elem; // number of strata (i.e., number of providers)
@@ -190,7 +205,7 @@ List KL_Cox_highdim(const arma::mat& Z, const arma::vec& delta, const arma::vec&
       ind_start, n_each_stratum, LinPred, K0, K1, 
       lambda, alpha, total_iter, max_total_iter, max_each_iter, 
       group_multiplier, S, tol, active_group, 
-      n_obs, n_group, actSet, actIter, activeGroupNum, actSetRemove);
+      n_obs, n_group, actSet, actIter, activeGroupNum, actSetRemove, tf, tl, use_ties);
 
     double loss_l, df_l;
     int iter_l;

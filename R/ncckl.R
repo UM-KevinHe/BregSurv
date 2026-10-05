@@ -92,7 +92,7 @@ ncckl <- function(y, z, stratum, etas, beta,
                      comb_max = 1e7) {
   
   z <- as.matrix(z)
-  y <- as.numeric(y)
+  y <- .check_event(y, "y")
   method <- match.arg(method)
 
   check_etas(etas)

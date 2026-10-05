@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 # fit_ncckl_enet.R - dispatcher for the fit_ncckl_enet MCP tool.
 #
-# Calls BregSurv::ncckl_enet() — NCC conditional logistic regression with
+# Calls BregSurv::ncckl_enet — NCC conditional logistic regression with
 # elastic-net penalty + KL divergence integration of external β. Single-eta
 # convention.
 #
-# IMPORTANT: ncckl_enet() accepts BOTH `beta` AND `RS` (mutually exclusive),
-# UNLIKE base ncckl() which only accepts `beta`. Mirrors coxkl_enet's design.
+# IMPORTANT: ncckl_enet accepts BOTH `beta` AND `RS` (mutually exclusive),
+# UNLIKE base ncckl which only accepts `beta`. Mirrors coxkl_enet's design.
 
 suppressPackageStartupMessages({
   library(jsonlite)
@@ -25,6 +25,48 @@ eval_in <- function(expr_str, env) {
     return(NULL)
   }
   eval(parse(text = expr_str), envir = env)
+}
+
+# --- External-coefficient linkage (requirement R2) ---------------------------
+# The external coefficient vector is matched to the internal covariates BY NAME.
+# `as.numeric` used to strip those names here, which disabled the package's
+# aligner and silently reintroduced POSITIONAL borrowing whenever the two
+# lengths happened to agree. Keep the names.
+as_named_numeric <- function(x) {
+  if (is.null(x)) return(NULL)
+  nm <- names(x)
+  if (is.null(nm) && is.matrix(x) && ncol(x) == 1L) nm <- rownames(x)
+  v <- as.numeric(unlist(x, use.names = FALSE))
+  if (!is.null(nm) && length(nm) == length(v)) names(v) <- nm
+  v
+}
+
+# BregSurv zero-pads internal covariates the external model does not cover, but
+# HARD-ERRORS on external names with no internal counterpart. R2 calls for those
+# to be dropped, so drop them here and report exactly what was dropped.
+link_external <- function(z, beta, Q = NULL) {
+  zn <- colnames(z)
+  bn <- names(beta)
+  if (is.null(beta) || is.null(bn) || is.null(zn)) {
+    return(list(beta = beta, Q = Q, linkage = list(
+      matched_by = "position", n_internal = ncol(z),
+      n_external = length(beta),
+      covered = list(), zero_padded = list(), dropped = list())))
+  }
+  keep    <- bn %in% zn
+  dropped <- bn[!keep]
+  beta    <- beta[keep]
+  if (!is.null(Q) && !is.null(rownames(Q))) {
+    qk <- rownames(Q) %in% zn
+    Q  <- Q[qk, qk, drop = FALSE]
+  }
+  list(beta = beta, Q = Q, linkage = list(
+    matched_by  = "name",
+    n_internal  = ncol(z),
+    n_external  = length(bn),
+    covered     = as.list(intersect(zn, bn)),
+    zero_padded = as.list(setdiff(zn, bn)),
+    dropped     = as.list(dropped)))
 }
 
 result <- tryCatch({
@@ -65,11 +107,11 @@ result <- tryCatch({
   beta <- NULL; RS <- NULL
   ext_sources <- character(0)
   if (!is.null(input$beta_expr) && nzchar(input$beta_expr)) {
-    beta <- as.numeric(eval_in(input$beta_expr, e))
+    beta <- as_named_numeric(eval_in(input$beta_expr, e))
     ext_sources <- c(ext_sources, "beta_expr")
   }
   if (!is.null(input$beta_inline)) {
-    beta <- as.numeric(unlist(input$beta_inline))
+    beta <- as_named_numeric(input$beta_inline)
     ext_sources <- c(ext_sources, "beta_inline")
   }
   if (!is.null(input$RS_expr) && nzchar(input$RS_expr)) {
@@ -100,6 +142,9 @@ result <- tryCatch({
   tol   <- if (!is.null(input$tol))   as.numeric(input$tol)   else 1e-4
   Mstop <- if (!is.null(input$Mstop)) as.integer(input$Mstop) else 1000L
 
+  .lk  <- link_external(z, beta)
+  beta <- .lk$beta
+
   fit <- ncckl_enet(
     y                = y,
     z                = z,
@@ -118,6 +163,7 @@ result <- tryCatch({
 
   list(
     status       = "ok",
+    linkage      = .lk$linkage,
     eta          = eta,
     alpha        = as.numeric(fit$alpha),
     lambda       = as.numeric(fit$lambda),

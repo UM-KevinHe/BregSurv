@@ -54,9 +54,13 @@
 #'   \code{stratum = NULL}: if \code{stratum} is supplied and \code{c_index_stratum} is not
 #'   identical to it, the function stops with an error. Default is \code{NULL}.
 #' @param message Logical. Whether to print progress messages. Default is \code{FALSE}.
+#' @param standardize Logical, forwarded to \code{\link{coxkl_ridge}}. \code{TRUE}
+#'   (the default since 1.2.0) scales the design matrix before the ridge penalty is
+#'   applied; the coefficients come back on the original scale.
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
 #' @param ... Additional arguments passed to the underlying fitting function \code{\link{coxkl_ridge}}.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.
 #' @return An object of class \code{"cv.coxkl_ridge"}. A list containing:
 #' \describe{
 #'   \item{\code{best}}{A list with the optimal parameters:
@@ -106,7 +110,8 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
                            nfolds = 5,
                            cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                            c_index_stratum = NULL,
-                           message = FALSE, seed = NULL, ...) {
+                           message = FALSE, seed = NULL, standardize = TRUE, ties = c("none", "breslow"), ...) {
+  ties <- .check_ties(match.arg(ties))
   
   ## ---- Input Check & Preparation ----
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
@@ -138,7 +143,7 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
   time <- as.numeric(time[time_order])
   stratum <- as.numeric(stratum[time_order])
   z <- as.matrix(z)[time_order, , drop = FALSE]
-  delta <- as.numeric(delta[time_order])
+  delta <- .check_event(delta[time_order], "delta")
   RS <- RS[time_order, , drop = FALSE]
   
   n_obs <- nrow(z)
@@ -146,7 +151,20 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
   n.each_stratum_full <- as.numeric(table(stratum))
 
   ## ---- CV Folds ----
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold(nfolds = nfolds, delta = delta, stratum = stratum)
   
   n_eta <- length(etas)
@@ -166,16 +184,16 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
     
     ## 1. Fit on Full Data (to get lambda sequence and warm start)
     if (is.null(lambda)) {
-      fit0 <- coxkl_ridge(z = z, delta = delta, time = time, stratum = stratum,
+      fit0 <- coxkl_ridge(ties = ties, z = z, delta = delta, time = time, stratum = stratum,
                           RS = RS, eta = eta, lambda = NULL,
                           nlambda = nlambda, penalty.factor = 1 - 1e-4, # implicit assumption for ridge gen
-                          data_sorted = TRUE, message = FALSE, ...) # coxkl_ridge hard-codes lambda.min.ratio = 0 (path ends at the unpenalized solution)
+                          data_sorted = TRUE, message = FALSE, standardize = standardize, ...) # coxkl_ridge hard-codes lambda.min.ratio = 0 (path ends at the unpenalized solution)
       lambda_seq <- as.vector(fit0$lambda)
     } else {
       lambda_seq <- sort(lambda, decreasing = TRUE)
-      fit0 <- coxkl_ridge(z = z, delta = delta, time = time, stratum = stratum,
+      fit0 <- coxkl_ridge(ties = ties, z = z, delta = delta, time = time, stratum = stratum,
                           RS = RS, eta = eta, lambda = lambda_seq,
-                          data_sorted = TRUE, message = FALSE, ...)
+                          data_sorted = TRUE, message = FALSE, standardize = standardize, ...)
     }
     
     # Store full fit results
@@ -205,13 +223,13 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
       beta_initial <- beta_initial.fit0
       
       # Fit on training fold
-      fit_f <- coxkl_ridge(z = z[train_idx, , drop = FALSE],
+      fit_f <- coxkl_ridge(ties = ties, z = z[train_idx, , drop = FALSE],
                            delta = delta[train_idx],
                            time = time[train_idx],
                            stratum = stratum[train_idx],
                            RS = RS[train_idx, , drop = FALSE],
                            eta = eta, lambda = lambda_seq,
-                           data_sorted = TRUE, message = FALSE,
+                           data_sorted = TRUE, message = FALSE, standardize = standardize,
                            beta_initial = beta_initial, ...)
       
       beta_mat <- fit_f$beta
@@ -227,8 +245,8 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
       if (cv.criteria == "V&VH") {
         n.each_stratum_train <- as.numeric(table(stratum[train_idx]))
         n.each_stratum_all   <- as.numeric(table(stratum))
-        pl_all <- apply(LP_all,  2, function(col) pl_cal_theta(col, delta, n.each_stratum_all))
-        pl_tr  <- apply(LP_train,2, function(col) pl_cal_theta(col, delta[train_idx], n.each_stratum_train))
+        pl_all <- apply(LP_all,  2, function(col) .pl_ties(col, delta, time, n.each_stratum_all, ties))
+        pl_tr  <- apply(LP_train,2, function(col) .pl_ties(col, delta[train_idx], time[train_idx], n.each_stratum_train, ties))
         vvh_sum <- vvh_sum + (pl_all - pl_tr)
       } else if (cv.criteria == "LinPred") {
         Y[test_idx, ] <- LP_test
@@ -313,6 +331,7 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
   best_res <- list(best_eta = best_per_eta$eta[best.idx],
                    best_lambda = best_per_eta$lambda[best.idx],
                    best_beta = beta_best_mat[, best.idx],
+                   best_value = .best_value(best_per_eta, best.idx),
                    criteria = cv.criteria)
   
   structure(
@@ -322,7 +341,13 @@ cv.coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NUL
       integrated_stat.best_per_eta = best_per_eta,
       integrated_stat.betahat_best = beta_best_mat,
       criteria = cv.criteria,
-      nfolds = nfolds
+      nfolds = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. Assigned on the internally sorted data, not the caller's
+      ## row order. `get_fold` is not exported, so this is the only route to it.
+      folds = folds,
+      seed = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind = .rng_kind
     ),
     class = "cv.coxkl_ridge"
   )

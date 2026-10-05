@@ -1,0 +1,729 @@
+{
+ "_about": "Catalogue of published external models the agent can name for the analyst (component 4, Memory). Metadata only: the agent never downloads a release; the analyst obtains the file from the holder, reduces it to per-variable coefficients on their own derived columns, and uploads it. Checksums identify a file that was published; nothing here is patient data. Maintenance: add an entry per release cycle.",
+ "_recorded": "2026-09-11 | 2026-09-14: thirteen entries beyond the SRTR added from the literature (metadata only, each checked against the paper or guide named in its notes)",
+ "sources": {
+  "SRTR": {
+   "name": "Scientific Registry of Transplant Recipients, program-specific report risk-adjustment models",
+   "page_posttransplant": "https://srtr.hrsa.gov/transplant-professionals/program-specific-report/posttransplant-outcomes-risk-adjustment/",
+   "page_waitlist": "https://srtr.hrsa.gov/transplant-professionals/program-specific-report/waiting-list-risk-adjustment/",
+   "methods": "https://srtr.hrsa.gov/transplant-professionals/program-specific-report/technical-methods-for-the-program-specific-reports/",
+   "tool_posttransplant": "https://srtr.hrsa.gov/tools/RAM_PosttransplantOutcomes/",
+   "tool_waitlist": "https://srtr.hrsa.gov/tools/RAM_WaitingList/",
+   "how_to_obtain": [
+    "Open the interactive tool page (a Shiny application inside the page).",
+    "Choose organ, donor type, recipient age group, outcome and time window; the model name is the concatenation of the option codes (ki + dd + ad + gs + 1y = kiddadgs1y).",
+    "On the Model Coefficients tab press 'Download .CSV File'; on the Baseline Cumulative Hazard tab press it again for the baseline (posttransplant models only).",
+    "The download is session-scoped and behind a reCAPTCHA on the parent page; it cannot be scripted and the agent does not try."
+   ],
+   "release_cadence": "twice a year with the program-specific reports; a release is identified by its year and month (e.g. 202607).",
+   "reduction_note": "The posttransplant coefficient table has one row per (predictor, level): categorical levels as indicators, 'Missing' as a missingness indicator, 'Linear' as the linear term, and 'Apply to > k (Right LS)' / 'Apply to < k (Left LS)' as linear-spline pieces max(0, x-k) / max(0, k-x). The agent refuses this per-level layout (names not unique). Reduce it to one coefficient per derived column that exists in your own cohort, on the log-hazard scale, before uploading."
+  },
+  "OPTN": {
+   "name": "Organ Procurement and Transplantation Network (OPTN/UNOS) allocation calculators and guides",
+   "how_to_obtain": [
+    "Open the OPTN allocation-calculator page for the score (KDPI or EPTS) and download the current guide (pdf).",
+    "Copy the coefficient table of the guide into a two-column file (variable, coefficient) on the log hazard-ratio scale; derive the same covariates on your data.",
+    "The mapping table that turns the raw index into a percentile is not a model and is not uploaded."
+   ],
+   "reduction_note": "The guides publish the Cox regression coefficients of the donor (KDRI) or candidate (EPTS) factors; interaction terms and spline/threshold terms must be built as columns of your own data before the coefficients can be aligned."
+  },
+  "literature": {
+   "name": "Published prognostic models in the peer-reviewed literature (paper tables or supplements)",
+   "how_to_obtain": [
+    "Open the paper (DOI in the entry) and locate the table or supplement that lists the model's coefficients or hazard ratios.",
+    "Transcribe them into a two-column file (variable, coefficient) -- hazard ratios may be uploaded as such and are converted -- together with the standard errors or covariance where the paper gives them.",
+    "A model published on transformed covariates (fractional polynomials, splines, categorised levels) has to be reduced to columns your data can carry before it can be aligned; the agent does not transform data."
+   ],
+   "reduction_note": "A published score (points, an index formula) that is not a coefficient vector on named variables cannot be borrowed from by this library; it can be computed for your own patients and used as a covariate."
+  }
+ },
+ "models": [
+  {
+   "id": "srtr.kiddadgs1y.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult recipients (18+)",
+   "outcome": "graft survival (graft failure or death, whichever first)",
+   "horizon": "1 year after transplant",
+   "model_class": "Cox proportional hazards",
+   "release": "202607",
+   "contents": [
+    "coefficients",
+    "baseline cumulative hazard"
+   ],
+   "files": [
+    {
+     "name": "kiddadgs1y_202607_coefficients.csv",
+     "layout": [
+      "predictor",
+      "level",
+      "coefficient"
+     ],
+     "rows": 229,
+     "predictors": 55,
+     "sha256_prefix": "e79812044e6d06c2"
+    },
+    {
+     "name": "kiddadgs1y_202607_baseline_cumhaz.csv",
+     "layout": "daily baseline cumulative hazard, days 0-365",
+     "rows": 366
+    }
+   ],
+   "aliases": [
+    "kiddadgs1y",
+    "one-year deceased-donor kidney graft survival",
+    "SRTR kidney graft survival 1 year"
+   ]
+  },
+  {
+   "id": "srtr.kiddadgs3y.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult recipients (18+)",
+   "outcome": "graft survival (graft failure or death, whichever first)",
+   "horizon": "3 years after transplant",
+   "model_class": "Cox proportional hazards",
+   "release": "202607",
+   "contents": [
+    "coefficients",
+    "baseline cumulative hazard"
+   ],
+   "files": [
+    {
+     "name": "kiddadgs3y_202607_coefficients.csv",
+     "layout": [
+      "predictor",
+      "level",
+      "coefficient"
+     ],
+     "rows": 232,
+     "predictors": 55,
+     "sha256_prefix": "498c6f49d642e20a"
+    },
+    {
+     "name": "kiddadgs3y_202607_baseline_cumhaz.csv",
+     "layout": "daily baseline cumulative hazard, days 0-1096",
+     "rows": 1097
+    }
+   ],
+   "aliases": [
+    "kiddadgs3y",
+    "three-year deceased-donor kidney graft survival"
+   ]
+  },
+  {
+   "id": "srtr.kiddadps1y.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult recipients (18+)",
+   "outcome": "patient survival (death from any cause)",
+   "horizon": "1 year after transplant",
+   "model_class": "Cox proportional hazards",
+   "release": "202607",
+   "contents": [
+    "coefficients",
+    "baseline cumulative hazard"
+   ],
+   "files": [
+    {
+     "name": "kiddadps1y_202607_coefficients.csv",
+     "layout": [
+      "predictor",
+      "level",
+      "coefficient"
+     ],
+     "rows": 184,
+     "predictors": 44,
+     "sha256_prefix": "2eb405ccea8d13cd"
+    },
+    {
+     "name": "kiddadps1y_202607_baseline_cumhaz.csv",
+     "layout": "daily baseline cumulative hazard, days 0-365",
+     "rows": 366
+    }
+   ],
+   "aliases": [
+    "kiddadps1y",
+    "one-year deceased-donor kidney patient survival"
+   ]
+  },
+  {
+   "id": "srtr.kiddadps3y.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult recipients (18+)",
+   "outcome": "patient survival (death from any cause)",
+   "horizon": "3 years after transplant",
+   "model_class": "Cox proportional hazards",
+   "release": "202607",
+   "contents": [
+    "coefficients",
+    "baseline cumulative hazard"
+   ],
+   "files": [
+    {
+     "name": "kiddadps3y_202607_coefficients.csv",
+     "layout": [
+      "predictor",
+      "level",
+      "coefficient"
+     ],
+     "rows": 216,
+     "predictors": 53,
+     "sha256_prefix": "f7e8625704faa593"
+    },
+    {
+     "name": "kiddadps3y_202607_baseline_cumhaz.csv",
+     "layout": "daily baseline cumulative hazard, days 0-1096",
+     "rows": 1097
+    }
+   ],
+   "aliases": [
+    "kiddadps3y",
+    "three-year deceased-donor kidney patient survival"
+   ]
+  },
+  {
+   "id": "srtr.kiddadgs1y.202105",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult recipients (18+)",
+   "outcome": "graft survival (graft failure or death, whichever first)",
+   "horizon": "1 year after transplant",
+   "model_class": "Cox proportional hazards",
+   "release": "202105",
+   "contents": [
+    "coefficients",
+    "baseline cumulative hazard"
+   ],
+   "files": [
+    {
+     "name": "kiddadgs1y_202105_coefficients.csv",
+     "layout": "per-level coefficient table of that release; not held here",
+     "rows": null
+    }
+   ],
+   "notes": "Superseded release; kept because analyses fitted against it exist. A newer release of the same model is srtr.kiddadgs1y.202607.",
+   "aliases": [
+    "kiddadgs1y May 2021"
+   ]
+  },
+  {
+   "id": "srtr.wl_ki_ad_txrate.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "any",
+   "population": "adult waiting-list candidates (18+)",
+   "outcome": "transplant rate (waiting list)",
+   "horizon": "waiting-list period",
+   "model_class": "exponential (constant hazard)",
+   "release": "202607",
+   "contents": [
+    "coefficients",
+    "plausible-value bounds",
+    "trimming values"
+   ],
+   "files": [
+    {
+     "name": "wl_ki_ad_txrate_202607_coefficients.csv",
+     "layout": [
+      "Element",
+      "Level",
+      "Coefficient"
+     ],
+     "rows": 107,
+     "sha256_prefix": "da03a11442e2e292"
+    },
+    {
+     "name": "wl_ki_ad_plausible_values.csv",
+     "layout": [
+      "Variable.Description",
+      "Cut.Pt.L.",
+      "Cut.Pt.H.",
+      "Variable.Name"
+     ],
+     "rows": 6,
+     "sha256_prefix": "f0a56d43769e5942"
+    },
+    {
+     "name": "wl_ki_ad_trimming_values.csv",
+     "layout": [
+      "var",
+      "q01",
+      "q99"
+     ],
+     "rows": 8,
+     "sha256_prefix": "ca61b87b50da5ff3"
+    }
+   ],
+   "notes": "A waiting-list rate model, not a survival model of the kind this library fits; listed so the agent can say so when it is named.",
+   "aliases": [
+    "waiting list transplant rate",
+    "wl_ki_ad_txrate"
+   ]
+  },
+  {
+   "id": "srtr.wl_ki_ad_ddtxrate.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult waiting-list candidates (18+)",
+   "outcome": "deceased-donor transplant rate (waiting list)",
+   "horizon": "waiting-list period",
+   "model_class": "exponential (constant hazard)",
+   "release": "202607",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "wl_ki_ad_ddtxrate_202607_coefficients.csv",
+     "layout": [
+      "Element",
+      "Level",
+      "Coefficient"
+     ],
+     "rows": 106,
+     "sha256_prefix": "18f920e50f967b40"
+    }
+   ],
+   "notes": "A waiting-list rate model, not a survival model of the kind this library fits.",
+   "aliases": [
+    "deceased-donor transplant rate",
+    "wl_ki_ad_ddtxrate"
+   ]
+  },
+  {
+   "id": "srtr.wl_ki_ad_pretxmort.202607",
+   "source": "SRTR",
+   "organ": "kidney",
+   "donor_type": "any",
+   "population": "adult waiting-list candidates (18+)",
+   "outcome": "pre-transplant mortality (waiting list)",
+   "horizon": "waiting-list period",
+   "model_class": "exponential (constant hazard)",
+   "release": "202607",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "wl_ki_ad_pretxmort_202607_coefficients.csv",
+     "layout": [
+      "Element",
+      "Level",
+      "Coefficient"
+     ],
+     "rows": 103,
+     "sha256_prefix": "e336222b359666af"
+    }
+   ],
+   "notes": "A waiting-list rate model, not a survival model of the kind this library fits.",
+   "aliases": [
+    "pre-transplant mortality",
+    "waiting-list mortality",
+    "wl_ki_ad_pretxmort"
+   ]
+  },
+  {
+   "id": "optn.kdri.2024",
+   "source": "OPTN",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult first kidney-alone recipients (donor factors)",
+   "outcome": "graft survival (graft failure or death)",
+   "horizon": "long-term post-transplant",
+   "model_class": "Cox proportional hazards (donor factors)",
+   "release": "OPTN KDPI guide, refit on 2018-2021 transplants",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "kdpi_guide.pdf (Table 1)",
+     "layout": [
+      "donor factor",
+      "coefficient"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Kidney Donor Risk Index of Rao et al. (Transplantation 2009, doi:10.1097/TP.0b013e3181ac620b), refit by the SRTR for the OPTN; the guide gives the Cox coefficients of the donor factors (age with thresholds, height, weight, hypertension, diabetes, cause of death, creatinine, donation after circulatory death). KDPI is the percentile mapping of the index and is a score, not a model.",
+   "aliases": [
+    "KDRI",
+    "kidney donor risk index",
+    "KDPI",
+    "kidney donor profile index",
+    "Rao 2009"
+   ]
+  },
+  {
+   "id": "optn.epts.2020",
+   "source": "OPTN",
+   "organ": "kidney",
+   "donor_type": "any",
+   "population": "adult kidney waiting-list candidates",
+   "outcome": "patient survival (death from any cause) after transplant",
+   "horizon": "post-transplant",
+   "model_class": "Cox proportional hazards (candidate factors)",
+   "release": "OPTN EPTS guide (policy formula)",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "epts_guide.pdf (raw EPTS formula)",
+     "layout": [
+      "candidate factor",
+      "coefficient"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Estimated Post-Transplant Survival score of Israni et al. (J Am Soc Nephrol 2014, doi:10.1681/ASN.2013070784): candidate age, diabetes, prior solid-organ transplant and years on dialysis, with interaction terms; the guide gives the coefficients of the raw index and the mapping table to a percentile.",
+   "aliases": [
+    "EPTS",
+    "estimated post-transplant survival",
+    "Israni 2014"
+   ]
+  },
+  {
+   "id": "uk.kdri.2012",
+   "source": "literature",
+   "organ": "kidney",
+   "donor_type": "deceased donor",
+   "population": "adult recipients in the United Kingdom (donor factors)",
+   "outcome": "graft survival (graft failure or death)",
+   "horizon": "post-transplant",
+   "model_class": "Cox proportional hazards (donor factors)",
+   "release": "Watson et al., Transplantation 2012",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "paper table",
+     "layout": [
+      "donor factor",
+      "coefficient"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The UK Kidney Donor Risk Index (Watson et al., Transplantation 2012, doi:10.1097/TP.0b013e3182379423): a Cox model of graft failure on seven donor factors (age, height, hypertension, weight, days in hospital, adrenaline use, CMV), from the UK Transplant Registry.",
+   "aliases": [
+    "UK KDRI",
+    "UK kidney donor risk index",
+    "Watson 2012",
+    "kidney donor risk index"
+   ]
+  },
+  {
+   "id": "paris.ibox.2019",
+   "source": "literature",
+   "organ": "kidney",
+   "donor_type": "any",
+   "population": "adult kidney transplant recipients assessed after transplant",
+   "outcome": "graft survival (death-censored allograft failure)",
+   "horizon": "3 to 7 years after assessment",
+   "model_class": "Cox proportional hazards",
+   "release": "Loupy et al., BMJ 2019",
+   "contents": [
+    "hazard ratios with confidence intervals"
+   ],
+   "files": [
+    {
+     "name": "paper table / supplement",
+     "layout": [
+      "predictor",
+      "hazard ratio",
+      "95% CI"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The iBox (integrative box) of Loupy et al. (BMJ 2019;366:l4923, doi:10.1136/bmj.l4923): eight parameters at the time of assessment (time since transplant, eGFR, proteinuria, donor-specific antibody, and four histological scores); published as hazard ratios with 95% confidence intervals, with an online calculator.",
+   "aliases": [
+    "iBox",
+    "integrative box",
+    "Loupy 2019"
+   ]
+  },
+  {
+   "id": "nantes.ktfs.2010",
+   "source": "literature",
+   "organ": "kidney",
+   "donor_type": "any",
+   "population": "adult kidney transplant recipients at one year",
+   "outcome": "graft survival (return to dialysis)",
+   "horizon": "8 years after the first year",
+   "model_class": "Cox proportional hazards",
+   "release": "Foucher et al., Kidney International 2010",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "paper formula",
+     "layout": [
+      "predictor",
+      "coefficient"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Kidney Transplant Failure Score (Foucher et al., Kidney Int 2010;78:1288-94, doi:10.1038/ki.2010.232): eight variables measured at one year (creatinine, proteinuria, sex, age, prior transplant, creatinine at 3 months, acute rejection, and the change in creatinine); the paper gives the coefficients of the score.",
+   "aliases": [
+    "KTFS",
+    "kidney transplant failure score",
+    "Foucher 2010"
+   ]
+  },
+  {
+   "id": "unos.meld.2001",
+   "source": "literature",
+   "organ": "liver",
+   "donor_type": "any",
+   "population": "adult candidates with end-stage liver disease",
+   "outcome": "patient survival (death on the waiting list)",
+   "horizon": "3 months",
+   "model_class": "Cox proportional hazards on log-transformed laboratory values",
+   "release": "Kamath et al., Hepatology 2001",
+   "contents": [
+    "coefficients (on log-transformed values)"
+   ],
+   "files": [
+    {
+     "name": "MELD formula",
+     "layout": [
+      "log(creatinine)",
+      "log(bilirubin)",
+      "log(INR)"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Model for End-Stage Liver Disease (Kamath et al., Hepatology 2001;33:464-70, doi:10.1053/jhep.2001.22172): coefficients 0.957 log(creatinine), 0.378 log(bilirubin), 1.120 log(INR) (+0.643); the coefficients are on log-transformed laboratory values, which have to be built as columns before alignment.",
+   "aliases": [
+    "MELD",
+    "model for end-stage liver disease",
+    "Kamath 2001"
+   ]
+  },
+  {
+   "id": "zurich.bar.2011",
+   "source": "literature",
+   "organ": "liver",
+   "donor_type": "deceased donor",
+   "population": "adult liver transplant recipients",
+   "outcome": "patient survival (death from any cause)",
+   "horizon": "3 months after transplant",
+   "model_class": "points score",
+   "release": "Dutkowski et al., Annals of Surgery 2011",
+   "contents": [
+    "a points score"
+   ],
+   "files": [
+    {
+     "name": "score table",
+     "layout": [
+      "factor",
+      "points"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Balance of Risk score (Dutkowski et al., Ann Surg 2011;254:745-53, doi:10.1097/SLA.0b013e3182365081): six factors (recipient MELD, cold ischemia, recipient and donor age, retransplant, life support) summed as points from 0 to 27. A points score, not a coefficient vector on named variables: it can be computed for your patients and used as a covariate, not borrowed from.",
+   "aliases": [
+    "BAR score",
+    "balance of risk",
+    "Dutkowski 2011"
+   ]
+  },
+  {
+   "id": "cambridge.predict_breast.2017",
+   "source": "literature",
+   "organ": "breast",
+   "donor_type": "not applicable",
+   "population": "women with early invasive breast cancer",
+   "outcome": "patient survival (breast-cancer-specific and other-cause mortality)",
+   "horizon": "5, 10 and 15 years",
+   "model_class": "Cox proportional hazards, competing causes",
+   "release": "PREDICT Breast v2.1, Candido dos Reis et al., Breast Cancer Research 2017",
+   "contents": [
+    "coefficients",
+    "baseline hazard (in the published code)"
+   ],
+   "files": [
+    {
+     "name": "paper table / open-source code",
+     "layout": [
+      "predictor",
+      "coefficient"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "PREDICT Breast (Wishart et al. 2010; Candido dos Reis et al., Breast Cancer Res 2017;19:58, doi:10.1186/s13058-017-0852-3): Cox coefficients for age, tumour size, grade, node count, ER, HER2, KI67 and mode of detection, with the baseline hazard in the published calculator code; two cause-specific models.",
+   "aliases": [
+    "PREDICT",
+    "PREDICT breast",
+    "NHS PREDICT",
+    "Wishart 2010"
+   ]
+  },
+  {
+   "id": "nottingham.npi.1982",
+   "source": "literature",
+   "organ": "breast",
+   "donor_type": "not applicable",
+   "population": "women with operable breast cancer",
+   "outcome": "patient survival (death from any cause)",
+   "horizon": "long-term",
+   "model_class": "index formula",
+   "release": "Haybittle et al., British Journal of Cancer 1982",
+   "contents": [
+    "an index formula"
+   ],
+   "files": [
+    {
+     "name": "formula",
+     "layout": [
+      "0.2 x size (cm) + grade + lymph-node stage"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Nottingham Prognostic Index (Haybittle et al., Br J Cancer 1982;45:361-6): a three-term index, not a coefficient vector on named variables; it can be computed for your patients and used as a covariate, not borrowed from.",
+   "aliases": [
+    "NPI",
+    "Nottingham prognostic index",
+    "Haybittle 1982"
+   ]
+  },
+  {
+   "id": "rotterdam.royston_altman.2013",
+   "source": "literature",
+   "organ": "breast",
+   "donor_type": "not applicable",
+   "population": "women with primary breast cancer (Rotterdam tumour bank)",
+   "outcome": "recurrence-free survival (recurrence or death)",
+   "horizon": "long-term",
+   "model_class": "Cox proportional hazards on fractional-polynomial transformed covariates",
+   "release": "Royston and Altman, BMC Medical Research Methodology 2013",
+   "contents": [
+    "coefficients (on transformed covariates)"
+   ],
+   "files": [
+    {
+     "name": "paper Table 2",
+     "layout": [
+      "term",
+      "coefficient"
+     ],
+     "rows": 8
+    }
+   ],
+   "notes": "The Rotterdam-derived prognostic model of Royston and Altman (BMC Med Res Methodol 2013;13:33, doi:10.1186/1471-2288-13-33), validated on the German Breast Cancer Study Group data: eight coefficients on transformed terms (age cubed, age cubed times log age, menopausal status, two size indicators, nodes to the power -0.5, oestrogen receptor, hormonal therapy); no baseline hazard in the paper. The transformed terms must be built as columns of your data before the coefficients can be aligned.",
+   "aliases": [
+    "Royston Altman 2013",
+    "Rotterdam breast model",
+    "GBSG validation model"
+   ]
+  },
+  {
+   "id": "framingham.general_cvd.2008",
+   "source": "literature",
+   "organ": "cardiovascular",
+   "donor_type": "not applicable",
+   "population": "adults free of cardiovascular disease (Framingham Heart Study)",
+   "outcome": "cardiovascular disease (first event)",
+   "horizon": "10 years",
+   "model_class": "Cox proportional hazards, sex-specific",
+   "release": "D'Agostino et al., Circulation 2008",
+   "contents": [
+    "coefficients",
+    "baseline survival at 10 years"
+   ],
+   "files": [
+    {
+     "name": "paper tables",
+     "layout": [
+      "predictor",
+      "coefficient (men / women)"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The Framingham general cardiovascular risk profile (D'Agostino et al., Circulation 2008;117:743-53, doi:10.1161/CIRCULATIONAHA.107.699579): sex-specific Cox coefficients on log age, log total and HDL cholesterol, log systolic blood pressure (treated and untreated), smoking and diabetes, with the 10-year baseline survival.",
+   "aliases": [
+    "Framingham",
+    "Framingham risk score",
+    "general CVD risk",
+    "D'Agostino 2008"
+   ]
+  },
+  {
+   "id": "aha.prevent.2024",
+   "source": "literature",
+   "organ": "cardiovascular",
+   "donor_type": "not applicable",
+   "population": "adults 30-79 free of cardiovascular disease (pooled US cohorts)",
+   "outcome": "cardiovascular disease (first event; atherosclerotic and heart failure)",
+   "horizon": "10 and 30 years",
+   "model_class": "Cox proportional hazards, sex-specific",
+   "release": "Khan et al., Circulation 2024",
+   "contents": [
+    "coefficients"
+   ],
+   "files": [
+    {
+     "name": "supplement tables",
+     "layout": [
+      "predictor",
+      "coefficient (men / women)"
+     ],
+     "rows": null
+    }
+   ],
+   "notes": "The AHA PREVENT equations (Khan et al., Circulation 2024;149:430-49, doi:10.1161/CIRCULATIONAHA.123.067626): sex-specific Cox coefficients on age, cholesterol, blood pressure, diabetes, smoking, eGFR, BMI and treatment indicators, published in the supplement, without race.",
+   "aliases": [
+    "PREVENT",
+    "AHA PREVENT equations",
+    "Khan 2024"
+   ]
+  },
+  {
+   "id": "support.prognostic.1995",
+   "source": "literature",
+   "organ": "critical care",
+   "donor_type": "not applicable",
+   "population": "seriously ill hospitalised adults (SUPPORT study)",
+   "outcome": "patient survival (death from any cause)",
+   "horizon": "180 days",
+   "model_class": "Cox proportional hazards with splines",
+   "release": "Knaus et al., Annals of Internal Medicine 1995",
+   "contents": [
+    "model description; coefficients not released in the paper"
+   ],
+   "files": [
+    {
+     "name": "none",
+     "layout": [],
+     "rows": null
+    }
+   ],
+   "notes": "The SUPPORT prognostic model (Knaus et al., Ann Intern Med 1995;122:191-203): the paper describes the model (physiology score, age, diagnosis, comorbidity, with splines) but does not release a coefficient table; the SUPPORT data set itself is public, so the model can be refitted rather than borrowed from.",
+   "aliases": [
+    "SUPPORT",
+    "SUPPORT prognostic model",
+    "Knaus 1995"
+   ]
+  }
+ ]
+}

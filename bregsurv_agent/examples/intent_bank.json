@@ -1,0 +1,4693 @@
+{
+ "built": "2026-10-03",
+ "source": "jobs/v4/intent_bank/raw, merge_bank.py",
+ "vocabulary": [
+  "wl_days",
+  "died_on_list",
+  "CAN_AGE_AT_LISTING",
+  "CAN_BMI",
+  "CAN_DIAB",
+  "CAN_DIAL_YRS",
+  "CAN_CPRA",
+  "CAN_ABO",
+  "CAN_GENDER",
+  "CAN_RACE",
+  "PX_ID",
+  "days_to_death",
+  "pt_died",
+  "REC_AGE_AT_TX",
+  "REC_BMI",
+  "REC_DIAB",
+  "REC_COLD_ISCH_TM",
+  "REC_HLA_MM",
+  "DON_AGE",
+  "DON_KDPI",
+  "DON_CREAT",
+  "gf_days",
+  "graft_failed",
+  "years_to_eskd",
+  "eskd",
+  "age_at_index",
+  "female",
+  "egfr_baseline",
+  "uacr",
+  "sbp",
+  "hba1c",
+  "on_raas",
+  "days_to_death_or_ltfu",
+  "dead",
+  "age_enrol",
+  "ef_pct",
+  "nyha_class",
+  "bnp",
+  "creat_mg_dl",
+  "sodium",
+  "beta_blocker"
+ ],
+ "items": [
+  {
+   "id": "IA01",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "time col = days_to_death, event = pt_died (1 = dead).",
+   "reasoning": "time col = days_to_death, event = pt_died (1 = dead)",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "time col = days_to_death, event = pt_died (1 = dead)",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA02",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please adjust for REC_AGE_AT_TX, REC_BMI, REC_DIAB and DON_KDPI; the outcome is graft_failed with gf_days as the follow-up.",
+   "reasoning": "the outcome is graft_failed with gf_days as the follow-up | adjust for REC_AGE_AT_TX, REC_BMI, REC_DIAB and DON_KDPI",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "the outcome is graft_failed with gf_days as the follow-up",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA03",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hi team,\n\nI've attached our CKD extract. Time to kidney failure is in years_to_eskd and eskd flags whether it happened (1 = yes). Could you include age_at_index, female, egfr_baseline, uacr and sbp as predictors?\n\nThanks, Maria",
+   "reasoning": "Time to kidney failure is in years_to_eskd and eskd flags whether it happened (1 = yes) | include age_at_index, female, egfr_baseline, uacr and sbp as predictors",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Time to kidney failure is in years_to_eskd and eskd flags whether it happened (1 = yes)",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA04",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "use days_to_deth for time and pt_dide as the event pls",
+   "reasoning": "use days_to_deth for time and pt_dide as the event",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "use days_to_deth for time and pt_dide as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA06",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Covariates should be age_enrol, ef_pct, nyha_class, bnp and sodium.",
+   "reasoning": "Covariates should be age_enrol, ef_pct, nyha_class, bnp and sodium",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Covariates should be age_enrol, ef_pct, nyha_class, bnp and sodium",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA07",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "In this heart failure registry the follow-up runs in days_to_death_or_ltfu and dead marks death. We would like the model to borrow from the published risk score we uploaded.",
+   "reasoning": "the follow-up runs in days_to_death_or_ltfu and dead marks death | borrow from the published risk score we uploaded",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "the follow-up runs in days_to_death_or_ltfu and dead marks death",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "borrow from the published risk score we uploaded",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA08",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Model wl_days / died_on_list with CAN_AGE_AT_LISTING, CAN_BMI, CAN_DIAB, CAN_DIAL_YRS and CAN_CPRA.",
+   "reasoning": "Model wl_days / died_on_list with CAN_AGE_AT_LISTING, CAN_BMI, CAN_DIAB, CAN_DIAL_YRS and CAN_CPRA",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Model wl_days / died_on_list with CAN_AGE_AT_LISTING, CAN_BMI, CAN_DIAB, CAN_DIAL_YRS and CAN_CPRA",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA09",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Our recipients file: survival time is days_to_death, pt_died is the death flag. The registry gave us coefficients plus their covariance matrix, which is the file already loaded.",
+   "reasoning": "survival time is days_to_death, pt_died is the death flag | The registry gave us coefficients plus their covariance matrix",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "survival time is days_to_death, pt_died is the death flag",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "The registry gave us coefficients plus their covariance matrix",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA10",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "eskd==1 is the event.",
+   "reasoning": "eskd==1 is the event",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "eskd==1 is the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA11",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Dear colleagues, as discussed on Tuesday, the transplant centre data are now loaded. Please treat gf_days as time to graft loss and graft_failed as the event indicator; adjust for DON_AGE, DON_CREAT, REC_COLD_ISCH_TM and REC_HLA_MM. Best regards, Dr. Okafor",
+   "reasoning": "treat gf_days as time to graft loss and graft_failed as the event indicator | adjust for DON_AGE, DON_CREAT, REC_COLD_ISCH_TM and REC_HLA_MM",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "treat gf_days as time to graft loss and graft_failed as the event indicator",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA12",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "predictors: CAN_AGE_AT_LISTING CAN_GENDER CAN_RACE CAN_ABO",
+   "reasoning": "predictors: CAN_AGE_AT_LISTING CAN_GENDER CAN_RACE CAN_ABO",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "predictors: CAN_AGE_AT_LISTING CAN_GENDER CAN_RACE CAN_ABO",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA13",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "I want to see what drives progression to ESKD. Follow-up in years_to_eskd, event in eskd, and put hba1c and on_raas in alongside egfr_baseline.",
+   "reasoning": "Follow-up in years_to_eskd, event in eskd | put hba1c and on_raas in alongside egfr_baseline",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Follow-up in years_to_eskd, event in eskd",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA14",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "so basically dead=1 means they passed away and the clock is days_to_death_or_ltfu, can u run it with ef_pct, bnp, creat_mg_dl and beta_blocker",
+   "reasoning": "dead=1 means they passed away and the clock is days_to_death_or_ltfu | run it with ef_pct, bnp, creat_mg_dl and beta_blocker",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "dead=1 means they passed away and the clock is days_to_death_or_ltfu",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA15",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "For the waitlist cohort the time variable is wl_dyas and the outcome flag died_on_lsit; the value 1 indicates death on the list.",
+   "reasoning": "the time variable is wl_dyas and the outcome flag died_on_lsit | the value 1 indicates death on the list",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "the time variable is wl_dyas and the outcome flag died_on_lsit",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA16",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Use every column other than PX_ID as a covariate. Time is wl_days, event is died_on_list.",
+   "reasoning": "Time is wl_days, event is died_on_list | Use every column other than PX_ID as a covariate",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Time is wl_days, event is died_on_list",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA17",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "A patient who reached kidney failure has eskd equal to 1; those censored have 0.",
+   "reasoning": "A patient who reached kidney failure has eskd equal to 1",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "A patient who reached kidney failure has eskd equal to 1",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA18",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Graft survival analysis please. gf_days, graft_failed. We also have the donor-risk model's published coefficients and its baseline cumulative hazard in the uploaded file.",
+   "reasoning": "gf_days, graft_failed | published coefficients and its baseline cumulative hazard",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "gf_days, graft_failed",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "published coefficients and its baseline cumulative hazard",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA19",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Retrospective HF cohort, enrolled 2015 to 2020. We followed patients until death or loss to follow-up, recorded in days_to_death_or_ltfu; dead is our endpoint. Baseline nyha_class, ef_pct and age_enrol should enter the model.",
+   "reasoning": "recorded in days_to_death_or_ltfu; dead is our endpoint | Baseline nyha_class, ef_pct and age_enrol should enter the model",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "recorded in days_to_death_or_ltfu; dead is our endpoint",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA20",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "covars REC_AGE_AT_TX, REC_BMI, DON_KDPI",
+   "reasoning": "covars REC_AGE_AT_TX, REC_BMI, DON_KDPI",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "covars REC_AGE_AT_TX, REC_BMI, DON_KDPI",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA21",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Hello! Quick one: time = years_to_eskd, event = eskd. Thanks!",
+   "reasoning": "time = years_to_eskd, event = eskd",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "time = years_to_eskd, event = eskd",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA22",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Recipient death is pt_died, measured from transplant in days_to_death. I'd like REC_DIAB, REC_COLD_ISCH_TM and DON_AGE as the explanatory variables, and the held-out C-index on the test file I uploaded.",
+   "reasoning": "Recipient death is pt_died, measured from transplant in days_to_death | REC_DIAB, REC_COLD_ISCH_TM and DON_AGE as the explanatory variables",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Recipient death is pt_died, measured from transplant in days_to_death",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA23",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Event value: 1 in died_on_list stands for death while waiting.",
+   "reasoning": "Event value: 1 in died_on_list stands for death while waiting",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Event value: 1 in died_on_list stands for death while waiting",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA24",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Pls fit the model w/ age_enrl, ef_pctt, bnp and sodum; outcome is dead, time days_to_death_or_ltfu.",
+   "reasoning": "outcome is dead, time days_to_death_or_ltfu | fit the model w/ age_enrl, ef_pctt, bnp and sodum",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "outcome is dead, time days_to_death_or_ltfu",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA25",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "To the analysis group: our kidney transplant extract is in. Please use gf_days for follow-up, graft_failed (1 = graft lost) as the event, and REC_AGE_AT_TX, REC_HLA_MM, DON_KDPI and DON_CREAT as covariates. The coefficients we uploaded are from a national registry model.",
+   "reasoning": "use gf_days for follow-up, graft_failed (1 = graft lost) as the event | REC_AGE_AT_TX, REC_HLA_MM, DON_KDPI and DON_CREAT as covariates | The coefficients we uploaded are from a national registry model",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "use gf_days for follow-up, graft_failed (1 = graft lost) as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "The coefficients we uploaded are from a national registry model",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA26",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Drop CAN_RACE from the covariates and rerun.",
+   "reasoning": "Drop CAN_RACE from the covariates",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Drop CAN_RACE from the covariates",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA27",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Actually add uacr to the model too.",
+   "reasoning": "add uacr to the model too",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "add uacr to the model too",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA28",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Sorry, I had the coding wrong: in pt_died it is 0 that marks a death, not 1.",
+   "reasoning": "in pt_died it is 0 that marks a death, not 1",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "in pt_died it is 0 that marks a death, not 1",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA29",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Switch the time column to days_to_death_or_ltfu instead of the one I gave before.",
+   "reasoning": "Switch the time column to days_to_death_or_ltfu",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Switch the time column to days_to_death_or_ltfu",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA30",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Hi again, after talking with the surgeons we'd rather not adjust for REC_COLD_ISCH_TM, could you take it out? Thanks, Maria",
+   "reasoning": "we'd rather not adjust for REC_COLD_ISCH_TM, could you take it out",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "we'd rather not adjust for REC_COLD_ISCH_TM, could you take it out",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA31",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "pls remove hba1c and on_raas, keep the rest",
+   "reasoning": "remove hba1c and on_raas, keep the rest",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "remove hba1c and on_raas, keep the rest",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA32",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Use gf_days as follow-up rather than days_to_death; the outcome should be graft_failed.",
+   "reasoning": "Use gf_days as follow-up rather than days_to_death | the outcome should be graft_failed",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Use gf_days as follow-up rather than days_to_death",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA33",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Please also include beta_blocker and creat_mg_dl as covariates in the next run.",
+   "reasoning": "also include beta_blocker and creat_mg_dl as covariates",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "also include beta_blocker and creat_mg_dl as covariates",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA34",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "CAN_CPRA shouldn't be in there, its collinear with something else we have. take it out",
+   "reasoning": "CAN_CPRA shouldn't be in there",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "CAN_CPRA shouldn't be in there",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA35",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Correction: the event value for eskd is 2, not 1.",
+   "reasoning": "the event value for eskd is 2, not 1",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "the event value for eskd is 2, not 1",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA37",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Could you rerun with sodium added back in? I left it out by mistake.",
+   "reasoning": "rerun with sodium added back in",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "rerun with sodium added back in",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA38",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Remove REC_BMII from the predictors.",
+   "reasoning": "Remove REC_BMII from the predictors",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Remove REC_BMII from the predictors",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA39",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "The follow-up should be measured in years_to_eskd, I gave you the wrong column earlier.",
+   "reasoning": "The follow-up should be measured in years_to_eskd",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "The follow-up should be measured in years_to_eskd",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA40",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Let's add CAN_DIAL_YRS and CAN_ABO and drop CAN_GENDER.",
+   "reasoning": "add CAN_DIAL_YRS and CAN_ABO and drop CAN_GENDER",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "add CAN_DIAL_YRS and CAN_ABO and drop CAN_GENDER",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA41",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "female should not be a covariate, please exclude it",
+   "reasoning": "female should not be a covariate, please exclude it",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "female should not be a covariate, please exclude it",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA42",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Keep everything as is but also put REC_DIAB in.",
+   "reasoning": "also put REC_DIAB in",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "also put REC_DIAB in",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA45",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "swap egfr_baseline for uacr pls",
+   "reasoning": "swap egfr_baseline for uacr",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "swap egfr_baseline for uacr",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA46",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Restrict the covariates to CAN_AGE_AT_LISTING, CAN_BMI and CAN_DIAB only.",
+   "reasoning": "Restrict the covariates to CAN_AGE_AT_LISTING, CAN_BMI and CAN_DIAB only",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Restrict the covariates to CAN_AGE_AT_LISTING, CAN_BMI and CAN_DIAB only",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA47",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Change the event column to dead; I mixed it up with another flag.",
+   "reasoning": "Change the event column to dead",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Change the event column to dead",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA48",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "The patients's follow-up time is wl_days, not gf_days - my mistake, please correct.",
+   "reasoning": "follow-up time is wl_days, not gf_days",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "follow-up time is wl_days, not gf_days",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IA49",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Take bnp out and add nyha_class instead.",
+   "reasoning": "Take bnp out and add nyha_class instead",
+   "intents": [
+    {
+     "kind": "edit_declaration",
+     "evidence": "Take bnp out and add nyha_class instead",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB00",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "I have the log hazard ratios from the SRTR graft survival model, just the point estimates, nothing else.",
+   "reasoning": "I have the log hazard ratios from the SRTR graft survival model, just the point estimates",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "I have the log hazard ratios from the SRTR graft survival model, just the point estimates",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB01",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Uploading a csv with one column of variable names and one column of published betas from the registry paper.",
+   "reasoning": "a csv with one column of variable names and one column of published betas",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "a csv with one column of variable names and one column of published betas",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB02",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "fyi the file i sent is only the coefficient vector from their Cox model, no standard errors.",
+   "reasoning": "the file i sent is only the coefficient vector from their Cox model",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "the file i sent is only the coefficient vector from their Cox model",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB03",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hi team, hope your week is going well. We pulled the hazard ratios from Table 3 of the CRIC publication into a spreadsheet; only the estimates were reported. Best, Mei",
+   "reasoning": "We pulled the hazard ratios from Table 3 of the CRIC publication into a spreadsheet; only the estimates were reported",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "We pulled the hazard ratios from Table 3 of the CRIC publication into a spreadsheet; only the estimates were reported",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB04",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "The external info is a set of regression coeffs from a national heart failure registry - point estmates only.",
+   "reasoning": "a set of regression coeffs from a national heart failure registry - point estmates only",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "a set of regression coeffs from a national heart failure registry - point estmates only",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB05",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Just to be clear, what the registry gave us is the coefficient vector and that is all.",
+   "reasoning": "what the registry gave us is the coefficient vector and that is all",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "what the registry gave us is the coefficient vector and that is all",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB06",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Attached are the published coefficients together with their variance-covariance matrix from the UNOS waiting list model.",
+   "reasoning": "published coefficients together with their variance-covariance matrix",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "published coefficients together with their variance-covariance matrix",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB07",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "The json also carries the covariance matrix of those estimates, so you can use more than the betas.",
+   "reasoning": "The json also carries the covariance matrix of those estimates",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "The json also carries the covariance matrix of those estimates",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB08",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "We received the external Cox model's estimates plus the Fisher information matrix from the coordinating centre.",
+   "reasoning": "the external Cox model's estimates plus the Fisher information matrix",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "the external Cox model's estimates plus the Fisher information matrix",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB09",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Good morning. As discussed on Tuesday's call, the CKD consortium sent its fitted coefficients along with the full covariance of the estimates. Thanks for setting this up!",
+   "reasoning": "the CKD consortium sent its fitted coefficients along with the full covariance of the estimates",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "the CKD consortium sent its fitted coefficients along with the full covariance of the estimates",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB10",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "those 12 coefs come with a variance matrix too, it's in the second sheet",
+   "reasoning": "those 12 coefs come with a variance matrix too",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "those 12 coefs come with a variance matrix too",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB11",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "The heart failure trial published log-HRs and their standard errors and covariances in the supplement, which I've put into one file.",
+   "reasoning": "published log-HRs and their standard errors and covariances in the supplement",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "published log-HRs and their standard errors and covariances in the supplement",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB12",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "The registry file holds the model coefficients and the baseline cumulative hazard at each month.",
+   "reasoning": "the model coefficients and the baseline cumulative hazard at each month",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "the model coefficients and the baseline cumulative hazard at each month",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB13",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Besides the betas, the release includes the baseline survival hazard tabulated by year after transplant.",
+   "reasoning": "Besides the betas, the release includes the baseline survival hazard",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "Besides the betas, the release includes the baseline survival hazard",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB14",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "external model = coefficients + baseline hazard increments, sent as two tabs in one xlsx",
+   "reasoning": "external model = coefficients + baseline hazard increments",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "external model = coefficients + baseline hazard increments",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB15",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Dear colleagues, the published post-transplant mortality model came with both its regression coefficients and a table of the baseline cumulative hazard. I uploaded it this morning. Regards, Tomas",
+   "reasoning": "both its regression coefficients and a table of the baseline cumulative hazard",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "both its regression coefficients and a table of the baseline cumulative hazard",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB16",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "The coefficients file you read has a companion: the cumulative baseline hazrd over the first five years.",
+   "reasoning": "the cumulative baseline hazrd over the first five years",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "the cumulative baseline hazrd over the first five years",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB17",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "What we have from the larger study is a fitted Cox model with its Breslow baseline hazard, nothing at patient level.",
+   "reasoning": "a fitted Cox model with its Breslow baseline hazard",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "a fitted Cox model with its Breslow baseline hazard",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB18",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "I also have patient-level records from a second transplant centre that could be borrowed from.",
+   "reasoning": "patient-level records from a second transplant centre",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "patient-level records from a second transplant centre",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB19",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Our partner hospital shared its de-identified cohort, one row per patient with the same variables as ours.",
+   "reasoning": "shared its de-identified cohort, one row per patient",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "shared its de-identified cohort, one row per patient",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB20",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Instead of the published coefficients, we can now get the raw rows of the external CKD cohort.",
+   "reasoning": "we can now get the raw rows of the external CKD cohort",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "we can now get the raw rows of the external CKD cohort",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB21",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "hey, the other registry sent us their individual data, ~4000 patients, uploading it now",
+   "reasoning": "the other registry sent us their individual data",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "the other registry sent us their individual data",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB22",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hello Dr. Park, thank you for the reminder about the deadline. The external source here is another heart failure cohort's patient-level dataset, which I have uploaded alongside ours.",
+   "reasoning": "another heart failure cohort's patient-level dataset",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "another heart failure cohort's patient-level dataset",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB23",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "The external information is a full dataset of waiting-list candidates from a different region, not a model.",
+   "reasoning": "a full dataset of waiting-list candidates from a different region",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "a full dataset of waiting-list candidates from a different region",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB24",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "There is a published model from a large national study that I would like to borrow from.",
+   "reasoning": "a published model from a large national study",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "a published model from a large national study",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB25",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "I uploaded the external file from the registry; I'm not sure what exactly is inside it.",
+   "reasoning": "I uploaded the external file from the registry",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "I uploaded the external file from the registry",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB26",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "The external results come from the multicentre transplant study we discussed last month.",
+   "reasoning": "The external results come from the multicentre transplant study",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "The external results come from the multicentre transplant study",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB27",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hi, sorry for the late reply, clinic ran over. We do have some external information from the European registry that should help. Cheers, Anna",
+   "reasoning": "We do have some external information from the European registry",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "We do have some external information from the European registry",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB28",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Pls use the outside study's results that i attached, it's a much bigger population than our clinic.",
+   "reasoning": "use the outside study's results that i attached",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "use the outside study's results that i attached",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB30",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "For context, our unit is small and we have only a few years of follow-up. There is an external reference model from the national dialysis registry that I'd like to bring in.",
+   "reasoning": "an external reference model from the national dialysis registry",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "an external reference model from the national dialysis registry",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB31",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "external source = the 2024 SRTR release, file attached",
+   "reasoning": "external source = the 2024 SRTR release",
+   "intents": [
+    {
+     "kind": "describe_external",
+     "evidence": "external source = the 2024 SRTR release",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB32",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "What changed between this analysis and the one before it?",
+   "reasoning": "What changed between this analysis and the one before it",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "What changed between this analysis and the one before it",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB33",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Can you tell me how the new run differs from the previous one?",
+   "reasoning": "how the new run differs from the previous one",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "how the new run differs from the previous one",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB34",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "So after removing CAN_CPRA, what is different compared with the earlier fit?",
+   "reasoning": "what is different compared with the earlier fit",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "what is different compared with the earlier fit",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB35",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "diff between run 1 and run 2 pls",
+   "reasoning": "diff between run 1 and run 2",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "diff between run 1 and run 2",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB36",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Hi, thanks for the report. Could you summarise what differs between the first analysis this session and the latest one? Best, Raj",
+   "reasoning": "what differs between the first analysis this session and the latest one",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "what differs between the first analysis this session and the latest one",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB37",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Did anything move between the last two analyses, the selected model or the coefficients?",
+   "reasoning": "Did anything move between the last two analyses",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "Did anything move between the last two analyses",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB38",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "How does this result compare to what we got before I switched the covariates?",
+   "reasoning": "How does this result compare to what we got before",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "How does this result compare to what we got before",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB39",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "wat changed from the previous analysis to this one",
+   "reasoning": "wat changed from the previous analysis to this one",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "wat changed from the previous analysis to this one",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB40",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Now that the second analysis is done, show me where it disagrees with the first.",
+   "reasoning": "show me where it disagrees with the first",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "show me where it disagrees with the first",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB41",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Compare this run against the earlier one for me, please.",
+   "reasoning": "Compare this run against the earlier one",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "Compare this run against the earlier one",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB42",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "I reran it with the other event coding; what are the differences from the original analysis?",
+   "reasoning": "what are the differences from the original analysis",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "what are the differences from the original analysis",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB43",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Is the new result any different from the previous run, and where?",
+   "reasoning": "Is the new result any different from the previous run",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "Is the new result any different from the previous run",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB44",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Dear team, following yesterday's rerun, I'd appreciate a short note on what changed relative to the earlier analysis. Kind regards, Helena",
+   "reasoning": "what changed relative to the earlier analysis",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "what changed relative to the earlier analysis",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB45",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Put the two analyses we ran today side by side and tell me what differs.",
+   "reasoning": "Put the two analyses we ran today side by side and tell me what differs",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "Put the two analyses we ran today side by side and tell me what differs",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB46",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Which numbers changed when we went from the first analysis to the second?",
+   "reasoning": "Which numbers changed when we went from the first analysis to the second",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "Which numbers changed when we went from the first analysis to the second",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB47",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "After adding on_raas, how did the analysis change versus last time?",
+   "reasoning": "how did the analysis change versus last time",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "how did the analysis change versus last time",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB48",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "quick q: same selection as the previous analysis or did it change?",
+   "reasoning": "same selection as the previous analysis or did it change",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "same selection as the previous analysis or did it change",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IB49",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Walk me through the differences between the analysis I just asked for and the one before.",
+   "reasoning": "the differences between the analysis I just asked for and the one before",
+   "intents": [
+    {
+     "kind": "compare_runs",
+     "evidence": "the differences between the analysis I just asked for and the one before",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC00",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Could you redo the fit twice: once keeping DON_KDPI in the model and once dropping it, and then show me how the two compare?",
+   "reasoning": "redo the fit twice: once keeping DON_KDPI in the model and once dropping it, and then show me how the two compare",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "redo the fit twice: once keeping DON_KDPI in the model and once dropping it, and then show me how the two compare",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC01",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "run it again w/o REC_HLA_MM, then a third time without REC_COLD_ISCH_TM too, and line up all the results",
+   "reasoning": "run it again w/o REC_HLA_MM, then a third time without REC_COLD_ISCH_TM too, and line up all the results",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "run it again w/o REC_HLA_MM, then a third time without REC_COLD_ISCH_TM too, and line up all the results",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC03",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Hi team, for the sensitivity analysis I need two versions: one using the registry coefficients and one using only our own cohort. A side-by-side comparison afterwards would be great. Thanks!",
+   "reasoning": "I need two versions: one using the registry coefficients and one using only our own cohort",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "I need two versions: one using the registry coefficients and one using only our own cohort",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC04",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "We want years_to_eskd as follow-up and eskd as the event. Do one analysis adjusting for uacr and another without uacr, then compare the selected models.",
+   "reasoning": "Do one analysis adjusting for uacr and another without uacr, then compare the selected models | We want years_to_eskd as follow-up and eskd as the event",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "Do one analysis adjusting for uacr and another without uacr, then compare the selected models",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "We want years_to_eskd as follow-up and eskd as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC05",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Please repeat the analysis restricting covariates to REC_AGE_AT_TX, REC_BMI and REC_DIAB, then repeat it with all of them back in, and tell me what differs.",
+   "reasoning": "repeat the analysis restricting covariates to REC_AGE_AT_TX, REC_BMI and REC_DIAB, then repeat it with all of them back in, and tell me what differs",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "repeat the analysis restricting covariates to REC_AGE_AT_TX, REC_BMI and REC_DIAB, then repeat it with all of them back in, and tell me what differs",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC06",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Two more runs pls - first add bnp, then swap bnp for sodium. compare both against what we have now",
+   "reasoning": "Two more runs pls - first add bnp, then swap bnp for sodium. compare both against what we have now",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "Two more runs pls - first add bnp, then swap bnp for sodium. compare both against what we have now",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC07",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Follow-up is days_to_death_or_ltfu, event dead. I'd like the model fitted twice, with and without beta_blocker as a predictor, and a comparison of the two.",
+   "reasoning": "fitted twice, with and without beta_blocker as a predictor, and a comparison of the two | Follow-up is days_to_death_or_ltfu, event dead",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "fitted twice, with and without beta_blocker as a predictor, and a comparison of the two",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "Follow-up is days_to_death_or_ltfu, event dead",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC08",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "For the paper we need a series: first the current covariate set, next without CAN_DIAL_YRS, finally without CAN_DIAL_YRS and CAN_DIAB. Please run all three and summarise the differences.",
+   "reasoning": "run all three and summarise the differences",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "run all three and summarise the differences",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC09",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Dear all, could you run it with gf_days and graft_failed, and separately with and without DON_CREAT, then compare? Best, M.",
+   "reasoning": "separately with and without DON_CREAT, then compare | run it with gf_days and graft_failed",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "separately with and without DON_CREAT, then compare",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "run it with gf_days and graft_failed",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC10",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "I'm curious whether female changes anything. Fit once more leaving female out, keep everything else, and then also a version with only age_at_index and egfr_baseline; compare all of them.",
+   "reasoning": "Fit once more leaving female out, keep everything else, and then also a version with only age_at_index and egfr_baseline; compare all of them",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "Fit once more leaving female out, keep everything else, and then also a version with only age_at_index and egfr_baseline; compare all of them",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC11",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please carry out two analyses of wl_days / died_on_list: the first with CAN_AGE_AT_LISTING, CAN_BMI and CAN_DIAB, the second adding CAN_ABO and CAN_RACE. Report which set does better.",
+   "reasoning": "carry out two analyses | wl_days / died_on_list",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "carry out two analyses",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "wl_days / died_on_list",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC12",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "can u rerun twice — one with ef_pct and nyha_class dropped, one with them kept but creat_mg_dl removed — then compare the three runs incl. the current one",
+   "reasoning": "rerun twice — one with ef_pct and nyha_class dropped, one with them kept but creat_mg_dl removed — then compare the three runs incl. the current one",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "rerun twice — one with ef_pct and nyha_class dropped, one with them kept but creat_mg_dl removed — then compare the three runs incl. the current one",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC13",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "For robustness I'd like the borrowing done once with the published coefficients and once ignoring them entirely, using days_to_death and pt_died. Then a comparison, please.",
+   "reasoning": "once with the published coefficients and once ignoring them entirely | using days_to_death and pt_died",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "once with the published coefficients and once ignoring them entirely",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "using days_to_death and pt_died",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC14",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Next step: one run with on_raas included, one with hba1c excluded instead. After both are done, what changed relative to the first fit?",
+   "reasoning": "one run with on_raas included, one with hba1c excluded instead. After both are done, what changed relative to the first fit?",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "one run with on_raas included, one with hba1c excluded instead. After both are done, what changed relative to the first fit?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC15",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Please do the analysis in both versions - with CAN_GENDER as a covariate and without - and give me a comparison table of the selected methods.",
+   "reasoning": "do the analysis in both versions - with CAN_GENDER as a covariate and without",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "do the analysis in both versions - with CAN_GENDER as a covariate and without",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC16",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Our cohort uses gf_days for time and graft_failed for the event. We'd like to see the fit with donor variables (DON_AGE, DON_KDPI) and then without them, and how much difference it makes.",
+   "reasoning": "see the fit with donor variables (DON_AGE, DON_KDPI) and then without them, and how much difference it makes | Our cohort uses gf_days for time and graft_failed for the event",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "see the fit with donor variables (DON_AGE, DON_KDPI) and then without them, and how much difference it makes",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "Our cohort uses gf_days for time and graft_failed for the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC17",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "three fits pls: drop sbp; drop sbp + hba1c; drop nothing but leave out the registry info. then compare everything",
+   "reasoning": "three fits pls: drop sbp; drop sbp + hba1c; drop nothing but leave out the registry info. then compare everything",
+   "intents": [
+    {
+     "kind": "multi_step",
+     "evidence": "three fits pls: drop sbp; drop sbp + hba1c; drop nothing but leave out the registry info. then compare everything",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC18",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "How does the system decide how much to borrow from an external model?",
+   "reasoning": "How does the system decide how much to borrow from an external model?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "How does the system decide how much to borrow from an external model?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC19",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "what penalties do you support? ridge, lasso, something else?",
+   "reasoning": "what penalties do you support?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "what penalties do you support?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC20",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Before I declare anything: how is cross-validation done when you compare the candidate methods?",
+   "reasoning": "how is cross-validation done when you compare the candidate methods?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "how is cross-validation done when you compare the candidate methods?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC21",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hello, quick question. How are tied event times handled in your Cox fits? Many of our deaths fall on the same day. Thanks.",
+   "reasoning": "How are tied event times handled in your Cox fits?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "How are tied event times handled in your Cox fits?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC23",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Is there a way to analyse follow-up recorded in monthly intervals rather than exact days, and how does that work?",
+   "reasoning": "Is there a way to analyse follow-up recorded in monthly intervals rather than exact days, and how does that work?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Is there a way to analyse follow-up recorded in monthly intervals rather than exact days, and how does that work?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC24",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "What kinds of external information can the system actually borrow from?",
+   "reasoning": "What kinds of external information can the system actually borrow from?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "What kinds of external information can the system actually borrow from?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC25",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "If I rerun everything next month on the same files, will I get exactly the same answer? How is reproducibility ensured?",
+   "reasoning": "How is reproducibility ensured?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "How is reproducibility ensured?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC26",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "whats the difference between the KL and the mahalanobis approach in general",
+   "reasoning": "whats the difference between the KL and the mahalanobis approach in general",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "whats the difference between the KL and the mahalanobis approach in general",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC27",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Which methods are in your candidate set, and who decides which one is used?",
+   "reasoning": "Which methods are in your candidate set, and who decides which one is used?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Which methods are in your candidate set, and who decides which one is used?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC28",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Does a covariance matrix from the publication change which methods are admissible?",
+   "reasoning": "Does a covariance matrix from the publication change which methods are admissible?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Does a covariance matrix from the publication change which methods are admissible?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC29",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "In plain terms, what does 'admissible' mean for a method here?",
+   "reasoning": "what does 'admissible' mean for a method here?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "what does 'admissible' mean for a method here?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC30",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Our registry model only covers some of our variables. In general, how do you treat covariates the published model does not include?",
+   "reasoning": "how do you treat covariates the published model does not include?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "how do you treat covariates the published model does not include?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC31",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Does the language model itself compute any of the numbers, or are they all from the R package?",
+   "reasoning": "Does the language model itself compute any of the numbers",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Does the language model itself compute any of the numbers",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC32",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "how many folds does the cv use and is the split the same for every method?",
+   "reasoning": "how many folds does the cv use and is the split the same for every method?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "how many folds does the cv use and is the split the same for every method?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC33",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Is it possible that the system decides not to borrow at all? When would that happen?",
+   "reasoning": "Is it possible that the system decides not to borrow at all? When would that happen?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Is it possible that the system decides not to borrow at all? When would that happen?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC34",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Dear developers, I am new to transfer learning. Could you explain briefly what 'borrowing' from a published survival model means in this tool? Regards, Dr. K",
+   "reasoning": "Could you explain briefly what 'borrowing' from a published survival model means in this tool?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Could you explain briefly what 'borrowing' from a published survival model means in this tool?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC35",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "For matched sets, what likelihood is used — conditional or something else?",
+   "reasoning": "For matched sets, what likelihood is used",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "For matched sets, what likelihood is used",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC36",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "What is the loss that cross-validation minimises?",
+   "reasoning": "What is the loss that cross-validation minimises?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "What is the loss that cross-validation minimises?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC37",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Can you use individual-level records from another cohort instead of coefficients? How does that differ?",
+   "reasoning": "Can you use individual-level records from another cohort instead of coefficients? How does that differ?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Can you use individual-level records from another cohort instead of coefficients? How does that differ?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC38",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Does a held-out test file affect which model gets chosen, or is it only used for scoring?",
+   "reasoning": "Does a held-out test file affect which model gets chosen, or is it only used for scoring?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Does a held-out test file affect which model gets chosen, or is it only used for scoring?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC39",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "wht happens if there are more covariates than events? does it still work",
+   "reasoning": "wht happens if there are more covariates than events?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "wht happens if there are more covariates than events?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC40",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "How does the discrete-time option differ from the usual Cox model in this system?",
+   "reasoning": "How does the discrete-time option differ from the usual Cox model in this system?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "How does the discrete-time option differ from the usual Cox model in this system?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC41",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "When a baseline hazard is published along with the coefficients, what can the system do with it?",
+   "reasoning": "When a baseline hazard is published along with the coefficients, what can the system do with it?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "When a baseline hazard is published along with the coefficients, what can the system do with it?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC42",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "What gets saved so someone else can replay the analysis without the AI?",
+   "reasoning": "What gets saved so someone else can replay the analysis without the AI?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "What gets saved so someone else can replay the analysis without the AI?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC43",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Is stratification by centre supported, in general?",
+   "reasoning": "Is stratification by centre supported, in general?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "Is stratification by centre supported, in general?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC44",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Separate from my results: in general, how does the tool pick the tuning grid for the borrowing weight?",
+   "reasoning": "in general, how does the tool pick the tuning grid for the borrowing weight?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "in general, how does the tool pick the tuning grid for the borrowing weight?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC45",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Generally speaking, which study designs can this system handle, and which will it refuse?",
+   "reasoning": "which study designs can this system handle, and which will it refuse?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "which study designs can this system handle, and which will it refuse?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC46",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Not about this run — just in general, what is the difference between the ridge and lasso versions of each method?",
+   "reasoning": "just in general, what is the difference between the ridge and lasso versions of each method?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "just in general, what is the difference between the ridge and lasso versions of each method?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC47",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "As a general matter, how does the system check a dataset before fitting anything?",
+   "reasoning": "how does the system check a dataset before fitting anything?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "how does the system check a dataset before fitting anything?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC48",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "does the external model have to use the same variable names as my file? how is the matching done",
+   "reasoning": "how is the matching done",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "how is the matching done",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IC49",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Could you tell me how the final method is chosen among the ones that get fitted?",
+   "reasoning": "how the final method is chosen among the ones that get fitted?",
+   "intents": [
+    {
+     "kind": "ask_about_method",
+     "evidence": "how the final method is chosen among the ones that get fitted?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID00",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Why did the agent end up picking the Mahalanobis lasso rather than keeping my own model?",
+   "reasoning": "Why did the agent end up picking the Mahalanobis lasso",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why did the agent end up picking the Mahalanobis lasso",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID01",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "what does the cross-validated loss in the comparison table actually mean",
+   "reasoning": "what does the cross-validated loss in the comparison table actually mean",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "what does the cross-validated loss in the comparison table actually mean",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID02",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "The coefficient for REC_COLD_ISCH_TM moved a lot after borrowing - can you explain what the registry model did to it?",
+   "reasoning": "can you explain what the registry model did to it",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "can you explain what the registry model did to it",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID03",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "How did the selected model do on the test file?",
+   "reasoning": "How did the selected model do on the test file",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "How did the selected model do on the test file",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID04",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Hi, thanks for the report. Could you tell me what the held-out C-index of the chosen model is? Best, Maria",
+   "reasoning": "what the held-out C-index of the chosen model is",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "what the held-out C-index of the chosen model is",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID05",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "why ridge and not lasso",
+   "reasoning": "why ridge and not lasso",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why ridge and not lasso",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID06",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "So borrowing helped here? The report says the external-only row lost.",
+   "reasoning": "So borrowing helped here?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "So borrowing helped here?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID07",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "why did the lasso drop DON_KDPI",
+   "reasoning": "why did the lasso drop DON_KDPI",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why did the lasso drop DON_KDPI",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID08",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "I don't quite follow why eta came out so large for the KL fit. What does that tell me?",
+   "reasoning": "why eta came out so large for the KL fit",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why eta came out so large for the KL fit",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID09",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "wht does the Brier score number mean in the test secton",
+   "reasoning": "wht does the Brier score number mean",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "wht does the Brier score number mean",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID10",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Is the selected model better than just using the published coefficients unchanged?",
+   "reasoning": "Is the selected model better than just using the published coefficients unchanged?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Is the selected model better than just using the published coefficients unchanged?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID11",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Why was a penalty chosen at all?",
+   "reasoning": "Why was a penalty chosen at all?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why was a penalty chosen at all?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID12",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "In plain terms, how much did the registry information change the hazard ratio for REC_AGE_AT_TX?",
+   "reasoning": "how much did the registry information change the hazard ratio for REC_AGE_AT_TX",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "how much did the registry information change the hazard ratio for REC_AGE_AT_TX",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID13",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Which variables did the published model not cover, and what happened to them in the fit?",
+   "reasoning": "what happened to them in the fit",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "what happened to them in the fit",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID14",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Dear team, the report lists several methods that could not be fitted. Why did those fail?",
+   "reasoning": "Why did those fail?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why did those fail?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID15",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "the time-dependent AUC looks lower than the C-index - why is that for this model?",
+   "reasoning": "why is that for this model",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why is that for this model",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID16",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "How sure should I be about the choice? The losses look very close to each other.",
+   "reasoning": "How sure should I be about the choice?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "How sure should I be about the choice?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID17",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "What does 'selected eta' mean in the table you gave me?",
+   "reasoning": "What does 'selected eta' mean in the table you gave me?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "What does 'selected eta' mean in the table you gave me?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID18",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Why does the Euclidean member beat the one using the covariance here?",
+   "reasoning": "Why does the Euclidean member beat the one using the covariance here?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why does the Euclidean member beat the one using the covariance here?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID19",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Which covariates ended up with nonzero coefficients in the final model?",
+   "reasoning": "Which covariates ended up with nonzero coefficients in the final model?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Which covariates ended up with nonzero coefficients in the final model?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID20",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "can u explain why the internal-only model did so badly in your table",
+   "reasoning": "why the internal-only model did so badly in your table",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why the internal-only model did so badly in your table",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID21",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Why should I trust cross-validation for this choice?",
+   "reasoning": "Why should I trust cross-validation for this choice?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why should I trust cross-validation for this choice?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID22",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Hello, quick one: on the test data, did borrowing beat my own data alone?",
+   "reasoning": "on the test data, did borrowing beat my own data alone?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "on the test data, did borrowing beat my own data alone?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID23",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "What is the reference group for CAN_ABO in the coefficient table?",
+   "reasoning": "What is the reference group for CAN_ABO in the coefficient table?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "What is the reference group for CAN_ABO in the coefficient table?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID24",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Why is the sign of DON_CREAT flipped compared with the registry's coefficient?",
+   "reasoning": "Why is the sign of DON_CREAT flipped compared with the registry's coefficient?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why is the sign of DON_CREAT flipped compared with the registry's coefficient?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID25",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "How many events did the analysis use, and is that enough for the model you picked?",
+   "reasoning": "is that enough for the model you picked",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "is that enough for the model you picked",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID26",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Why was the ridge version of KL chosen over plain KL?",
+   "reasoning": "Why was the ridge version of KL chosen over plain KL?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why was the ridge version of KL chosen over plain KL?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID27",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Explain the number in the loss column for the selected model, please.",
+   "reasoning": "Explain the number in the loss column for the selected model",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Explain the number in the loss column for the selected model",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID28",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "I see bnp shrunk toward the published value. Was that intended by the method you selected?",
+   "reasoning": "Was that intended by the method you selected?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Was that intended by the method you selected?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID29",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "What made you prefer the lasso fit?",
+   "reasoning": "What made you prefer the lasso fit?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "What made you prefer the lasso fit?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID30",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Could you walk me through why the released model unchanged was not the recommendation?",
+   "reasoning": "why the released model unchanged was not the recommendation",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why the released model unchanged was not the recommendation",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID31",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Our IRB reviewer asks how the selected model performed on the held-out patients. What should I tell them?",
+   "reasoning": "how the selected model performed on the held-out patients",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "how the selected model performed on the held-out patients",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID32",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "the report says 3 terms were dropped from the external model - which ones and why",
+   "reasoning": "which ones and why",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "which ones and why",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID33",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Why are some coefficients exactly zero in the final model?",
+   "reasoning": "Why are some coefficients exactly zero in the final model?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why are some coefficients exactly zero in the final model?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID34",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "does the IBS on the test set mean the borrowed model is calibrated better than mine?",
+   "reasoning": "does the IBS on the test set mean the borrowed model is calibrated better than mine?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "does the IBS on the test set mean the borrowed model is calibrated better than mine?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID35",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Why did you pick that one?",
+   "reasoning": "Why did you pick that one?",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why did you pick that one?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID36",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "What predicts graft failure here? Use gf_days as the time and graft_failed as the event.",
+   "reasoning": "Use gf_days as the time and graft_failed as the event",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Use gf_days as the time and graft_failed as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID37",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Can you tell me whether donor KDPI matters for survival after transplant? Follow-up is days_to_death, death is pt_died.",
+   "reasoning": "Follow-up is days_to_death, death is pt_died",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Follow-up is days_to_death, death is pt_died",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID38",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "run it: years_to_eskd / eskd, adjust for egfr_baseline, uacr and sbp",
+   "reasoning": "years_to_eskd / eskd, adjust for egfr_baseline, uacr and sbp",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "years_to_eskd / eskd, adjust for egfr_baseline, uacr and sbp",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID39",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Hi, I'd like to know how well things work on our waiting-list patients. Time is wl_days and the event is died_on_list = 1.",
+   "reasoning": "Time is wl_days and the event is died_on_list = 1",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Time is wl_days and the event is died_on_list = 1",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID40",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "fit the model pls, time = days_to_death_or_ltfu, event = dead",
+   "reasoning": "time = days_to_death_or_ltfu, event = dead",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "time = days_to_death_or_ltfu, event = dead",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID41",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "How does borrowing compare with our own data? Predictors: REC_AGE_AT_TX, REC_BMI, REC_DIAB.",
+   "reasoning": "Predictors: REC_AGE_AT_TX, REC_BMI, REC_DIAB",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Predictors: REC_AGE_AT_TX, REC_BMI, REC_DIAB",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID42",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Does hba1c predict kidney failure in this cohort? eskd marks the event.",
+   "reasoning": "eskd marks the event",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "eskd marks the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID43",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "What did the analysis show?",
+   "reasoning": "What did the analysis show?",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "What did the analysis show?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID44",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please analyse my data and tell me which factors predict death.",
+   "reasoning": "Please analyse my data and tell me which factors predict death.",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "Please analyse my data and tell me which factors predict death.",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID45",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Why was the lasso chosen?",
+   "reasoning": "Why was the lasso chosen?",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "Why was the lasso chosen?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID46",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Run everything and give me the C-index on the test data.",
+   "reasoning": "Run everything and give me the C-index on the test data.",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "Run everything and give me the C-index on the test data.",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID47",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "how did my model do?",
+   "reasoning": "how did my model do?",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "how did my model do?",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID48",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Fit the best model you can and explain what drives risk.",
+   "reasoning": "Fit the best model you can and explain what drives risk.",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "Fit the best model you can and explain what drives risk.",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "ID49",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hello, could you go ahead and run the survival analysis on the file I uploaded? Thanks.",
+   "reasoning": "could you go ahead and run the survival analysis on the file I uploaded",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "could you go ahead and run the survival analysis on the file I uploaded",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IE00",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Can you show the survival curves for the selected model?",
+   "reasoning": "show the survival curves for the selected model",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "show the survival curves for the selected model",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE01",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Please draw a forest plot of the hazard ratios from the fitted model.",
+   "reasoning": "draw a forest plot of the hazard ratios",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "draw a forest plot of the hazard ratios",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE02",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "how well calibrated is it? a calibration plot at 3 years would help me see",
+   "reasoning": "a calibration plot at 3 years",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "a calibration plot at 3 years",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE03",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Before fitting anything, give me a histogram of wl_days so I can see the follow-up distribution.",
+   "reasoning": "give me a histogram of wl_days",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "give me a histogram of wl_days",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE04",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Hi team, could you graph cumulative incidence of death on the list split by CAN_DIAB? Thanks, R.",
+   "reasoning": "could you graph cumulative incidence of death on the list split by CAN_DIAB",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "could you graph cumulative incidence of death on the list split by CAN_DIAB",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE05",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Make a chart comparing the coeficients from each candidate model side by side pls",
+   "reasoning": "Make a chart comparing the coeficients",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "Make a chart comparing the coeficients",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE06",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "For the slides I need a figure of the borrowed versus local coefficients for DON_KDPI and REC_AGE_AT_TX.",
+   "reasoning": "I need a figure of the borrowed versus local coefficients",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "I need a figure of the borrowed versus local coefficients",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IE07",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Use days_to_death as the time and pt_died as the event, and also produce an estimated survival curve for each DON_KDPI quartile.",
+   "reasoning": "produce an estimated survival curve for each DON_KDPI quartile | Use days_to_death as the time and pt_died as the event",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "produce an estimated survival curve for each DON_KDPI quartile",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "Use days_to_death as the time and pt_died as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IE08",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "What is the predicted five-year survival for a 62-year-old recipient with a KDPI of 85?",
+   "reasoning": "predicted five-year survival for a 62-year-old recipient",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "predicted five-year survival for a 62-year-old recipient",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IE09",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Can the selected model give me a risk score for patient PX_ID 40213?",
+   "reasoning": "give me a risk score for patient PX_ID 40213",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "give me a risk score for patient PX_ID 40213",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IE11",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Dear all, once the model is fit, please estimate each listed candidate's chance of dying within a year so the committee can rank them.",
+   "reasoning": "estimate each listed candidate's chance of dying within a year",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "estimate each listed candidate's chance of dying within a year",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IE12",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "plug in egfr_baseline 28, uacr 900, sbp 150 and tell me her time to ESKD",
+   "reasoning": "tell me her time to ESKD",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "tell me her time to ESKD",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IE13",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Could you produce individual survival probabilities for the new referrals I am about to upload?",
+   "reasoning": "produce individual survival probabilities for the new referrals",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "produce individual survival probabilities for the new referrals",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IE14",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Time is gf_days, event graft_failed. Then for the donor we are offered tomorrow, DON_AGE 58 and DON_CREAT 1.9, what graft survival should our recipient expect?",
+   "reasoning": "what graft survival should our recipient expect | Time is gf_days, event graft_failed",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "what graft survival should our recipient expect",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    },
+    {
+     "kind": "declare_roles",
+     "evidence": "Time is gf_days, event graft_failed",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IE15",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Using the borrowed model, compute the expected survival for the patient in bed 4 with ef_pct 25.",
+   "reasoning": "compute the expected survival for the patient in bed 4",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "compute the expected survival for the patient in bed 4",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IE16",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "So does lowering cold ischemia time actually cause better patient survival? I need to tell the surgeons.",
+   "reasoning": "does lowering cold ischemia time actually cause better patient survival",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "does lowering cold ischemia time actually cause better patient survival",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE17",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Estimate the causal effect of on_raas on progression to ESKD.",
+   "reasoning": "Estimate the causal effect of on_raas",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "Estimate the causal effect of on_raas",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE18",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "We want to show that beta_blocker use prevents death in heart failure, so set the analysis up to prove that.",
+   "reasoning": "show that beta_blocker use prevents death in heart failure",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "show that beta_blocker use prevents death in heart failure",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE19",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please adjust for confounding with propensity weights and give the treatment effect of dialysis duration on waitlist mortality.",
+   "reasoning": "give the treatment effect of dialysis duration on waitlist mortality",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "give the treatment effect of dialysis duration on waitlist mortality",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE21",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "what would have happened to these patients if none had been on beta blockers? counterfactual survival please",
+   "reasoning": "counterfactual survival please",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "counterfactual survival please",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE22",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hello, I'm a nephrology fellow. Our question is whether high hba1c is responsible for faster kidney decline; can the system establish that?",
+   "reasoning": "whether high hba1c is responsible for faster kidney decline",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "whether high hba1c is responsible for faster kidney decline",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE23",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Run an instrumental-variable analysis to get the effect of donor KDPI on recipient death.",
+   "reasoning": "Run an instrumental-variable analysis to get the effect of donor KDPI",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "Run an instrumental-variable analysis to get the effect of donor KDPI",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IE24",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Death on the waiting list competes with transplant, so I need a Fine-Gray model for died_on_list.",
+   "reasoning": "I need a Fine-Gray model for died_on_list",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "I need a Fine-Gray model for died_on_list",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE25",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Patients can leave the list by transplant, removal or death; please treat those as competing events.",
+   "reasoning": "please treat those as competing events",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "please treat those as competing events",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE26",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Can you redo it as a cause-specific hazards analysis, with graft failure and death with function as separate causes?",
+   "reasoning": "redo it as a cause-specific hazards analysis",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "redo it as a cause-specific hazards analysis",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE27",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "the event column has 0=censored, 1=eskd, 2=death before eskd. model both events pls",
+   "reasoning": "model both events pls",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "model both events pls",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE28",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Estimate the subdistribution hazard of ESKD accounting for death as a competing risk.",
+   "reasoning": "Estimate the subdistribution hazard of ESKD",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "Estimate the subdistribution hazard of ESKD",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE29",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Hi, our outcome is graft_failed but death with a functioning graft censors it informatively. Could you account for that competing event when borrowing from the registry?",
+   "reasoning": "Could you account for that competing event",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "Could you account for that competing event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE30",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "What is the cumulative incidence of graft failure after removing deaths as competing risk?",
+   "reasoning": "cumulative incidence of graft failure after removing deaths as competing risk",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "cumulative incidence of graft failure after removing deaths as competing risk",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE31",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Use a multistate model with hospitalisation and death as two absorbing states.",
+   "reasoning": "Use a multistate model with hospitalisation and death",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "Use a multistate model with hospitalisation and death",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IE33",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "CAN_DIAL_YRS changes while a patient waits, so please update it over follow-up instead of using the listing value.",
+   "reasoning": "please update it over follow-up",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "please update it over follow-up",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IE34",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Could you refit with nyha_class allowed to change at each clinic visit?",
+   "reasoning": "refit with nyha_class allowed to change at each clinic visit",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "refit with nyha_class allowed to change at each clinic visit",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IE35",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "some patients started on_raas after enrolment. treat it as time varying exposure",
+   "reasoning": "treat it as time varying exposure",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "treat it as time varying exposure",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IE36",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Dear analyst, we have a long-format file with start and stop times per visit and updated sodium and bnp; please fit the Cox model on that counting-process layout.",
+   "reasoning": "fit the Cox model on that counting-process layout",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "fit the Cox model on that counting-process layout",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IE37",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "I suspect the effect of REC_DIAB wears off over time — can you let its coefficient vary with time since transplant?",
+   "reasoning": "let its coefficient vary with time since transplant",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "let its coefficient vary with time since transplant",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IE38",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Next, include post-transplant creatinine trajectories as a time-dependent predictor.",
+   "reasoning": "include post-transplant creatinine trajectories as a time-dependent predictor",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "include post-transplant creatinine trajectories as a time-dependent predictor",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IE40",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Our outcome is whether the patient was readmitted within 30 days, a yes/no flag, not a time.",
+   "reasoning": "whether the patient was readmitted within 30 days, a yes/no flag",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "whether the patient was readmitted within 30 days, a yes/no flag",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE41",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please model the number of rejection episodes per patient with a Poisson regression.",
+   "reasoning": "model the number of rejection episodes per patient",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "model the number of rejection episodes per patient",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE42",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Can you also fit hospital length of stay after transplant as the outcome?",
+   "reasoning": "fit hospital length of stay after transplant as the outcome",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "fit hospital length of stay after transplant as the outcome",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE43",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "what about total cost of care in the first year — model that as the response",
+   "reasoning": "total cost of care in the first year",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "total cost of care in the first year",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE44",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "I want logistic regression on dead at one year, ignoring the timing.",
+   "reasoning": "I want logistic regression on dead at one year",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "I want logistic regression on dead at one year",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE46",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Could the same borrowing be done for delayed graft function, which is binary?",
+   "reasoning": "delayed graft function, which is binary",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "delayed graft function, which is binary",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE47",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "model nyha_class at discharge as an ordinal outcome plz",
+   "reasoning": "model nyha_class at discharge as an ordinal outcome",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "model nyha_class at discharge as an ordinal outcome",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IE48",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Please write the methods section of our manuscript and submit it to the journal for us.",
+   "reasoning": "submit it to the journal for us",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "submit it to the journal for us",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "other"
+    }
+   ]
+  },
+  {
+   "id": "IE49",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Can you merge our cohort with the hospital billing database and clean the dates first?",
+   "reasoning": "merge our cohort with the hospital billing database",
+   "intents": [
+    {
+     "kind": "out_of_scope",
+     "evidence": "merge our cohort with the hospital billing database",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "other"
+    }
+   ]
+  },
+  {
+   "id": "IF00",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Follow-up is wl_days and the event is died_on_list. Also, could you draw survival curves split by CAN_DIAB?",
+   "reasoning": "Follow-up is wl_days and the event is died_on_list | could you draw survival curves split by CAN_DIAB",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Follow-up is wl_days and the event is died_on_list",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "could you draw survival curves split by CAN_DIAB",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF01",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "time col = days_to_death, event = pt_died (1 = death). pls also give me a forest plot of the hazard ratios",
+   "reasoning": "time col = days_to_death, event = pt_died (1 = death) | give me a forest plot of the hazard ratios",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "time col = days_to_death, event = pt_died (1 = death)",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "give me a forest plot of the hazard ratios",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF03",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Dear team, the outcome column is dead and survival time is days_to_death_or_ltfu. We would also like to treat transplant as a competing event for death. Thanks!",
+   "reasoning": "the outcome column is dead and survival time is days_to_death_or_ltfu | treat transplant as a competing event for death",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "the outcome column is dead and survival time is days_to_death_or_ltfu",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "treat transplant as a competing event for death",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IF04",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "gf_days is the follow up, graft_failed the event; covariates DON_KDPI, REC_COLD_ISCH_TM, REC_HLA_MM. also can u tell me whether long cold ischemia causes graft loss",
+   "reasoning": "gf_days is the follow up, graft_failed the event | covariates DON_KDPI, REC_COLD_ISCH_TM, REC_HLA_MM | tell me whether long cold ischemia causes graft loss",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "gf_days is the follow up, graft_failed the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "tell me whether long cold ischemia causes graft loss",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IF05",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please model time on the waiting list (wl_days) with died_on_list as the event. CAN_CPRA changes over the listing period, so it should enter as a time-varying covariate.",
+   "reasoning": "Please model time on the waiting list (wl_days) with died_on_list as the event | it should enter as a time-varying covariate",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Please model time on the waiting list (wl_days) with died_on_list as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "it should enter as a time-varying covariate",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IF06",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Predictors: ef_pct, nyha_class, bnp, sodium. Outcome dead, time days_to_death_or_ltfu. And a calibration plot at one year, if possible.",
+   "reasoning": "Predictors: ef_pct, nyha_class, bnp, sodium | Outcome dead, time days_to_death_or_ltfu | a calibration plot at one year",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Predictors: ef_pct, nyha_class, bnp, sodium",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "a calibration plot at one year",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF07",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "In this cohort, pt_died equal to 1 marks a death and days_to_death is the follow-up. I'd also like to model the number of hospital readmissions per patient as a second outcome.",
+   "reasoning": "pt_died equal to 1 marks a death and days_to_death is the follow-up | model the number of hospital readmissions per patient",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "pt_died equal to 1 marks a death and days_to_death is the follow-up",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "model the number of hospital readmissions per patient",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IF08",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Run it with REC_AGE_AT_TX, REC_BMI, REC_DIAB and DON_AGE as covariates. Can you show a histogram of the follow-up times too?",
+   "reasoning": "Run it with REC_AGE_AT_TX, REC_BMI, REC_DIAB and DON_AGE as covariates | show a histogram of the follow-up times",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Run it with REC_AGE_AT_TX, REC_BMI, REC_DIAB and DON_AGE as covariates",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "show a histogram of the follow-up times",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF09",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hi, quick one: time is years_to_eskd, event eskd coded 1. Could you then estimate what happens to ESKD risk if every patient were put on_raas?",
+   "reasoning": "time is years_to_eskd, event eskd coded 1 | estimate what happens to ESKD risk if every patient were put on_raas",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "time is years_to_eskd, event eskd coded 1",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "estimate what happens to ESKD risk if every patient were put on_raas",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IF10",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "The waitlist file has wl_days for time and died_on_list for the event, with CAN_AGE_AT_LISTING, CAN_BMI and CAN_DIAL_YRS as predictors. Removal for transplant should be handled as a separate competing cause.",
+   "reasoning": "wl_days for time and died_on_list for the event | CAN_AGE_AT_LISTING, CAN_BMI and CAN_DIAL_YRS as predictors | Removal for transplant should be handled as a separate competing cause",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "wl_days for time and died_on_list for the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "Removal for transplant should be handled as a separate competing cause",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IF11",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "event=dead time=days_to_death_or_ltfu covs=age_enrol,creat_mg_dl,beta_blocker; then give me each patient's 2-year survival probability in a table",
+   "reasoning": "event=dead time=days_to_death_or_ltfu covs=age_enrol,creat_mg_dl,beta_blocker | give me each patient's 2-year survival probability",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "event=dead time=days_to_death_or_ltfu covs=age_enrol,creat_mg_dl,beta_blocker",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "give me each patient's 2-year survival probability",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IF12",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Follow-up time is gf_days and graft_failed is the event. I am uploading the published SRTR coefficients together with their covariance matrix.",
+   "reasoning": "Follow-up time is gf_days and graft_failed is the event | the published SRTR coefficients together with their covariance matrix",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Follow-up time is gf_days and graft_failed is the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "the published SRTR coefficients together with their covariance matrix",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF13",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "time = years_to_eskd, event = eskd. we also have the coefficient vector from a large CKD consortium paper",
+   "reasoning": "time = years_to_eskd, event = eskd | the coefficient vector from a large CKD consortium paper",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "time = years_to_eskd, event = eskd",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "the coefficient vector from a large CKD consortium paper",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF15",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Our outcome is dead with time days_to_death_or_ltfu, covariates ef_pct and bnp. A partner hospital sent us their own patient-level records with the same columns.",
+   "reasoning": "Our outcome is dead with time days_to_death_or_ltfu | covariates ef_pct and bnp | A partner hospital sent us their own patient-level records",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Our outcome is dead with time days_to_death_or_ltfu",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "A partner hospital sent us their own patient-level records",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF16",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "adjust for CAN_AGE_AT_LISTING, CAN_DIAB, CAN_CPRA and CAN_GENDER. the published model I attached is from a national listing study, not sure exactly what's in it",
+   "reasoning": "adjust for CAN_AGE_AT_LISTING, CAN_DIAB, CAN_CPRA and CAN_GENDER | the published model I attached is from a national listing study",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "adjust for CAN_AGE_AT_LISTING, CAN_DIAB, CAN_CPRA and CAN_GENDER",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "the published model I attached is from a national listing study",
+     "external_form": "unknown",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF17",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hello, the event indicator is pt_died, where 1 is death, and days_to_death is time. We'd like to borrow from the external hazard ratios and their variances reported in the 2021 paper.",
+   "reasoning": "the event indicator is pt_died, where 1 is death, and days_to_death is time | borrow from the external hazard ratios and their variances reported in the 2021 paper",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "the event indicator is pt_died, where 1 is death, and days_to_death is time",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "borrow from the external hazard ratios and their variances reported in the 2021 paper",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF18",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Covariates: age_at_index, female, sbp, hba1c, on_raas. There's also an external model I'd like to use.",
+   "reasoning": "Covariates: age_at_index, female, sbp, hba1c, on_raas | There's also an external model I'd like to use",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Covariates: age_at_index, female, sbp, hba1c, on_raas",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "There's also an external model I'd like to use",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF20",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "For the transplant cohort take gf_days as follow-up and graft_failed as the event, with DON_KDPI, DON_CREAT and REC_HLA_MM. A second center's records are in the attached file and could be pooled into the analysis.",
+   "reasoning": "take gf_days as follow-up and graft_failed as the event | with DON_KDPI, DON_CREAT and REC_HLA_MM | A second center's records are in the attached file",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "take gf_days as follow-up and graft_failed as the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "A second center's records are in the attached file",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF21",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Time to death or loss to follow-up is days_to_death_or_ltfu; dead==1 is the event. Published coefficients plus a baseline hazard from the heart failure registry are attached.",
+   "reasoning": "Time to death or loss to follow-up is days_to_death_or_ltfu; dead==1 is the event | Published coefficients plus a baseline hazard from the heart failure registry",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Time to death or loss to follow-up is days_to_death_or_ltfu; dead==1 is the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "Published coefficients plus a baseline hazard from the heart failure registry",
+     "external_form": "coefficients_with_baseline_hazard",
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF22",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Time is years_to_eskd, event eskd. Before it runs, how do you decide how much to borrow from an external model?",
+   "reasoning": "Time is years_to_eskd, event eskd | how do you decide how much to borrow from an external model",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Time is years_to_eskd, event eskd",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "how do you decide how much to borrow from an external model",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF23",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "use days_to_death / pt_died, covariates REC_AGE_AT_TX and DON_KDPI. which methods can you actually fit?",
+   "reasoning": "use days_to_death / pt_died, covariates REC_AGE_AT_TX and DON_KDPI | which methods can you actually fit",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "use days_to_death / pt_died, covariates REC_AGE_AT_TX and DON_KDPI",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "which methods can you actually fit",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF24",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "The follow-up variable is wl_days and death on the list is died_on_list. Also, in general, what parts of a published model can the system borrow?",
+   "reasoning": "The follow-up variable is wl_days and death on the list is died_on_list | what parts of a published model can the system borrow",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "The follow-up variable is wl_days and death on the list is died_on_list",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "what parts of a published model can the system borrow",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF25",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hi! covariates are ef_pct, nyha_class, sodium and beta_blocker, outcome dead. Just curious how model selection works in this tool.",
+   "reasoning": "covariates are ef_pct, nyha_class, sodium and beta_blocker, outcome dead | how model selection works in this tool",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "covariates are ef_pct, nyha_class, sodium and beta_blocker, outcome dead",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "how model selection works in this tool",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF26",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Graft survival: gf_days with graft_failed. How does the system handle predictors that the published model doesn't include?",
+   "reasoning": "gf_days with graft_failed | How does the system handle predictors that the published model doesn't include",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "gf_days with graft_failed",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "How does the system handle predictors that the published model doesn't include",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF27",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "event value 1 in eskd means kidney failure; time years_to_eskd. what's the difference between the penalties you use?",
+   "reasoning": "event value 1 in eskd means kidney failure; time years_to_eskd | what's the difference between the penalties you use",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "event value 1 in eskd means kidney failure; time years_to_eskd",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "what's the difference between the penalties you use",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF28",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Please include CAN_BMI, CAN_DIAL_YRS and CAN_ABO as covariates. Does the system use cross-validation to choose between borrowing and not borrowing?",
+   "reasoning": "include CAN_BMI, CAN_DIAL_YRS and CAN_ABO as covariates | Does the system use cross-validation to choose between borrowing and not borrowing",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "include CAN_BMI, CAN_DIAL_YRS and CAN_ABO as covariates",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "Does the system use cross-validation to choose between borrowing and not borrowing",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF29",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "days_to_death_or_ltfu for time and dead for the event please; also, can you explain what a Mahalanobis penalty is?",
+   "reasoning": "days_to_death_or_ltfu for time and dead for the event | can you explain what a Mahalanobis penalty is",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "days_to_death_or_ltfu for time and dead for the event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "ask_about_method",
+     "evidence": "can you explain what a Mahalanobis penalty is",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF30",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Why did the lasso version win over plain borrowing? And could you plot the survival curves for the two DON_KDPI groups?",
+   "reasoning": "Why did the lasso version win over plain borrowing | could you plot the survival curves for the two DON_KDPI groups",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why did the lasso version win over plain borrowing",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "could you plot the survival curves for the two DON_KDPI groups",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF31",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "what does the cross-validated loss in the table mean exactly? also pls predict survival for the patient with PX_ID 4417",
+   "reasoning": "what does the cross-validated loss in the table mean exactly | predict survival for the patient with PX_ID 4417",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "what does the cross-validated loss in the table mean exactly",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "predict survival for the patient with PX_ID 4417",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IF32",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Thanks for the report. How much did borrowing move the coefficient for REC_COLD_ISCH_TM? I'd also like to know if cutting cold ischemia time would reduce deaths.",
+   "reasoning": "How much did borrowing move the coefficient for REC_COLD_ISCH_TM | if cutting cold ischemia time would reduce deaths",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "How much did borrowing move the coefficient for REC_COLD_ISCH_TM",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "if cutting cold ischemia time would reduce deaths",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "causal_claim"
+    }
+   ]
+  },
+  {
+   "id": "IF33",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "Why was the unpenalised model not selected? Next, redo it treating death before ESKD as a competing risk.",
+   "reasoning": "Why was the unpenalised model not selected | treating death before ESKD as a competing risk",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Why was the unpenalised model not selected",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "treating death before ESKD as a competing risk",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IF34",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Which model ended up selected, and why that one? Could you also add a forest plot of its coefficients?",
+   "reasoning": "Which model ended up selected, and why that one | add a forest plot of its coefficients",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Which model ended up selected, and why that one",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "add a forest plot of its coefficients",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF35",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "In the report the time-dependent AUC is lower than the C-index; why would that be? Also, can we let bnp vary over follow-up?",
+   "reasoning": "the time-dependent AUC is lower than the C-index; why would that be | can we let bnp vary over follow-up",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "the time-dependent AUC is lower than the C-index; why would that be",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "can we let bnp vary over follow-up",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IF36",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: verified | result: present",
+   "message": "Did the external model actually help here compared with our data alone? I also want a model for length of hospital stay in days as a continuous outcome.",
+   "reasoning": "Did the external model actually help here compared with our data alone | a model for length of hospital stay in days as a continuous outcome",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "Did the external model actually help here compared with our data alone",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "a model for length of hospital stay in days as a continuous outcome",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "different_outcome_type"
+    }
+   ]
+  },
+  {
+   "id": "IF37",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "why is sodium dropped from the final model?? and show me a calibration curve",
+   "reasoning": "why is sodium dropped from the final model?? | show me a calibration curve",
+   "intents": [
+    {
+     "kind": "ask_about_result",
+     "evidence": "why is sodium dropped from the final model??",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "show me a calibration curve",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF38",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Time is gf_days and the event graft_failed. I've attached published coefficients with their covariance. Please also make a Kaplan-Meier plot by REC_DIAB.",
+   "reasoning": "Time is gf_days and the event graft_failed | published coefficients with their covariance | make a Kaplan-Meier plot by REC_DIAB",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Time is gf_days and the event graft_failed",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "published coefficients with their covariance",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "make a Kaplan-Meier plot by REC_DIAB",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF39",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "years_to_eskd and eskd are the outcome columns. The external file is the consortium's coefficient vector. We'd also like individual 5-year risks for each patient.",
+   "reasoning": "years_to_eskd and eskd are the outcome columns | the consortium's coefficient vector | individual 5-year risks for each patient",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "years_to_eskd and eskd are the outcome columns",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "the consortium's coefficient vector",
+     "external_form": "coefficients",
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "individual 5-year risks for each patient",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "individual_prediction"
+    }
+   ]
+  },
+  {
+   "id": "IF40",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "outcome = dead, time = days_to_death_or_ltfu. we have records from another heart failure cohort to borrow from. and treat heart transplant as a competing event",
+   "reasoning": "outcome = dead, time = days_to_death_or_ltfu | records from another heart failure cohort | treat heart transplant as a competing event",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "outcome = dead, time = days_to_death_or_ltfu",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "records from another heart failure cohort",
+     "external_form": "individual_level_data",
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "treat heart transplant as a competing event",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "competing_risks"
+    }
+   ]
+  },
+  {
+   "id": "IF42",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Covariates REC_AGE_AT_TX, REC_BMI, DON_AGE; time days_to_death, event pt_died. There's a published model too. Also a histogram of REC_BMI would be nice.",
+   "reasoning": "Covariates REC_AGE_AT_TX, REC_BMI, DON_AGE; time days_to_death, event pt_died | There's a published model too | a histogram of REC_BMI",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "Covariates REC_AGE_AT_TX, REC_BMI, DON_AGE; time days_to_death, event pt_died",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "There's a published model too",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "a histogram of REC_BMI",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "figure_requested"
+    }
+   ]
+  },
+  {
+   "id": "IF43",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "We use years_to_eskd as follow up with eskd as event, adjusting for egfr_baseline and uacr. A published model's coefficients and variance matrix are attached. Since uacr is measured repeatedly, please let it change over time.",
+   "reasoning": "We use years_to_eskd as follow up with eskd as event, adjusting for egfr_baseline and uacr | A published model's coefficients and variance matrix are attached | please let it change over time",
+   "intents": [
+    {
+     "kind": "declare_roles",
+     "evidence": "We use years_to_eskd as follow up with eskd as event, adjusting for egfr_baseline and uacr",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "describe_external",
+     "evidence": "A published model's coefficients and variance matrix are attached",
+     "external_form": "coefficients_with_covariance",
+     "external_name": null,
+     "out_of_scope_reason": null
+    },
+    {
+     "kind": "out_of_scope",
+     "evidence": "please let it change over time",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": "time_varying_covariates"
+    }
+   ]
+  },
+  {
+   "id": "IF44",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Hi there!",
+   "reasoning": "Hi there!",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "Hi there!",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF45",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "ok let's get going",
+   "reasoning": "let's get going",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "let's get going",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF46",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "Can you take a look at this dataset and do what makes sense?",
+   "reasoning": "take a look at this dataset and do what makes sense",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "take a look at this dataset and do what makes sense",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF47",
+   "state": "State: cohort loaded: yes | external information: none | declaration: none | result: none",
+   "message": "Good morning, I'm new to this tool and not sure where to begin.",
+   "reasoning": "not sure where to begin",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "not sure where to begin",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF48",
+   "state": "State: cohort loaded: yes | external information: none | declaration: verified | result: present",
+   "message": "thanks, that's all for today",
+   "reasoning": "that's all for today",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "that's all for today",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  },
+  {
+   "id": "IF49",
+   "state": "State: cohort loaded: yes | external information: published coefficients (12) | declaration: none | result: none",
+   "message": "hmm, not sure yet",
+   "reasoning": "not sure yet",
+   "intents": [
+    {
+     "kind": "other",
+     "evidence": "not sure yet",
+     "external_form": null,
+     "external_name": null,
+     "out_of_scope_reason": null
+    }
+   ]
+  }
+ ]
+}

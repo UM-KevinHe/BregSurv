@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_cox_indi_enet.R - dispatcher for the cv_cox_indi_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for BregSurv::cox_indi_enet(). Internal
+# K-fold CV of (eta, lambda) for BregSurv::cox_indi_enet. Internal
 # data are split into folds; the external cohort is fully included in
 # every training fold (assumed large and fixed).
 #
@@ -104,7 +104,16 @@ result <- tryCatch({
   stratum_ext     <- eval_in(input$stratum_ext_expr, e)
   c_index_stratum <- eval_in(input$c_index_stratum_expr, e)
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  seed   <- if (!is.null(input$seed))   as.integer(input$seed)   else NULL
+  # A4: the seed is never NULL. Fold assignment is drawn with sample, so an
+  # absent seed hands the cross-validated loss -- and therefore the choice
+  # between candidates -- to the ambient RNG. over 30
+  # unseeded rounds the recommended estimator flipped 8 times out of 30,
+  # because the run-to-run wobble in the loss was four times the gap between
+  # the candidates. A fixed documented default costs nothing statistically
+  # (the partition is arbitrary) and makes the run repeatable by default.
+  DEFAULT_CV_SEED <- 20260818L
+  seed   <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED
+  seed_source <- if (!is.null(input$seed)) "caller" else "bridge_default"
 
   cv_args <- list(
     z_int = z_int, delta_int = delta_int, time_int = time_int, stratum_int = stratum_int,
@@ -126,6 +135,10 @@ result <- tryCatch({
     criteria            = cv_fit$criteria,
     alpha               = as.numeric(cv_fit$alpha),
     nfolds              = cv_fit$nfolds,
+    seed                = seed,
+    seed_source         = seed_source,
+    rng_kind            = if (!is.null(cv_fit$rng_kind)) cv_fit$rng_kind else NA,
+    folds               = if (!is.null(cv_fit$folds)) as.integer(cv_fit$folds) else NA,
     etas                = as.numeric(best_per_eta$eta),
     cv_metric           = list(name = metric_name,
                                values = as.numeric(best_per_eta[[metric_name]])),

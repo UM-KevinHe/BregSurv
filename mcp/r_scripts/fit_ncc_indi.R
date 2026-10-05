@@ -4,9 +4,9 @@
 # Called by mcp/server.py as:
 #   Rscript fit_ncc_indi.R <input.json> <output.json>
 #
-# Calls BregSurv::ncc_indi() with individual-level external matched
+# Calls BregSurv::ncc_indi with individual-level external matched
 # case-control data. Internally maps the matched-set problem to a stratified
-# Cox model (time = 1, delta = y) and dispatches to cox_indi().
+# Cox model (time = 1, delta = y) and dispatches to cox_indi.
 #
 # NCC API: y_int + stratum_int (required) and y_ext + stratum_ext (required),
 # NOT time/delta. Strata are required because the matching design is what

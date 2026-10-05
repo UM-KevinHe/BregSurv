@@ -5,7 +5,7 @@
 #   Rscript fit_coxkl.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions
-# against the loaded environment, calls BregSurv::coxkl(), writes results
+# against the loaded environment, calls BregSurv::coxkl, writes results
 # as JSON. On any error, writes a structured {status:"error",...} payload.
 
 suppressPackageStartupMessages({
@@ -27,6 +27,48 @@ eval_in <- function(expr_str, env) {
     return(NULL)
   }
   eval(parse(text = expr_str), envir = env)
+}
+
+# --- External-coefficient linkage (requirement R2) ---------------------------
+# The external coefficient vector is matched to the internal covariates BY NAME.
+# `as.numeric` used to strip those names here, which disabled the package's
+# aligner and silently reintroduced POSITIONAL borrowing whenever the two
+# lengths happened to agree. Keep the names.
+as_named_numeric <- function(x) {
+  if (is.null(x)) return(NULL)
+  nm <- names(x)
+  if (is.null(nm) && is.matrix(x) && ncol(x) == 1L) nm <- rownames(x)
+  v <- as.numeric(unlist(x, use.names = FALSE))
+  if (!is.null(nm) && length(nm) == length(v)) names(v) <- nm
+  v
+}
+
+# BregSurv zero-pads internal covariates the external model does not cover, but
+# HARD-ERRORS on external names with no internal counterpart. R2 calls for those
+# to be dropped, so drop them here and report exactly what was dropped.
+link_external <- function(z, beta, Q = NULL) {
+  zn <- colnames(z)
+  bn <- names(beta)
+  if (is.null(beta) || is.null(bn) || is.null(zn)) {
+    return(list(beta = beta, Q = Q, linkage = list(
+      matched_by = "position", n_internal = ncol(z),
+      n_external = length(beta),
+      covered = list(), zero_padded = list(), dropped = list())))
+  }
+  keep    <- bn %in% zn
+  dropped <- bn[!keep]
+  beta    <- beta[keep]
+  if (!is.null(Q) && !is.null(rownames(Q))) {
+    qk <- rownames(Q) %in% zn
+    Q  <- Q[qk, qk, drop = FALSE]
+  }
+  list(beta = beta, Q = Q, linkage = list(
+    matched_by  = "name",
+    n_internal  = ncol(z),
+    n_external  = length(bn),
+    covered     = as.list(intersect(zn, bn)),
+    zero_padded = as.list(setdiff(zn, bn)),
+    dropped     = as.list(dropped)))
 }
 
 result <- tryCatch({
@@ -74,11 +116,11 @@ result <- tryCatch({
   ext_sources <- character(0)
 
   if (!is.null(input$beta_expr) && nzchar(input$beta_expr)) {
-    beta <- as.numeric(eval_in(input$beta_expr, e))
+    beta <- as_named_numeric(eval_in(input$beta_expr, e))
     ext_sources <- c(ext_sources, "beta_expr")
   }
   if (!is.null(input$beta_inline)) {
-    beta <- as.numeric(unlist(input$beta_inline))
+    beta <- as_named_numeric(input$beta_inline)
     ext_sources <- c(ext_sources, "beta_inline")
   }
   if (!is.null(input$RS_expr) && nzchar(input$RS_expr)) {
@@ -106,7 +148,10 @@ result <- tryCatch({
   Mstop        <- if (!is.null(input$Mstop))     as.integer(input$Mstop)     else 100L
   backtrack    <- if (!is.null(input$backtrack)) as.logical(input$backtrack) else FALSE
 
-  # --- Call coxkl() ---
+  # --- Call coxkl ---
+  .lk  <- link_external(z, beta)
+  beta <- .lk$beta
+
   fit <- coxkl(
     z            = z,
     delta        = delta,
@@ -126,6 +171,7 @@ result <- tryCatch({
   # coxkl$beta is a p x n_etas matrix; jsonlite serialises row-major.
   list(
     status        = "ok",
+    linkage       = .lk$linkage,
     eta           = as.numeric(fit$eta),
     beta          = fit$beta,
     likelihood    = as.numeric(fit$likelihood),

@@ -133,7 +133,7 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   time <- as.numeric(time[time_order])
   stratum <- as.numeric(stratum[time_order])
   z <- as.matrix(z)[time_order, , drop = FALSE]
-  delta <- as.numeric(delta[time_order])
+  delta <- .check_event(delta[time_order], "delta")
   
   n <- nrow(z)
   n_eta <- length(etas)
@@ -160,7 +160,20 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   beta_full <- full_estimate$beta
   
   ## Fix seed for reproducibility and create folds
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold(nfolds = nfolds, delta = delta, stratum = stratum)
   
   ## Storage for internal CV results
@@ -317,6 +330,7 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
   
   best_res <- list(best_eta = etas[best_eta.idx],
                    best_beta = beta_full[, best_eta.idx],
+                   best_value = .best_value(results, best_eta.idx),
                    criteria = cv.criteria)
   
   # Final structure matches cv.coxkl
@@ -326,7 +340,13 @@ cv.coxkl_ties <- function(z, delta, time, stratum = NULL,
       beta_full = beta_full,
       best = best_res,
       criteria = cv.criteria,
-      nfolds = nfolds
+      nfolds = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. Assigned on the internally sorted data, not the caller's
+      ## row order. `get_fold` is not exported, so this is the only route to it.
+      folds = folds,
+      seed = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind = .rng_kind
     ),
     class = "cv.coxkl"
   )

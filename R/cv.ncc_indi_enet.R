@@ -133,9 +133,9 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
 
   cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 
-  y_int <- as.numeric(y_int)
+  y_int <- .check_event(y_int, "y_int")
   z_int <- as.matrix(z_int)
-  y_ext <- as.numeric(y_ext)
+  y_ext <- .check_event(y_ext, "y_ext")
   z_ext <- as.matrix(z_ext)
 
   if (missing(stratum_int) || is.null(stratum_int)) {
@@ -208,7 +208,20 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
   if (message) close(pb_full)
 
   ## CV fold assignment at stratum level (internal data only)
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold_cc(nfolds = nfolds, delta = y_int, stratum = stratum_int)
   if (length(folds) != n) {
     stop("get_fold_cc must return a fold assignment of length equal to length(y_int).", call. = FALSE)
@@ -270,9 +283,9 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
         ...
       )
 
-      beta_mat_fold <- fold_fit$beta[[1]]   # p x L
+      beta_mat_fold <- fold_fit$beta[[1]]  # p x L
 
-      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold   # n_test x L
+      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold  # n_test x L
 
       if (cv.criteria == "loss") {
         for (j in seq_len(L)) {
@@ -331,21 +344,28 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
   }
   rownames(best_per_eta) <- NULL
 
-  beta_best_mat <- sapply(seq_len(n_eta), function(i) {
+  ## rows of best_per_eta are matched by eta value (an eta with no finite
+  ## score has none); see cv.cox_indi_enet.R, 2026-09-14
+  beta_best_mat <- matrix(NA_real_, nrow = nrow(beta_full_list[[1]]), ncol = n_eta)
+  rownames(beta_best_mat) <- rownames(beta_full_list[[1]])
+  for (i in seq_len(n_eta)) {
+    j <- match(etas[i], best_per_eta$eta)
+    if (is.na(j)) next
     beta_mat   <- beta_full_list[[i]]
     lambda_seq <- lambda_list[[i]]
-
-    lambda_target <- best_per_eta$lambda[i]
+    lambda_target <- best_per_eta$lambda[j]
     idx <- which(abs(lambda_seq - lambda_target) < 1e-12)
     if (length(idx) != 1L) idx <- which.min(abs(lambda_seq - lambda_target))
-    beta_mat[, idx]
-  })
+    beta_best_mat[, i] <- beta_mat[, idx]
+  }
   colnames(beta_best_mat) <- etas
+  best_col <- match(best_per_eta$eta[best.idx], etas)
 
   best_res <- list(
     best_eta    = best_per_eta$eta[best.idx],
     best_lambda = best_per_eta$lambda[best.idx],
-    best_beta   = beta_best_mat[, best.idx],
+    best_beta   = beta_best_mat[, best_col],
+    best_value  = .best_value(best_per_eta, best.idx),
     criteria    = cv.criteria
   )
 
@@ -357,7 +377,17 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
       integrated_stat.betahat_best = beta_best_mat,
       criteria                     = cv.criteria,
       alpha                        = alpha,
-      nfolds                       = nfolds
+      nfolds                       = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. this is `get_fold_cc`, NOT `get_fold`,
+      ## and it is assigned on the CALLER'S row order -- these drivers never
+      ## reorder. The cohort claim this comment used to make was copied from
+      ## cv.coxkl and was wrong here. `get_fold_cc` is also fully deterministic
+      ## (it contains no RNG call at all), so it assigns whole matched sets by
+      ## a fixed rule and `seed` below is provenance only.
+      folds                       = folds,
+      seed                       = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind                       = .rng_kind
     ),
     class = "cv.ncc_indi_enet"
   )

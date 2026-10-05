@@ -52,6 +52,7 @@
 #' @param seed Optional integer. Random seed for reproducible fold assignment.
 #' @param ... Additional arguments passed to the underlying fitting function \code{\link{cox_MDTL}}.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.
 #' @return An object of class \code{"cv.cox_MDTL"} containing:
 #' \describe{
 #'   \item{\code{internal_stat}}{A \code{data.frame} with one row per candidate \code{eta},
@@ -101,7 +102,8 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
                         cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                         c_index_stratum = NULL,
                         message = FALSE,
-                        seed = NULL, ...) {
+                        seed = NULL, ties = c("none", "breslow"), ...) {
+  ties <- .check_ties(match.arg(ties))
 
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
 
@@ -131,7 +133,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
   time <- as.numeric(time[time_order])
   stratum <- as.numeric(stratum[time_order])
   z <- as.matrix(z)[time_order, , drop = FALSE]
-  delta <- as.numeric(delta[time_order])
+  delta <- .check_event(delta[time_order], "delta")
 
   n <- nrow(z)
   n_eta <- length(etas)
@@ -140,7 +142,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
 
 
   # fit a full model:
-  full_estimate <- cox_MDTL(z = z,
+  full_estimate <- cox_MDTL(ties = ties, z = z,
                             delta = delta,
                             time = time,
                             stratum = stratum,
@@ -155,7 +157,20 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
 
 
   # do cross-validation
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold(nfolds = nfolds, delta = delta, stratum = stratum)
 
   result_mat <- matrix(NA_real_, nrow = nfolds, ncol = n_eta)
@@ -176,7 +191,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
     time_train <- time[train_idx]
     stratum_train <- stratum[train_idx]
 
-    beta_initial <- rep(0, ncol(z))  # warm start for each fold
+    beta_initial <- rep(0, ncol(z)) # warm start for each fold
 
 
     ## ----- Cross-validation over eta sequence (internal model) -----
@@ -187,7 +202,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
 
     for (i in seq_along(etas)) {
       eta <- etas[i]
-      cox_estimate <- cox_MDTL(z = z_train,
+      cox_estimate <- cox_MDTL(ties = ties, z = z_train,
                                delta = delta_train,
                                time = time_train,
                                stratum = stratum_train,
@@ -201,7 +216,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
                                beta_initial = beta_initial)
 
       beta_train <- cox_estimate$beta
-      beta_initial <- beta_train  # warm start
+      beta_initial <- beta_train # warm start
 
       z_test <- z[test_idx, , drop = FALSE]
       delta_test <- delta[test_idx]
@@ -213,8 +228,8 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
         LP_internal <- as.matrix(z) %*% as.matrix(beta_train)
         n.each_stratum_train <- as.numeric(table(stratum_train))
 
-        result_mat[f, i] <- pl_cal_theta(LP_internal, delta, n.each_stratum_full) -
-          pl_cal_theta(LP_train, delta_train, n.each_stratum_train)
+        result_mat[f, i] <- .pl_ties(LP_internal, delta, time, n.each_stratum_full, ties) -
+          .pl_ties(LP_train, delta_train, time_train, n.each_stratum_train, ties)
 
       } else if (cv.criteria == "LinPred") {
         cv_all_linpred[test_idx, i] <- LP_test
@@ -241,7 +256,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
     result_vec <- colSums(result_mat, na.rm = TRUE)
   } else if (cv.criteria == "LinPred") {
     result_vec <- apply(cv_all_linpred, 2,
-                        function(lp) pl_cal_theta(lp, delta, as.numeric(table(stratum))))
+                        function(lp) .pl_ties(lp, delta, time, as.numeric(table(stratum)), ties))
   } else if (cv.criteria == "CIndex_foldaverage") {
     result_vec <- colMeans(result_mat, na.rm = TRUE)
   } else if (cv.criteria == "CIndex_pooled") {
@@ -268,6 +283,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
 
   best_res <- list(best_eta = etas[best_eta.idx],
                    best_beta = beta_full[, best_eta.idx],
+                   best_value = .best_value(results, best_eta.idx),
                    criteria = cv.criteria)
 
   structure(
@@ -276,7 +292,13 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
       beta_full = beta_full,
       best = best_res,
       criteria = cv.criteria,
-      nfolds = nfolds
+      nfolds = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. Assigned on the internally sorted data, not the caller's
+      ## row order. `get_fold` is not exported, so this is the only route to it.
+      folds = folds,
+      seed = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind = .rng_kind
     ),
     class = "cv.cox_MDTL"
   )

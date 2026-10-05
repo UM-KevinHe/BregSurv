@@ -23,10 +23,11 @@
 #' @param seed Optional integer seed for reproducibility.
 #' @param message Logical. Whether to print progress messages. Default FALSE.
 #' @param ncores Integer. Number of parallel cores. Default 1 (sequential execution).
-#' @param ... Additional arguments passed to \code{cv.coxkl_enet()} (e.g., \code{alpha},
+#' @param ... Additional arguments passed to \code{cv.coxkl_enet} (e.g., \code{alpha},
 #'   \code{lambda}, \code{nlambda}, \code{lambda.min.ratio}, \code{nfolds},
 #'   \code{cv.criteria}, \code{c_index_stratum}, etc.).
 #'
+#'   Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @return An object of class "variable_importance" with fields:
 #' \describe{
 #'   \item{freq}{Named numeric vector of selection frequencies (length p).}

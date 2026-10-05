@@ -93,7 +93,8 @@ plot.coxkl <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
           test_time = test_time,
           test_stratum = test_stratum,
           betahat = beta_mat[, i],
-          criteria = "loss"
+          criteria = "loss",
+          ties = .fit_ties(object)
         )
       )
       metrics <- as.numeric(raw_metrics)
@@ -240,7 +241,8 @@ plot.coxkl_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta = NU
           test_time = test_time,
           test_stratum = test_stratum,
           betahat = beta_mat[, i],
-          criteria = "loss"
+          criteria = "loss",
+          ties = .fit_ties(object)
         )
       )
       metrics <- as.numeric(raw_metrics)
@@ -373,7 +375,8 @@ plot.coxkl_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = NUL
           test_time = test_time,
           test_stratum = test_stratum,
           betahat = beta_mat[, i],
-          criteria = "loss"
+          criteria = "loss",
+          ties = .fit_ties(object)
         )
       )
       metrics <- as.numeric(raw_metrics)
@@ -508,7 +511,8 @@ plot.cox_MDTL <- function(x, test_z = NULL, test_time = NULL, test_delta = NULL,
           test_time = test_time,
           test_stratum = test_stratum,
           betahat = beta_mat[, i],
-          criteria = "loss"
+          criteria = "loss",
+          ties = .fit_ties(object)
         )
       )
       metrics <- as.numeric(raw_metrics)
@@ -654,7 +658,8 @@ plot.cox_MDTL_ridge <- function(x, test_z = NULL, test_time = NULL, test_delta =
           test_time = test_time,
           test_stratum = test_stratum,
           betahat = beta_mat[, i],
-          criteria = "loss"
+          criteria = "loss",
+          ties = .fit_ties(object)
         )
       )
       metrics <- as.numeric(raw_metrics)
@@ -786,7 +791,8 @@ plot.cox_MDTL_enet <- function(x, test_z = NULL, test_time = NULL, test_delta = 
           test_time = test_time,
           test_stratum = test_stratum,
           betahat = beta_mat[, i],
-          criteria = "loss"
+          criteria = "loss",
+          ties = .fit_ties(object)
         )
       )
       metrics <- as.numeric(raw_metrics)

@@ -90,7 +90,7 @@ ncc_MDTL <- function(y, z, stratum,
                          beta_initial = NULL) {
 
   z <- as.matrix(z)
-  y <- as.numeric(y)
+  y <- .check_event(y, "y")
 
   check_etas(etas)
 

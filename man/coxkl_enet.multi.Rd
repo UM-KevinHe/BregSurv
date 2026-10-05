@@ -51,7 +51,7 @@ or \code{"median"}.}
 
 \item{...}{Additional arguments passed to \code{cv.coxkl_enet()} (e.g., \code{alpha},
 \code{lambda}, \code{nlambda}, \code{lambda.min.ratio}, \code{nfolds},
-\code{cv.criteria}, \code{c_index_stratum}, etc.).}
+\code{cv.criteria}, \code{c_index_stratum}, etc.). Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).}
 }
 \value{
 An object of class \code{"coxkl_enet.multi"}, which is a list containing:

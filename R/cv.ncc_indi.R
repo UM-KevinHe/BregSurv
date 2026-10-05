@@ -106,9 +106,9 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
 
   cv.criteria <- match.arg(cv.criteria, choices = c("loss", "AUC", "CIndex", "Brier"))
 
-  y_int <- as.numeric(y_int)
+  y_int <- .check_event(y_int, "y_int")
   z_int <- as.matrix(z_int)
-  y_ext <- as.numeric(y_ext)
+  y_ext <- .check_event(y_ext, "y_ext")
   z_ext <- as.matrix(z_ext)
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
@@ -149,13 +149,30 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   )
   beta_full <- full_fit$beta
 
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold_cc(nfolds = nfolds, delta = y_int, stratum = stratum_int)
   if (length(folds) != n) {
     stop("get_fold_cc must return a fold assignment of length equal to length(y_int).", call. = FALSE)
   }
 
   result_mat <- matrix(NA_real_, nrow = nfolds, ncol = n_eta)
+  ## Held-out size per fold, needed because the "loss" criterion is POOLED over
+  ## subjects rather than averaged over folds -- get_fold_cc assigns whole
+  ## matched sets, so the folds are not the same size. See the aggregation below.
+  n_test_per_fold <- rep(NA_real_, nfolds)
   if (cv.criteria %in% c("AUC", "CIndex", "Brier")) {
     cv_all_lp <- matrix(NA_real_, nrow = n, ncol = n_eta)
   }
@@ -205,7 +222,10 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
 
       if (cv.criteria == "loss") {
         loglik_test <- cc_loglik(y = y_test, lp = lp_test, stratum = stratum_test)
-        result_mat[f, i] <- -loglik_test / length(y_test)
+        ## Store the UNNORMALIZED fold total; the division happens once, at the
+        ## pooled aggregation below.
+        result_mat[f, i] <- -loglik_test
+        n_test_per_fold[f] <- length(y_test)
       } else {
         cv_all_lp[test_idx, i] <- lp_test
       }
@@ -213,7 +233,26 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   }
 
   if (cv.criteria == "loss") {
-    result_vec <- colMeans(result_mat, na.rm = TRUE)
+    ## POOLED, NOT THE MEAN OF PER-FOLD MEANS. 
+    ##
+    ## This used to be colMeans over per-fold mean losses, while the elastic
+    ## net NCC drivers pooled (loss_sum / loss_n) and the whole COHORT side
+    ## pools too (colSums over folds, then -2 * sum / n). The two are equal only
+    ## when the folds are the same size, and get_fold_cc assigns whole matched
+    ## sets, so they are not. The consequence was that unpenalized and penalized
+    ## NCC members went into one argmin on two different scales; the agent's
+    ## run_candidates.R now refuses such a set outright, which is what exposed
+    ## this. Pooling here is what makes the NCC candidate set rankable, and it
+    ## is the convention already used everywhere else in the package.
+    ##
+    ## The per-column denominator is load-bearing: a fold where this eta failed
+    ## leaves NA, and a fixed denominator would shrink the numerator only,
+    ## reporting a better loss for the eta that failed more often.
+    result_vec <- vapply(seq_len(n_eta), function(i) {
+      ok <- !is.na(result_mat[, i])
+      if (!any(ok)) return(NA_real_)
+      sum(result_mat[ok, i]) / sum(n_test_per_fold[ok])
+    }, numeric(1))
   } else if (cv.criteria %in% c("AUC", "CIndex")) {
     result_vec <- apply(
       cv_all_lp, 2,
@@ -245,6 +284,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   best_res <- list(
     best_eta  = etas[best_eta_idx],
     best_beta = beta_full[, best_eta_idx],
+    best_value = .best_value(results, best_eta_idx),
     criteria  = cv.criteria
   )
 
@@ -254,7 +294,17 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
       beta_full     = beta_full,
       best          = best_res,
       criteria      = cv.criteria,
-      nfolds        = nfolds
+      nfolds        = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. this is `get_fold_cc`, NOT `get_fold`,
+      ## and it is assigned on the CALLER'S row order -- these drivers never
+      ## reorder. The cohort claim this comment used to make was copied from
+      ## cv.coxkl and was wrong here. `get_fold_cc` is also fully deterministic
+      ## (it contains no RNG call at all), so it assigns whole matched sets by
+      ## a fixed rule and `seed` below is provenance only.
+      folds        = folds,
+      seed        = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind        = .rng_kind
     ),
     class = "cv.ncc_indi"
   )

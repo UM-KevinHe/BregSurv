@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_cox_indi_enet.R - dispatcher for the fit_cox_indi_enet MCP tool.
 #
-# Calls BregSurv::cox_indi_enet() — Cox PH with elastic-net + dual-cohort
+# Calls BregSurv::cox_indi_enet — Cox PH with elastic-net + dual-cohort
 # composite likelihood. Internal observations get weight 1, external get
 # weight `eta`. eta=0 recovers internal-only fit.
 #
@@ -121,8 +121,8 @@ result <- tryCatch({
     status            = "ok",
     etas              = as.numeric(fit$eta),
     alpha             = as.numeric(fit$alpha),
-    beta_per_eta      = beta_per_eta,           # list of p x L_i matrices
-    lambda_per_eta    = lambda_per_eta,         # list of numeric vectors
+    beta_per_eta      = beta_per_eta,          # list of p x L_i matrices
+    lambda_per_eta    = lambda_per_eta,        # list of numeric vectors
     n_obs_int         = nrow(z_int),
     n_obs_ext         = nrow(z_ext),
     n_covariates      = ncol(z_int),

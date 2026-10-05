@@ -17,7 +17,8 @@ coxkl(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL
+  beta_initial = NULL,
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -58,6 +59,8 @@ columns of the returned coefficient matrix follow that sorted order.}
 \item{data_sorted}{Logical. Internal use. If \code{TRUE}, assumes data is already sorted by stratum and time.}
 
 \item{beta_initial}{Optional numeric vector. Initial values for the coefficients for the first \code{eta}. Default is a zero vector.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
 }
 \value{
 An object of class \code{"coxkl"} containing:

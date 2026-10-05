@@ -33,7 +33,8 @@ cox_MDTL_enet(
   returnX = FALSE,
   trace.lambda = FALSE,
   message = FALSE,
-  data_sorted = FALSE
+  data_sorted = FALSE,
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -77,7 +78,13 @@ coefficients are left unpenalized. See \code{\link{align_beta_Q}}.}
 
 \item{group.multiplier}{Vector of multipliers for each group size. Default is \code{NULL}.}
 
-\item{standardize}{Logical. Should the predictors be standardized before fitting? Default is TRUE.}
+\item{standardize}{Logical. Should the predictors be standardized before fitting?
+Default is TRUE. A \code{Q} you supply carries its own units and the Mahalanobis part of
+the penalty is left exactly unchanged; with \code{Q = NULL} the implicit identity metric is
+taken on the standardized scale, one standard deviation per covariate, so that the member
+does not depend on the units the covariates happen to be recorded in and agrees with
+\code{\link{cox_MDTL_ridge}}. Changed in 1.2.0; before that both cases used a metric of
+\eqn{\mathrm{diag}(\mathrm{sd}^4)} on the original coefficients.}
 
 \item{nvar.max}{Maximum number of variables allowed in the model. Default is \code{ncol(z)}.}
 
@@ -100,6 +107,8 @@ coefficients are left unpenalized. See \code{\link{align_beta_Q}}.}
 \item{message}{Logical. If TRUE, prints warnings and progress messages.}
 
 \item{data_sorted}{Logical. Internal flag indicating if data is already sorted by time/stratum. Default is \code{FALSE}.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
 }
 \value{
 An object of class \code{"cox_MDTL_enet"} containing:

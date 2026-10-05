@@ -23,6 +23,7 @@
 #' @param message Logical; print progress (default FALSE).
 #' @param seed Optional seed for reproducible folds.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.
 #' @return An object of class \code{"cv.cox_indi"} with components:
 #' \itemize{
 #' \item \code{internal_stat}: data.frame of CV stats by eta, one row per candidate
@@ -79,7 +80,8 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
                         c_index_stratum = NULL,
                         max_iter = 100, tol = 1.0e-7,
                         message = FALSE,
-                        seed = NULL) {
+                        seed = NULL, ties = c("none", "breslow")) {
+  ties <- .check_ties(match.arg(ties))
 
   cv.criteria <- match.arg(cv.criteria, choices = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"))
 
@@ -89,8 +91,8 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   z_int <- as.matrix(z_int)
   z_ext <- as.matrix(z_ext)
-  delta_int <- as.numeric(delta_int)
-  delta_ext <- as.numeric(delta_ext)
+  delta_int <- .check_event(delta_int, "delta_int")
+  delta_ext <- .check_event(delta_ext, "delta_ext")
   time_int <- as.numeric(time_int)
   time_ext <- as.numeric(time_ext)
 
@@ -114,14 +116,27 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   n_eta <- length(etas)
 
-  fit_full_path <- cox_indi(
+  fit_full_path <- cox_indi(ties = ties, 
     z_int = z_int, delta_int = delta_int, time_int = time_int, stratum_int = stratum_int,
     z_ext = z_ext, delta_ext = delta_ext, time_ext = time_ext, stratum_ext = stratum_ext,
     etas = etas, max_iter = max_iter, tol = tol, message = FALSE
   )
   beta_full <- fit_full_path$beta
 
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   stratum_enc_full <- match(stratum_int, unique(stratum_int))
   folds <- get_fold(nfolds = nfolds, delta = delta_int, stratum = stratum_enc_full)
 
@@ -158,7 +173,7 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
     }
     stratum_test_for_c <- match(stratum_test_for_c, unique(stratum_test_for_c))
 
-    fit_fold_path <- cox_indi(
+    fit_fold_path <- cox_indi(ties = ties, 
       z_int = z_train, delta_int = delta_train, time_int = time_train, stratum_int = stratum_train,
       z_ext = z_ext, delta_ext = delta_ext, time_ext = time_ext, stratum_ext = stratum_ext,
       etas = etas, max_iter = max_iter, tol = tol, message = FALSE
@@ -178,8 +193,8 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
         LP_train <- as.vector(z_train %*% beta_hat)
         LP_full_internal <- as.vector(z_int %*% beta_hat)
         result_mat[f, i] <-
-          pl_cal_theta(LP_full_internal, delta_int, n_each_stratum_full) -
-          pl_cal_theta(LP_train,         delta_train, n_each_stratum_train)
+          .pl_ties(LP_full_internal, delta_int, time_int, n_each_stratum_full, ties) -
+          .pl_ties(LP_train, delta_train, time_train, n_each_stratum_train, ties)
 
       } else if (cv.criteria == "LinPred") {
         cv_all_linpred[test_idx, i] <- LP_test
@@ -202,7 +217,7 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
     result_vec <- colSums(result_mat, na.rm = TRUE)
   } else if (cv.criteria == "LinPred") {
     result_vec <- apply(cv_all_linpred, 2, function(lp) {
-      pl_cal_theta(lp, delta_int, as.numeric(table(stratum_enc_full)))
+      .pl_ties(lp, delta_int, time_int, as.numeric(table(stratum_enc_full)), ties)
     })
   } else if (cv.criteria == "CIndex_foldaverage") {
     result_vec <- colMeans(result_mat, na.rm = TRUE)
@@ -232,6 +247,7 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
   best_res <- list(
     best_eta = etas[best_eta.idx],
     best_beta = beta_full[, best_eta.idx],
+    best_value = .best_value(results, best_eta.idx),
     criteria = cv.criteria
   )
 
@@ -241,7 +257,13 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
       beta_full = beta_full,
       best = best_res,
       criteria = cv.criteria,
-      nfolds = nfolds
+      nfolds = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. Assigned on the internally sorted data, not the caller's
+      ## row order. `get_fold` is not exported, so this is the only route to it.
+      folds = folds,
+      seed = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind = .rng_kind
     ),
     class = "cv.cox_indi"
   )

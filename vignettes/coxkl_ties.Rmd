@@ -433,7 +433,7 @@ yields more accurate inference in the presence of extensive ties, at the cost of
 increased computational burden due to the enumeration of all subsets
 $\mathcal{R}_k^{(s)}(d_k^{(s)})$. In practice, the two methods produce nearly
 identical results when ties are infrequent. Users can select between the two via
-the `ties` argument in `coxkl_ties()` and `cv.coxkl_ties()`.
+the `ties` argument in `coxkl_ties()` and `cv.coxkl_ties()`. Since version 1.3.0, the Breslow correction is also available in every other Cox-family estimator of the package through `ties = "breslow"` (see the main vignette).
 
 
 ## References

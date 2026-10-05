@@ -20,7 +20,9 @@ coxkl_ridge(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL
+  standardize = TRUE,
+  beta_initial = NULL,
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -68,7 +70,15 @@ Default is \code{0.999}.}
 
 \item{data_sorted}{Logical. Internal optimization. If \code{TRUE}, assumes input data is already sorted by strata and time.}
 
+\item{standardize}{Logical. If \code{TRUE} (the default since 1.2.0), \code{z} is scaled to
+unit standard deviation before the ridge penalty is applied and the coefficients are
+returned on the original scale. The ridge penalty \eqn{\lambda\|\beta\|^2} is not scale
+free, so with \code{standardize = FALSE} a covariate measured on a large scale is
+penalised almost not at all. Set \code{FALSE} to reproduce version 1.1.0 and earlier.}
+
 \item{beta_initial}{Optional numeric vector. Initial values for the coefficients. Default is 0.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
 }
 \value{
 An object of class \code{"coxkl_ridge"} containing:

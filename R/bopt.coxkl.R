@@ -35,6 +35,7 @@
 #' @param verbose Logical; if \code{TRUE}, progress of the optimization is printed.
 #' @param ... Additional arguments passed to \code{\link{cv.coxkl}} and \code{\link{coxkl}}.
 #'
+#'   Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @details
 #' Each objective evaluation is a call to \code{\link{cv.coxkl}} at a single candidate
 #' \code{eta}, and this function consumes that call's S3 return directly: the scalar

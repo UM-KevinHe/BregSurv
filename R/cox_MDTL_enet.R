@@ -33,7 +33,13 @@
 #' @param max.total.iter Maximum total iterations across all lambda values. Default is \code{Mstop * nlambda}.
 #' @param group Vector describing the grouping of the coefficients. Default is \code{1:ncol(z)} (no grouping).
 #' @param group.multiplier Vector of multipliers for each group size. Default is \code{NULL}.
-#' @param standardize Logical. Should the predictors be standardized before fitting? Default is TRUE.
+#' @param standardize Logical. Should the predictors be standardized before fitting?
+#'   Default is TRUE. A \code{Q} you supply carries its own units and the Mahalanobis part
+#'   of the penalty is left exactly unchanged; with \code{Q = NULL} the implicit identity
+#'   metric is taken on the standardized scale, one standard deviation per covariate, so
+#'   that the member does not depend on the units the covariates happen to be recorded in
+#'   and agrees with \code{\link{cox_MDTL_ridge}}. Changed in 1.2.0; before that both
+#'   cases used a metric of \eqn{\mathrm{diag}(\mathrm{sd}^4)} on the original coefficients.
 #' @param nvar.max Maximum number of variables allowed in the model. Default is \code{ncol(z)}.
 #' @param group.max Maximum number of groups allowed in the model. Default is \code{length(unique(group))}.
 #' @param stop.loss.ratio Ratio of loss change to stop the path early. Default is 1e-2.
@@ -46,6 +52,7 @@
 #' @param message Logical. If TRUE, prints warnings and progress messages.
 #' @param data_sorted Logical. Internal flag indicating if data is already sorted by time/stratum. Default is \code{FALSE}.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return An object of class \code{"cox_MDTL_enet"} containing:
 #' \itemize{
 #'   \item \code{beta}: Matrix of estimated coefficients (p x nlambda).
@@ -92,7 +99,9 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
                           group = 1:ncol(z), group.multiplier = NULL, standardize = T, 
                           nvar.max = ncol(z), group.max = length(unique(group)), stop.loss.ratio = 1e-2, 
                           actSet = TRUE, actIter = Mstop, actGroupNum = sum(unique(group) != 0), actSetRemove = F,
-                          returnX = FALSE, trace.lambda = FALSE, message = FALSE, data_sorted = FALSE){
+                          returnX = FALSE, trace.lambda = FALSE, message = FALSE, data_sorted = FALSE,
+                          ties = c("none", "breslow")){
+  ties <- .check_ties(match.arg(ties))
   
   if (is.null(alpha)){
     warning("alpha is not provided. Setting alpha = 1 (lasso penalty).", call. = FALSE)
@@ -114,9 +123,17 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   aligned <- align_beta_Q(z, beta, Q)
   beta <- aligned$beta
   Q <- aligned$Q
+  ## Did the analyst supply the metric, or did align_beta_Q manufacture it?  A supplied
+  ## metric carries its own units (an external information matrix does) and the Mahalanobis
+  ## penalty is left exactly as specified; a manufactured one is an arbitrary identity, and
+  ## under standardize = TRUE it is taken on the standardized scale -- one standard deviation
+  ## per covariate -- the same choice the ridge / lasso penalty makes, so the member does not
+  ## depend on the units the covariates happen to be recorded in.  The MARK is read here and
+  ## not from `is.null(Q)` on entry, because every cv.* wrapper aligns before calling the fit.
+  Q_supplied <- !isTRUE(attr(Q, "manufactured"))
 
   z <- as.matrix(z)
-  delta <- as.numeric(delta)
+  delta <- .check_event(delta, "delta")
   time <- as.numeric(time)
   
   input_data <- list(z = z, time = time, delta = delta, stratum = stratum)
@@ -132,12 +149,13 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     time <- as.numeric(time[time_order])
     stratum <- as.numeric(stratum[time_order])
     z <- as.matrix(z)[time_order, , drop = FALSE]
-    delta <- as.numeric(delta[time_order])
+    delta <- .check_event(delta[time_order], "delta")
   } else {
     stratum <- as.numeric(stratum)
   }
   
   n.each_stratum <- as.numeric(table(stratum))
+  tm <- .tie_maps(as.numeric(time), n.each_stratum, ties)
   
   initial.group <- group
   if (standardize == T){
@@ -152,9 +170,27 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   Q    <- Q[ord, ord, drop = FALSE]
   beta <- beta[ord]
   
+  ## ---- the metric under standardization --------------------------
+  ## beta_std = D beta with D = diag(scale) keeps the linear predictor.  What the
+  ## Mahalanobis metric should become depends on where it came from:
+  ##   * a Q the caller SUPPLIED carries its own units (an external information matrix
+  ##     does), so Q_std = D^{-1} Q D^{-1} leaves
+  ##     (beta_std - beta_ext_std)' Q_std (beta_std - beta_ext_std)
+  ##       = (beta - beta_ext)' Q (beta - beta_ext)  exactly as specified;
+  ##   * with Q = NULL align_beta_Q built a MASKED IDENTITY, and "one unit of whatever
+  ##     the column happens to be measured in" is arbitrary and scale dependent.  The
+  ##     matrix of ones and zeros is the same on either scale, so leaving it alone puts
+  ##     the identity on the STANDARDIZED scale: one standard deviation per covariate,
+  ##     free of the covariates' units.  This is the same convention as
+  ##     cox_MDTL_ridge, so the two members of the family agree on what "no covariance
+  ##     was released" means.
+  ## Before 1.2.0 both cases used Q_std = D Q D, which for Q = NULL makes the metric
+  ## acting on the original coefficients diag(scale^4).  Measured on the transplant
+  ## cohort over 200 splits: 0.6385 then, 0.6423 now, and diag(1) would be 0.6201.
   if (isTRUE(standardize)) {
-    D <- diag(std.Z$scale[ord], ncol(Z))
-    Q_std    <- as.matrix(D %*% Q %*% D)
+    D        <- diag(std.Z$scale[ord], ncol(Z))
+    Dinv     <- diag(1 / std.Z$scale[ord], ncol(Z))
+    Q_std    <- if (Q_supplied) as.matrix(Dinv %*% Q %*% Dinv) else Q
     beta_std <- as.vector(D %*% beta)
   } else {
     Q_std    <- Q
@@ -188,7 +224,7 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     lambda.fit <- setupLambda_MDTL(Z, time, delta, beta.init, stratum,
                                    beta_ext_prime, Q_prime, Qbeta_ext_prime,
                                    group, group.multiplier, n.each_stratum,
-                                   alpha, eta, nlambda, lambda.min.ratio)
+                                   alpha, eta, nlambda, lambda.min.ratio, tm = tm)
     
     lambda.seq <- lambda.fit$lambda.seq
     beta <- lambda.fit$beta
@@ -214,7 +250,8 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   fit <- cox_MDTL_enet_cpp(delta, Z, n.each_stratum, beta, K0, K1, lambda.seq, lambda.early.stop,
                            stop.loss.ratio, group.multiplier, max.total.iter,Mstop, tol, 
                            initial.active.group, nvar.max, group.max,trace.lambda, actSet, 
-                           actIter, actGroupNum, actSetRemove, alpha, eta, Q_prime, Qbeta_ext_prime)
+                           actIter, actGroupNum, actSetRemove, alpha, eta, Q_prime, Qbeta_ext_prime,
+                           tie_first = tm$first, tie_last = tm$last)
   
   
   # fit <- cox_MDTL_enet_cpp(delta, Z, n.each_stratum, beta, K0, K1, lambda.seq, lambda.early.stop,
@@ -249,7 +286,7 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   # Original scale
   beta <- unorthogonalize(beta, std.Z$std.Z, group)
   rownames(beta) <- colnames(Z)
-  if (std.Z$reorder == TRUE){  # original order of beta
+  if (std.Z$reorder == TRUE){ # original order of beta
     beta <- beta[std.Z$ord.inv, , drop = F]
   }
   if (standardize == T) {
@@ -283,6 +320,7 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     iter = iter,
     W = exp(LinPred_original),
     group.multiplier = group.multiplier,
+    ties = ties,
     data = input_data
   ), class = "cox_MDTL_enet")
   

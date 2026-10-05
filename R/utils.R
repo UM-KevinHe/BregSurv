@@ -89,7 +89,77 @@ check_etas <- function(etas, scalar = FALSE, arg = "etas") {
 }
 
 
-# Internal worker shared by align_beta() and align_beta_Q().
+# The value of the selected criterion at the chosen tuning parameters.
+#
+# `best` used to say WHICH eta and lambda won without saying by how much, so a
+# caller comparing several candidates had to reach past it into the statistics
+# table -- and the two families lay that table out differently (`internal_stat`
+# for the unpenalized fits, `integrated_stat.best_per_eta` for ridge and elastic
+# net), with a metric column whose NAME depends on `cv.criteria`. This picks the
+# metric column out of whichever table it is handed, so `best` becomes uniform.
+#
+# Named `best_value`, not `best_loss`: for `CIndex_*` and `AUC` the quantity is
+# maximized, and calling a concordance index a loss would put a wrong word into
+# anything that reads this field. `best$criteria` says which quantity it is.
+.best_value <- function(stat, idx) {
+  if (is.null(stat) || !NROW(stat) || length(idx) != 1L || is.na(idx)) {
+    return(NA_real_)
+  }
+  cols <- setdiff(names(stat), c("eta", "lambda", "alpha"))
+  if (!length(cols)) return(NA_real_)
+  as.numeric(stat[[cols[1L]]][idx])
+}
+
+
+# Coerce an event / case indicator to numeric, refusing the inputs that would
+# otherwise be coerced into a plausible but wrong answer. A drop-in replacement
+# for `as.numeric` at every point where an outcome indicator enters a fit.
+#
+# Measured against this package on 2026-08-18, `as.numeric(delta)` alone let
+# three distinct wrong inputs through WITHOUT error or warning:
+#   * a three-level status column {0 = censored, 1 = death, 2 = competing event}
+#     entered the partial likelihood with the competing event weighted 2, giving
+#     coefficients matching neither the composite nor the cause-specific fit;
+#   * a 0/1 column stored as a FACTOR became {1, 2}, because as.numeric on a
+#     factor returns its category codes, so every subject counted as an event;
+#   * a character column coerced silently, which is harmless for "0"/"1" but not
+#     for anything else.
+#
+# Degeneracy (every subject an event, or none) is deliberately NOT refused here.
+# It is refused by the agent's admissibility gate, where the user can be told
+# why. A library must still permit a degenerate stratum inside a larger loop.
+.check_event <- function(delta, arg = "delta") {
+  if (is.null(delta)) {
+    stop(sprintf("'%s' is required.", arg), call. = FALSE)
+  }
+  if (is.factor(delta)) {
+    stop(sprintf(paste0(
+      "'%s' is a factor. Converting a factor to a number returns its category ",
+      "codes, not its values, so a 0/1 indicator would silently become 1/2 and ",
+      "every subject would count as an event. Convert it explicitly first, with ",
+      "as.numeric(as.character(%s))."), arg, arg), call. = FALSE)
+  }
+  d <- suppressWarnings(as.numeric(delta))
+  if (anyNA(d)) {
+    stop(sprintf(paste0(
+      "'%s' contains %d missing or non-numeric value(s). Whether an event ",
+      "occurred cannot be left unknown: the fit runs and returns a coefficient ",
+      "vector that is entirely NA."), arg, sum(is.na(d))), call. = FALSE)
+  }
+  u <- sort(unique(d))
+  if (!all(u %in% c(0, 1))) {
+    stop(sprintf(paste0(
+      "'%s' must be a 0/1 indicator; the values observed are %s. More than two ",
+      "levels usually means competing events, which this library does not fit. ",
+      "Supply either a cause-specific indicator (the event of interest = 1, ",
+      "every other outcome censored) or a composite one (any event = 1)."),
+      arg, paste(u, collapse = ", ")), call. = FALSE)
+  }
+  d
+}
+
+
+# Internal worker shared by align_beta and align_beta_Q.
 # Returns list(beta = <length-ncol(z), ordered to colnames(z)>, provided = <logical>).
 .align_beta <- function(z, beta, arg = "beta") {
   p <- ncol(z)
@@ -156,13 +226,13 @@ check_etas <- function(etas, scalar = FALSE, arg = "etas") {
 #' Name-based alignment signals an error if \code{beta} has duplicated names, or if
 #' any name in \code{beta} is not one of \code{colnames(z)} (covariates that exist
 #' only in the external source must be dropped by the caller). Whenever at least one
-#' covariate is zero-padded, a \code{message()} listing the padded covariates is
+#' covariate is zero-padded, a \code{message} listing the padded covariates is
 #' emitted.
 #'
 #' @param z Internal covariate matrix or data frame. Its columns define the
 #'   target coefficient space; column names, when present, are used for matching.
 #' @param beta External coefficient vector (optionally named). A one-column matrix is
-#'   also accepted -- the shape in which a \code{coef()} result or a stored
+#'   also accepted -- the shape in which a \code{coef} result or a stored
 #'   external-model artifact typically arrives -- and its row names are promoted to
 #'   the names of the resulting vector.
 #' @param arg Name used for \code{beta} in error messages.
@@ -210,7 +280,7 @@ align_beta <- function(z, beta, arg = "beta") {
 #' \code{beta} and 0 on padded positions. This ensures that padded-zero
 #' coefficients are not penalized as if they were genuine external information.
 #'
-#' Symmetry of \code{Q} is checked with \code{isSymmetric()} at tolerance
+#' Symmetry of \code{Q} is checked with \code{isSymmetric} at tolerance
 #' \code{1e-8}, and positive semi-definiteness by requiring the smallest eigenvalue
 #' to be at least \code{-1e-8}; violations of either are errors. Name-based
 #' alignment of \code{Q} engages only when \code{rownames(Q)} is non-\code{NULL}
@@ -257,9 +327,22 @@ align_beta_Q <- function(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q") {
   znames <- colnames(z)
 
   if (is.null(Q)) {
+    ## No metric was released, so one is manufactured: the identity on the covered
+    ## coordinates, zero on the rest.  MARK IT.  Every cv.* wrapper aligns before it
+    ## calls the fit, so without this mark the fit cannot tell a metric the analyst
+    ## supplied (which carries its own units) from one built here (which does not),
+    ## and cannot choose the scale the identity should live on under standardize = TRUE.
     Q_full <- diag(as.numeric(al$provided), nrow = p)
+    attr(Q_full, "manufactured") <- TRUE
   } else {
+    ## A Q that THIS function manufactured on an earlier call keeps its mark, so a
+    ## caller that aligns and then hands the result to a fit (every cv.* wrapper) does
+    ## not turn a manufactured metric into one the analyst appears to have supplied.
+    was_manufactured <- isTRUE(attr(Q, "manufactured"))
     Q <- as.matrix(Q)
+    ## t does not carry an arbitrary attribute, so isSymmetric below would compare
+    ## Q against a t(Q) that lacks the mark and declare an ordinary matrix asymmetric.
+    attr(Q, "manufactured") <- NULL
     if (!isSymmetric(unname(Q), tol = 1e-8)) {
       stop(sprintf("'%s' must be symmetric.", arg_Q), call. = FALSE)
     }
@@ -296,6 +379,9 @@ align_beta_Q <- function(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q") {
   }
   if (!is.null(znames)) {
     dimnames(Q_full) <- list(znames, znames)
+  }
+  if (is.null(Q) || isTRUE(get0("was_manufactured", ifnotfound = FALSE))) {
+    attr(Q_full, "manufactured") <- TRUE
   }
   list(beta = al$beta, Q = Q_full, provided = al$provided)
 }
@@ -569,12 +655,22 @@ vcov_Estimate <- function(z, delta, time, stratum, beta_hat, lambda = 0) {
 #' @noRd
 setupLambdaCoxKL <- function(Z, time, delta, delta_tilde, RS, beta.init, stratum,
                              group, group.multiplier, n.each_stratum, alpha,
-                             eta, nlambda, lambda.min.ratio) {
+                             eta, nlambda, lambda.min.ratio, tm = NULL) {
   n <- nrow(Z)
   K <- table(group)
   K1 <- as.integer(if (min(group)==0) cumsum(K) else c(0, cumsum(K)))
   storage.mode(K1) <- "integer"
-  if (K1[1]!=0) { ## some covariates are not penalized
+  if (!is.null(tm)) {  ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+    LinPred <- rep(0, n)
+    if (K1[1] != 0) {
+      nullFit <- coxkl(Z[, group == 0, drop = FALSE], delta, time, stratum, RS, beta = NULL, eta,
+                       ties = "breslow")
+      LinPred <- as.numeric(nullFit$linear.predictors[, 1])
+      beta.init <- c(nullFit$beta[, 1], rep(0, length(beta.init) - nrow(nullFit$beta)))
+    }
+    r <- (delta + eta * delta_tilde) / (1 + eta) -
+      exp(LinPred) * .breslow_cumhaz(LinPred, delta, stratum, tm)
+  } else if (K1[1]!=0) { ## some covariates are not penalized
     nullFit <- coxkl(Z[, group == 0, drop = FALSE], delta, time, stratum, RS, beta = NULL, eta)
     LinPred <- nullFit$linear.predictors[[1]]
     beta.init <- c(nullFit$beta[[1]], rep(0, length(beta.init) - length(nullFit$beta[[1]])))
@@ -647,12 +743,12 @@ subsetG <- function(g, nz) { # nz: index of non-constant features
   lev <- attr(g, 'levels')
   m <- attr(g, 'm')
   new <- g[nz] # only include non-constant columns
-  dropped <- setdiff(g, new)  # If the entire group has been dropped
+  dropped <- setdiff(g, new) # If the entire group has been dropped
   if (length(dropped) > 0) {
     lev <- lev[-dropped] # remaining group
     m <- m[-dropped]
     group.factor <- factor(new) #remaining group factor
-    new <- as.integer(group.factor) - 1 * any(levels(group.factor) == '0')  #new group index
+    new <- as.integer(group.factor) - 1 * any(levels(group.factor) == '0') #new group index
   }
   structure(new, levels = lev, m = m)
 }
@@ -700,7 +796,7 @@ standardize.Z <- function(Z){
 ## converting standardized betas back to original variables
 unstandardize <- function(beta, gamma, std.Z){
   original.beta <- matrix(0, nrow = length(std.Z$scale), ncol = ncol(beta))
-  original.beta[std.Z$nz, ] <- beta / std.Z$scale[std.Z$nz]  # modified beta
+  original.beta[std.Z$nz, ] <- beta / std.Z$scale[std.Z$nz] # modified beta
   original.gamma <- t(apply(gamma, 1, function(x) x - crossprod(std.Z$center, original.beta))) # modified intercepts (gamma)
   return(list(gamma = original.gamma, beta = original.beta))
 }
@@ -723,12 +819,12 @@ orthogonalize <- function(Z, group) {
     if (length(ind) == 0) { # skip 0-length group
       next
     }
-    SVD <- svd(Z[, ind, drop = FALSE], nu = 0)  # Q matrix (orthonormal matrix of eigenvectors)
-    r <- which(SVD$d > 1e-10)  #remove extremely small singular values
+    SVD <- svd(Z[, ind, drop = FALSE], nu = 0) # Q matrix (orthonormal matrix of eigenvectors)
+    r <- which(SVD$d > 1e-10) #remove extremely small singular values
     QL[[j]] <- sweep(SVD$v[, r, drop = FALSE], 2, sqrt(n)/SVD$d[r], "*") # Q * Lambda^{-1/2}
-    orthog.Z[, ind[r]] <- Z[, ind] %*% QL[[j]]  # group orthogonalized X, where (X^T * X)/n = I
+    orthog.Z[, ind[r]] <- Z[, ind] %*% QL[[j]] # group orthogonalized X, where (X^T * X)/n = I
   }
-  nz <- !apply(orthog.Z == 0, 2, all)  #find all zero
+  nz <- !apply(orthog.Z == 0, 2, all) #find all zero
   orthog.Z <- orthog.Z[, nz, drop = FALSE]
   attr(orthog.Z, "QL") <- QL
   attr(orthog.Z, "group") <- group[nz]
@@ -742,7 +838,7 @@ unorthogonalize <- function(beta, Z, group) {
   if (sum(group == 0) > 0){ #some groups are unpenalized
     ind0 <- which(group==0)
     original.beta <- as.matrix(rbind(beta[ind0, , drop = FALSE], QL %*% beta[-ind0, , drop = FALSE]))
-  } else {  # all groups are penalized
+  } else { # all groups are penalized
     original.beta <- as.matrix(QL %*% beta)
   }
   return(original.beta)
@@ -774,7 +870,7 @@ newZG.Std <- function(Z, g, m){
     )
   }
 
-  nz <- which(scale > 1e-6)   # non-constant columns
+  nz <- which(scale > 1e-6)  # non-constant columns
   if (length(nz) != ncol(Z)) {
     std.Z <- std.Z[, nz, drop = F]
     G <- subsetG(G, nz)
@@ -870,17 +966,29 @@ loss.coxkl_highdim <- function(delta, y.hat, stratum, total = TRUE){
 #' @noRd
 setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, Q, Qbeta_ext,
                              group, group.multiplier, n.each_stratum, alpha,
-                             eta, nlambda, lambda.min.ratio) {
+                             eta, nlambda, lambda.min.ratio, tm = NULL) {
   n <- nrow(Z)
   K <- table(group)
   K1 <- as.integer(if (min(group)==0) cumsum(K) else c(0, cumsum(K)))
   storage.mode(K1) <- "integer"
 
 
-  if (K1[1]!=0) {
+  if (!is.null(tm)) {  ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+    LinPred <- rep(0, n)
+    Qbeta_Ustar <- rep(0, ncol(Z))
+    if (K1[1] != 0) {
+      nullFit <- cox_MDTL(Z[, group == 0, drop = FALSE], delta, time, stratum,
+                          beta = beta_ext, Q = Q, etas = eta, ties = "breslow")
+      beta_U_star <- as.numeric(nullFit$beta)
+      Qbeta_Ustar <- as.vector(Q[, group == 0, drop = FALSE] %*% beta_U_star)
+      LinPred <- as.numeric(nullFit$linear.predictors)
+      beta.init <- c(beta_U_star, rep(0, length(beta.init) - length(beta_U_star)))
+    }
+    r <- delta - exp(LinPred) * .breslow_cumhaz(LinPred, delta, stratum, tm)
+  } else if (K1[1]!=0) {
     nullFit <- cox_MDTL(Z[, group == 0, drop = FALSE], delta, time, stratum,
                         beta = beta_ext, Q = Q, etas = eta)
-    beta_U_star <- as.numeric(nullFit$beta)  #low-dim unpenalized beta estimate
+    beta_U_star <- as.numeric(nullFit$beta) #low-dim unpenalized beta estimate
     Qbeta_Ustar <- as.vector(Q[, group == 0, drop = FALSE] %*% beta_U_star) #for calculate lambda_max
 
     LinPred <- as.numeric(nullFit$linear.predictors)
@@ -936,16 +1044,29 @@ get_T_from_stdZ <- function(std.Z) {
 set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
                                 group, group.multiplier, n.each_prov,
                                 alpha = 1, nlambda = 100,
-                                lambda.min.ratio = 1e-03) {
+                                lambda.min.ratio = 1e-03, tm = NULL) {
 
   K  <- table(group)
   K1 <- if (min(group) == 0) cumsum(K) else c(0, cumsum(K))
   storage.mode(K1) <- "integer"
 
-  # n_eff <- sum(weight)
-  n_eff <- nrow(Z)
+  # the same denominator as the solver (src/cox_indi_enet.cpp): the row count, or the total
+  # weight when the external rows are weighted above 1
+  n_eff <- max(sum(weight), nrow(Z))
 
-  if (K1[1] != 0) {
+  if (!is.null(tm)) {  # Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+    if (K1[1] != 0) {
+      nullFit <- survival::coxph(
+        survival::Surv(time, delta.obs) ~ Z[, group == 0, drop = FALSE] + survival::strata(ID),
+        weights = weight, ties = "breslow")
+      eta_lp <- as.numeric(nullFit$linear.predictors)
+      beta.initial <- c(nullFit$coefficients, rep(0.0, length(beta) - length(nullFit$coefficients)))
+    } else {
+      eta_lp <- rep(0, length(delta.obs))
+      beta.initial <- beta
+    }
+    r <- weight * delta.obs - exp(eta_lp) * .breslow_cumhaz(eta_lp, weight * delta.obs, ID, tm)
+  } else if (K1[1] != 0) {
     # Unpenalized covariates exist: fit null model on those first
     nullFit  <- survival::coxph(
       survival::Surv(time, delta.obs) ~ Z[, group == 0, drop = FALSE] +
@@ -1001,3 +1122,71 @@ set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
 
 
 
+
+
+## ---------------------------------------------------------------------------------------------------
+## Breslow tie correction (1.3.0)
+##
+## Every estimator of the family fits the Cox partial likelihood on data sorted by stratum and then by
+## time. Without a tie correction ("none", the behaviour of every release before 1.3.0) the risk set of an
+## event is everyone from its own row onward, so among subjects who share an event time the earlier rows
+## are dropped from the later rows' risk sets, and the result depends on how the tied rows happen to be
+## ordered. Under Breslow's approximation the risk set at time t is everyone whose time is t or later. The
+## engines read two maps for this: for each sorted row, the 0-based index of the first and of the last row
+## of its stratum with the same time. NULL maps (ties = "none") leave every engine on its pre-1.3.0 path.
+.check_ties <- function(ties) {
+  if (length(ties) != 1L || !ties %in% c("none", "breslow")) {
+    stop("'ties' must be \"none\" or \"breslow\".", call. = FALSE)
+  }
+  ties
+}
+
+.tie_maps <- function(time, n_each, ties = "none") {
+  if (identical(ties, "none")) return(NULL)
+  n <- length(time)
+  if (sum(n_each) != n) stop("tie maps: the stratum sizes do not add up to the number of rows.")
+  first <- integer(n); last <- integer(n)
+  ends <- cumsum(n_each); starts <- ends - n_each + 1
+  for (s in seq_along(n_each)) {
+    if (n_each[s] == 0) next
+    idx <- starts[s]:ends[s]
+    tt <- time[idx]
+    if (is.unsorted(tt)) stop("tie maps: time must be sorted within each stratum.")
+    g <- c(1L, 1L + cumsum(diff(tt) != 0))
+    first[idx] <- idx[match(g, g)]
+    last[idx] <- idx[length(g) + 1L - match(g, rev(g))]
+  }
+  list(first = first - 1L, last = last - 1L)
+}
+
+## the log partial likelihood the family scores with: Breslow's when ties = "breslow", else the
+## pre-1.3.0 one. Data sorted by stratum then time, as for the maps.
+.pl_ties <- function(lp, delta, time, n_each, ties = "none") {
+  if (identical(ties, "breslow")) {
+    ends <- cumsum(n_each); starts <- ends - n_each + 1
+    for (s in seq_along(n_each)) if (n_each[s] > 1 && is.unsorted(time[starts[s]:ends[s]]))
+      stop("the Breslow likelihood needs time sorted within each stratum.", call. = FALSE)
+    pl_cal_breslow(as.numeric(lp), as.numeric(delta), as.numeric(time), n_each)
+  } else pl_cal_theta(lp, delta, n_each)
+}
+
+
+## Breslow (1.3.0): each row's cumulative hazard at its own time, sum over the event times up to and
+## including it of (event weight) / (risk-set sum), with the risk set of a tie group starting at its first
+## row and every row of a tie group carrying the hazard up to its last row. `dw` is the event weight per
+## row (delta, or weight * delta); data sorted by stratum then time, `tm` from .tie_maps.
+.breslow_cumhaz <- function(lp, dw, stratum, tm) {
+  ex <- exp(as.numeric(lp)); n <- length(ex)
+  rsk <- numeric(n); H <- numeric(n)
+  for (s in unique(stratum)) { idx <- which(stratum == s); rsk[idx] <- rev(cumsum(rev(ex[idx]))) }
+  rsk <- rsk[tm$first + 1L]
+  d <- dw / rsk; d[!is.finite(d)] <- 0
+  for (s in unique(stratum)) { idx <- which(stratum == s); H[idx] <- cumsum(d[idx]) }
+  H[tm$last + 1L]
+}
+
+## the tie handling a fitted object records (objects from releases before 1.3.0 carry none: "none")
+.fit_ties <- function(object) {
+  t <- object$ties
+  if (is.null(t)) "none" else .check_ties(t)
+}

@@ -28,6 +28,7 @@
 #' @param tol Convergence tolerance (default 1e-7).
 #' @param message Logical; if \code{TRUE}, show a progress bar. Default \code{FALSE}.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return
 #' An object of class \code{"cox_indi"} containing:
 #' \describe{
@@ -77,12 +78,13 @@
 cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
                      z_ext, delta_ext, time_ext, stratum_ext = NULL,
                      etas, max_iter = 100, tol = 1.0e-7,
-                     message = FALSE) {
+                     message = FALSE, ties = c("none", "breslow")) {
+  ties <- .check_ties(match.arg(ties))
 
   z_int <- as.matrix(z_int)
   z_ext <- as.matrix(z_ext)
-  delta_int <- as.numeric(delta_int)
-  delta_ext <- as.numeric(delta_ext)
+  delta_int <- .check_event(delta_int, "delta_int")
+  delta_ext <- .check_event(delta_ext, "delta_ext")
   time_int <- as.numeric(time_int)
   time_ext <- as.numeric(time_ext)
 
@@ -122,6 +124,8 @@ cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
   stratum_all <- c(stratum_int_s, stratum_ext_s)
 
   n_each_stratum <- as.numeric(table(stratum_all))
+  ## the external cohort sits in strata of its own, so a tie group never mixes the two cohorts
+  tm <- .tie_maps(c(time_int_s, time_ext_s), n_each_stratum, ties)
 
   n_eta <- length(etas)
   beta_mat <- matrix(NA_real_, nrow = p, ncol = n_eta)
@@ -151,7 +155,8 @@ cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
       n_each_stratum = n_each_stratum,
       beta = beta_init,
       tol = tol,
-      max_iter = max_iter
+      max_iter = max_iter,
+      tie_first = tm$first
     )
 
     beta_hat <- as.numeric(fit$beta)
@@ -183,6 +188,7 @@ cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
       beta = beta_mat,
       linear.predictors_int = lp_int_original,
       linear.predictors_ext = lp_ext_original,
+      ties = ties,
       data = input_data
     ),
     class = "cox_indi"

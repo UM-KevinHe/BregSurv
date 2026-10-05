@@ -1,179 +1,78 @@
-# HuggingFace Space Dockerfile — runs the BregSurv agent with a locally
-# served Qwen 2.5-7B-AWQ (no OpenAI / Together API call). Model weights
-# are baked into the image at build time (NOT downloaded at runtime) so
-# every wake-up after sleep starts in ~90 s rather than re-pulling 5 GB.
+# BregSurv agent (V4) -- one image for the Hugging Face Space and for local use.
+# Everything runs inside: Qwen3-8B-AWQ served by vLLM, the harness, R and BregSurv.
+# No external API is called. The model weights are baked in at build time.
 #
-# Pair with `Dockerfile.selfhost`: same FROM, same R / BregSurv install,
-# same `mcp/entrypoint.sh`. The only deltas are (a) weights baked vs
-# volume-mounted, (b) HF Space binds port 7860 and runs as the default
-# `root` user (HF Docker-SDK Spaces allow this), (c) Gradio password
-# auth gated by env vars set as HF Space Secrets.
-#
-# Keep the R-deps list and the BregSurv install block in sync with
-# `Dockerfile.selfhost` — they share the same canonical source
-# (DESCRIPTION's Imports list).
+#   docker build -t bregsurv-agent .
+#   docker run --gpus all -p 7860:7860 bregsurv-agent      # then open http://localhost:7860
+FROM vllm/vllm-openai:v0.27.1-cu129
 
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 AS base
+ENV DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    TZ=Etc/UTC \
-    PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PIP_NO_CACHE_DIR=1
-
-# --------------------------------------------------------------------
-# System packages — see Dockerfile.selfhost for the *-dev rationale.
-# Identical block; the lesson about runtime vs -dev variants applies
-# the same way here.
-# --------------------------------------------------------------------
+# R 4.5 from CRAN's Ubuntu repository, plus what the R packages compile against
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      software-properties-common ca-certificates curl gnupg \
-    && add-apt-repository -y ppa:deadsnakes/ppa \
+      ca-certificates curl gnupg software-properties-common \
     && curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
-       | gpg --dearmor -o /usr/share/keyrings/cran-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" \
+       | gpg --dearmor -o /usr/share/keyrings/cran.gpg \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu ${UBUNTU_CODENAME}-cran40/" \
        > /etc/apt/sources.list.d/cran.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-      python3.11 python3.11-venv python3.11-dev python3-pip \
-      r-base r-base-dev \
-      build-essential gfortran pkgconf \
-      libxml2-dev libssl-dev libcurl4-openssl-dev \
-      libpango1.0-dev libcairo2-dev \
-      libharfbuzz-dev libfribidi-dev \
-      libfreetype6-dev libfontconfig1-dev \
-      libpng-dev libjpeg-dev libtiff-dev \
-      libmagick++-dev \
-      libuv1-dev libsodium-dev libgit2-dev libsecret-1-dev \
-      libffi-dev \
-      fonts-dejavu-core fonts-liberation \
-      shared-mime-info locales \
-    && sed -i '/^# en_US.UTF-8/s/^# //' /etc/locale.gen \
-    && locale-gen \
+      r-base r-base-dev build-essential gfortran \
+      libxml2-dev libssl-dev libcurl4-openssl-dev libfontconfig1-dev \
+      libfreetype6-dev libpng-dev libjpeg-dev libtiff-dev libharfbuzz-dev libfribidi-dev \
+      libpango-1.0-0 libpangoft2-1.0-0 fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.11 1 \
-    && curl -sS https://bootstrap.pypa.io/get-pip.py | python
+# R dependencies: Posit binaries for this Ubuntu release, CRAN source as fallback
+RUN . /etc/os-release && R -q -e " \
+    options(repos = c(PPM = 'https://packagemanager.posit.co/cran/__linux__/${UBUNTU_CODENAME}/latest', \
+                      CRAN = 'https://cloud.r-project.org'), \
+            HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version[['platform']], R.version[['arch']], R.version[['os']])), \
+            Ncpus = 4); \
+    pk <- c('Rcpp','RcppArmadillo','RcppEigen','ggplot2','cowplot','Matrix','rlang','riskRegression', \
+            'dplyr','reshape2','survival','MASS','mvtnorm','scales','rBayesianOptimization', \
+            'jsonlite','readxl','arrow','future','future.apply'); \
+    install.packages(pk); \
+    miss <- pk[!vapply(pk, requireNamespace, logical(1), quietly = TRUE)]; \
+    if (length(miss)) stop('R packages failed: ', paste(miss, collapse = ', '))"
 
-# --------------------------------------------------------------------
-# R packages — mirror Dockerfile.selfhost (canonical source: DESCRIPTION
-# Imports).
-#
-# Repo strategy: Posit Package Manager (PPM) Jammy binaries first,
-# CRAN source as fallback. PPM serves Ubuntu-22.04-precompiled binaries
-# for every package on CRAN, in step with CRAN's current version. This
-# (a) avoids the 15+ min compile-from-source chain, (b) dodges system-
-# lib mismatches between Ubuntu 22.04 and the Debian-based Stage 4c
-# environment that surfaced as `riskRegression` failing with
-# `dependencies 'rms', 'Hmisc' are not available` (rms/Hmisc compiled
-# fine on Debian bookworm + R 4.2.x but failed silently on the Ubuntu
-# 22.04 + R 4.1.2 stack we're on now).
-#
-# Past Stage 4c lesson preserved: every named package gets verified
-# post-install or the build fails fast.
-# --------------------------------------------------------------------
-RUN R -e " \
-    options(repos = c( \
-      PPM = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest', \
-      CRAN = 'https://cloud.r-project.org' \
-    ), HTTPUserAgent = sprintf('R/%s R (%s)', getRversion(), paste(getRversion(), R.version[['platform']], R.version[['arch']], R.version[['os']])), Ncpus = 4); \
-    install.packages(c( \
-      'Rcpp', 'RcppArmadillo', \
-      'ggplot2', 'cowplot', 'Matrix', 'rlang', \
-      'riskRegression', 'dplyr', 'reshape2', \
-      'survival', 'MASS', 'mvtnorm', 'scales', \
-      'rBayesianOptimization', \
-      'jsonlite', 'remotes' \
-    ), dependencies = c('Depends', 'Imports', 'LinkingTo')); \
-    missing <- c('Rcpp','RcppArmadillo','ggplot2','cowplot','Matrix','rlang','riskRegression','dplyr','reshape2','survival','MASS','mvtnorm','scales','rBayesianOptimization','jsonlite','remotes'); \
-    missing <- missing[!missing %in% rownames(installed.packages())]; \
-    if (length(missing)) stop('Failed to install: ', paste(missing, collapse=', ')); \
-    cat('R deps installed; library:', .libPaths()[1], '\n')"
+# The estimator library (this repository's R package) and the discrete-time package, from source
+COPY DESCRIPTION NAMESPACE LICENSE.md /opt/r_pkgs/BregSurv/
+COPY R/ /opt/r_pkgs/BregSurv/R/
+COPY src/ /opt/r_pkgs/BregSurv/src/
+COPY man/ /opt/r_pkgs/BregSurv/man/
+COPY data/ /opt/r_pkgs/BregSurv/data/
+COPY mcp/r_pkgs/DiscreteKL/ /opt/r_pkgs/DiscreteKL/
+RUN R CMD INSTALL /opt/r_pkgs/BregSurv && R CMD INSTALL /opt/r_pkgs/DiscreteKL \
+    && R -q -e "library(BregSurv); library(DiscreteKL); cat('BregSurv', as.character(packageVersion('BregSurv')), '\n')"
 
-# --------------------------------------------------------------------
-# Python deps — Gradio + vLLM + huggingface_hub CLI for the build-time
-# weight download.
-# --------------------------------------------------------------------
-WORKDIR /app
+# The harness and the UI
+# The app gets its own environment on top of the image's Python, so Gradio's web stack cannot
+# disturb vLLM's; torch (for the discrete-time network members) is shared from the image.
 COPY requirements.txt /app/requirements.txt
-RUN pip install -r /app/requirements.txt \
-    && pip install \
-       "vllm==0.6.6.post1" \
-       "transformers==4.46.3" \
-       "huggingface_hub[cli]>=0.20"
-
-# --------------------------------------------------------------------
-# Qwen 2.5-7B-Instruct-AWQ — baked at build time, NOT runtime.
-#
-# HF Space ephemeral storage clears /root/.cache between wake-ups, so a
-# runtime download would re-pull 5.2 GB every time the container wakes
-# from sleep — bad for cold-start latency AND HF egress quotas. Baking
-# the weights into a fixed dir (`/opt/qwen-awq`) makes them part of the
-# cached image layer; every wake-up uses the same baked copy.
-#
-# `Dockerfile.selfhost` does this differently (runtime download to a
-# named volume) because that deployment runs on the user's machine with
-# their own disk, no ephemeral-storage problem.
-# --------------------------------------------------------------------
-RUN hf download Qwen/Qwen2.5-7B-Instruct-AWQ --local-dir /opt/qwen-awq \
-    && du -sh /opt/qwen-awq \
-    && ls /opt/qwen-awq | head
-
-# --------------------------------------------------------------------
-# BregSurv R package — local source install, same as Dockerfile.selfhost.
-# --------------------------------------------------------------------
-COPY DESCRIPTION NAMESPACE /app/_bregsurv_pkg/
-COPY R/    /app/_bregsurv_pkg/R/
-COPY src/  /app/_bregsurv_pkg/src/
-COPY man/  /app/_bregsurv_pkg/man/
-COPY data/ /app/_bregsurv_pkg/data/
-
-RUN R CMD INSTALL --no-docs --no-multiarch /app/_bregsurv_pkg \
-    && R -e "library(BregSurv); cat('BregSurv installed:', as.character(packageVersion('BregSurv')), '\n')"
-
-# Application files — kept last so edits don't bust the slow layers.
-COPY mcp/r_scripts/ /app/mcp/r_scripts/
-COPY mcp/server.py /app/mcp/server.py
-COPY mcp/entrypoint.sh /app/mcp/entrypoint.sh
-COPY data/ /app/data/
+RUN python3 -m venv --system-site-packages /opt/appenv \
+    && /opt/appenv/bin/pip install -r /app/requirements.txt
+COPY app.py /app/
 COPY bregsurv_agent/ /app/bregsurv_agent/
-COPY app.py generate_transcripts.py /app/
-RUN chmod +x /app/mcp/entrypoint.sh
+COPY demo/ /app/demo/
+COPY mcp/r_scripts/ /app/mcp/r_scripts/
+COPY mcp/py_scripts/ /app/mcp/py_scripts/
 
-# --------------------------------------------------------------------
-# Runtime configuration
-#
-# vLLM is local: agent talks to 127.0.0.1:8000/v1. OPENAI_API_KEY is
-# the literal string "EMPTY" — vLLM ignores it, but the OpenAI Python
-# client rejects truly empty strings, so a placeholder is required.
-#
-# BREGSURV_AUTH_USER / BREGSURV_AUTH_PASS are NOT set here — they MUST
-# come from HF Space Secrets so the credentials never live in the
-# image. When unset, Gradio launches without auth (fine for local
-# Docker self-host where the user already controls the host).
-# --------------------------------------------------------------------
-ENV GRADIO_SERVER_NAME=0.0.0.0 \
-    GRADIO_SERVER_PORT=7860 \
-    DEPLOYMENT_MODE=demo \
-    SURVBREGDIV_RSCRIPT=/usr/bin/Rscript \
-    SURVBREGDIV_R_SCRIPTS=/app/mcp/r_scripts \
+# Qwen3-8B-AWQ (Apache-2.0), downloaded once at build time
+RUN python3 -c "from huggingface_hub import snapshot_download; \
+snapshot_download('Qwen/Qwen3-8B-AWQ', local_dir='/models/qwen3-8b-awq')"
+
+COPY deploy/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && mkdir -p /tmp/bregsurv && chmod 777 /tmp/bregsurv
+
+ENV VLLM_MODEL_PATH=/models/qwen3-8b-awq \
+    SURVBREGDIV_MODEL_NAME=qwen3-8b-awq \
     SURVBREGDIV_MODEL_ENDPOINT=http://127.0.0.1:8000/v1 \
-    SURVBREGDIV_MODEL_NAME=qwen2.5-7b-awq \
     OPENAI_API_KEY=EMPTY \
-    VLLM_MODEL_ID=/opt/qwen-awq \
-    VLLM_HOST=127.0.0.1 \
-    VLLM_PORT=8000 \
-    VLLM_MAX_MODEL_LEN=32768 \
-    VLLM_GPU_MEM_UTIL=0.95 \
-    HF_HOME=/root/.cache/huggingface \
-    LANG=en_US.UTF-8 \
-    LC_ALL=en_US.UTF-8 \
-    PYTHONIOENCODING=utf-8
-
+    BREGSURV_THINKING=auto BREGSURV_PLANNER=on BREGSURV_MEMORY=off \
+    VLLM_USE_FLASHINFER_SAMPLER=0 BREGSURV_PYTHON=/opt/appenv/bin/python \
+    GRADIO_SERVER_NAME=0.0.0.0 GRADIO_SERVER_PORT=7860 \
+    DEPLOYMENT_MODE=local
 EXPOSE 7860
-
-# Healthcheck: Gradio responds on / once both vLLM AND app.py are up.
-HEALTHCHECK --interval=60s --timeout=10s --start-period=180s --retries=3 \
-    CMD curl -fs http://127.0.0.1:7860/ >/dev/null || exit 1
-
-ENTRYPOINT ["/app/mcp/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]

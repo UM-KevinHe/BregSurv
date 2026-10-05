@@ -40,6 +40,7 @@
 #' @param data_sorted Logical. If \code{TRUE}, assumes input data is already sorted by stratum and time.
 #' @param beta_initial Optional initial coefficient vector for warm start.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return An object of class \code{"cox_MDTL"} containing:
 #' \describe{
 #'   \item{\code{eta}}{The vector of eta values evaluated.}
@@ -74,7 +75,9 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
                      backtrack = FALSE,
                      message = FALSE,
                      data_sorted = FALSE,
-                     beta_initial = NULL) {
+                     beta_initial = NULL,
+                     ties = c("none", "breslow")) {
+  ties <- .check_ties(match.arg(ties))
 
   ## ---- Input Checks ----
   if (missing(beta)) stop("External beta must be provided.", call. = FALSE)
@@ -91,7 +94,7 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
 
   ## ---- Data Preparation ----
   z <- as.matrix(z)
-  delta <- as.numeric(delta)
+  delta <- .check_event(delta, "delta")
   time <- as.numeric(time)
   etas <- sort(etas)
   
@@ -117,6 +120,7 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
   }
   
   n.each_stratum <- table(stratum)
+  tm <- .tie_maps(as.numeric(time), as.numeric(n.each_stratum), ties)
   N <- nrow(z_mat)
   n_eta <- length(etas)
   
@@ -146,15 +150,16 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
     beta_train <- Cox_MDTL_cpp(
       N = N, Z = z_mat, delta = delta, n_each_stratum = n.each_stratum,
       eta = eta, external_beta = beta, Q = Q, beta_initial = beta_initial,
-      lambda = 0, tol = tol, max_iter = Mstop, backtrack = backtrack, message = FALSE
+      lambda = 0, tol = tol, max_iter = Mstop, backtrack = backtrack, message = FALSE,
+      tie_first = tm$first
     )
     
     LP_train <- z_mat %*% as.matrix(beta_train)
     LP_mat[, i] <- LP_train
     beta_mat[, i] <- beta_train
-    likelihood_mat[i] <- pl_cal_theta(LP_train, delta, n.each_stratum)
+    likelihood_mat[i] <- .pl_ties(LP_train, delta, time, as.numeric(n.each_stratum), ties)
     
-    beta_initial <- beta_train  # "warm start"
+    beta_initial <- beta_train # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   
@@ -174,6 +179,7 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
       beta = beta_mat,
       linear.predictors = LinPred_original,
       likelihood = likelihood_mat,
+      ties = ties,
       data = list(
         z = z, # Return original z
         time = time, # Return sorted time if sorted, or original logic depends on usage

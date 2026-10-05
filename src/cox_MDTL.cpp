@@ -34,7 +34,9 @@ double MDTL_loglik(const double N,
                     const arma::vec& external_beta,
                     const arma::mat& Q,
                     const arma::vec& beta,
-                    const double lambda = 0.0) {
+                    const double lambda,
+                    const arma::uvec& tf,
+                    const bool use_ties) {
   const arma::uword S = ind_start.n_elem;
   double loglik = 0.0;
 
@@ -50,6 +52,7 @@ double MDTL_loglik(const double N,
     const double m = lp_s.max();
     arma::vec exp_lp_s_shift = arma::exp(lp_s - m);
     arma::vec S0_s = rev_cumsum(exp_lp_s_shift);
+    if (use_ties) S0_s = S0_s.elem(tf.subvec(start, end) - start);   // Breslow: the tie group's risk set
 
     loglik += arma::accu(delta_s % (lp_s - arma::log(S0_s)));
     loglik -= m * arma::sum(delta_s);
@@ -90,9 +93,11 @@ arma::vec BetaUpdate_MDTL(const double N,
                           const arma::vec& n_each_stratum,
                           const arma::vec& external_beta,
                           const arma::mat& Q,
-                          const double lambda = 0.0,
-                          const double eta = 0.0,
-                          bool backtrack = false) {
+                          const double lambda,
+                          const double eta,
+                          bool backtrack,
+                          const arma::uvec& tf,
+                          const bool use_ties) {
 
   const arma::uword p = Z.n_cols;       
   const arma::uword S = n_each_stratum.n_elem;
@@ -133,16 +138,17 @@ arma::vec BetaUpdate_MDTL(const double N,
 
     for (arma::uword i = 0; i < len; ++i) {
       const double d_i = delta_s(i);
-      const double s0_i = S0_s(i);
+      const arma::uword k = use_ties ? tf(start + i) - start : i;   // Breslow: the tie group's risk set
+      const double s0_i = S0_s(k);
 
       arma::rowvec z_i = Z_s.row(i);
-      arma::rowvec s1_i = S1_s.row(i);
+      arma::rowvec s1_i = S1_s.row(k);
       L1 += d_i * (z_i.t() - (s1_i / s0_i).t());
 
       if (d_i > 0) {
         arma::mat s2_i(p, p);
         for (arma::uword j = 0; j < p; ++j) {
-          s2_i.col(j) = S2_s.slice(j).row(i).t();
+          s2_i.col(j) = S2_s.slice(j).row(k).t();
         }
         arma::vec s1_div_s0 = s1_i.t() / s0_i;
         arma::mat outer = s1_div_s0 * s1_div_s0.t();
@@ -175,7 +181,7 @@ arma::vec BetaUpdate_MDTL(const double N,
     double step_size = 1.0;
 
     double f0 = MDTL_loglik(N, theta, delta, eta, ind_start, n_each_stratum,
-                            external_beta, Q, beta, lambda);
+                            external_beta, Q, beta, lambda, tf, use_ties);
     double slope = arma::dot(L1, d_beta);
 
     for (int bt = 0; bt < max_bt; ++bt) {
@@ -183,7 +189,7 @@ arma::vec BetaUpdate_MDTL(const double N,
       arma::vec theta_try = Z * beta_try;
 
       double f_try = MDTL_loglik(N, theta_try, delta, eta, ind_start, n_each_stratum,
-                                 external_beta, Q, beta_try, lambda);
+                                 external_beta, Q, beta_try, lambda, tf, use_ties);
       if (f_try >= f0 + armijo_s * step_size * slope) break;
       step_size *= shrink_t;
     }
@@ -227,9 +233,12 @@ arma::vec Cox_MDTL_cpp(const double N,
                       const double tol = 1.0e-7,
                       const int max_iter = 100,
                       bool backtrack = false,
-                      bool message = false) {
+                      bool message = false,
+                      Rcpp::Nullable<Rcpp::IntegerVector> tie_first = R_NilValue) {
   
   arma::vec beta = beta_initial;
+  const bool use_ties = tie_first.isNotNull();
+  const arma::uvec tf = tie_index(tie_first, Z.n_rows);
 
 
   const arma::uword S = n_each_stratum.n_elem;
@@ -241,7 +250,7 @@ arma::vec Cox_MDTL_cpp(const double N,
 
   for (int iter = 0; iter < max_iter; ++iter) {
     arma::vec d_beta = BetaUpdate_MDTL(N, Z, delta, beta, ind_start, n_each_stratum,
-                                       external_beta, Q, lambda, eta, backtrack);
+                                       external_beta, Q, lambda, eta, backtrack, tf, use_ties);
     
     double step_size = 1.0;
     if (!backtrack && arma::abs(d_beta).max() > 1.0) {

@@ -83,6 +83,7 @@
 #' @param ... Additional arguments passed to the underlying fitting function
 #'   \code{\link{cox_indi_enet}}.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.
 #' @return An object of class \code{"cv.cox_indi_enet"}. A list containing:
 #' \describe{
 #'   \item{\code{best}}{A list with the optimal tuning parameters:
@@ -155,7 +156,8 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
                              nfolds = 5,
                              cv.criteria = c("V&VH", "LinPred", "CIndex_pooled", "CIndex_foldaverage"),
                              c_index_stratum = NULL,
-                             message = FALSE, seed = NULL, ...) {
+                             message = FALSE, seed = NULL, ties = c("none", "breslow"), ...) {
+  ties <- .check_ties(match.arg(ties))
 
   # --------------------------------------------------------------------------
   # 0. Input checks and coercions
@@ -172,8 +174,8 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   z_int     <- as.matrix(z_int)
   z_ext     <- as.matrix(z_ext)
-  delta_int <- as.numeric(delta_int)
-  delta_ext <- as.numeric(delta_ext)
+  delta_int <- .check_event(delta_int, "delta_int")
+  delta_ext <- .check_event(delta_ext, "delta_ext")
   time_int  <- as.numeric(time_int)
   time_ext  <- as.numeric(time_ext)
 
@@ -198,10 +200,50 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   if (!is.null(c_index_stratum) && !identical(as.vector(stratum_int), as.vector(c_index_stratum)))
     stop("Provided 'c_index_stratum' is not identical to 'stratum_int'.", call. = FALSE)
 
+  ## SORT INTO (STRATUM, TIME) ORDER.; this function was the
+  ## only cross-validation driver in the package that did not, and the omission
+  ## made its reported loss meaningless rather than merely differently split.
+  ##
+  ## Two things depended on it. (1) pl_cal_theta forms risk sets with a reverse
+  ## cumulative sum over CONTIGUOUS row blocks whose sizes come from
+  ## table(stratum_int); table orders by sorted level while the rows were in
+  ## caller order, so the kernel was reading blocks that did not correspond to
+  ## the strata it was told about, and computing a partial likelihood against
+  ## the wrong risk sets. (2) get_fold does as.factor(stratum) and draws two
+  ## sample calls per stratum, so an unsorted, unencoded stratum consumed the
+  ## RNG stream in a different order and produced a DIFFERENT partition from
+  ## every sibling estimator -- which breaks the one-partition property the
+  ## whole candidate comparison rests on.
+  ##
+  ## Encoding first (match against first appearance) is what makes table's
+  ## level order agree with row order for character or non-consecutive strata:
+  ## sort would otherwise put "10" before "2". Mirrors cv.cox_indi.R:108-113.
+  stratum_int <- match(as.vector(stratum_int), unique(as.vector(stratum_int)))
+  ord0        <- order(stratum_int, time_int)
+  z_int       <- z_int[ord0, , drop = FALSE]
+  delta_int   <- delta_int[ord0]
+  time_int    <- time_int[ord0]
+  stratum_int <- stratum_int[ord0]
+  # Identical to stratum_int by the check above, so it follows the same permutation.
+  if (!is.null(c_index_stratum)) c_index_stratum <- stratum_int
+
   # --------------------------------------------------------------------------
   # 1. CV fold assignment on internal data (stratified by event & stratum)
   # --------------------------------------------------------------------------
-  if (!is.null(seed)) set.seed(seed)
+  ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
+  ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
+  ## future/future.apply returns a DIFFERENT split from the same seed, hence a
+  ## different cross-validated loss. The caller's RNG state
+  ## is captured and restored on exit, so a parallel worker's stream is left
+  ## exactly as it was found.
+  if (!is.null(seed)) {
+    .rs_old <- if (exists(".Random.seed", envir = globalenv()))
+                 get(".Random.seed", envir = globalenv()) else NULL
+    on.exit(if (!is.null(.rs_old))
+              assign(".Random.seed", .rs_old, envir = globalenv()), add = TRUE)
+    set.seed(seed, kind = "Mersenne-Twister")
+  }
+  .rng_kind <- RNGkind()[1]
   folds <- get_fold(nfolds = nfolds, delta = delta_int, stratum = stratum_int)
 
   # --------------------------------------------------------------------------
@@ -209,8 +251,8 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   # --------------------------------------------------------------------------
   n_eta        <- length(etas)
   results_list <- vector("list", n_eta)
-  fit_beta_list  <- vector("list", n_eta)   # full-data beta matrices, one per eta
-  lambda_list    <- vector("list", n_eta)   # lambda path, one per eta
+  fit_beta_list  <- vector("list", n_eta)  # full-data beta matrices, one per eta
+  lambda_list    <- vector("list", n_eta)  # lambda path, one per eta
 
   if (message) {
     cat("Cross-validation over etas sequence:\n")
@@ -221,7 +263,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     eta_i <- etas[ei]
 
     # ---- 2a. Full-data fit to obtain lambda path and full-data betas -------
-    fit0 <- cox_indi_enet(
+    fit0 <- cox_indi_enet(ties = ties, 
       z_int       = z_int,
       delta_int   = delta_int,
       time_int    = time_int,
@@ -241,7 +283,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
     # cox_indi_enet returns lists indexed by eta; eta_i is a single value here
     lambda_seq    <- fit0$lambda[[1]]
-    beta_full_mat <- fit0$beta[[1]]    # p x L
+    beta_full_mat <- fit0$beta[[1]]   # p x L
 
     fit_beta_list[[ei]] <- beta_full_mat
     lambda_list[[ei]]   <- lambda_seq
@@ -256,7 +298,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     } else if (cv.criteria == "CIndex_pooled") {
       numer <- rep(0.0, L)
       denom <- rep(0.0, L)
-    } else {                                  # CIndex_foldaverage
+    } else {                                 # CIndex_foldaverage
       csum <- rep(0.0, L)
       cnt  <- rep(0L,  L)
     }
@@ -267,7 +309,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       test_idx  <- which(folds == f)
 
       # Fit on training internal + full external, at the shared lambda path
-      fit_f <- cox_indi_enet(
+      fit_f <- cox_indi_enet(ties = ties, 
         z_int       = z_int[train_idx, , drop = FALSE],
         delta_int   = delta_int[train_idx],
         time_int    = time_int[train_idx],
@@ -283,7 +325,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
         ...
       )
 
-      beta_f <- fit_f$beta[[1]]    # p x L  (may have fewer cols if some lambdas dropped)
+      beta_f <- fit_f$beta[[1]]   # p x L (may have fewer cols if some lambdas dropped)
 
       # Align columns: if some lambdas were dropped during fold fit, fill with NA columns
       if (ncol(beta_f) < L) {
@@ -296,18 +338,18 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       }
 
       # Linear predictors for all internal obs and for test obs
-      LP_train <- z_int[train_idx, , drop = FALSE] %*% beta_f   # n_train x L
-      LP_all   <- z_int %*% beta_f                               # n_int   x L
-      LP_test  <- z_int[test_idx,  , drop = FALSE] %*% beta_f   # n_test  x L
+      LP_train <- z_int[train_idx, , drop = FALSE] %*% beta_f  # n_train x L
+      LP_all   <- z_int %*% beta_f                              # n_int x L
+      LP_test  <- z_int[test_idx,  , drop = FALSE] %*% beta_f  # n_test x L
 
       # Compute fold contribution
       if (cv.criteria == "V&VH") {
         n_each_train <- as.numeric(table(stratum_int[train_idx]))
         n_each_all   <- as.numeric(table(stratum_int))
         pl_all_vec <- apply(LP_all,   2, function(col)
-          pl_cal_theta(col, delta_int, n_each_all))
+          .pl_ties(col, delta_int, time_int, n_each_all, ties))
         pl_tr_vec  <- apply(LP_train, 2, function(col)
-          pl_cal_theta(col, delta_int[train_idx], n_each_train))
+          .pl_ties(col, delta_int[train_idx], time_int[train_idx], n_each_train, ties))
         vvh_sum <- vvh_sum + (pl_all_vec - pl_tr_vec)
 
       } else if (cv.criteria == "LinPred") {
@@ -336,7 +378,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
           cnt  <- cnt  + as.integer(!is.na(cstat_vec))
         }
       }
-    }   # end fold loop
+    }  # end fold loop
 
     # ---- 2d. Aggregate across folds for this eta ---------------------------
     if (cv.criteria == "V&VH") {
@@ -359,7 +401,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     )
 
     if (message) utils::setTxtProgressBar(pb_eta, ei)
-  }   # end eta loop
+  }  # end eta loop
 
   if (message) close(pb_eta)
 
@@ -401,19 +443,34 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   # --------------------------------------------------------------------------
   # 4. Extract best-lambda beta for each eta (from full-data fits)
   # --------------------------------------------------------------------------
-  beta_best_mat <- sapply(seq_along(etas), function(i) {
+  ## An eta whose every lambda gave a non-finite loss (large eta on the lasso
+  ## path, seen at eta = 200) has no row in best_per_eta: `split` dropped it.
+  ## The old sapply then indexed best_per_eta by position, matched no lambda,
+  ## returned a p x 0 matrix and made sapply return a list, which failed at
+  ## colnames<- ("attempt to set 'colnames' on an object with less than two
+  ## dimensions") on every individual-level fit with such an eta. Rows are
+  ## matched by eta value; an eta with no finite loss gets an NA column and is
+  ## never selected.
+  beta_best_mat <- matrix(NA_real_, nrow = nrow(fit_beta_list[[1]]),
+                          ncol = length(etas))
+  rownames(beta_best_mat) <- rownames(fit_beta_list[[1]])
+  for (i in seq_along(etas)) {
+    j <- match(etas[i], best_per_eta$eta)
+    if (is.na(j)) next
     bm  <- fit_beta_list[[i]]
     lam <- lambda_list[[i]]
-    idx <- which(abs(lam - best_per_eta$lambda[i]) < 1e-12)
-    if (length(idx) != 1) idx <- which.min(abs(lam - best_per_eta$lambda[i]))
-    bm[, idx]
-  })
+    idx <- which(abs(lam - best_per_eta$lambda[j]) < 1e-12)
+    if (length(idx) != 1) idx <- which.min(abs(lam - best_per_eta$lambda[j]))
+    beta_best_mat[, i] <- bm[, idx]
+  }
   colnames(beta_best_mat) <- etas
+  best_col <- match(best_per_eta$eta[best.idx], etas)
 
   best_res <- list(
     best_eta    = best_per_eta$eta[best.idx],
     best_lambda = best_per_eta$lambda[best.idx],
-    best_beta   = beta_best_mat[, best.idx],
+    best_beta   = beta_best_mat[, best_col],
+    best_value  = .best_value(best_per_eta, best.idx),
     criteria    = cv.criteria
   )
 
@@ -428,7 +485,13 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       integrated_stat.betahat_best = beta_best_mat,
       criteria                     = cv.criteria,
       alpha                        = alpha,
-      nfolds                       = nfolds
+      nfolds                       = nfolds,
+      ## the split actually used, so a replay can be checked rather than
+      ## trusted. Assigned on the internally sorted data, not the caller's
+      ## row order. `get_fold` is not exported, so this is the only route to it.
+      folds                       = folds,
+      seed                       = if (is.null(seed)) NA_integer_ else as.integer(seed),
+      rng_kind                       = .rng_kind
     ),
     class = "cv.cox_indi_enet"
   )

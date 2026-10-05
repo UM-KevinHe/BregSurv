@@ -38,8 +38,17 @@
 #' @param backtrack Logical. If \code{TRUE}, uses backtracking line search. Default is \code{FALSE}.
 #' @param message Logical. If \code{TRUE}, progress messages are printed.
 #' @param data_sorted Logical. If \code{TRUE}, assumes input data is already sorted by stratum and time.
+#' @param standardize Logical. If \code{TRUE} (the default since 1.2.0), \code{z} is
+#'   scaled to unit standard deviation before the ridge penalty is applied and the
+#'   coefficients are returned on the original scale. A \code{Q} you supply carries its
+#'   own units, so it is transformed with \code{beta} and the Mahalanobis penalty is left
+#'   exactly as specified; with \code{Q = NULL} the implicit identity metric is taken on
+#'   the standardized scale, one standard deviation per covariate, so the member does not
+#'   depend on the units the covariates happen to be recorded in. Set \code{FALSE} to
+#'   reproduce results from version 1.1.0 and earlier.
 #' @param beta_initial Optional initial coefficient vector for warm start.
 #'
+#' @param ties Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.
 #' @return An object of class \code{"cox_MDTL_ridge"} containing:
 #' \describe{
 #'   \item{\code{lambda}}{The sequence of lambda values used.}
@@ -70,7 +79,8 @@
 cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL, eta = NULL,
                            lambda = NULL, nlambda = 100, penalty.factor = 0.999,
                            tol = 1.0e-4, Mstop = 50, backtrack = FALSE, message = FALSE, data_sorted = FALSE,
-                           beta_initial = NULL) {
+                           standardize = TRUE, beta_initial = NULL, ties = c("none", "breslow")) {
+  ties <- .check_ties(match.arg(ties))
   if (is.null(eta)) {
     warning("eta is not provided. Setting eta = 0 (no external information used).", call. = FALSE)
     eta <- 0
@@ -80,15 +90,24 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
 
   if (is.null(beta)) stop("External beta must be provided.", call. = FALSE)
 
+
   ## Align external beta and Q to the covariates of z (named -> matched to
   ## colnames(z) and zero-padded; Q validated symmetric/PSD; NULL Q -> masked
   ## identity). For a full-length, in-order beta and full Q this is a no-op.
   aligned <- align_beta_Q(z, beta, Q)
   beta <- aligned$beta
   Q <- aligned$Q
+  ## Did the analyst supply the metric, or did align_beta_Q manufacture it?  A supplied
+  ## metric carries its own units (an external information matrix does) and the Mahalanobis
+  ## penalty is left exactly as specified; a manufactured one is an arbitrary identity, and
+  ## under standardize = TRUE it is taken on the standardized scale -- one standard deviation
+  ## per covariate -- the same choice the ridge / lasso penalty makes, so the member does not
+  ## depend on the units the covariates happen to be recorded in.  The MARK is read here and
+  ## not from `is.null(Q)` on entry, because every cv.* wrapper aligns before calling the fit.
+  Q_supplied <- !isTRUE(attr(Q, "manufactured"))
 
   z <- as.matrix(z)
-  delta <- as.numeric(delta)
+  delta <- .check_event(delta, "delta")
   time <- as.numeric(time)
   
   input_data <- list(z = z, time = time, delta = delta, stratum = stratum)
@@ -105,20 +124,47 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
     time <- as.numeric(time[time_order])
     stratum <- as.numeric(stratum[time_order])
     z_mat <- as.matrix(z)[time_order, , drop = FALSE]
-    delta <- as.numeric(delta[time_order])
+    delta <- .check_event(delta[time_order], "delta")
   } else {
     stratum <- as.numeric(stratum)
     z_mat <- z
   }
   
   n.each_stratum <- as.numeric(table(stratum))
+  tm <- .tie_maps(as.numeric(time), n.each_stratum, ties)
   beta.init <- rep(0, ncol(z_mat)) # initial value of beta
   
   n_vars <- ncol(z_mat)
   n_obs <- nrow(z_mat)
   
-  Qbeta_ext <- as.vector(Q %*% beta)  # a length p vector (fixed term)
-  beta_ext <- beta
+
+  ## ---- Standardization of the design matrix ----------------------
+  ## See coxkl_ridge for why: the ridge part lambda * ||beta||^2 is not scale free.
+  ## Only the ridge part is meant to change.  The Mahalanobis part
+  ## eta/2 (beta - beta_ext)' Q (beta - beta_ext) is handled by whether the caller
+  ## supplied Q.  A SUPPLIED Q carries its own units, so with beta_std = D beta and
+  ## D = diag(std_scale), Q_std = D^{-1} Q D^{-1} gives
+  ##   (beta_std - beta_ext_std)' Q_std (beta_std - beta_ext_std)
+  ##     = (beta - beta_ext)' Q (beta - beta_ext),
+  ## i.e. standardize = TRUE at lambda = 0 reproduces cox_MDTL exactly.  With
+  ## Q = NULL the masked identity is taken on the STANDARDIZED scale (the matrix of
+  ## ones and zeros is the same either way), so the metric is one standard deviation
+  ## per covariate and the whole member is free of the covariates' units.  Both are
+  ## asserted in the test suite.  Scaling only, no centering (a constant shift of
+  ## every linear predictor cannot change a Cox fit).
+  std_scale <- rep(1, n_vars)
+  if (isTRUE(standardize)) {
+    mysd <- function(v) sqrt(sum((v - mean(v))^2) / length(v))
+    std_scale <- apply(z_mat, 2, mysd)
+    std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1
+    z_fit        <- sweep(z_mat, 2, std_scale, "/")
+    beta_ext_fit <- beta * std_scale
+    Q_fit        <- if (Q_supplied) Q / outer(std_scale, std_scale) else Q
+  } else {
+    z_fit <- z_mat; beta_ext_fit <- beta; Q_fit <- Q
+  }
+  Qbeta_ext <- as.vector(Q_fit %*% beta_ext_fit)
+  beta_ext <- beta_ext_fit
   
   if (is.null(lambda)) {
     if (nlambda < 2) {
@@ -126,11 +172,11 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
     } else if (nlambda != round(nlambda)) {
       stop("nlambda must be a positive integer", call. = FALSE)
     }
-    lambda.fit <- setupLambda_MDTL(z_mat, time, delta, beta.init, stratum,
-                                   beta_ext, Q, Qbeta_ext,
+    lambda.fit <- setupLambda_MDTL(z_fit, time, delta, beta.init, stratum,
+                                   beta_ext, Q_fit, Qbeta_ext,
                                    group = 1:ncol(z_mat), group.multiplier = rep(1, ncol(z_mat)),
                                    n.each_stratum, alpha = 1 - penalty.factor,
-                                   eta, nlambda, lambda.min.ratio = 0)
+                                   eta, nlambda, lambda.min.ratio = 0, tm = tm)
     
     lambda.seq <- lambda.fit$lambda.seq
   } else {
@@ -151,6 +197,9 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
   
   if (is.null(beta_initial)) {
     beta_initial <- rep(0, ncol(z_mat))
+  } else {
+    ## beta_initial is supplied on the ORIGINAL scale
+    beta_initial <- as.numeric(beta_initial) * std_scale
   }
   
   if (message) {
@@ -160,20 +209,24 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
   
   for (i in seq_along(lambda.seq)) {
     lambda <- lambda.seq[i]
-    beta_est <- Cox_MDTL_cpp(N = n_obs, Z = z_mat, delta = delta, n_each_stratum = n.each_stratum, eta = eta,
-                             external_beta = beta_ext, Q = Q, beta_initial = beta_initial,
-                             lambda = lambda, tol = tol, max_iter = Mstop, backtrack = backtrack, message = message)
-    LP_train <- z_mat %*% as.matrix(beta_est)
+    beta_est <- Cox_MDTL_cpp(N = n_obs, Z = z_fit, delta = delta, n_each_stratum = n.each_stratum, eta = eta,
+                             external_beta = beta_ext, Q = Q_fit, beta_initial = beta_initial,
+                             lambda = lambda, tol = tol, max_iter = Mstop, backtrack = backtrack, message = message,
+                             tie_first = tm$first)
+    LP_train <- z_fit %*% as.matrix(beta_est)
     beta_mat[, i] <- beta_est
     LP_mat[, i] <- LP_train
-    likelihood_mat[i] <- pl_cal_theta(LP_train, delta, n.each_stratum)
+    likelihood_mat[i] <- .pl_ties(LP_train, delta, time, n.each_stratum, ties)
     
-    beta_initial <- beta_est  # "warm start"
+    beta_initial <- beta_est # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   if (message) close(pb)
   
   
+  ## back to the original scale, so that linear.predictors == z %*% beta exactly
+  if (isTRUE(standardize)) beta_mat <- beta_mat / std_scale
+  rownames(beta_mat) <- colnames(z_mat)
   if (data_sorted == FALSE) {
     LinPred_original <- matrix(NA_real_, nrow = length(time_order), ncol = nlambda)
     LinPred_original[time_order, ] <- LP_mat
@@ -188,6 +241,7 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
     beta = beta_mat,
     linear.predictors = LinPred_original,
     likelihood = likelihood_mat,
+    ties = ties,
     data = list(
       z = z,
       time = time,

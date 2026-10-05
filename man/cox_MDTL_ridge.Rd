@@ -20,7 +20,9 @@ cox_MDTL_ridge(
   backtrack = FALSE,
   message = FALSE,
   data_sorted = FALSE,
-  beta_initial = NULL
+  standardize = TRUE,
+  beta_initial = NULL,
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -68,7 +70,17 @@ A value close to 1 (default 0.999) results in \code{alpha} close to 0, enforcing
 
 \item{data_sorted}{Logical. If \code{TRUE}, assumes input data is already sorted by stratum and time.}
 
+\item{standardize}{Logical. If \code{TRUE} (the default since 1.2.0), \code{z} is scaled to
+unit standard deviation before the ridge penalty is applied, and \code{beta} and \code{Q}
+are transformed with it. A \code{Q} you supply carries its own units and the Mahalanobis
+part of the penalty is left exactly unchanged; with \code{Q = NULL} the implicit identity
+metric is taken on the standardized scale, one standard deviation per covariate, so that
+the member does not depend on the units the covariates happen to be recorded in. Coefficients are
+returned on the original scale. Set \code{FALSE} to reproduce version 1.1.0 and earlier.}
+
 \item{beta_initial}{Optional initial coefficient vector for warm start.}
+
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
 }
 \value{
 An object of class \code{"cox_MDTL_ridge"} containing:

@@ -7,6 +7,7 @@
 #' a single split of the data.
 #'
 #' @inheritParams cv.coxkl_enet
+#' @param ... Additional arguments passed to the underlying fitting function \code{\link{coxkl_enet}}. Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @param beta Optional numeric vector of external coefficients. If \code{beta} is
 #'   named, names are matched against \code{colnames(z)}: covariates absent from
 #'   \code{beta} are set to 0 (with a message) and the vector is reordered. An
@@ -232,6 +233,7 @@ coxkl_enet.StabSelect <- function(z, delta, time, stratum = NULL, RS = NULL, bet
 #' importance that is less sensitive to a single data split.
 #'
 #' @inheritParams cv.cox_MDTL_enet
+#' @param ... Additional arguments passed to the underlying fitting function. Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).
 #' @param beta Optional numeric vector of external coefficients. If \code{beta} is
 #'   named, names are matched against \code{colnames(z)}: covariates absent from
 #'   \code{beta} are set to 0 (with a message) and the vector is reordered. An

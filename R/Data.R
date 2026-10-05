@@ -270,8 +270,8 @@
 
 #' Example internal/external Cox individual-level data
 #'
-#' A simulated survival dataset for illustrating \code{cox_indi()} and
-#' \code{cv.cox_indi()}. The object contains one internal cohort and one external
+#' A simulated survival dataset for illustrating \code{cox_indi} and
+#' \code{cv.cox_indi}. The object contains one internal cohort and one external
 #' cohort, each stratified into multiple strata.
 #'
 #' @name ExampleData_indi

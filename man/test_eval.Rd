@@ -11,7 +11,8 @@ test_eval(
   betahat,
   test_stratum = NULL,
   train_baseline_obj = NULL,
-  criteria = c("loss", "CIndex", "IBS", "tdAUC")
+  criteria = c("loss", "CIndex", "IBS", "tdAUC"),
+  ties = c("none", "breslow")
 )
 }
 \arguments{
@@ -30,6 +31,10 @@ Required only when \code{criteria = "IBS"}.}
 
 \item{criteria}{Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex" (Concordance Index),
 "IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC). Default is "loss".}
+
+\item{ties}{Tie handling in the partial likelihood behind \code{criteria = "loss"}: \code{"none"} (the
+default, the behaviour of every release before 1.3.0) or \code{"breslow"}, which should match the
+\code{ties} the model was fitted with. The other criteria do not use it.}
 }
 \value{
 A numeric value representing the performance metric.

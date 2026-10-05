@@ -12,6 +12,9 @@
 #' Required only when \code{criteria = "IBS"}.
 #' @param criteria Metric to calculate: "loss" (Log-Partial Likelihood), "CIndex" (Concordance Index),
 #' "IBS" (Integrated Brier Score), or "tdAUC" (Integrated Time-Dependent AUC). Default is "loss".
+#' @param ties Tie handling in the partial likelihood behind \code{criteria = "loss"}: \code{"none"} (the
+#' default, the behaviour of every release before 1.3.0) or \code{"breslow"}, which should match the
+#' \code{ties} the model was fitted with. The other criteria do not use it.
 #'
 #' @details
 #' For "IBS", the function predicts survival probabilities and converts them to risk (1 - S).
@@ -43,9 +46,11 @@
 test_eval <- function(test_z, test_delta, test_time,
                       betahat, test_stratum = NULL,
                       train_baseline_obj = NULL,
-                      criteria = c("loss", "CIndex", "IBS", "tdAUC")) {
+                      criteria = c("loss", "CIndex", "IBS", "tdAUC"),
+                      ties = c("none", "breslow")) {
 
   criteria <- match.arg(criteria)
+  ties <- .check_ties(match.arg(ties))
 
   test_RS <- as.vector(as.matrix(test_z) %*% as.matrix(betahat))
   d_test <- data.frame(time = as.numeric(test_time), status = as.numeric(test_delta))
@@ -54,7 +59,8 @@ test_eval <- function(test_z, test_delta, test_time,
 
   if (criteria == "loss") {
     ord <- order(test_stratum, d_test$time)
-    return(-2 * pl_cal_theta(test_RS[ord], d_test$status[ord], as.numeric(table(test_stratum))) / n)
+    return(-2 * .pl_ties(test_RS[ord], d_test$status[ord], d_test$time[ord],
+                         as.numeric(table(test_stratum)), ties) / n)
   }
 
   if (criteria == "CIndex") {
@@ -337,7 +343,7 @@ predict_surv_prob <- function(test_RS, eval_times, train_baseline_obj, test_stra
 get_baseline_hazard <- function(z, delta, time, beta, stratum = NULL) {
   lp <- as.vector(as.matrix(z) %*% as.matrix(beta))
   time <- as.numeric(time)
-  delta <- as.numeric(delta)
+  delta <- .check_event(delta, "delta")
 
   if (length(lp) != length(time) || length(time) != length(delta)) {
     stop("`z`, `time` and `delta` must refer to the same number of subjects.")

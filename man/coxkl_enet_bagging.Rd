@@ -85,7 +85,7 @@ evaluation.}
 
 \item{ncores}{Integer. Number of parallel cores. Default 1 (sequential execution).}
 
-\item{...}{Additional arguments passed to \code{cv.coxkl_enet}.}
+\item{...}{Additional arguments passed to \code{cv.coxkl_enet}. Pass \code{ties = "breslow"} here to fit every model with Breslow's tie correction (see \code{\link{coxkl}}).}
 }
 \value{
 An object of class \code{"bagging"}, which is a list containing:

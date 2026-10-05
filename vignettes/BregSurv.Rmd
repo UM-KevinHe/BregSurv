@@ -67,7 +67,7 @@ The package supports two primary study designs for time-to-event analysis:
 Real-world survival data often exhibit between-cluster heterogeneity due to multi-site enrollment, matched case-control designs, or hierarchical sampling structures. Ignoring such clustering can lead to biased hazard ratio estimates and invalid standard errors. The package addresses this issue through stratified partial likelihoods, which allow the baseline hazard function to vary freely across strata rather than imposing a common baseline. 
 
 **Robustness to tied event times**  
-Tied event times frequently arise when follow-up is recorded on a coarse time scale, such as daily records, scheduled clinical visits, or discretized follow-up intervals. Direct application to heavily tied data on the standard Cox partial likelihood (which assumes a continuous time scale with no ties) can produce biased estimates due to incorrect probability construction. The package incorporates tie-correction methods—including the Breslow and Efron approximations—to adjust the risk set contributions at tied event times and restore the validity of partial likelihood inference.
+Tied event times frequently arise when follow-up is recorded on a coarse time scale, such as daily records, scheduled clinical visits, or discretized follow-up intervals. Direct application to heavily tied data on the standard Cox partial likelihood (which assumes a continuous time scale with no ties) can produce biased estimates due to incorrect probability construction. The package incorporates tie correction to adjust the risk-set contributions at tied event times: since version 1.3.0, every Cox-family estimator and its cross-validation function accept `ties = "breslow"` (Breslow's approximation), and `coxkl_ties()` additionally offers Cox's exact method.
 
 **High-dimensional variable selection**
 Penalized estimation with ridge, lasso, and elastic net penalties is supported for variable selection and shrinkage, with tuning parameters selected via cross-validation by default. However, cross-validation optimizes predictive performance rather than variable selection stability, and the selected predictor set can vary across repeated runs or minor data perturbations. For users who need a reproducible and trustworthy shortlist of important predictors, the package provides a stability selection-based variable importance feature that identifies predictors consistently selected across resampled datasets.
@@ -295,11 +295,24 @@ Whenever the purple curve falls below the green line, using external information
 
 For datasets containing **tied** event times, users can apply the `coxkl_ties()` and `cv.coxkl_ties()` function, which extends the KL integrated Cox model to explicitly accommodate ties. The function allows users to choose between the "breslow" [@breslow1974covariance] and "exact" [@cox1972regression] methods for tie handling. The Breslow method provides a computationally efficient approximation and is generally suitable when the number of tied events is moderate, whereas the exact method yields more accurate inference in the presence of extensive ties at the cost of increased computational burden. The following example demonstrates the use of the Breslow method. For methodology details, please refer to Page: **Appendix: Cox KL: Tied Event Times**.
 
+Since version 1.3.0 the Breslow correction is not limited to `coxkl_ties()`: every Cox-family estimator (`coxkl()`, `coxkl_ridge()`, `coxkl_enet()`, `cox_MDTL()`, `cox_MDTL_ridge()`, `cox_MDTL_enet()`, `cox_indi()`, `cox_indi_enet()`), its `cv.*` counterpart and `test_eval()` take `ties = c("none", "breslow")`. The default `"none"` keeps the behaviour of earlier versions; `"breslow"` uses Breslow risk sets throughout, including in cross-validation.
+
 
 ```{r}
 time_ties <- round(time, 2)   # Rounding time introduces ties for demonstration
 
 fit.coxkl.ties <- coxkl_ties(
+  z = z,
+  delta = delta,
+  time = time_ties,
+  stratum = strat,
+  beta = beta_ext,
+  etas = eta_list,
+  ties = "breslow"
+)
+
+# The same correction in any other estimator, e.g. the plain KL fit:
+fit.coxkl.breslow <- coxkl(
   z = z,
   delta = delta,
   time = time_ties,
@@ -319,6 +332,8 @@ Two families of penalties are implemented:
 
 - **Ridge penalty ($\ell_2$)**, via `coxkl_ridge()` and related downstream functions, which shrinks coefficients toward zero while yielding dense solutions.
 - **LASSO penalty ($\ell_1$)** and **Elastic net penalty (a mixture of $\ell_1$ and $\ell_2$)**, via `coxkl_enet()` and related downstream functions, to enable sparse variable selection.
+
+Both families standardize the covariates before penalizing (`standardize = TRUE`, the default for the ridge functions since version 1.2.0), so a single $\lambda$ acts on every covariate on a common scale; coefficients are always returned on the original scale of `z`.
 
 In addition to the integration weight $\eta$, which determines the extent of information borrowed from external sources, the high-dimensional functions involve a **regularization parameter** $\lambda \ge 0$ that governs the strength of regularization. The parameter $\alpha \in [0,1]$ is a mixing coefficient that controls the relative contribution of the $\ell_1$ (LASSO) and $\ell_2$ (Ridge) components.
 
