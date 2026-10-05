@@ -140,26 +140,6 @@ Also supported: tied event times (Breslow correction), stratified cohorts, ridge
 
 ---
 
-## 📊 Results at a glance
-
-On a common suite of 60 survival-analysis tasks with external information, graded block by block (0–10) by an independent grader:
-
-| Agent | Model | Score (0–10) | Tasks with a fatal error | Tokens per task | Time per task |
-|---|---|:---:|:---:|:---:|:---:|
-| **BregSurv Agent** | Qwen3-8B, local | **9.6** | **0 / 60** | 25 k | 4 min |
-| Claude Code, with the R package | Claude Opus 5 | 9.2 | 5 / 60 | 3.1 M | 26 min |
-| Claude Code, without the R package | Claude Opus 5 | 9.1 | 5 / 60 | 1.7 M | 16 min |
-| Tool-calling agent (smolagents) + rules | Qwen3-8B | 7.2 | 20 / 60 | 142 k | 2 min |
-| Tool-calling agent (smolagents) | Qwen3-8B | 6.9 | 25 / 60 | 125 k | 2 min |
-| DataMind | Qwen3-8B | 2.5 | 58 / 60 | 31 k | 1 min |
-| LAMBDA | Qwen3-8B | 1.8 | 57 / 60 | 30 k | 6 min |
-| MetaGPT Data Interpreter | Qwen3-8B | 1.5 | 60 / 60 | 72 k | 10 min |
-| Qwen Code | Qwen3-8B | 1.5 | 59 / 60 | 145 k | 4 min |
-
-A *fatal error* is a delivered analysis that is wrong in a way the analyst would not see (for example, the wrong outcome, a misaligned external model, or numbers no computation produced). Details are in the accompanying paper.
-
----
-
 ## 📁 Repository layout
 
 ```
