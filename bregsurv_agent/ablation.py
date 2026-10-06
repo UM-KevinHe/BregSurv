@@ -17,6 +17,15 @@ provenance (`describe`), so an ablated run can never pass for a real one.
                   the grammar; the reply is parsed as free text
   no_planner      V4: the planner's decisions replaced by fixed defaults -- every
                   admissible member of the declared row on its default grid
+  no_diagnostics  V4: the planner plans without the transfer-diagnostics card
+                  (calibration slope, per-term differences, ties, time grid, ...);
+                  it still sees the analysis, the admissible members and the
+                  analyst's words
+  no_playbook     V4: the planner sees no playbook note
+The other V4 pieces are removed by their own switches: the refinement loop by
+BREGSURV_MAX_REFINEMENTS=0, thinking by BREGSURV_THINKING=off, the retrieved
+examples by BREGSURV_FEWSHOT / _INTENT_EXAMPLES / _RELEASE_EXAMPLES /
+_PROSE_EXAMPLES = off.
 
 Nothing here is reachable from the app's UI; the variable is read once per
 process. Never set it in a deployment.
@@ -26,7 +35,8 @@ from __future__ import annotations
 import os
 from typing import Dict, List
 
-KNOWN = ("no_backing", "no_verify", "no_planner_fallback", "no_constrained", "no_planner")
+KNOWN = ("no_backing", "no_verify", "no_planner_fallback", "no_constrained", "no_planner",
+         "no_diagnostics", "no_playbook")
 
 
 def cells() -> List[str]:

@@ -318,9 +318,13 @@ def assignment_schema_for(tables: List[RawTable]) -> Dict[str, Any]:
 def assign_roles(client, model: str, tables: List[RawTable]) -> Dict[str, Any]:
     """One constrained call. A proposal; :func:`check_assignment` verifies it."""
     from . import boundary
-    user = "Tables in the file:\n\n" + summarize(tables)
+    from . import release_examples
+    summ = summarize(tables)
+    prefix, rec = release_examples.for_tables(summ)
+    user = prefix + "Tables in the file:\n\n" + summ
     return boundary._chat(client, model, _ASSIGN_SYSTEM, user, assignment_schema_for(tables),
-                          "external_roles", max_tokens=900)
+                          "external_roles", max_tokens=900,
+                          extra_record={"release_examples": rec} if rec else None)
 
 
 _NAME_HEADS = ("variable", "term", "name", "covariate", "predictor", "parameter",

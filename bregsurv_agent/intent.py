@@ -43,6 +43,8 @@ from . import boundary, policy
 KINDS = ("declare_roles", "edit_declaration", "describe_external",
          "select_external", "compare_runs", "multi_step",
          "evaluate_by_splits",                      # V4: evaluation by repeated splits
+         "kaplan_meier",                            # V4: the analyst asks to see the KM curve
+         "evaluate_on_test",                        # V4: score the models on the supplied test file
          "ask_about_result", "ask_about_method", "out_of_scope", "other")
 
 EXTERNAL_FORMS = ("coefficients", "coefficients_with_covariance",
@@ -88,9 +90,12 @@ def schema_for(externals: Optional[List[str]] = None) -> Dict[str, Any]:
                         "out_of_scope_reason": {"anyOf": [
                             {"type": "string", "enum": list(OUT_OF_SCOPE_REASONS)},
                             {"type": "null"}]},
+                        # V4: the column a requested Kaplan-Meier curve is split by,
+                        # as the analyst wrote it; null for the whole cohort
+                        "km_by": {"anyOf": [{"type": "string", "maxLength": 80}, {"type": "null"}]},
                     },
                     "required": ["kind", "evidence", "external_form",
-                                 "external_name", "out_of_scope_reason"],
+                                 "external_name", "out_of_scope_reason", "km_by"],
                 },
             },
         },
@@ -113,6 +118,7 @@ class Intent:
     evidence_verified: bool = True
     demoted_from: Optional[str] = None
     external_name: Optional[str] = None       # M2: which loaded release the message means
+    km_by: Optional[str] = None               # V4: the column a requested KM curve is split by
 
     def as_dict(self) -> Dict[str, Any]:
         return {"kind": self.kind, "evidence": self.evidence,
@@ -120,7 +126,7 @@ class Intent:
                 "external_name": self.external_name,
                 "out_of_scope_reason": self.out_of_scope_reason,
                 "evidence_verified": self.evidence_verified,
-                "demoted_from": self.demoted_from}
+                "demoted_from": self.demoted_from, "km_by": self.km_by}
 
 
 # ------------------------------------------------------------------- the call
@@ -208,6 +214,11 @@ def validate(message: str, raw: Dict[str, Any],
                     out_of_scope_reason=(item.get("out_of_scope_reason")
                                          if kind == "out_of_scope" else None),
                     evidence_verified=ok)
+        if kind == "kaplan_meier":
+            # a grouping column is kept only as the analyst wrote it; the app then checks it is a
+            # column of the file
+            by = str(item.get("km_by") or "").strip()
+            it.km_by = by if by and _norm(by) in msg else None
         if kind == "out_of_scope" and not ok:
             it.demoted_from, it.kind = "out_of_scope", "other"
             it.out_of_scope_reason = None
@@ -225,7 +236,7 @@ def validate(message: str, raw: Dict[str, Any],
 
 _ORDER = {k: i for i, k in enumerate((
     "multi_step", "describe_external", "select_external",
-    "declare_roles", "edit_declaration", "compare_runs", "evaluate_by_splits",
+    "declare_roles", "edit_declaration", "compare_runs", "evaluate_by_splits", "kaplan_meier", "evaluate_on_test",
     "ask_about_method", "ask_about_result", "out_of_scope", "other"))}
 
 
@@ -249,7 +260,9 @@ REFUSALS: Dict[str, str] = {
         "This system estimates coefficients and compares estimators. It does not "
         "produce a risk score for an individual patient.",
     "figure_requested":
-        "This system produces tables and a written report, not figures. The "
+        "Beyond the Kaplan-Meier estimate of your cohort, drawn with every "
+        "analysis (by stratum when you declared strata), and the box plots of an "
+        "evaluation by repeated splits, this system draws no figures. The "
         "candidates.json and repro.R it writes hold everything a figure would "
         "need.",
     "causal_claim":

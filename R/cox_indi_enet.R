@@ -218,7 +218,7 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   tm <- .tie_maps(time_all, n_each_stratum, ties)
 
 
-  initial_group <- group         # keep original for output
+  initial_group <- group        # keep original for output
   group.multiplier <- if (is.null(group.multiplier)) {
     rep(1, length(unique(group)))
   } else {
@@ -231,11 +231,11 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     std.Z <- newZG.Unstd(z_all, group, group.multiplier)
   }
 
-  Z_std        <- std.Z$std.Z         # standardized + orthogonalized matrix
-  group_std    <- std.Z$g             # (possibly reordered) group vector
+  Z_std        <- std.Z$std.Z        # standardized + orthogonalized matrix
+  group_std    <- std.Z$g            # (possibly reordered) group vector
   grp_mult_std <- as.double(std.Z$m) # group multipliers after orthogonalization
 
-  p_std <- ncol(Z_std)                # may differ from p if constant cols removed
+  p_std <- ncol(Z_std)               # may differ from p if constant cols removed
 
   K_tab <- as.integer(table(group_std))
   K0    <- as.integer(if (min(group_std) == 0) K_tab[1] else 0)
@@ -253,10 +253,10 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   beta_list <- vector("list", n_eta)
   names(beta_list) <- round(etas, 6)
 
-  lp_int_list <- vector("list", n_eta)  # linear predictors, internal, original order
+  lp_int_list <- vector("list", n_eta) # linear predictors, internal, original order
   lp_ext_list <- vector("list", n_eta)
 
-  lambda_list <- vector("list", n_eta)  # actual lambda path used per eta
+  lambda_list <- vector("list", n_eta) # actual lambda path used per eta
 
   if (message) {
     pb <- utils::txtProgressBar(min = 0, max = n_eta, style = 3, width = 30)
@@ -323,8 +323,8 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       tie_last         = tm$last
     )
 
-    beta_std  <- fit$beta       # p_std x nlambda_actual (standardized space)
-    eta_mat   <- fit$Eta        # n_all x nlambda_actual (linear predictors, std space)
+    beta_std  <- fit$beta      # p_std x nlambda_actual (standardized space)
+    eta_mat   <- fit$Eta       # n_all x nlambda_actual (linear predictors, std space)
     iter_vec  <- fit$iter
 
     # Drop saturated lambdas (iter == NA)

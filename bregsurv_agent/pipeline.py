@@ -181,7 +181,52 @@ class RunResult:
             json.dumps(self.candidates, indent=2, ensure_ascii=False),
             encoding="utf-8")
         paths["candidates"] = str(d / "candidates.json")
+        # V4: the Kaplan-Meier estimate of the target cohort, a figure in the report,
+        # drawn by the harness from the declared roles; a full-cohort design only (a matched sample
+        # has no follow-up time to draw). A failed figure never fails the artifacts.
+        km = self.draw_km(d)
+        if km:
+            paths["km_pdf"], paths["km_png"] = km["pdf"], km["png"]
         return paths
+
+    _KM_START, _KM_END = "<!-- km -->", "<!-- /km -->"
+
+    def draw_km(self, d: Path, group_col: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Draw km_curve.{pdf,png} in `d` (pooled, by the declared strata, or by `group_col`, a column
+        the analyst asked for) and put the figure into report.md in place of any earlier one. Returns
+        the R result, or None when nothing was drawn (a matched design, or a failure). `error`
+        carries the reason a requested grouping could not be drawn."""
+        dec = self.declaration
+        if not dec.time_col or not dec.event_col:
+            return None
+        d = Path(d)
+        try:
+            r = _default_run_r()("plot_km.R", {
+                "data_path": self.data_path, "data_expr": self.data_expr,
+                "time_col": dec.time_col, "event_col": dec.event_col,
+                "event_value": str(dec.event_value), "stratum_col": dec.stratum_col or "",
+                "group_col": group_col or "", "out_base": str(d / "km_curve")}, timeout_s=120)
+        except Exception as exc:
+            return {"status": "error", "reason": f"{type(exc).__name__}: {exc}"} if group_col else None
+        if not (isinstance(r, dict) and r.get("status") == "ok"):
+            return r if group_col and isinstance(r, dict) else None
+        by = r.get("grouped_by")
+        how = {"levels": f" by `{by}`", "strata": f" by stratum (`{by}`)",
+               "median": f" by `{by}`, split at its median"}.get(r.get("grouping") or "", "")
+        band = "its pointwise 95% band and " if (r.get("n_strata") or 1) == 1 else ""
+        note = (f"{self._KM_START}\nThe Kaplan-Meier estimate of the target cohort{how}, with {band}"
+                "the number at risk, is drawn below and in `km_curve.pdf`.\n\n"
+                f"![Kaplan-Meier estimate of the target cohort](km_curve.png)\n{self._KM_END}\n\n")
+        md = d / "report.md"
+        rep = md.read_text(encoding="utf-8") if md.is_file() else self.report
+        a, b = rep.find(self._KM_START), rep.find(self._KM_END)
+        if a >= 0 and b > a:
+            rep = rep[:a] + note.rstrip("\n") + rep[b + len(self._KM_END):]
+        else:
+            k = rep.find("\n## 2.")
+            rep = (rep[:k + 1] + note + rep[k + 1:]) if k >= 0 else rep + "\n\n" + note
+        md.write_text(rep, encoding="utf-8")
+        return r
 
 
 # ------------------------------------------------------------------ provenance
@@ -298,6 +343,12 @@ def derive_candidate_keys(design: str, external_form: str,
     if "individual" in external_form.lower():
         keys = ["internal", "indi", "internal_lasso", "indi_lasso"]
         if not ncc:
+            # A full cohort's records also yield a fitted coefficient vector and its covariance,
+            # so the whole coefficient-and-covariance set is admissible beside the composite
+            # likelihood (2026-10-05; run_candidates.R fits the records and adds the same keys).
+            keys += ["kl", "mahalanobis", "euclidean", "internal_ridge", "kl_ridge",
+                     "mahalanobis_ridge", "euclidean_ridge", "kl_lasso", "mahalanobis_lasso",
+                     "euclidean_lasso"]
             # no fixed-coefficient conditional-likelihood loss exists, so the
             # matched side cannot score a model it did not fit
             keys.append("external")

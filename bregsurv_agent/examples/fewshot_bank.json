@@ -2,7 +2,7 @@
  "generated_by": "eval/generate_corpus.py --bank",
  "seed": 20260912,
  "purpose": "few-shot example bank for boundary 1 (3d.11)",
- "n_items": 300,
+ "n_items": 468,
  "n_templates": 60,
  "items": [
   {
@@ -13034,6 +13034,3923 @@
     "event_value_evidence": "value 1 when the event happened",
     "covariate_columns": null
    }
+  },
+  {
+   "id": "CRA00",
+   "template_id": "r2.RA.00",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "Fit graft survival using gf_days as the follow-up and graft_failed as the outcome (1 = failure). Predictors: DON_KDPI, REC_DIAL_YRS, DON_HCV, REC_COLD_ISCH_TM.",
+   "note": "A predictor absent from the file is kept as written next to the real ones.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"gf_days as the follow-up\" names the follow-up column; \"graft_failed as the outcome\" names the event column; \"1 = failure\" gives the event code; the predictor list names DON_KDPI, REC_DIAL_YRS, DON_HCV and REC_COLD_ISCH_TM. DON_HCV is not in the column list, so it is returned exactly as written for the harness to flag.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days as the follow-up",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed as the outcome",
+    "event_value": "1",
+    "event_value_evidence": "1 = failure",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAL_YRS",
+     "DON_HCV",
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRA01",
+   "template_id": "r2.RA.01",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "hey, for the waitlist file (wl_extract.csv) the clock is wl_days and removal for transplant is removed_for_tx, coded yes. adjust for CAN_CPRA, CAN_PREV_TX, CAN_ALBUMIN and CAN_DIAL_YRS please",
+   "note": "A lab the cohort never recorded is returned as written, not dropped.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the clock is wl_days\" names the follow-up column; \"removal for transplant is removed_for_tx\" names the event column; \"coded yes\" gives the event code; the adjustment list names four columns, of which CAN_ALBUMIN is not in the file and is returned unchanged rather than swapped for another CAN_ column.",
+    "time_column": "wl_days",
+    "time_evidence": "the clock is wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "removal for transplant is removed_for_tx",
+    "event_value": "yes",
+    "event_value_evidence": "coded yes",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_PREV_TX",
+     "CAN_ALBUMIN",
+     "CAN_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRA02",
+   "template_id": "r2.RA.02",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "Outcome is eskd, follow-up is years_to_eskd. Covariates: hba1c, sbp, uacr, potassium, on_raas.",
+   "note": "Terse list with one missing lab; event code left null when unstated.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Outcome is eskd\" names the event column; \"follow-up is years_to_eskd\" names the follow-up column; the covariate list names hba1c, sbp, uacr, potassium and on_raas; potassium is not a column of this file and is returned as written. No event code is given, so event_value is null.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up is years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "Outcome is eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "hba1c",
+     "sbp",
+     "uacr",
+     "potassium",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRA03",
+   "template_id": "r2.RA.03",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "Dear team, I'd like a Cox model of death_flag over months_followed. The predictors should be rcp_age, donor_type, tacrolimus_trough and hemoglobin. Thanks, M.",
+   "note": "A differently named version of a real column is never mapped to the real one.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"a Cox model of death_flag\" names the event column; \"over months_followed\" names the follow-up column; the predictors named are rcp_age, donor_type, tacrolimus_trough and hemoglobin. tacrolimus_trough is not in the file; it is returned as written and not replaced by tacrolimus_m3. No event code is stated.",
+    "time_column": "months_followed",
+    "time_evidence": "over months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "a Cox model of death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "donor_type",
+     "tacrolimus_trough",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRA04",
+   "template_id": "r2.RA.04",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "Survival analysis on the HF registry pull: duration in days_to_death_or_ltfu, event dead = 1. Include ef_pct, bnp, nt_probnp, sodium.",
+   "note": "A marker the file lacks stays in the list beside the similar one it has.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"duration in days_to_death_or_ltfu\" names the follow-up column; \"event dead = 1\" names the event column and its code; \"Include ef_pct, bnp, nt_probnp, sodium\" names the covariates, and nt_probnp, absent from the file, is returned as written rather than replaced by bnp.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "duration in days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "event dead = 1",
+    "event_value": "1",
+    "event_value_evidence": "dead = 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "bnp",
+     "nt_probnp",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRA05",
+   "template_id": "r2.RA.05",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "Use patient follow-up from fu_days_pt and pt_died as the event marker; covariates DON_AGE, DON_CREAT, REC_DIAB.",
+   "note": "A follow-up column the file lacks is returned as written so the harness can say it is missing.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"patient follow-up from fu_days_pt\" names the follow-up column as fu_days_pt, which is not in the file; it is returned exactly as written, not replaced by days_to_death. \"pt_died as the event marker\" names the event column. The covariates are DON_AGE, DON_CREAT and REC_DIAB. No event code is given.",
+    "time_column": "fu_days_pt",
+    "time_evidence": "patient follow-up from fu_days_pt",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died as the event marker",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_AGE",
+     "DON_CREAT",
+     "REC_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRA06",
+   "template_id": "r2.RA.06",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "adjust for female, age_at_index, sbp_avg, hba1c. eskd is the endpoint, years_to_eskd the duration.",
+   "note": "A longer spelling of a real column (sbp_avg vs sbp) is kept as written.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"adjust for female, age_at_index, sbp_avg, hba1c\" names four covariates; sbp_avg is a longer name than the file's sbp and is returned as written. \"eskd is the endpoint\" names the event column; \"years_to_eskd the duration\" names the follow-up column. No code for the event is given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd the duration",
+    "event_column": "eskd",
+    "event_evidence": "eskd is the endpoint",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "female",
+     "age_at_index",
+     "sbp_avg",
+     "hba1c"
+    ]
+   }
+  },
+  {
+   "id": "CRA07",
+   "template_id": "r2.RA.07",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "Predictors: delayed_graft_function, bk_viremia, rcp_age. Event column death_flag, where 1 marks a death; observation length is months_followed.",
+   "note": "Predictors stated first; a never-recorded lab is returned unchanged.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Predictors: delayed_graft_function, bk_viremia, rcp_age\" names three covariates, bk_viremia being absent from the file and returned as written. \"Event column death_flag\" names the event column; \"1 marks a death\" gives its code; \"observation length is months_followed\" names the follow-up column.",
+    "time_column": "months_followed",
+    "time_evidence": "observation length is months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Event column death_flag",
+    "event_value": "1",
+    "event_value_evidence": "1 marks a death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "delayed_graft_function",
+     "bk_viremia",
+     "rcp_age"
+    ]
+   }
+  },
+  {
+   "id": "CRA08",
+   "template_id": "r2.RA.08",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "We want mortality on the list, but in our file the outcome is list_death_ind and the duration is wl_days. Adjust for CAN_AGE_AT_LISTING, CAN_DIAB, CAN_GENDER.",
+   "note": "A named event column that the file lacks is returned as written, never substituted.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the outcome is list_death_ind\" names the event column as list_death_ind, which is not in the column list; it is returned exactly as written instead of being replaced by a similar real column. \"the duration is wl_days\" names the follow-up column. The covariates named are CAN_AGE_AT_LISTING, CAN_DIAB and CAN_GENDER. No event code is given.",
+    "time_column": "wl_days",
+    "time_evidence": "the duration is wl_days",
+    "event_column": "list_death_ind",
+    "event_evidence": "the outcome is list_death_ind",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_AGE_AT_LISTING",
+     "CAN_DIAB",
+     "CAN_GENDER"
+    ]
+   }
+  },
+  {
+   "id": "CRA09",
+   "template_id": "r2.RA.09",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "Quick one -- dead is the outcome (coded 1), days_to_death_or_ltfu the follow-up. Covariates nyha_class, creat_mg_dl, lvef, beta_blocker, and troponin if it's there.",
+   "note": "Two missing names, one resembling a real column, both returned as written.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"dead is the outcome\" names the event column; \"coded 1\" gives the code; \"days_to_death_or_ltfu the follow-up\" names the follow-up column; the covariates named are nyha_class, creat_mg_dl, lvef, beta_blocker and troponin. lvef and troponin are not in the file; both are returned as written, and lvef is not replaced by ef_pct.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu the follow-up",
+    "event_column": "dead",
+    "event_evidence": "dead is the outcome",
+    "event_value": "1",
+    "event_value_evidence": "coded 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "nyha_class",
+     "creat_mg_dl",
+     "lvef",
+     "beta_blocker",
+     "troponin"
+    ]
+   }
+  },
+  {
+   "id": "CRA10",
+   "template_id": "r2.RA.10",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "Graft outcome: graft_failed=1 on gf_days. Model on DON_KDPI, DON_DCD, REC_PREV_TX, REC_DIAL_YRS.",
+   "note": "Two absent predictors in one list are both kept for the harness to report.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"graft_failed=1\" names the event column and its code; \"on gf_days\" names the follow-up column; \"Model on DON_KDPI, DON_DCD, REC_PREV_TX, REC_DIAL_YRS\" names four covariates, of which DON_DCD and REC_PREV_TX are not columns of this file and are returned exactly as written.",
+    "time_column": "gf_days",
+    "time_evidence": "on gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed=1",
+    "event_value": "1",
+    "event_value_evidence": "graft_failed=1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "DON_DCD",
+     "REC_PREV_TX",
+     "REC_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRA11",
+   "template_id": "r2.RA.11",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "The registry equation uses uacr_log; in our extract please put uacr_log, hba1c and on_raas in the model, with eskd (1 = kidney failure) over years_to_eskd.",
+   "note": "A transformed name the file lacks is not mapped back to the raw column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"put uacr_log, hba1c and on_raas in the model\" names the covariates; uacr_log is not in the file (it has uacr) and is returned as written. \"eskd (1 = kidney failure)\" names the event column and \"1 = kidney failure\" its code; \"over years_to_eskd\" names the follow-up column.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "over years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd (1 = kidney failure)",
+    "event_value": "1",
+    "event_value_evidence": "1 = kidney failure",
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr_log",
+     "hba1c",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRA12",
+   "template_id": "r2.RA.12",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "Our transplant center EHR covers 2015 to 2022. I'll take death_flag as the outcome and the months_followed column for follow-up. Adjust for rcp_age, hemoglobin_m3 and donor_type.",
+   "note": "A suffixed variant of a real column stays as the analyst wrote it.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"death_flag as the outcome\" names the event column; \"the months_followed column for follow-up\" names the follow-up column; \"Adjust for rcp_age, hemoglobin_m3 and donor_type\" names three covariates, and hemoglobin_m3, a longer name than the file's hemoglobin, is returned as written. No event code is given.",
+    "time_column": "months_followed",
+    "time_evidence": "the months_followed column for follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag as the outcome",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "hemoglobin_m3",
+     "donor_type"
+    ]
+   }
+  },
+  {
+   "id": "CRA13",
+   "template_id": "r2.RA.13",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "Duration is wl_dayz, event removed_for_tx. Adjust for CAN_CPRA, CAN_ABO and CAN_RACE.",
+   "note": "A misspelt follow-up column is returned as written, not silently corrected.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Duration is wl_dayz\" names the follow-up column as wl_dayz, which the file does not have; it is returned exactly as written rather than corrected to wl_days, so the harness can ask. \"event removed_for_tx\" names the event column. The covariates are CAN_CPRA, CAN_ABO and CAN_RACE. No event code is given.",
+    "time_column": "wl_dayz",
+    "time_evidence": "Duration is wl_dayz",
+    "event_column": "removed_for_tx",
+    "event_evidence": "event removed_for_tx",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_ABO",
+     "CAN_RACE"
+    ]
+   }
+  },
+  {
+   "id": "CRA14",
+   "template_id": "r2.RA.14",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "Please model dead using days_to_death_or_ltfu, adjusting for age_enrol, sodium, potassium_meq and bnp. Event value is 1.",
+   "note": "A missing lab with units in its name is kept as written.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"model dead\" names the event column; \"using days_to_death_or_ltfu\" names the follow-up column; \"Event value is 1\" gives the code; the adjustment list names age_enrol, sodium, potassium_meq and bnp, and potassium_meq is not in the file, so it is returned as written.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "using days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "model dead",
+    "event_value": "1",
+    "event_value_evidence": "Event value is 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "age_enrol",
+     "sodium",
+     "potassium_meq",
+     "bnp"
+    ]
+   }
+  },
+  {
+   "id": "CRA15",
+   "template_id": "r2.RA.15",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "Can you fit patient survival -- days_to_death and pt_died -- with DON_AGE, REC_COLD_ISCH_TM and REC_FUNCTIONAL_SCORE as predictors?",
+   "note": "A published-model variable the file lacks is returned beside the real predictors.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"patient survival -- days_to_death\" names the follow-up column and \"and pt_died\" the event column; \"with DON_AGE, REC_COLD_ISCH_TM and REC_FUNCTIONAL_SCORE as predictors\" names the covariates, REC_FUNCTIONAL_SCORE being absent from the file and returned as written. No event code is given.",
+    "time_column": "days_to_death",
+    "time_evidence": "patient survival -- days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "and pt_died",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_AGE",
+     "REC_COLD_ISCH_TM",
+     "REC_FUNCTIONAL_SCORE"
+    ]
+   }
+  },
+  {
+   "id": "CRA16",
+   "template_id": "r2.RA.16",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "endpoint eskd, years_to_eskd. predictors: hba1c, female, bp_systolic.",
+   "note": "A differently spelt blood-pressure variable is not mapped to sbp.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"endpoint eskd\" names the event column; \"years_to_eskd\" written next to it is the only follow-up column named; \"predictors: hba1c, female, bp_systolic\" names three covariates, and bp_systolic is not in the file; it is returned as written, not replaced by sbp. No event code is given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "endpoint eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "hba1c",
+     "female",
+     "bp_systolic"
+    ]
+   }
+  },
+  {
+   "id": "CRA17",
+   "template_id": "r2.RA.17",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "Outcome death_flag (value 1), follow-up months_followed. Covariates: tacrolimus_m3, delayed_graft_function, cmv_igg.",
+   "note": "A serology the center never recorded is returned unchanged.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Outcome death_flag\" names the event column and \"value 1\" its code; \"follow-up months_followed\" names the follow-up column; the covariates named are tacrolimus_m3, delayed_graft_function and cmv_igg, the last of which the file does not have; it is returned as written.",
+    "time_column": "months_followed",
+    "time_evidence": "follow-up months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Outcome death_flag",
+    "event_value": "1",
+    "event_value_evidence": "value 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "tacrolimus_m3",
+     "delayed_graft_function",
+     "cmv_igg"
+    ]
+   }
+  },
+  {
+   "id": "CRA18",
+   "template_id": "r2.RA.18",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "I'm working on wl_extract.csv. The event I care about is removed_for_tx and the follow-up is wl_days. I want CAN_BMI, CAN_FRAILTY_IDX, CAN_DIAL_YRS and CAN_PREV_TX in the model. Unrelated: the center codes changed in 2019.",
+   "note": "Missing predictor plus an irrelevant aside that assigns nothing.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"The event I care about is removed_for_tx\" names the event column; \"the follow-up is wl_days\" names the follow-up column; \"I want CAN_BMI, CAN_FRAILTY_IDX, CAN_DIAL_YRS and CAN_PREV_TX in the model\" names the covariates, and CAN_FRAILTY_IDX is not in the file and is returned as written. The aside about center codes names no role. No event code is given.",
+    "time_column": "wl_days",
+    "time_evidence": "the follow-up is wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "The event I care about is removed_for_tx",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_BMI",
+     "CAN_FRAILTY_IDX",
+     "CAN_DIAL_YRS",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRA19",
+   "template_id": "r2.RA.19",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "dead (1 = death) over days_to_death_or_ltfu; covariates ef_pct, nyha_class, sodium, hemoglobin_g_dl, creat_mg_dl.",
+   "note": "One absent lab inside a longer list.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"dead (1 = death)\" names the event column and \"1 = death\" its code; \"over days_to_death_or_ltfu\" names the follow-up column; the covariate list names five columns, and hemoglobin_g_dl, not in the file, is returned as written.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "over days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead (1 = death)",
+    "event_value": "1",
+    "event_value_evidence": "1 = death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "nyha_class",
+     "sodium",
+     "hemoglobin_g_dl",
+     "creat_mg_dl"
+    ]
+   }
+  },
+  {
+   "id": "CRA20",
+   "template_id": "r2.RA.20",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "The registry_release.csv model includes DON_HCV, REC_PRA_PEAK and DON_KDPI. For our cohort I only want DON_KDPI, REC_DIAL_YRS and DON_CREAT as predictors. Follow-up gf_days, event graft_failed.",
+   "note": "Names used to describe the release are not the requested predictors.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The first sentence describes the release's variables, not the cohort's predictors. \"I only want DON_KDPI, REC_DIAL_YRS and DON_CREAT as predictors\" is the explicit request, so only those three are covariates; DON_HCV and REC_PRA_PEAK are not requested. \"Follow-up gf_days\" names the follow-up column; \"event graft_failed\" names the event column. No event code is given.",
+    "time_column": "gf_days",
+    "time_evidence": "Follow-up gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "event graft_failed",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAL_YRS",
+     "DON_CREAT"
+    ]
+   }
+  },
+  {
+   "id": "CRA21",
+   "template_id": "r2.RA.21",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "The published waitlist model (consortium_model.json) has CAN_PREV_TX, a frailty score and CAN_CPRA. Our cohort's predictors: CAN_AGE_AT_LISTING, CAN_DIAB, CAN_GENDER. Outcome removed_for_tx over wl_days.",
+   "note": "Release contents are context; only the cohort's explicit list is read.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The first sentence lists what the published model contains; it does not ask for those as predictors. \"Our cohort's predictors: CAN_AGE_AT_LISTING, CAN_DIAB, CAN_GENDER\" names the covariates. \"Outcome removed_for_tx\" names the event column; \"over wl_days\" names the follow-up column. No event code is given.",
+    "time_column": "wl_days",
+    "time_evidence": "over wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "Outcome removed_for_tx",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_AGE_AT_LISTING",
+     "CAN_DIAB",
+     "CAN_GENDER"
+    ]
+   }
+  },
+  {
+   "id": "CRA22",
+   "template_id": "r2.RA.22",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "External equation was built on uacr, sbp, potassium and phosphate. We'll adjust for hba1c and on_raas only. eskd is the event (1), years_to_eskd the follow-up.",
+   "note": "Release variables, real or missing, stay out of covariate_columns when another list is requested.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The first sentence names the external equation's inputs, not the analysis predictors. \"We'll adjust for hba1c and on_raas only\" names the covariates. \"eskd is the event\" names the event column and \"(1)\" gives its code; \"years_to_eskd the follow-up\" names the follow-up column.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd the follow-up",
+    "event_column": "eskd",
+    "event_evidence": "eskd is the event",
+    "event_value": "1",
+    "event_value_evidence": "(1)",
+    "stratum_column": null,
+    "covariate_columns": [
+     "hba1c",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRA23",
+   "template_id": "r2.RA.23",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "FYI the national model uses donor_type, rcp_age and a cPRA term. In our center data, adjust for hemoglobin, tacrolimus_m3 and delayed_graft_function. Outcome death_flag, months_followed for follow-up.",
+   "note": "Real columns mentioned only as the release's contents are not covariates.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the national model uses donor_type, rcp_age and a cPRA term\" describes the release. \"adjust for hemoglobin, tacrolimus_m3 and delayed_graft_function\" is the requested covariate list. \"Outcome death_flag\" names the event column; \"months_followed for follow-up\" names the follow-up column. No event code is given.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed for follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "Outcome death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "hemoglobin",
+     "tacrolimus_m3",
+     "delayed_graft_function"
+    ]
+   }
+  },
+  {
+   "id": "CRA24",
+   "template_id": "r2.RA.24",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "The trial-derived release contains bnp, ef_pct, nt_probnp and lvef. Here our predictors are nyha_class, sodium and beta_blocker; event is dead, duration days_to_death_or_ltfu.",
+   "note": "Missing names in the release description are neither returned nor flagged.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"The trial-derived release contains bnp, ef_pct, nt_probnp and lvef\" describes the release. \"our predictors are nyha_class, sodium and beta_blocker\" names the covariates. \"event is dead\" names the event column; \"duration days_to_death_or_ltfu\" names the follow-up column. No event code is given.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "duration days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "event is dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "nyha_class",
+     "sodium",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRA25",
+   "template_id": "r2.RA.25",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "Use the same variables as the registry model. Patient survival: pt_died over days_to_death.",
+   "note": "A reference to the release's variable set names no covariate.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Use the same variables as the registry model\" refers to a set without naming any column, so covariate_columns is null. \"pt_died\" names the event column; \"over days_to_death\" names the follow-up column. No event code is given.",
+    "time_column": "days_to_death",
+    "time_evidence": "over days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "Patient survival: pt_died",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRA26",
+   "template_id": "r2.RA.26",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "adjust for whatever the SRTR waitlist model uses -- same set. event removed_for_tx, follow-up wl_days.",
+   "note": "\"Same set as the model\" leaves covariates null; the harness resolves it.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"adjust for whatever the SRTR waitlist model uses -- same set\" points at a set of columns without naming one, so covariate_columns is null. \"event removed_for_tx\" names the event column; \"follow-up wl_days\" names the follow-up column. No event code is given.",
+    "time_column": "wl_days",
+    "time_evidence": "follow-up wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "event removed_for_tx",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRA27",
+   "template_id": "r2.RA.27",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "Same predictors as the published risk equation, please; outcome eskd coded 1, follow-up years_to_eskd.",
+   "note": "Set-valued reference to an external equation yields null covariates.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Same predictors as the published risk equation\" names no column, so covariate_columns is null. \"outcome eskd\" names the event column and \"coded 1\" its code; \"follow-up years_to_eskd\" names the follow-up column.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "outcome eskd",
+    "event_value": "1",
+    "event_value_evidence": "coded 1",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRA28",
+   "template_id": "r2.RA.28",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "dead / days_to_death_or_ltfu, and covariates identical to those in the consortium_model.json release.",
+   "note": "Covariates defined by a file's contents are not names; leave null.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"dead\" is the event column named before the slash and \"days_to_death_or_ltfu\" the follow-up column after it. \"covariates identical to those in the consortium_model.json release\" names no column, so covariate_columns is null. No event code is given.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead /",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRA29",
+   "template_id": "r2.RA.29",
+   "profile": "srtr_posttx",
+   "category": "RA",
+   "request": "The released coefficients cover DON_AGE, DON_KDPI, REC_COLD_ISCH_TM and REC_DIAB. I'd like REC_DIAB and DON_CREAT in my own model -- graft_failed (yes) with gf_days.",
+   "note": "Overlap with the release does not pull its other variables in.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The first sentence lists the release's coverage. \"I'd like REC_DIAB and DON_CREAT in my own model\" names the covariates; the other release variables are not requested. \"graft_failed (yes)\" names the event column and the code yes; \"with gf_days\" names the follow-up column.",
+    "time_column": "gf_days",
+    "time_evidence": "with gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed (yes)",
+    "event_value": "yes",
+    "event_value_evidence": "(yes)",
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAB",
+     "DON_CREAT"
+    ]
+   }
+  },
+  {
+   "id": "CRA30",
+   "template_id": "r2.RA.30",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "Hi! registry_release.csv lists rcp_age, donor_type and a dialysis vintage term. Our model: rcp_age, donor_type, hemoglobin. Follow-up months_followed; death_flag = 1 is death.",
+   "note": "The cohort list, not the release's list, sets the covariates.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"registry_release.csv lists rcp_age, donor_type and a dialysis vintage term\" describes the release. \"Our model: rcp_age, donor_type, hemoglobin\" names the covariates. \"Follow-up months_followed\" names the follow-up column; \"death_flag = 1 is death\" names the event column and the code 1.",
+    "time_column": "months_followed",
+    "time_evidence": "Follow-up months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag = 1 is death",
+    "event_value": "1",
+    "event_value_evidence": "death_flag = 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "donor_type",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRA31",
+   "template_id": "r2.RA.31",
+   "profile": "ckd_ehr",
+   "category": "RA",
+   "request": "the registry model includes age_at_index, sbp and uacr. predictors for our clinic cohort: female, hba1c, uacr. endpoint eskd; follow-up years_to_eskd.",
+   "note": "Partial overlap: only the explicitly requested list counts.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the registry model includes age_at_index, sbp and uacr\" describes the release. \"predictors for our clinic cohort: female, hba1c, uacr\" names the covariates; age_at_index and sbp are not requested. \"endpoint eskd\" names the event column; \"follow-up years_to_eskd\" names the follow-up column. No code is given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "endpoint eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "female",
+     "hba1c",
+     "uacr"
+    ]
+   }
+  },
+  {
+   "id": "CRA32",
+   "template_id": "r2.RA.32",
+   "profile": "srtr_waitlist",
+   "category": "RA",
+   "request": "Background: the release (registry_release.csv) has CAN_CPRA, CAN_ABO, CAN_RACE and CAN_SERUM_ALB. Please adjust only for CAN_DIAL_YRS and CAN_PREV_TX. Event removed_for_tx, follow-up wl_days.",
+   "note": "A release-only variable is context, not a requested predictor.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the release (registry_release.csv) has CAN_CPRA, CAN_ABO, CAN_RACE and CAN_SERUM_ALB\" describes the release, so none of those is a covariate and CAN_SERUM_ALB is not flagged. \"adjust only for CAN_DIAL_YRS and CAN_PREV_TX\" names the covariates. \"Event removed_for_tx\" names the event column; \"follow-up wl_days\" names the follow-up column. No code is given.",
+    "time_column": "wl_days",
+    "time_evidence": "follow-up wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "Event removed_for_tx",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_DIAL_YRS",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRA33",
+   "template_id": "r2.RA.33",
+   "profile": "heart_failure",
+   "category": "RA",
+   "request": "The external Cox model uses age_enrol, bnp and creat_mg_dl. Same variables as that model, please. Outcome dead (1) over days_to_death_or_ltfu.",
+   "note": "Even when the release's names appear, \"same variables as that model\" is a reference, not a list.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"The external Cox model uses age_enrol, bnp and creat_mg_dl\" describes the release; \"Same variables as that model, please\" asks for a set by reference without naming the predictors, so covariate_columns is null and the harness resolves the set. \"Outcome dead\" names the event column and \"(1)\" its code; \"over days_to_death_or_ltfu\" names the follow-up column.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "over days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "Outcome dead",
+    "event_value": "1",
+    "event_value_evidence": "(1)",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRA34",
+   "template_id": "r2.RA.34",
+   "profile": "tx_center_ehr",
+   "category": "RA",
+   "request": "Same covariates as the national registry model, which has donor_type and rcp_age in it. Outcome death_flag, follow-up months_followed.",
+   "note": "A by-reference request stays null even with release names nearby.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Same covariates as the national registry model\" requests a set by reference; the names that follow describe the model's contents and are not a list of requested predictors, so covariate_columns is null. \"Outcome death_flag\" names the event column; \"follow-up months_followed\" names the follow-up column. No code is given.",
+    "time_column": "months_followed",
+    "time_evidence": "follow-up months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Outcome death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRB00",
+   "template_id": "r2.RB.00",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "Fit the post-transplant survival model on days_to_death with pt_died as the outcome; pt_died equals 1 for a death. Adjust for DON_KDPI, REC_DIAB and REC_COLD_ISCH_TM.",
+   "note": "a plainly stated event code is returned as written, with its phrase",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"on days_to_death\" names the follow-up column; \"pt_died as the outcome\" names the event column; \"pt_died equals 1 for a death\" gives the code 1 as the event; \"Adjust for DON_KDPI, REC_DIAB and REC_COLD_ISCH_TM\" names three covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "on days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died as the outcome",
+    "event_value": "1",
+    "event_value_evidence": "pt_died equals 1 for a death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAB",
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRB01",
+   "template_id": "r2.RB.01",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "Graft survival please: gf_days is the clock, graft_failed is 2 when the graft failed and 1 otherwise. Predictors DON_KDPI, DON_CREAT, REC_DIAL_YRS.",
+   "note": "a 1/2 coding: the event code is 2 because the request says so",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"gf_days is the clock\" names the follow-up column; \"graft_failed is 2 when the graft failed\" names the event column and says 2 marks the event; \"Predictors DON_KDPI, DON_CREAT, REC_DIAL_YRS\" names the covariates.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days is the clock",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed is 2 when the graft failed",
+    "event_value": "2",
+    "event_value_evidence": "graft_failed is 2 when the graft failed",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "DON_CREAT",
+     "REC_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRB02",
+   "template_id": "r2.RB.02",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "eskd: 1 = reached kidney failure. years_to_eskd is how long each patient was followed. Use uacr, sbp, hba1c and on_raas.",
+   "note": "terse 'column: code = meaning' notation still states the event code",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"eskd: 1 = reached kidney failure\" names the event column and gives 1 as the event code; \"years_to_eskd is how long each patient was followed\" names the follow-up column; \"Use uacr, sbp, hba1c and on_raas\" names four covariates.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd is how long each patient was followed",
+    "event_column": "eskd",
+    "event_evidence": "eskd: 1 = reached kidney failure",
+    "event_value": "1",
+    "event_value_evidence": "eskd: 1 = reached kidney failure",
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr",
+     "sbp",
+     "hba1c",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRB03",
+   "template_id": "r2.RB.03",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "dead coded yes/no, yes meaning the patient is deceased; follow-up in days_to_death_or_ltfu. Covariates ef_pct, bnp, sodium, nyha_class.",
+   "note": "a text code (yes) is returned exactly as the request writes it",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"dead coded yes/no\" names the event column; \"yes meaning the patient is deceased\" says the code yes marks the event; \"follow-up in days_to_death_or_ltfu\" names the follow-up column; \"Covariates ef_pct, bnp, sodium, nyha_class\" names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "follow-up in days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead coded yes/no",
+    "event_value": "yes",
+    "event_value_evidence": "yes meaning the patient is deceased",
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "bnp",
+     "sodium",
+     "nyha_class"
+    ]
+   }
+  },
+  {
+   "id": "CRB04",
+   "template_id": "r2.RB.04",
+   "profile": "srtr_waitlist",
+   "category": "RB",
+   "request": "hi, quick one -- wl_days for duration on the list, died_on_list flags the outcome (a value of 1 marks a death while waiting). CAN_CPRA, CAN_DIAL_YRS, CAN_PREV_TX as adjusters.",
+   "note": "the code can be stated in a parenthetical aside",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"wl_days for duration on the list\" names the follow-up column; \"died_on_list flags the outcome\" names the event column; \"a value of 1 marks a death while waiting\" gives 1 as the event code; \"CAN_CPRA, CAN_DIAL_YRS, CAN_PREV_TX as adjusters\" names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days for duration on the list",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list flags the outcome",
+    "event_value": "1",
+    "event_value_evidence": "a value of 1 marks a death while waiting",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRB05",
+   "template_id": "r2.RB.05",
+   "profile": "tx_center_ehr",
+   "category": "RB",
+   "request": "Outcome: death_flag (Y = deceased). Duration: months_followed. Adjust for donor_type, delayed_graft_function, tacrolimus_m3, hemoglobin.",
+   "note": "a single-letter code is kept as written, not turned into 1",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Outcome: death_flag\" names the event column; \"death_flag (Y = deceased)\" says Y marks the event; \"Duration: months_followed\" names the follow-up column; the adjustment list names four covariates.",
+    "time_column": "months_followed",
+    "time_evidence": "Duration: months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Outcome: death_flag",
+    "event_value": "Y",
+    "event_value_evidence": "death_flag (Y = deceased)",
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "delayed_graft_function",
+     "tacrolimus_m3",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRB06",
+   "template_id": "r2.RB.06",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "Dear team, for the registry-borrowing analysis of our heart failure cohort, the endpoint column is dead, where 1 denotes all-cause mortality. Please measure follow-up with days_to_death_or_ltfu and include bnp, creat_mg_dl and beta_blocker. Thanks, R.",
+   "note": "in a narrative email the code sits in a relative clause",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the endpoint column is dead\" names the event column; \"where 1 denotes all-cause mortality\" gives 1 as the event code; \"measure follow-up with days_to_death_or_ltfu\" names the follow-up column; \"include bnp, creat_mg_dl and beta_blocker\" names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "measure follow-up with days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "the endpoint column is dead",
+    "event_value": "1",
+    "event_value_evidence": "where 1 denotes all-cause mortality",
+    "stratum_column": null,
+    "covariate_columns": [
+     "bnp",
+     "creat_mg_dl",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRB07",
+   "template_id": "r2.RB.07",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "useing eskd as teh event (coded TRUE when dialysis or transplant started), years_to_eskd for duration, adjust for female, uacr, sbp",
+   "note": "typos do not change the reading; TRUE is copied in the request's case",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"useing eskd as teh event\" names the event column despite the typos; \"coded TRUE when dialysis or transplant started\" gives TRUE as the event code; \"years_to_eskd for duration\" names the follow-up column; \"adjust for female, uacr, sbp\" names the covariates.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd for duration",
+    "event_column": "eskd",
+    "event_evidence": "useing eskd as teh event",
+    "event_value": "TRUE",
+    "event_value_evidence": "coded TRUE when dialysis or transplant started",
+    "stratum_column": null,
+    "covariate_columns": [
+     "female",
+     "uacr",
+     "sbp"
+    ]
+   }
+  },
+  {
+   "id": "CRB08",
+   "template_id": "r2.RB.08",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "Patient survival: the outcome is pt_died, which takes the value 1 whenever the recipient passed away; measure from transplant with days_to_death. Covariates REC_DIAL_YRS and DON_KDPI. (The release file is registry_release.csv.)",
+   "note": "a file name in the request is not a column and is not returned",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the outcome is pt_died\" names the event column; \"takes the value 1 whenever the recipient passed away\" gives 1 as the event code; \"measure from transplant with days_to_death\" names the follow-up column; \"Covariates REC_DIAL_YRS and DON_KDPI\" names two covariates; the release file name is not a column.",
+    "time_column": "days_to_death",
+    "time_evidence": "measure from transplant with days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "the outcome is pt_died",
+    "event_value": "1",
+    "event_value_evidence": "takes the value 1 whenever the recipient passed away",
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAL_YRS",
+     "DON_KDPI"
+    ]
+   }
+  },
+  {
+   "id": "CRB09",
+   "template_id": "r2.RB.09",
+   "profile": "srtr_waitlist",
+   "category": "RB",
+   "request": "removed_for_tx is the indicator here, and 'Y' in it means the candidate was removed because they received a transplant. Use wl_days. Covariates: CAN_ABO, CAN_CPRA, CAN_DIAB.",
+   "note": "the event need not be a death; the code is whatever marks the named outcome",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"removed_for_tx is the indicator here\" names the event column; \"'Y' in it means the candidate was removed because they received a transplant\" gives Y as the event code; \"Use wl_days\" names the follow-up column; \"Covariates: CAN_ABO, CAN_CPRA, CAN_DIAB\" names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "Use wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "removed_for_tx is the indicator here",
+    "event_value": "Y",
+    "event_value_evidence": "'Y' in it means the candidate was removed because they received a transplant",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_ABO",
+     "CAN_CPRA",
+     "CAN_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRB10",
+   "template_id": "r2.RB.10",
+   "profile": "tx_center_ehr",
+   "category": "RB",
+   "request": "Kaplan-Meier pictures aside, for the Cox part use months_followed, and death_flag where a 1 records a death. Predictors hemoglobin and tacrolimus_m3. Ignore campus.",
+   "note": "a column the analyst says to ignore is not a covariate",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"use months_followed\" names the follow-up column; \"death_flag where a 1 records a death\" names the event column and gives 1 as the event code; \"Predictors hemoglobin and tacrolimus_m3\" names the covariates; campus is explicitly excluded, so it is not a covariate.",
+    "time_column": "months_followed",
+    "time_evidence": "use months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag where a 1 records a death",
+    "event_value": "1",
+    "event_value_evidence": "death_flag where a 1 records a death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "hemoglobin",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRB11",
+   "template_id": "r2.RB.11",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "Event indicator eskd uses 'yes' for progression to end-stage disease; follow-up is years_to_eskd. No predictors chosen yet, use whatever is sensible.",
+   "note": "a stated code with no covariates named: covariates stay null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Event indicator eskd\" names the event column; \"uses 'yes' for progression to end-stage disease\" gives yes as the event code; \"follow-up is years_to_eskd\" names the follow-up column; \"No predictors chosen yet\" names no covariate, so covariate_columns is null.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up is years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "Event indicator eskd",
+    "event_value": "yes",
+    "event_value_evidence": "uses 'yes' for progression to end-stage disease",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRB13",
+   "template_id": "r2.RB.13",
+   "profile": "srtr_waitlist",
+   "category": "RB",
+   "request": "died_on_list is 1 when the candidate is still alive, 0 when the candidate passed away -- odd, I know. wl_days is the waiting duration. Adjust for CAN_CPRA and CAN_DIAL_YRS.",
+   "note": "even when the column name suggests 1, the analyst's stated 0 is the answer",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"died_on_list is 1 when the candidate is still alive\" names the event column; \"0 when the candidate passed away\" says 0 marks the event, so event_value is 0; \"wl_days is the waiting duration\" names the follow-up column; \"Adjust for CAN_CPRA and CAN_DIAL_YRS\" names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days is the waiting duration",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list is 1 when the candidate is still alive",
+    "event_value": "0",
+    "event_value_evidence": "0 when the candidate passed away",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRB14",
+   "template_id": "r2.RB.14",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "careful, dead is reversed in this pull: 1 = alive, 2 = deceased. days_to_death_or_ltfu for follow-up; covariates ef_pct, bnp, nyha_class, sodium",
+   "note": "with two codes listed, the one tied to the event is returned",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"dead is reversed in this pull\" names the event column; \"2 = deceased\" says 2 marks the event; \"days_to_death_or_ltfu for follow-up\" names the follow-up column; \"covariates ef_pct, bnp, nyha_class, sodium\" names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu for follow-up",
+    "event_column": "dead",
+    "event_evidence": "dead is reversed in this pull",
+    "event_value": "2",
+    "event_value_evidence": "2 = deceased",
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "bnp",
+     "nyha_class",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRB15",
+   "template_id": "r2.RB.15",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "graft_failed got recoded by the data office so that 0 marks a failed graft and 1 a functioning one. Clock is gf_days. Use DON_KDPI, DON_CREAT, REC_COLD_ISCH_TM, REC_DIAB.",
+   "note": "a recoded indicator: quote the recoding, return its event code",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"graft_failed got recoded by the data office\" names the event column; \"0 marks a failed graft\" gives 0 as the event code; \"Clock is gf_days\" names the follow-up column; the Use list names four covariates.",
+    "time_column": "gf_days",
+    "time_evidence": "Clock is gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed got recoded by the data office",
+    "event_value": "0",
+    "event_value_evidence": "0 marks a failed graft",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "DON_CREAT",
+     "REC_COLD_ISCH_TM",
+     "REC_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRB16",
+   "template_id": "r2.RB.16",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "Reminder from the data manager: eskd here is coded 1 = still free of kidney failure, 0 = kidney failure reached. Please analyse years_to_eskd against uacr, hba1c, on_raas.",
+   "note": "1 meaning event-free is stated, so the event code is 0",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"eskd here is coded\" names the event column; \"0 = kidney failure reached\" says 0 marks the event; \"analyse years_to_eskd\" names the follow-up column; \"against uacr, hba1c, on_raas\" names the covariates.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "analyse years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd here is coded",
+    "event_value": "0",
+    "event_value_evidence": "0 = kidney failure reached",
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr",
+     "hba1c",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRB17",
+   "template_id": "r2.RB.17",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "Our pt_died column follows the alive-flag convention of the old system, so the event (death) is pt_died = 0. Clock: days_to_death. Covariates REC_DIAL_YRS, DON_KDPI.",
+   "note": "an explicit 'event is column = 0' overrides what the name suggests",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Our pt_died column\" names the event column; \"the event (death) is pt_died = 0\" gives 0 as the event code; \"Clock: days_to_death\" names the follow-up column; \"Covariates REC_DIAL_YRS, DON_KDPI\" names the covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "Clock: days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "Our pt_died column",
+    "event_value": "0",
+    "event_value_evidence": "the event (death) is pt_died = 0",
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAL_YRS",
+     "DON_KDPI"
+    ]
+   }
+  },
+  {
+   "id": "CRB18",
+   "template_id": "r2.RB.18",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "dead = N for deceased patients and Y for those alive at the last visit (yes, backwards). Follow-up days_to_death_or_ltfu, adjust for creat_mg_dl and beta_blocker.",
+   "note": "a reversed letter code: N is the event because the analyst says so",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"dead = N for deceased patients\" names the event column and says N marks the event; \"Follow-up days_to_death_or_ltfu\" names the follow-up column; \"adjust for creat_mg_dl and beta_blocker\" names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Follow-up days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead = N for deceased patients",
+    "event_value": "N",
+    "event_value_evidence": "dead = N for deceased patients",
+    "stratum_column": null,
+    "covariate_columns": [
+     "creat_mg_dl",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRB19",
+   "template_id": "r2.RB.19",
+   "profile": "tx_center_ehr",
+   "category": "RB",
+   "request": "Note that death_flag uses 2 for alive and 1 for deceased in the campus extract. months_followed is the follow-up. Adjust: delayed_graft_function, tacrolimus_m3.",
+   "note": "an unusual 2/1 coding: the code tied to the event is the answer",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"death_flag uses 2 for alive\" names the event column; \"1 for deceased\" says 1 marks the event; \"months_followed is the follow-up\" names the follow-up column; \"Adjust: delayed_graft_function, tacrolimus_m3\" names the covariates; campus is mentioned only as the extract's origin, not as a predictor.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed is the follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag uses 2 for alive",
+    "event_value": "1",
+    "event_value_evidence": "1 for deceased",
+    "stratum_column": null,
+    "covariate_columns": [
+     "delayed_graft_function",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRB20",
+   "template_id": "r2.RB.20",
+   "profile": "srtr_waitlist",
+   "category": "RB",
+   "request": "In wl_extract.csv the removed_for_tx flag is inverted: 0 = removed for a transplant, 1 = otherwise. Please use wl_days and adjust for CAN_ABO, CAN_PREV_TX.",
+   "note": "an inverted flag: the stated 0 is returned unchanged",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the removed_for_tx flag is inverted\" names the event column; \"0 = removed for a transplant\" gives 0 as the event code; \"use wl_days\" names the follow-up column; \"adjust for CAN_ABO, CAN_PREV_TX\" names the covariates; wl_extract.csv is a file, not a column.",
+    "time_column": "wl_days",
+    "time_evidence": "use wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "the removed_for_tx flag is inverted",
+    "event_value": "0",
+    "event_value_evidence": "0 = removed for a transplant",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_ABO",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRB21",
+   "template_id": "r2.RB.21",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "Hi both, slight wrinkle: in the clinic export, eskd is FALSE for patients who progressed and TRUE for those who did not, because the field was originally 'kidney ok'. Use years_to_eskd and sbp, uacr, female. Thanks.",
+   "note": "a reversed logical code: FALSE is the event as the analyst states",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"eskd is FALSE for patients who progressed\" names the event column and says FALSE marks the event; \"Use years_to_eskd\" names the follow-up column; \"sbp, uacr, female\" names the covariates.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "Use years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd is FALSE for patients who progressed",
+    "event_value": "FALSE",
+    "event_value_evidence": "eskd is FALSE for patients who progressed",
+    "stratum_column": null,
+    "covariate_columns": [
+     "sbp",
+     "uacr",
+     "female"
+    ]
+   }
+  },
+  {
+   "id": "CRB22",
+   "template_id": "r2.RB.22",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "Use days_to_death and pt_died with the usual coding; adjust for DON_KDPI and REC_DIAB.",
+   "note": "'the usual coding' does not state a code: event_value is null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Use days_to_death\" names the follow-up column; \"pt_died with the usual coding\" names the event column but does not say which code marks the event, so event_value is null; \"adjust for DON_KDPI and REC_DIAB\" names the covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "Use days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died with the usual coding",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRB24",
+   "template_id": "r2.RB.24",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "Endpoint dead, follow-up days_to_death_or_ltfu. Borrow from consortium_model.json.",
+   "note": "a bare endpoint name: no code, no covariates",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Endpoint dead\" names the event column; no code is given, so event_value is null; \"follow-up days_to_death_or_ltfu\" names the follow-up column; no predictor is named, so covariate_columns is null; consortium_model.json is the external file.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "follow-up days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "Endpoint dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRB25",
+   "template_id": "r2.RB.25",
+   "profile": "tx_center_ehr",
+   "category": "RB",
+   "request": "Outcome is death_flag; the follow-up lives in months_followed. Adjust for donor_type, hemoglobin, delayed_graft_function. Score on holdout_2023.csv afterwards.",
+   "note": "do not assume 1 for a 'flag' column when no code is written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Outcome is death_flag\" names the event column without a code, so event_value is null; \"the follow-up lives in months_followed\" names the follow-up column; the adjustment list names three covariates; holdout_2023.csv is a file, not a column.",
+    "time_column": "months_followed",
+    "time_evidence": "the follow-up lives in months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Outcome is death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "hemoglobin",
+     "delayed_graft_function"
+    ]
+   }
+  },
+  {
+   "id": "CRB26",
+   "template_id": "r2.RB.26",
+   "profile": "srtr_waitlist",
+   "category": "RB",
+   "request": "Event = died_on_list, standard 0/1. Duration on the list is wl_days; covariates CAN_CPRA, CAN_DIAL_YRS, CAN_DIAB.",
+   "note": "listing the values '0/1' is not stating which is the event",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Event = died_on_list\" names the event column; \"standard 0/1\" lists the two values without saying which one marks the event, so event_value is null; \"Duration on the list is wl_days\" names the follow-up column; the covariates are named.",
+    "time_column": "wl_days",
+    "time_evidence": "Duration on the list is wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "Event = died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS",
+     "CAN_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRB27",
+   "template_id": "r2.RB.27",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "graft_failed is the indicator; gf_days the clock. Coded as in the SRTR release, nothing special.",
+   "note": "a reference to someone else's coding does not supply the code",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"graft_failed is the indicator\" names the event column; \"Coded as in the SRTR release\" refers to a coding without giving the code, so event_value is null; \"gf_days the clock\" names the follow-up column; no covariate is named.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days the clock",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed is the indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRB28",
+   "template_id": "r2.RB.28",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "ok so eskd's the thing we care about, years_to_eskd is how long we watched them. throw in on_raas and female.",
+   "note": "colloquial naming of the outcome: column yes, code null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"eskd's the thing we care about\" names the event column without a code, so event_value is null; \"years_to_eskd is how long we watched them\" names the follow-up column; \"throw in on_raas and female\" names the covariates.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd is how long we watched them",
+    "event_column": "eskd",
+    "event_evidence": "eskd's the thing we care about",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "on_raas",
+     "female"
+    ]
+   }
+  },
+  {
+   "id": "CRB29",
+   "template_id": "r2.RB.29",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "The outcome variable dead uses the same coding as the registry; please don't recode it. Use days_to_death_or_ltfu; predictors ef_pct and bnp.",
+   "note": "'same coding as the registry' leaves the code unstated",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"The outcome variable dead\" names the event column; \"uses the same coding as the registry\" does not give the code, so event_value is null; \"Use days_to_death_or_ltfu\" names the follow-up column; \"predictors ef_pct and bnp\" names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Use days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "The outcome variable dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "bnp"
+    ]
+   }
+  },
+  {
+   "id": "CRB30",
+   "template_id": "r2.RB.30",
+   "profile": "tx_center_ehr",
+   "category": "RB",
+   "request": "pls run with months_followed and death_flag (normal coding), covs: tacrolimus_m3 hemoglobin campus",
+   "note": "'normal coding' is not a code",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"run with months_followed\" names the follow-up column; \"death_flag (normal coding)\" names the event column but gives no code, so event_value is null; \"covs: tacrolimus_m3 hemoglobin campus\" names three covariates.",
+    "time_column": "months_followed",
+    "time_evidence": "run with months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag (normal coding)",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "tacrolimus_m3",
+     "hemoglobin",
+     "campus"
+    ]
+   }
+  },
+  {
+   "id": "CRB31",
+   "template_id": "r2.RB.31",
+   "profile": "srtr_waitlist",
+   "category": "RB",
+   "request": "We want to model transplant from the list: removed_for_tx is the event column, values 0 and 1. wl_days. Adjust for CAN_ABO.",
+   "note": "naming the values without their meaning leaves event_value null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"removed_for_tx is the event column\" names the event column; \"values 0 and 1\" lists the values but not which marks the event, so event_value is null; \"wl_days\" names the follow-up column; \"Adjust for CAN_ABO\" names one covariate.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "removed_for_tx is the event column",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_ABO"
+    ]
+   }
+  },
+  {
+   "id": "CRB32",
+   "template_id": "r2.RB.32",
+   "profile": "srtr_posttx",
+   "category": "RB",
+   "request": "pt_died is the event indicator, counted from transplant in days_to_death; covariates DON_KDPI, DON_CREAT, REC_DIAL_YRS. I'm attaching registry_release.csv for borrowing.",
+   "note": "a column named like an indicator still has no stated code",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"pt_died is the event indicator\" names the event column, no code given, so event_value is null; \"counted from transplant in days_to_death\" names the follow-up column; \"covariates DON_KDPI, DON_CREAT, REC_DIAL_YRS\" names three covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "counted from transplant in days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died is the event indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "DON_CREAT",
+     "REC_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRB33",
+   "template_id": "r2.RB.33",
+   "profile": "heart_failure",
+   "category": "RB",
+   "request": "Mortality analysis with the event indicator dead and days_to_death_or_ltfu; adjust for nyha_class, sodium, creat_mg_dl. The coding is whatever the enrolment form used.",
+   "note": "deferring to a form's coding is not stating the code",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the event indicator dead\" names the event column; \"The coding is whatever the enrolment form used\" does not state the code, so event_value is null; \"days_to_death_or_ltfu\" names the follow-up column; the adjustment list names three covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "the event indicator dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "nyha_class",
+     "sodium",
+     "creat_mg_dl"
+    ]
+   }
+  },
+  {
+   "id": "CRB34",
+   "template_id": "r2.RB.34",
+   "profile": "ckd_ehr",
+   "category": "RB",
+   "request": "Please treat eskd as the outcome (it's an indicator) and years_to_eskd as follow-up; I haven't decided on predictors.",
+   "note": "no code and no covariates: both left null for the harness",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"treat eskd as the outcome\" names the event column; \"it's an indicator\" gives no code, so event_value is null; \"years_to_eskd as follow-up\" names the follow-up column; \"I haven't decided on predictors\" names none, so covariate_columns is null.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd as follow-up",
+    "event_column": "eskd",
+    "event_evidence": "treat eskd as the outcome",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC01",
+   "template_id": "r2.RC.01",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "Hi team - could you fit the model with years_to_eskd as the follow-up and eskd as the endpoint, adjusting for age_at_index and sbp and hba1c and uacr? Thanks!",
+   "note": "a list joined by repeated 'and' is still an explicit list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"years_to_eskd as the follow-up\" names the follow-up column; \"eskd as the endpoint\" names the event column; \"adjusting for age_at_index and sbp and hba1c and uacr\" names four covariates joined by 'and'; the event code is not given, so it is null.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd as the follow-up",
+    "event_column": "eskd",
+    "event_evidence": "eskd as the endpoint",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "age_at_index",
+     "sbp",
+     "hba1c",
+     "uacr"
+    ]
+   }
+  },
+  {
+   "id": "CRC02",
+   "template_id": "r2.RC.02",
+   "profile": "tx_center_ehr",
+   "category": "RC",
+   "request": "Outcome is death_flag, months_followed gives the follow-up. Covariates:\n- rcp_age\n- delayed_graft_function\n- tacrolimus_m3\n- hemoglobin",
+   "note": "a bulleted list of predictors is read one bullet per covariate",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Outcome is death_flag\" names the event column; \"months_followed gives the follow-up\" names the follow-up column; the bulleted lines under \"Covariates:\" name rcp_age, delayed_graft_function, tacrolimus_m3 and hemoglobin; no event code is written.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed gives the follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "Outcome is death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "delayed_graft_function",
+     "tacrolimus_m3",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRC03",
+   "template_id": "r2.RC.03",
+   "profile": "heart_failure",
+   "category": "RC",
+   "request": "Predictors I want: ef pct, nyha class, beta blocker. Follow-up is in days_to_death_or_ltfu and dead marks the endpoint.",
+   "note": "names written with spaces map to the underscored spelling of the column list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Predictors I want: ef pct, nyha class, beta blocker\" names three covariates written with spaces, returned in the column list's spelling ef_pct, nyha_class, beta_blocker; \"Follow-up is in days_to_death_or_ltfu\" names the follow-up column; \"dead marks the endpoint\" names the event column; no code is given for the event.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Follow-up is in days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead marks the endpoint",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "nyha_class",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRC04",
+   "template_id": "r2.RC.04",
+   "profile": "srtr_waitlist",
+   "category": "RC",
+   "request": "adjust only for these three: CAN_CPRA, CAN_DIAL_YRS, CAN_PREV_TX. Waiting-list duration is wl_days; death on the list is died_on_list.",
+   "note": "'only these three' limits the covariates to the names listed",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"adjust only for these three: CAN_CPRA, CAN_DIAL_YRS, CAN_PREV_TX\" names exactly three covariates; \"Waiting-list duration is wl_days\" names the follow-up column; \"death on the list is died_on_list\" names the event column; the event code is not written.",
+    "time_column": "wl_days",
+    "time_evidence": "Waiting-list duration is wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "death on the list is died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRC05",
+   "template_id": "r2.RC.05",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "graft model please. gf days for the clock, graft failed for the endpoint, adjust for DON CREAT and REC COLD ISCH TM and DON KDPI.",
+   "note": "every role written with spaces for underscores is returned in the file's spelling",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"gf days for the clock\" names gf_days written with a space; \"graft failed for the endpoint\" names graft_failed written with a space; \"adjust for DON CREAT and REC COLD ISCH TM and DON KDPI\" names three covariates, returned as DON_CREAT, REC_COLD_ISCH_TM, DON_KDPI; no event code is stated.",
+    "time_column": "gf_days",
+    "time_evidence": "gf days for the clock",
+    "event_column": "graft_failed",
+    "event_evidence": "graft failed for the endpoint",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_CREAT",
+     "REC_COLD_ISCH_TM",
+     "DON_KDPI"
+    ]
+   }
+  },
+  {
+   "id": "CRC06",
+   "template_id": "r2.RC.06",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "eskd outcome, years_to_eskd folowup. covars = female, on_raas, egfr_baseline.",
+   "note": "a terse 'covars =' line with a typo elsewhere is still an explicit list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"eskd outcome\" names the event column; \"years_to_eskd folowup\" names the follow-up column despite the typo; \"covars = female, on_raas, egfr_baseline\" names three covariates; no event code appears.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd folowup",
+    "event_column": "eskd",
+    "event_evidence": "eskd outcome",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "female",
+     "on_raas",
+     "egfr_baseline"
+    ]
+   }
+  },
+  {
+   "id": "CRC07",
+   "template_id": "r2.RC.07",
+   "profile": "tx_center_ehr",
+   "category": "RC",
+   "request": "My PI wants a short model for the 2019 transplant cohort. The predictors should be donor_type and egfr_m12, nothing more. Please use months_followed and death_flag as usual.",
+   "note": "'nothing more' after a two-name list keeps the covariates to those two",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"The predictors should be donor_type and egfr_m12, nothing more\" names two covariates and closes the list; \"months_followed\" is named in \"Please use months_followed and death_flag as usual\" as the follow-up column and \"death_flag\" as the event column; no event code is written.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "egfr_m12"
+    ]
+   }
+  },
+  {
+   "id": "CRC08",
+   "template_id": "r2.RC.08",
+   "profile": "heart_failure",
+   "category": "RC",
+   "request": "Covariates are bnp, sodium and creat mg dl. dead = 1 is a death; the survival interval sits in days_to_death_or_ltfu.",
+   "note": "a mixed list of underscored and spaced names, with the event code stated",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Covariates are bnp, sodium and creat mg dl\" names three covariates, the last written with spaces for creat_mg_dl; \"dead = 1 is a death\" names the event column and its code, quoted as \"dead = 1\"; \"the survival interval sits in days_to_death_or_ltfu\" names the follow-up column.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "the survival interval sits in days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead = 1 is a death",
+    "event_value": "1",
+    "event_value_evidence": "dead = 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "bnp",
+     "sodium",
+     "creat_mg_dl"
+    ]
+   }
+  },
+  {
+   "id": "CRC09",
+   "template_id": "r2.RC.09",
+   "profile": "srtr_waitlist",
+   "category": "RC",
+   "request": "For the wl_extract.csv analysis, keep the predictor list to CAN_GENDER, CAN_RACE and CAN_ABO; I'll tell you the outcome columns later.",
+   "note": "a list of covariates can come alone; the outcome roles stay null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"keep the predictor list to CAN_GENDER, CAN_RACE and CAN_ABO\" names three covariates; \"I'll tell you the outcome columns later\" says the follow-up and event columns are not given yet, so both are null, and so is the event code.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_GENDER",
+     "CAN_RACE",
+     "CAN_ABO"
+    ]
+   }
+  },
+  {
+   "id": "CRC10",
+   "template_id": "r2.RC.10",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "Patient survival: days_to_death and pt_died. Model terms -- REC_DIAL_YRS, DON_AGE, REC_COLD_ISCH_TM. (Coffee machine on floor 3 is broken again, sorry for the delay.)",
+   "note": "'model terms' is another way of naming covariates; an aside is ignored",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Patient survival: days_to_death and pt_died\" names the follow-up column days_to_death and the event column pt_died; \"Model terms -- REC_DIAL_YRS, DON_AGE, REC_COLD_ISCH_TM\" names three covariates; the remark about the coffee machine is irrelevant; no event code.",
+    "time_column": "days_to_death",
+    "time_evidence": "days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAL_YRS",
+     "DON_AGE",
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRC11",
+   "template_id": "r2.RC.11",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "Use the years until kidney failure column with eskd as the indicator, adjusting for uacr, sbp.",
+   "note": "the follow-up may be described, but the covariates are still read by name only",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the years until kidney failure column\" describes a follow-up column and only years_to_eskd fits it; \"eskd as the indicator\" names the event column; \"adjusting for uacr, sbp\" names two covariates; the event code is not given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "the years until kidney failure column",
+    "event_column": "eskd",
+    "event_evidence": "eskd as the indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr",
+     "sbp"
+    ]
+   }
+  },
+  {
+   "id": "CRC12",
+   "template_id": "r2.RC.12",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "Fit graft survival from gf_days and graft_failed, with every other column as a predictor.",
+   "note": "'every other column' names no covariate, so the list stays null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"from gf_days and graft_failed\" names the follow-up column gf_days and the event column graft_failed; \"every other column as a predictor\" refers to a set without naming any column, so covariate_columns is null and the harness fills it by its disclosed rule; no event code.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC13",
+   "template_id": "r2.RC.13",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "years_to_eskd / eskd. Throw in all the remaining variables.",
+   "note": "'all the remaining variables' is a rule for the harness, not a list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"years_to_eskd / eskd\" names the follow-up column and the event column in that order; \"Throw in all the remaining variables\" names no column, so covariate_columns is null; no event code is written.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC14",
+   "template_id": "r2.RC.14",
+   "profile": "heart_failure",
+   "category": "RC",
+   "request": "Outcome dead, follow-up days_to_death_or_ltfu; adjust for everything except the identifiers.",
+   "note": "excluding identifiers by description still names no covariate",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Outcome dead\" names the event column; \"follow-up days_to_death_or_ltfu\" names the follow-up column; \"adjust for everything except the identifiers\" describes a set without naming a column, so covariate_columns is null; no event code.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "follow-up days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "Outcome dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC15",
+   "template_id": "r2.RC.15",
+   "profile": "tx_center_ehr",
+   "category": "RC",
+   "request": "Please run it on months_followed with death_flag as the event, coded 1, and use the full set of baseline variables.",
+   "note": "'the full set of baseline variables' is never expanded into names",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"run it on months_followed\" names the follow-up column; \"death_flag as the event\" names the event column; \"coded 1\" gives the event code; \"the full set of baseline variables\" describes the covariates without naming any, so covariate_columns is null.",
+    "time_column": "months_followed",
+    "time_evidence": "run it on months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag as the event",
+    "event_value": "1",
+    "event_value_evidence": "coded 1",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC16",
+   "template_id": "r2.RC.16",
+   "profile": "srtr_waitlist",
+   "category": "RC",
+   "request": "We'd like to model wl_days and died_on_list; the predictors are whatever else is in the extract, apart from PX_ID.",
+   "note": "naming the one column to leave out does not turn the rest into a named list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"model wl_days and died_on_list\" names the follow-up column and the event column; \"whatever else is in the extract, apart from PX_ID\" names only a column to leave out, not any predictor, so covariate_columns is null; no event code.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC17",
+   "template_id": "r2.RC.17",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "Dear analyst, the registry linkage is done. Mortality after transplant is captured by pt_died and days_to_death. Please use all available donor and recipient characteristics as adjustment variables.",
+   "note": "'donor and recipient characteristics' is a description; covariates are never filled from one",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"captured by pt_died and days_to_death\" names the event column pt_died and the follow-up column days_to_death; \"all available donor and recipient characteristics\" describes a group of columns without naming one, so covariate_columns is null; no event code.",
+    "time_column": "days_to_death",
+    "time_evidence": "days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "Mortality after transplant is captured by pt_died",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC18",
+   "template_id": "r2.RC.18",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "all covariates in the file except mrn and clinic_id pls. eskd is the event, value 1.",
+   "note": "an exclusion list with no inclusion list leaves the covariates null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"all covariates in the file except mrn and clinic_id\" names only columns to exclude, so covariate_columns is null; \"eskd is the event\" names the event column; \"value 1\" gives the event code; no follow-up column is named or described, so it is null.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "eskd",
+    "event_evidence": "eskd is the event",
+    "event_value": "1",
+    "event_value_evidence": "value 1",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC19",
+   "template_id": "r2.RC.19",
+   "profile": "heart_failure",
+   "category": "RC",
+   "request": "Same as last quarter: every clinical measurement we have goes in. The endpoint column is dead and its follow-up is days_to_death_or_ltfu.",
+   "note": "'every clinical measurement' is not a list of names",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"every clinical measurement we have goes in\" names no column, so covariate_columns is null; \"The endpoint column is dead\" names the event column; \"its follow-up is days_to_death_or_ltfu\" names the follow-up column; no event code.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "its follow-up is days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "The endpoint column is dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC20",
+   "template_id": "r2.RC.20",
+   "profile": "tx_center_ehr",
+   "category": "RC",
+   "request": "Kitchen-sink model, all other columns as covariates. Survival interval: months_followed. Event: death_flag.",
+   "note": "a 'kitchen-sink' request leaves the covariate list to the harness",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"all other columns as covariates\" names no covariate, so the list is null; \"Survival interval: months_followed\" names the follow-up column; \"Event: death_flag\" names the event column; no event code.",
+    "time_column": "months_followed",
+    "time_evidence": "Survival interval: months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Event: death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC21",
+   "template_id": "r2.RC.21",
+   "profile": "srtr_waitlist",
+   "category": "RC",
+   "request": "Adjust for all of the candidate-level variables. The days on the waiting list column is the follow-up; died_on_list flags the death.",
+   "note": "the follow-up may be resolved from a description; the covariate group may not",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"all of the candidate-level variables\" describes a group without naming a column, so covariate_columns is null; \"The days on the waiting list column\" describes a follow-up column and only wl_days fits; \"died_on_list flags the death\" names the event column; no event code.",
+    "time_column": "wl_days",
+    "time_evidence": "The days on the waiting list column",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list flags the death",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC22",
+   "template_id": "r2.RC.22",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "everything else is a covariate. graft_failed = 1 means graft loss, measured over gf_days.",
+   "note": "the covariate phrase may come first; it still names nothing",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"everything else is a covariate\" names no column, so covariate_columns is null; \"graft_failed = 1 means graft loss\" names the event column and gives its code as \"1\"; \"measured over gf_days\" names the follow-up column.",
+    "time_column": "gf_days",
+    "time_evidence": "measured over gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed = 1 means graft loss",
+    "event_value": "1",
+    "event_value_evidence": "graft_failed = 1",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC23",
+   "template_id": "r2.RC.23",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "Use the remaining columns as predictors; I've already removed what shouldn't be in there. Endpoint eskd.",
+   "note": "a pre-cleaned file does not make 'the remaining columns' a named list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Use the remaining columns as predictors\" names no column, so covariate_columns is null; \"Endpoint eskd\" names the event column; no follow-up column is named or described, so it is null, and no event code is given.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "eskd",
+    "event_evidence": "Endpoint eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRC25",
+   "template_id": "r2.RC.25",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "Covariates: age_at_index, female, sbp. Outcome eskd over years_to_eskd. Oh, and add hba1c as well.",
+   "note": "a covariate added in an afterthought sentence belongs to the list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Covariates: age_at_index, female, sbp\" names three covariates and \"add hba1c as well\" names a fourth; \"Outcome eskd\" names the event column; \"over years_to_eskd\" names the follow-up column; no event code.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "over years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "Outcome eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "age_at_index",
+     "female",
+     "sbp",
+     "hba1c"
+    ]
+   }
+  },
+  {
+   "id": "CRC26",
+   "template_id": "r2.RC.26",
+   "profile": "heart_failure",
+   "category": "RC",
+   "request": "Predictors ef_pct, bnp, sodium, beta_blocker -- drop beta_blocker actually, the pharmacy data are unreliable. dead / days_to_death_or_ltfu.",
+   "note": "a name withdrawn later in the request is left out",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Predictors ef_pct, bnp, sodium, beta_blocker\" names four covariates and \"drop beta_blocker actually\" removes one, leaving ef_pct, bnp, sodium; \"dead / days_to_death_or_ltfu\" names the event column dead and the follow-up column days_to_death_or_ltfu; no event code.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "bnp",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRC27",
+   "template_id": "r2.RC.27",
+   "profile": "tx_center_ehr",
+   "category": "RC",
+   "request": "Adjust for rcp_age, donor_type and tacrolimus_m3. I forgot one: delayed_graft_function should go in too. Event death_flag, follow-up months_followed.",
+   "note": "'I forgot one' extends the explicit list by name",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Adjust for rcp_age, donor_type and tacrolimus_m3\" names three covariates and \"delayed_graft_function should go in too\" adds a fourth; \"Event death_flag\" names the event column; \"follow-up months_followed\" names the follow-up column; no event code.",
+    "time_column": "months_followed",
+    "time_evidence": "follow-up months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Event death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "donor_type",
+     "tacrolimus_m3",
+     "delayed_graft_function"
+    ]
+   }
+  },
+  {
+   "id": "CRC28",
+   "template_id": "r2.RC.28",
+   "profile": "srtr_waitlist",
+   "category": "RC",
+   "request": "Model terms: CAN_AGE_AT_LISTING, CAN_BMI, CAN_DIAB, CAN_CPRA, leaving out CAN_CPRA because it overlaps with CAN_PREV_TX. wl_days / died_on_list.",
+   "note": "a column mentioned only as a reason for an exclusion is not a covariate",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Model terms: CAN_AGE_AT_LISTING, CAN_BMI, CAN_DIAB, CAN_CPRA\" names four covariates and \"leaving out CAN_CPRA\" removes one; CAN_PREV_TX is mentioned only as a reason, not as a predictor; \"wl_days / died_on_list\" names the follow-up and event columns; no event code.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_AGE_AT_LISTING",
+     "CAN_BMI",
+     "CAN_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRC29",
+   "template_id": "r2.RC.29",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "Graft outcome: gf_days and graft_failed. Predictors REC_DIAB, REC_HLA_MM, DON_KDPI. Please also add DON_HCV.",
+   "note": "an added name missing from the file is still returned as written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Graft outcome: gf_days and graft_failed\" names the follow-up column and the event column; \"Predictors REC_DIAB, REC_HLA_MM, DON_KDPI\" names three covariates; \"Please also add DON_HCV\" names a fourth that is not in the column list, so it is returned exactly as written for the harness to report; no event code.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAB",
+     "REC_HLA_MM",
+     "DON_KDPI",
+     "DON_HCV"
+    ]
+   }
+  },
+  {
+   "id": "CRC30",
+   "template_id": "r2.RC.30",
+   "profile": "ckd_ehr",
+   "category": "RC",
+   "request": "Use on_raas and uacr and sbp, but not sbp after all (it's measured inconsistently across clinics). Follow-up years_to_eskd; eskd = 1 is kidney failure.",
+   "note": "'but not X after all' withdraws X from the list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Use on_raas and uacr and sbp\" names three covariates and \"but not sbp after all\" removes one, leaving on_raas and uacr; \"Follow-up years_to_eskd\" names the follow-up column; \"eskd = 1 is kidney failure\" names the event column and its code \"1\".",
+    "time_column": "years_to_eskd",
+    "time_evidence": "Follow-up years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd = 1 is kidney failure",
+    "event_value": "1",
+    "event_value_evidence": "eskd = 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "on_raas",
+     "uacr"
+    ]
+   }
+  },
+  {
+   "id": "CRC31",
+   "template_id": "r2.RC.31",
+   "profile": "heart_failure",
+   "category": "RC",
+   "request": "adjust for nyha class and creat mg dl. second thought: include ef pct too. event column dead.",
+   "note": "spaced names added on second thought map to the underscored columns",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"adjust for nyha class and creat mg dl\" names two covariates written with spaces and \"include ef pct too\" adds a third, returned as nyha_class, creat_mg_dl, ef_pct; \"event column dead\" names the event column; no follow-up column is named or described, so it is null; no event code.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "dead",
+    "event_evidence": "event column dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "nyha_class",
+     "creat_mg_dl",
+     "ef_pct"
+    ]
+   }
+  },
+  {
+   "id": "CRC32",
+   "template_id": "r2.RC.32",
+   "profile": "tx_center_ehr",
+   "category": "RC",
+   "request": "The covariate list is egfr_m12, delayed_graft_function, rcp_age, minus rcp_age. Use months_followed and death_flag (1 = death).",
+   "note": "'minus X' inside the list removes X",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"The covariate list is egfr_m12, delayed_graft_function, rcp_age, minus rcp_age\" names three covariates and removes rcp_age, leaving egfr_m12 and delayed_graft_function; \"Use months_followed and death_flag\" names the follow-up and event columns; \"1 = death\" gives the event code.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag",
+    "event_value": "1",
+    "event_value_evidence": "1 = death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "egfr_m12",
+     "delayed_graft_function"
+    ]
+   }
+  },
+  {
+   "id": "CRC33",
+   "template_id": "r2.RC.33",
+   "profile": "srtr_waitlist",
+   "category": "RC",
+   "request": "Please adjust for CAN_GENDER and CAN_DIAL_YRS; separately, add CAN_ABO to that list. Stratify by CAN_LISTING_CTR_ID. Waiting-list follow-up wl_days, endpoint died_on_list.",
+   "note": "a named strata column is kept out of the covariate list",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"adjust for CAN_GENDER and CAN_DIAL_YRS\" names two covariates and \"add CAN_ABO to that list\" adds a third; \"Stratify by CAN_LISTING_CTR_ID\" names the strata column, which is therefore not a covariate; \"Waiting-list follow-up wl_days\" names the follow-up column; \"endpoint died_on_list\" names the event column; no event code.",
+    "time_column": "wl_days",
+    "time_evidence": "Waiting-list follow-up wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "endpoint died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "CAN_LISTING_CTR_ID",
+    "covariate_columns": [
+     "CAN_GENDER",
+     "CAN_DIAL_YRS",
+     "CAN_ABO"
+    ]
+   }
+  },
+  {
+   "id": "CRC34",
+   "template_id": "r2.RC.34",
+   "profile": "srtr_posttx",
+   "category": "RC",
+   "request": "Covariates: REC_AGE_AT_TX, REC_DIAL_YRS, DON_AGE, DON_KDPI, REC_COLD_ISCH_TM. Remove DON_AGE since KDPI already carries it. Then add REC_DIAB at the end. Survival is days_to_death with pt_died.",
+   "note": "one removal and one addition in later sentences are both applied",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Covariates: REC_AGE_AT_TX, REC_DIAL_YRS, DON_AGE, DON_KDPI, REC_COLD_ISCH_TM\" names five covariates, \"Remove DON_AGE\" takes one out and \"add REC_DIAB at the end\" puts one in; \"Survival is days_to_death with pt_died\" names the follow-up column days_to_death and the event column pt_died; no event code.",
+    "time_column": "days_to_death",
+    "time_evidence": "Survival is days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_AGE_AT_TX",
+     "REC_DIAL_YRS",
+     "DON_KDPI",
+     "REC_COLD_ISCH_TM",
+     "REC_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRD01",
+   "template_id": "r2.RD.01",
+   "profile": "srtr_waitlist",
+   "category": "RD",
+   "request": "The registry paper reports hazard ratios with 95% confidence intervals for candidates followed up to three years; those are in hr_table_2022.csv. In our extract (wl_extract.csv) the duration on the list is wl_days, and death while waiting is coded died_on_list = 1. Transplant removal, removed_for_tx, is a competing exit we are not modelling here. Predictors: CAN_GENDER, CAN_RACE, CAN_BMI, CAN_PREV_TX. Check the borrowed model against holdout_q4.csv.",
+   "note": "external follow-up length is not a role; a column mentioned as not modelled is not a covariate",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the duration on the list is wl_days' names the follow-up column; the registry's three years of follow-up belong to the outside cohort and are not a column here. 'death while waiting is coded died_on_list' names the event column and 'died_on_list = 1' gives its code. removed_for_tx is mentioned only as an exit not modelled, so it is neither the event nor a covariate. 'Predictors: CAN_GENDER, CAN_RACE, CAN_BMI, CAN_PREV_TX' names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "the duration on the list is wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "death while waiting is coded died_on_list",
+    "event_value": "1",
+    "event_value_evidence": "died_on_list = 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_GENDER",
+     "CAN_RACE",
+     "CAN_BMI",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRD02",
+   "template_id": "r2.RD.02",
+   "profile": "srtr_waitlist",
+   "category": "RD",
+   "request": "Hi -- quick one before the transplant committee meets. A partner registry released coefficients plus a full covariance matrix (consortium_model.json), and I'd like the analysis to lean on it where it helps. Use the number of days each candidate spent waiting on the list as follow-up, the death-on-list indicator as the outcome, and stratify by CAN_LISTING_CTR_ID. For predictors just take whatever the consortium model covers. A separate scoring file, holdout_2024.csv, came out of the same pull.",
+   "note": "follow-up and event resolved from descriptions; a set-valued phrase about the release leaves covariates null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the number of days each candidate spent waiting on the list' describes the follow-up without naming it, and wl_days is the only day count on the list, so it resolves to wl_days. 'the death-on-list indicator' describes the event and fits only died_on_list (removed_for_tx marks transplant). 'stratify by CAN_LISTING_CTR_ID' names the strata. 'whatever the consortium model covers' names no column, so covariate_columns is null. No event code is given.",
+    "time_column": "wl_days",
+    "time_evidence": "the number of days each candidate spent waiting on the list",
+    "event_column": "died_on_list",
+    "event_evidence": "the death-on-list indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "CAN_LISTING_CTR_ID",
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRD03",
+   "template_id": "r2.RD.03",
+   "profile": "srtr_waitlist",
+   "category": "RD",
+   "request": "Our release from the registry includes the baseline cumulative hazard and log hazard ratios (registry_bch_2025.csv); the registry cohort was tracked for up to ten years, which is longer than ours. Here the follow-up is wl_days and the event is died_on_list, where 1 means death on the waitlist. Covariates: CAN_AGE_AT_LISTING, CAN_ABO, CAN_EDUCATION, CAN_CPRA. If borrowing doesn't beat our own data alone on holdout_2023.csv, say so.",
+   "note": "a named covariate missing from the file is returned as written; release tracking length ignored",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Here the follow-up is wl_days' names the follow-up column; the registry's ten years of tracking refer to the outside cohort. 'the event is died_on_list' names the event column and '1 means death on the waitlist' gives the code. The covariate list names CAN_AGE_AT_LISTING, CAN_ABO, CAN_EDUCATION and CAN_CPRA; CAN_EDUCATION is not in the file, so it is returned as written for the harness to flag.",
+    "time_column": "wl_days",
+    "time_evidence": "Here the follow-up is wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "the event is died_on_list",
+    "event_value": "1",
+    "event_value_evidence": "1 means death on the waitlist",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_AGE_AT_LISTING",
+     "CAN_ABO",
+     "CAN_EDUCATION",
+     "CAN_CPRA"
+    ]
+   }
+  },
+  {
+   "id": "CRD04",
+   "template_id": "r2.RD.04",
+   "profile": "srtr_waitlist",
+   "category": "RD",
+   "request": "Score on wl_holdout.csv at the end. Predictors are CAN_DIAB, CAN_DIAL_YRS, CAN_PREV_TX. The outcome this round is removal for transplant, removed_for_tx, with yes marking a transplant, and the clock is wl_days. The other centre shared its patient records with exactly our columns (centre_b_records.csv), so pool information from them if it helps.",
+   "note": "the analyst's chosen event is read as named even when another event column exists; order of statements varied",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the clock is wl_days' names the follow-up column; 'removal for transplant, removed_for_tx' names the event column and 'with yes marking a transplant' gives its code as the request writes it. 'Predictors are CAN_DIAB, CAN_DIAL_YRS, CAN_PREV_TX' names the covariates. The other centre's records and the holdout file are external information and evaluation, not roles.",
+    "time_column": "wl_days",
+    "time_evidence": "the clock is wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "removal for transplant, removed_for_tx",
+    "event_value": "yes",
+    "event_value_evidence": "with yes marking a transplant",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_DIAB",
+     "CAN_DIAL_YRS",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRD06",
+   "template_id": "r2.RD.06",
+   "profile": "srtr_waitlist",
+   "category": "RD",
+   "request": "Dear team, attached is wl_extract_v3.csv, pulled from our SRTR SAF on 3 September. The national waitlist model was published as coefficients only, and we hope borrowing from it will steady the estimates for our small centre. Please use wl_days as the follow-up and died_on_list as the outcome. The registry's own follow-up ended in 2021, so it is shorter than ours. Results on holdout_sept.csv would be ideal by the 20th.",
+   "note": "long email with no predictors named: covariates null, not filled with the remaining columns",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'use wl_days as the follow-up' names the follow-up column and 'died_on_list as the outcome' names the event column. The registry's own follow-up ending in 2021 is about the outside cohort. No predictor is named anywhere, so covariate_columns is null; no event code and no strata are given.",
+    "time_column": "wl_days",
+    "time_evidence": "use wl_days as the follow-up",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list as the outcome",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRD07",
+   "template_id": "r2.RD.07",
+   "profile": "srtr_posttx",
+   "category": "RD",
+   "request": "The SRTR post-transplant patient survival model (coefficients with standard errors and a full covariance, posttx_release.json) is what we want to borrow from. Patient survival here: days_to_death and pt_died, and pt_died = 1 is death. Graft loss (gf_days, graft_failed) is not the endpoint today. Adjust for REC_AGE_AT_TX, REC_DIAB, DON_KDPI, REC_COLD_ISCH_TM. We will score on holdout_2023.csv.",
+   "note": "columns named only to be set aside are not roles",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Patient survival here: days_to_death' names the follow-up column; 'pt_died = 1 is death' names the event column and gives its code. gf_days and graft_failed are mentioned only to say they are not the endpoint, so they fill no role. 'Adjust for REC_AGE_AT_TX, REC_DIAB, DON_KDPI, REC_COLD_ISCH_TM' names the covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "Patient survival here: days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died = 1 is death",
+    "event_value": "1",
+    "event_value_evidence": "pt_died = 1 is death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_AGE_AT_TX",
+     "REC_DIAB",
+     "DON_KDPI",
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRD08",
+   "template_id": "r2.RD.08",
+   "profile": "srtr_posttx",
+   "category": "RD",
+   "request": "Borrow from the published graft-loss hazard ratios (gf_hr_table.csv, with 95% intervals) if it helps. Use the days from transplant to graft failure or censoring as follow-up and the graft failure flag as the outcome. Predictors: DON_AGE, DON_CREAT, REC_HLA_MM, REC_DIAL_YRS. Our deadline is the DSMB packet next Tuesday; the test file is posttx_holdout.csv.",
+   "note": "a specific description picks one of two candidate columns",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the days from transplant to graft failure or censoring' describes the follow-up; of the two day counts only gf_days runs to graft failure, so it resolves to gf_days. 'the graft failure flag' fits only graft_failed. 'Predictors: DON_AGE, DON_CREAT, REC_HLA_MM, REC_DIAL_YRS' names the covariates. No event code is given.",
+    "time_column": "gf_days",
+    "time_evidence": "the days from transplant to graft failure or censoring",
+    "event_column": "graft_failed",
+    "event_evidence": "the graft failure flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_AGE",
+     "DON_CREAT",
+     "REC_HLA_MM",
+     "REC_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRD10",
+   "template_id": "r2.RD.10",
+   "profile": "srtr_posttx",
+   "category": "RD",
+   "request": "we got the registry baseline cum hazard + coefs (srtr_bh_2025.csv), the registry folks followed recipients for 5 yrs. our data: folow-up = days_to_death, event = pt_died (2 means death in our coding). covariates DON_AGE, DON_KDPI, REC_DIAB. test on posttx_test_2025.csv pls, and only borrow if it actualy helps",
+   "note": "terse typo-laden note; a non-standard event code is read as written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'folow-up = days_to_death' names the follow-up column despite the typo; the five years refer to the registry's recipients. 'event = pt_died' names the event column and '2 means death in our coding' gives the code 2. 'covariates DON_AGE, DON_KDPI, REC_DIAB' names the covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "folow-up = days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "event = pt_died",
+    "event_value": "2",
+    "event_value_evidence": "2 means death in our coding",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_AGE",
+     "DON_KDPI",
+     "REC_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRD11",
+   "template_id": "r2.RD.11",
+   "profile": "srtr_posttx",
+   "category": "RD",
+   "request": "The posttx registry model came as log hazard ratios and a covariance matrix (kidney_posttx_model.json). Graft survival: gf_days for follow-up and graft_failed for the outcome. For covariates, use everything the registry model has plus REC_COLD_ISCH_TM. The scoring set is holdout_2023.csv; please also tell me whether borrowing changed the ranking.",
+   "note": "set-valued phrase plus one named column: only the named one is returned",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'gf_days for follow-up' names the follow-up column and 'graft_failed for the outcome' names the event column. 'everything the registry model has' names no column, so only the one named covariate, REC_COLD_ISCH_TM, is returned. No event code or strata are given.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days for follow-up",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed for the outcome",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRD12",
+   "template_id": "r2.RD.12",
+   "profile": "srtr_posttx",
+   "category": "RD",
+   "request": "From a quality-review pull last week: survival is measured by days-to-death and pt_died. Covariates: REC_AGE_AT_TX, REC_PRA, DON_CREAT. The national registry gives hazard ratios and CIs in natl_hr.csv for a cohort observed through 2019; please borrow if worthwhile and report on holdout_review.csv.",
+   "note": "hyphenated name mapped to underscores; an absent covariate kept as written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'days-to-death' names days_to_death with hyphens, returned in the file's spelling; 'pt_died' names the event column. 'Covariates: REC_AGE_AT_TX, REC_PRA, DON_CREAT' names three covariates; REC_PRA is not in the file and is returned as written. The registry cohort observed through 2019 is not this file's follow-up.",
+    "time_column": "days_to_death",
+    "time_evidence": "days-to-death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_AGE_AT_TX",
+     "REC_PRA",
+     "DON_CREAT"
+    ]
+   }
+  },
+  {
+   "id": "CRD13",
+   "template_id": "r2.RD.13",
+   "profile": "srtr_posttx",
+   "category": "RD",
+   "request": "Our IRB-approved extract (posttx_2015_2022.csv) should be analysed with borrowing from the SRTR patient-survival coefficients (srtr_ps_coefs.csv). Days to death or last contact are in days_to_death; pt_died is 0 for alive and 1 for death. Adjust for REC_AGE_AT_TX, REC_DIAL_YRS, DON_AGE and REC_HLA_MM. Report performance on posttx_holdout.csv; the registry's median follow-up was about four years, ours is shorter.",
+   "note": "both codes stated: the one marking the event is returned",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Days to death or last contact are in days_to_death' names the follow-up column; the registry's four-year median is about the outside cohort. 'pt_died is 0 for alive and 1 for death' names the event column, and '1 for death' gives the code that marks the event. The adjustment list names four covariates.",
+    "time_column": "days_to_death",
+    "time_evidence": "Days to death or last contact are in days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died is 0 for alive and 1 for death",
+    "event_value": "1",
+    "event_value_evidence": "1 for death",
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_AGE_AT_TX",
+     "REC_DIAL_YRS",
+     "DON_AGE",
+     "REC_HLA_MM"
+    ]
+   }
+  },
+  {
+   "id": "CRD14",
+   "template_id": "r2.RD.14",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "We are borrowing from the CKD Prognosis Consortium's published coefficients (ckd_pc_coefs.csv) for kidney failure. In our EHR pull, years_to_eskd is the follow-up and eskd the outcome. Adjust for age_at_index, female, egfr_baseline, uacr and sbp. Evaluate on ckd_holdout_2024.csv, and keep in mind the consortium cohorts were followed for up to a decade.",
+   "note": "plain naming surrounded by consortium details",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'years_to_eskd is the follow-up' names the follow-up column and 'eskd the outcome' names the event column; the consortium's decade of follow-up is not a column here. The adjustment list names age_at_index, female, egfr_baseline, uacr and sbp. No event code or strata are given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd is the follow-up",
+    "event_column": "eskd",
+    "event_evidence": "eskd the outcome",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "age_at_index",
+     "female",
+     "egfr_baseline",
+     "uacr",
+     "sbp"
+    ]
+   }
+  },
+  {
+   "id": "CRD15",
+   "template_id": "r2.RD.15",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "The kidney failure risk equation coefficients, with their covariance (kfre_release.json), are the external information; borrow from them where that pays off. Follow-up should be the years until kidney failure or censoring, and the outcome the kidney failure indicator. Predictors are uacr, hba1c, on_raas and sbp. The test patients are in ckd_test_q3.csv, pulled with the same query.",
+   "note": "follow-up and event resolved from unique descriptions; covariates only by name",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the years until kidney failure or censoring' describes the follow-up and fits only years_to_eskd; 'the kidney failure indicator' describes the event and fits only eskd. 'Predictors are uacr, hba1c, on_raas and sbp' names the covariates. No event code is given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "the years until kidney failure or censoring",
+    "event_column": "eskd",
+    "event_evidence": "the kidney failure indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr",
+     "hba1c",
+     "on_raas",
+     "sbp"
+    ]
+   }
+  },
+  {
+   "id": "CRD16",
+   "template_id": "r2.RD.16",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "Stratify by clinic_id. Outcome: eskd (TRUE when dialysis or transplant started); follow-up: years_to_eskd. Another health system shared patient rows with the same layout (partner_ckd_rows.csv) and we'd like to borrow from them. Covariates female, uacr, on_raas. Holdout is ckd_holdout_v2.csv -- needed for the nephrology board on Monday.",
+   "note": "strata named first; a logical event code read as written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Stratify by clinic_id' names the strata. 'Outcome: eskd' names the event column and 'TRUE when dialysis or transplant started' gives its code. 'follow-up: years_to_eskd' names the follow-up column. 'Covariates female, uacr, on_raas' names the covariates; the partner rows and holdout name no role.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up: years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "Outcome: eskd",
+    "event_value": "TRUE",
+    "event_value_evidence": "TRUE when dialysis or transplant started",
+    "stratum_column": "clinic_id",
+    "covariate_columns": [
+     "female",
+     "uacr",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRD17",
+   "template_id": "r2.RD.17",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "Per our call, the registry baseline cumulative hazard and coefficients are in renal_registry_bch.csv. Use years_to_eskd for follow-up and the outcome we discussed last week. Borrow from the registry if it helps, and score on ckd_holdout_2024.csv; the registry's own follow-up was five years.",
+   "note": "a reference to an earlier discussion is not a description; event left null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Use years_to_eskd for follow-up' names the follow-up column. 'the outcome we discussed last week' refers to an earlier conversation and neither names nor describes a column, so the event column is null. No predictor is named, so covariate_columns is null. The registry's five years are about the outside cohort.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "Use years_to_eskd for follow-up",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRD18",
+   "template_id": "r2.RD.18",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "Published hazard ratios with 95% CIs from a national CKD cohort (natl_ckd_hr.csv) are our outside source. Follow-up: years to eskd. Event: eskd, 1 = reached kidney failure. Adjust for on raas, hba1c, albumin, sbp. Please judge every fit on holdout_ckd.csv.",
+   "note": "spaced names normalised; a missing covariate passed through for the harness",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Follow-up: years to eskd' names years_to_eskd with spaces. 'Event: eskd' names the event column and '1 = reached kidney failure' gives the code. 'Adjust for on raas, hba1c, albumin, sbp' names four covariates: on raas is on_raas, and albumin is not in the file, so it is returned as written.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "Follow-up: years to eskd",
+    "event_column": "eskd",
+    "event_evidence": "Event: eskd",
+    "event_value": "1",
+    "event_value_evidence": "1 = reached kidney failure",
+    "stratum_column": null,
+    "covariate_columns": [
+     "on_raas",
+     "hba1c",
+     "albumin",
+     "sbp"
+    ]
+   }
+  },
+  {
+   "id": "CRD19",
+   "template_id": "r2.RD.19",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "I'm putting together the analysis plan for the renal QI committee. External input: a precision matrix and coefficients from the consortium (ckd_consortium_precision.json), estimated on cohorts with roughly eight years of observation each. Locally we track years_to_eskd and the end point is eskd. Use age_at_index, female, egfr_baseline and on_raas as adjustment variables. A held-back file, ckd_2025_holdout.csv, is for scoring only.",
+   "note": "external observation length described in detail is still not the follow-up role",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Locally we track years_to_eskd' names the follow-up column; the consortium's eight years of observation describe the outside cohorts, not a column of this file. 'the end point is eskd' names the event column. The adjustment variables are named explicitly. No event code is given.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "Locally we track years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "the end point is eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "age_at_index",
+     "female",
+     "egfr_baseline",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRD20",
+   "template_id": "r2.RD.20",
+   "profile": "ckd_ehr",
+   "category": "RD",
+   "request": "Two things: the follow-up column is years_to_eskd, and eskd = yes marks progression. Borrow from the published KFRE coefficients in kfre_4var.csv. The predictors are uacr and hba1c only. Score on ckd_holdout_2024.csv.",
+   "note": "short list stays short even when the release covers more variables",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the follow-up column is years_to_eskd' names the follow-up column. 'eskd = yes marks progression' names the event column and gives the code yes. 'The predictors are uacr and hba1c only' names two covariates; the four-variable release does not add any.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "the follow-up column is years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd = yes marks progression",
+    "event_value": "yes",
+    "event_value_evidence": "eskd = yes",
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr",
+     "hba1c"
+    ]
+   }
+  },
+  {
+   "id": "CRD21",
+   "template_id": "r2.RD.21",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "Borrow from the registry's published post-transplant coefficients (registry_release.csv) if it helps. Our EHR follow-up is months_followed and the outcome is death_flag. Predictors: rcp_age, donor_type, delayed_graft_function, tacrolimus_m3. Score on tx_holdout_2023.csv; the registry observed its recipients for three years.",
+   "note": "registry observation span after the roles is ignored",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Our EHR follow-up is months_followed' names the follow-up column; the registry's three years describe its own recipients. 'the outcome is death_flag' names the event column. 'Predictors: rcp_age, donor_type, delayed_graft_function, tacrolimus_m3' names the covariates. No code or strata are given.",
+    "time_column": "months_followed",
+    "time_evidence": "Our EHR follow-up is months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "the outcome is death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "donor_type",
+     "delayed_graft_function",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRD22",
+   "template_id": "r2.RD.22",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "A partner centre sent recipient rows with our exact columns (partner_tx_rows.csv), and also a sentence that their recipients were followed for a median of 40 months -- that's theirs, not ours. For our file, use the number of months each recipient was followed as follow-up, and the death indicator as the outcome. Adjust for egfr_m12, hemoglobin, tacrolimus_m3. Scoring file: tx_holdout_q2.csv.",
+   "note": "the partner's follow-up is skipped; this file's follow-up resolved from its own description",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The partner's 40-month median is about their cohort. 'the number of months each recipient was followed' describes this file's follow-up and fits only months_followed; 'the death indicator' fits only death_flag. 'Adjust for egfr_m12, hemoglobin, tacrolimus_m3' names the covariates. No code is given.",
+    "time_column": "months_followed",
+    "time_evidence": "the number of months each recipient was followed",
+    "event_column": "death_flag",
+    "event_evidence": "the death indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "egfr_m12",
+     "hemoglobin",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRD23",
+   "template_id": "r2.RD.23",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "Stratify by campus. Events: death_flag, where 1 is death; follow-up: months_followed. Covariates: rcp_age, donor_type, egfr_m12. External source: hazard ratios with confidence intervals from the national kidney registry (natl_ktx_hr.csv). Evaluate on tx_holdout_2024.csv for the transplant board.",
+   "note": "strata, code and covariates in a terse list before the release",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Stratify by campus' names the strata. 'Events: death_flag' names the event column and 'where 1 is death' gives the code. 'follow-up: months_followed' names the follow-up column. 'Covariates: rcp_age, donor_type, egfr_m12' names the covariates.",
+    "time_column": "months_followed",
+    "time_evidence": "follow-up: months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "Events: death_flag",
+    "event_value": "1",
+    "event_value_evidence": "where 1 is death",
+    "stratum_column": "campus",
+    "covariate_columns": [
+     "rcp_age",
+     "donor_type",
+     "egfr_m12"
+    ]
+   }
+  },
+  {
+   "id": "CRD24",
+   "template_id": "r2.RD.24",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "Use followup_months as the follow-up and death_flag as the event. The registry released log hazard ratios and a covariance matrix (ktx_registry.json); borrow if it improves things. I don't want to pick predictors myself -- use what the registry model covers. Test file: tx_test_2025.csv.",
+   "note": "a wrongly written follow-up name is returned as written, not silently corrected",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Use followup_months as the follow-up' names a column the file does not have (it holds months_followed), so followup_months is returned as written for the harness to flag. 'death_flag as the event' names the event column. 'use what the registry model covers' names no column, so covariate_columns is null.",
+    "time_column": "followup_months",
+    "time_evidence": "Use followup_months as the follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag as the event",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRD25",
+   "template_id": "r2.RD.25",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "ok so the registry gave us a baseline cumulative hazzard plus coefficients (reg_bch_ktx.csv). folks there were followed way longer than ours. for us its months_followed and death_flag, death_flag 1 = dead. predictors rcp_age delayed_graft_function hemoglobin. score it on tx_holdout.csv, deadline is the abstract",
+   "note": "colloquial message with no punctuation between names",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'for us its months_followed' names the follow-up column; the registry's longer follow-up is theirs. 'death_flag 1 = dead' names the event column and gives the code 1. 'predictors rcp_age delayed_graft_function hemoglobin' names three covariates without commas.",
+    "time_column": "months_followed",
+    "time_evidence": "for us its months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag 1 = dead",
+    "event_value": "1",
+    "event_value_evidence": "death_flag 1 = dead",
+    "stratum_column": null,
+    "covariate_columns": [
+     "rcp_age",
+     "delayed_graft_function",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRD26",
+   "template_id": "r2.RD.26",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "We want to borrow from a published graft-loss model (graft_loss_coefs.csv) and score on tx_holdout_2023.csv. Follow-up is months_followed. The outcome should be graft loss, whichever column holds it. Adjust for donor_type and tacrolimus_m3.",
+   "note": "a description that fits no column is not forced onto the only event column",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Follow-up is months_followed' names the follow-up column. 'graft loss, whichever column holds it' describes an outcome that no column of this file records (death_flag marks death), so the event column is null and the harness will ask. 'Adjust for donor_type and tacrolimus_m3' names the covariates.",
+    "time_column": "months_followed",
+    "time_evidence": "Follow-up is months_followed",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRD27",
+   "template_id": "r2.RD.27",
+   "profile": "tx_center_ehr",
+   "category": "RD",
+   "request": "The partner hospital's recipient-level records share our layout (hospital_b_recipients.csv). Use months followed for follow-up and death flag for the outcome, death flag = Y meaning the patient passed away. Covariates are donor type, tacrolimus m3 and hemoglobin. Hold out tx_holdout_v3.csv for evaluation.",
+   "note": "every name written with spaces; letter code read as written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'months followed for follow-up' names months_followed with a space; 'death flag for the outcome' names death_flag; 'death flag = Y meaning the patient passed away' gives the code Y. 'Covariates are donor type, tacrolimus m3 and hemoglobin' names three covariates, returned in the file's spelling.",
+    "time_column": "months_followed",
+    "time_evidence": "months followed for follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "death flag for the outcome",
+    "event_value": "Y",
+    "event_value_evidence": "death flag = Y meaning the patient passed away",
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "tacrolimus_m3",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRD28",
+   "template_id": "r2.RD.28",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "We are borrowing from the MAGGIC heart failure model's published coefficients (maggic_coefs.csv). Follow-up is days_to_death_or_ltfu and the outcome is dead. Adjust for age_enrol, ef_pct, nyha_class, creat_mg_dl and beta_blocker. Score on hf_holdout_2024.csv; MAGGIC's cohorts had up to three years of follow-up.",
+   "note": "external model's follow-up span is not a role",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Follow-up is days_to_death_or_ltfu' names the follow-up column; MAGGIC's three years belong to its cohorts. 'the outcome is dead' names the event column. The adjustment list names five covariates. No code or strata.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Follow-up is days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "the outcome is dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "age_enrol",
+     "ef_pct",
+     "nyha_class",
+     "creat_mg_dl",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRD29",
+   "template_id": "r2.RD.29",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "External information is a set of coefficients with a covariance matrix from a heart failure registry (hf_registry_cov.json). For follow-up use the days until death or loss to follow-up; for the event, the death indicator. Predictors are bnp, sodium and ef_pct. Hold out hf_test_q1.csv for scoring. The cardiology review is Thursday.",
+   "note": "both outcome roles resolved from descriptions with the phrase as evidence",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the days until death or loss to follow-up' describes the follow-up and fits only days_to_death_or_ltfu; 'the death indicator' fits only dead. 'Predictors are bnp, sodium and ef_pct' names the covariates. No code is given.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "the days until death or loss to follow-up",
+    "event_column": "dead",
+    "event_evidence": "the death indicator",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "bnp",
+     "sodium",
+     "ef_pct"
+    ]
+   }
+  },
+  {
+   "id": "CRD30",
+   "template_id": "r2.RD.30",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "Stratify by enrol_site and adjust for nyha_class, bnp, sodium. Use dead (1 = death) as the event and days_to_death_or_ltfu as the follow-up. Borrow from another trial's patient rows with matching columns (trial_b_rows.csv) and score on hf_holdout.csv.",
+   "note": "strata and covariates first, outcome after, external rows last",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Stratify by enrol_site' names the strata, so enrol_site is not a covariate. 'adjust for nyha_class, bnp, sodium' names the covariates. 'dead (1 = death) as the event' names the event column and '1 = death' gives the code. 'days_to_death_or_ltfu as the follow-up' names the follow-up column.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu as the follow-up",
+    "event_column": "dead",
+    "event_evidence": "dead (1 = death) as the event",
+    "event_value": "1",
+    "event_value_evidence": "1 = death",
+    "stratum_column": "enrol_site",
+    "covariate_columns": [
+     "nyha_class",
+     "bnp",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRD31",
+   "template_id": "r2.RD.31",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "The published hazard ratios with 95% intervals (hf_hr_2021.csv) were estimated in patients followed for about two years. Our follow-up is days_to_death_or_ltfu and the outcome is death_or_hosp. Covariates: ef_pct, creat_mg_dl, beta_blocker. Please check any borrowed fit against hf_holdout_2023.csv.",
+   "note": "a named event column absent from the file is returned as written",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The two years describe the published cohort. 'Our follow-up is days_to_death_or_ltfu' names the follow-up column. 'the outcome is death_or_hosp' names an event column the file does not have, so it is returned as written for the harness to flag rather than swapped for dead. 'Covariates: ef_pct, creat_mg_dl, beta_blocker' names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Our follow-up is days_to_death_or_ltfu",
+    "event_column": "death_or_hosp",
+    "event_evidence": "the outcome is death_or_hosp",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "creat_mg_dl",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRD32",
+   "template_id": "r2.RD.32",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "Hello, following up from the heart failure working group. We received a baseline cumulative hazard and coefficients from the national registry (hf_bch_release.csv) and would like to borrow from them if they help. In our cohort the outcome column is dead and the follow-up column is days_to_death_or_ltfu. For the predictors, please use the registry's list. The holdout file hf_holdout_v2.csv should only be used to score the final models.",
+   "note": "narrative email deferring predictors to the release: covariates null",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'the outcome column is dead' names the event column and 'the follow-up column is days_to_death_or_ltfu' names the follow-up column. 'please use the registry's list' names no column, so covariate_columns is null. No code or strata are given.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "the follow-up column is days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "the outcome column is dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRD33",
+   "template_id": "r2.RD.33",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "Precision matrix and coefficients from the consortium are in hf_consortium_prec.json. Follow-up: days to death or ltfu. Outcome: dead, yes meaning the patient passed away. Adjust for nyha class, bnp, sodium and beta blocker. Evaluate on hf_test_2025.csv.",
+   "note": "a long name written with spaces is mapped to the file's spelling",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'Follow-up: days to death or ltfu' names days_to_death_or_ltfu written with spaces. 'Outcome: dead' names the event column and 'yes meaning the patient passed away' gives the code yes. 'Adjust for nyha class, bnp, sodium and beta blocker' names four covariates, returned with underscores.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Follow-up: days to death or ltfu",
+    "event_column": "dead",
+    "event_evidence": "Outcome: dead",
+    "event_value": "yes",
+    "event_value_evidence": "yes meaning the patient passed away",
+    "stratum_column": null,
+    "covariate_columns": [
+     "nyha_class",
+     "bnp",
+     "sodium",
+     "beta_blocker"
+    ]
+   }
+  },
+  {
+   "id": "CRD34",
+   "template_id": "r2.RD.34",
+   "profile": "heart_failure",
+   "category": "RD",
+   "request": "The registry's coefficients (hf_registry_coefs.csv) cover our patients' main risk factors; borrow if that helps on hf_holdout_2024.csv. The outcome is dead. I still need to check with the data manager which column carries follow-up, so leave that open for now. Adjust for ef_pct, bnp and creat_mg_dl.",
+   "note": "a role the analyst leaves open is not filled from the only plausible column",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "'The outcome is dead' names the event column. The analyst says explicitly that the follow-up column is not yet settled, so the follow-up role is null even though the file has one candidate. 'Adjust for ef_pct, bnp and creat_mg_dl' names the covariates. No code is given.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "dead",
+    "event_evidence": "The outcome is dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "bnp",
+     "creat_mg_dl"
+    ]
+   }
+  },
+  {
+   "id": "CRE00",
+   "template_id": "r2.RE.00",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "Using wl_extract.csv, model how long each candidate waited on the list, with died_on_list = 1 as the outcome. Adjust for CAN_CPRA, CAN_DIAB and CAN_PREV_TX.",
+   "note": "A follow-up duration described in words resolves to the single waiting-list duration column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"how long each candidate waited on the list\" describes the follow-up duration without naming it; the only column it can mean is wl_days, so wl_days is returned with that phrase. \"died_on_list = 1 as the outcome\" names the event column and its code 1. \"Adjust for CAN_CPRA, CAN_DIAB and CAN_PREV_TX\" names three covariates. No stratifying column is named.",
+    "time_column": "wl_days",
+    "time_evidence": "how long each candidate waited on the list",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list = 1 as the outcome",
+    "event_value": "1",
+    "event_value_evidence": "died_on_list = 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAB",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRE01",
+   "template_id": "r2.RE.01",
+   "profile": "ckd_ehr",
+   "category": "RE",
+   "request": "From the clinic extract, fit a survival model for whether the person reached end-stage kidney disease, with follow-up measured by years_to_eskd. Predictors: uacr, sbp, hba1c, on_raas.",
+   "note": "An event described clinically resolves to the one indicator column it fits; the code stays null when not stated.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"follow-up measured by years_to_eskd\" names the follow-up column. \"whether the person reached end-stage kidney disease\" describes the event without writing a column name; eskd is the only indicator it can mean, so eskd is returned with that phrase. No code for the event is given, so event_value is null. \"Predictors: uacr, sbp, hba1c, on_raas\" names the covariates. No strata are named.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up measured by years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "whether the person reached end-stage kidney disease",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "uacr",
+     "sbp",
+     "hba1c",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRE02",
+   "template_id": "r2.RE.02",
+   "profile": "tx_center_ehr",
+   "category": "RE",
+   "request": "hey, can you look at how many months each recipient was observed and whether they passed away? put in tacrolimus_m3, hemoglobin, donor_type pls",
+   "note": "Both outcome roles described in a casual message, each fitting exactly one column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"how many months each recipient was observed\" describes a follow-up length in months; months_followed is the only such column (tx_year is a calendar year), so it is returned with that phrase. \"whether they passed away\" describes the event; death_flag is the only column recording mortality. No value for the event is written. \"put in tacrolimus_m3, hemoglobin, donor_type\" names the covariates. No strata are named.",
+    "time_column": "months_followed",
+    "time_evidence": "how many months each recipient was observed",
+    "event_column": "death_flag",
+    "event_evidence": "whether they passed away",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "tacrolimus_m3",
+     "hemoglobin",
+     "donor_type"
+    ]
+   }
+  },
+  {
+   "id": "CRE03",
+   "template_id": "r2.RE.03",
+   "profile": "heart_failure",
+   "category": "RE",
+   "request": "Outcome: all-cause mortality, recorded in dead (1 = deceased). Follow-up: the number of days until death or loss to follow-up. Covariates ef_pct, nyha_class, bnp, sodium.",
+   "note": "A named event with its code and a described follow-up in the same request.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"all-cause mortality, recorded in dead\" names the event column dead, and \"1 = deceased\" gives its code. \"the number of days until death or loss to follow-up\" describes the follow-up without its name; days_to_death_or_ltfu is the only duration column, so it is returned with that phrase. \"Covariates ef_pct, nyha_class, bnp, sodium\" names four covariates. No strata are named.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "the number of days until death or loss to follow-up",
+    "event_column": "dead",
+    "event_evidence": "all-cause mortality, recorded in dead",
+    "event_value": "1",
+    "event_value_evidence": "1 = deceased",
+    "stratum_column": null,
+    "covariate_columns": [
+     "ef_pct",
+     "nyha_class",
+     "bnp",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRE04",
+   "template_id": "r2.RE.04",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "For graft survival in registry_release.csv, use the number of days until the transplanted kidney stopped working as follow-up, and the indicator of whether the transplanted kidney was lost as the outcome, coded 1 for loss. Adjust for DON_KDPI, REC_DIAL_YRS and DON_CREAT.",
+   "note": "A description specific to graft loss picks one of two similar duration columns and one of two indicators.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the number of days until the transplanted kidney stopped working\" describes graft follow-up; of the two day-count columns only gf_days counts days to graft loss, so it is returned with that phrase. \"the indicator of whether the transplanted kidney was lost\" describes graft loss, which only graft_failed records. \"coded 1 for loss\" gives the event code. \"Adjust for DON_KDPI, REC_DIAL_YRS and DON_CREAT\" names the covariates. No strata are named.",
+    "time_column": "gf_days",
+    "time_evidence": "the number of days until the transplanted kidney stopped working",
+    "event_column": "graft_failed",
+    "event_evidence": "the indicator of whether the transplanted kidney was lost",
+    "event_value": "1",
+    "event_value_evidence": "coded 1 for loss",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAL_YRS",
+     "DON_CREAT"
+    ]
+   }
+  },
+  {
+   "id": "CRE05",
+   "template_id": "r2.RE.05",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "Hi all, following up on Tuesday's call. For patient survival we agreed to measure the days from transplant to the recipient's death or last contact, and the event is whether the recipient passed away. Please include REC_DIAB, REC_DIAL_YRS and DON_KDPI. Thanks, Mei",
+   "note": "Descriptions tied to patient death, not graft loss, each fit one column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the days from transplant to the recipient's death or last contact\" describes a day count to patient death; days_to_death is the only column it fits (gf_days counts to graft loss). \"whether the recipient passed away\" describes patient mortality, which only pt_died records. No code for the event is written. \"Please include REC_DIAB, REC_DIAL_YRS and DON_KDPI\" names the covariates. No strata are named.",
+    "time_column": "days_to_death",
+    "time_evidence": "the days from transplant to the recipient's death or last contact",
+    "event_column": "pt_died",
+    "event_evidence": "whether the recipient passed away",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAB",
+     "REC_DIAL_YRS",
+     "DON_KDPI"
+    ]
+   }
+  },
+  {
+   "id": "CRE06",
+   "template_id": "r2.RE.06",
+   "profile": "ckd_ehr",
+   "category": "RE",
+   "request": "Dear team, attached is cohort_2024.csv. Please treat eskd as the endpoint (1 = reached) and the years until kidney failure or censoring as the follow-up. Use female, uacr and on_raas.",
+   "note": "Follow-up described in a formal email resolves to the single duration column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"treat eskd as the endpoint\" names the event column and \"1 = reached\" its code. \"the years until kidney failure or censoring\" describes the follow-up; years_to_eskd is the only duration column, so it is returned with that phrase. \"Use female, uacr and on_raas\" names the covariates. No strata are named.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "the years until kidney failure or censoring",
+    "event_column": "eskd",
+    "event_evidence": "treat eskd as the endpoint",
+    "event_value": "1",
+    "event_value_evidence": "1 = reached",
+    "stratum_column": null,
+    "covariate_columns": [
+     "female",
+     "uacr",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRE07",
+   "template_id": "r2.RE.07",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "wl_days for follow-up; outcome = whether the candidate was taken off the list because they got a kidney. covariates CAN_ABO, CAN_CPRA, CAN_GENDER.",
+   "note": "A specific description separates removal for transplant from death on the list.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"wl_days for follow-up\" names the follow-up column. \"whether the candidate was taken off the list because they got a kidney\" describes removal for transplant; of the two indicators only removed_for_tx means that, so it is returned with that phrase. No event code is given. \"covariates CAN_ABO, CAN_CPRA, CAN_GENDER\" names three covariates. No strata are named.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days for follow-up",
+    "event_column": "removed_for_tx",
+    "event_evidence": "whether the candidate was taken off the list because they got a kidney",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_ABO",
+     "CAN_CPRA",
+     "CAN_GENDER"
+    ]
+   }
+  },
+  {
+   "id": "CRE08",
+   "template_id": "r2.RE.08",
+   "profile": "heart_failure",
+   "category": "RE",
+   "request": "folow-up is how many days each patient was tracked before death or being lost, and the endpoint is wether they passed away. covars: beta_blocker, creat_mg_dl, sodium",
+   "note": "Evidence keeps the analyst's typos character for character.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"how many days each patient was tracked before death or being lost\" describes the follow-up; days_to_death_or_ltfu is the only duration column. \"wether they passed away\" (misspelt in the request and quoted as written) describes mortality, which only dead records. No code is given. \"covars: beta_blocker, creat_mg_dl, sodium\" names the covariates. No strata are named.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "how many days each patient was tracked before death or being lost",
+    "event_column": "dead",
+    "event_evidence": "wether they passed away",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "beta_blocker",
+     "creat_mg_dl",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRE09",
+   "template_id": "r2.RE.09",
+   "profile": "tx_center_ehr",
+   "category": "RE",
+   "request": "Quick one before I head to clinic (the coffee machine is broken again). death_flag is the outcome, 1 meaning the recipient passed away. Follow-up should be how long, in months, each person stayed under observation. Adjust for delayed_graft_function and tacrolimus_m3.",
+   "note": "An irrelevant aside is ignored; the described follow-up still resolves.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "The coffee machine aside says nothing about the roles. \"death_flag is the outcome\" names the event column and \"1 meaning the recipient passed away\" its code. \"how long, in months, each person stayed under observation\" describes the follow-up; months_followed is the only duration in months, so it is returned with that phrase. \"Adjust for delayed_graft_function and tacrolimus_m3\" names the covariates. No strata are named.",
+    "time_column": "months_followed",
+    "time_evidence": "how long, in months, each person stayed under observation",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag is the outcome",
+    "event_value": "1",
+    "event_value_evidence": "1 meaning the recipient passed away",
+    "stratum_column": null,
+    "covariate_columns": [
+     "delayed_graft_function",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRE10",
+   "template_id": "r2.RE.10",
+   "profile": "ckd_ehr",
+   "category": "RE",
+   "request": "We want to study progression to kidney failure needing dialysis or transplant, with the years until that happened as follow-up. Adjust for hba1c, sbp and female.",
+   "note": "Both outcome roles described, neither named, each fitting one column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"progression to kidney failure needing dialysis or transplant\" describes the event; eskd is the only outcome indicator it can mean. \"the years until that happened\" describes the follow-up; years_to_eskd is the only duration column. Both are returned with their phrases. No code for the event is written. \"Adjust for hba1c, sbp and female\" names the covariates. No strata are named.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "the years until that happened",
+    "event_column": "eskd",
+    "event_evidence": "progression to kidney failure needing dialysis or transplant",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "hba1c",
+     "sbp",
+     "female"
+    ]
+   }
+  },
+  {
+   "id": "CRE11",
+   "template_id": "r2.RE.11",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "Registry waitlist question: the follow-up is the days each candidate spent listed, and the event is death while waiting, flagged as 1. Include CAN_DIAL_YRS and CAN_RACE.",
+   "note": "A description of death on the list is distinct from removal for transplant, so it fits one indicator.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the days each candidate spent listed\" describes the waiting-list duration; wl_days is the only column in days on the list (CAN_DIAL_YRS counts years on dialysis). \"death while waiting\" describes death on the list, which only died_on_list records; \"flagged as 1\" gives the code. \"Include CAN_DIAL_YRS and CAN_RACE\" names the covariates. No strata are named.",
+    "time_column": "wl_days",
+    "time_evidence": "the days each candidate spent listed",
+    "event_column": "died_on_list",
+    "event_evidence": "death while waiting",
+    "event_value": "1",
+    "event_value_evidence": "flagged as 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_DIAL_YRS",
+     "CAN_RACE"
+    ]
+   }
+  },
+  {
+   "id": "CRE12",
+   "template_id": "r2.RE.12",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "Please fit a Cox model on registry_release.csv using the follow-up duration and whether the outcome happened, adjusted for REC_DIAB, DON_KDPI and REC_COLD_ISCH_TM.",
+   "note": "Generic descriptions in a file with two durations and two indicators leave both roles null.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the follow-up duration\" could mean days_to_death or gf_days, two columns, so the follow-up is left null for the harness to ask. \"whether the outcome happened\" could mean pt_died or graft_failed, so the event is null too, and no code is given. \"adjusted for REC_DIAB, DON_KDPI and REC_COLD_ISCH_TM\" names the covariates. No strata are named.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "REC_DIAB",
+     "DON_KDPI",
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRE13",
+   "template_id": "r2.RE.13",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "Endpoint pt_died, with 1 for a recipient who passed away. For follow-up use the length of observation in days.",
+   "note": "A named event does not license resolving an ambiguous duration description.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Endpoint pt_died\" names the event and \"1 for a recipient who passed away\" its code. \"the length of observation in days\" fits both day-count columns, days_to_death and gf_days, so two columns could be meant and the follow-up is null. No covariates and no strata are named.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "pt_died",
+    "event_evidence": "Endpoint pt_died",
+    "event_value": "1",
+    "event_value_evidence": "1 for a recipient who passed away",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRE14",
+   "template_id": "r2.RE.14",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "gf_days is the follow-up. The outcome is whether the bad thing happened after transplant. Adjust for DON_CREAT and REC_DIAL_YRS.",
+   "note": "A vague outcome description stays null even when the named follow-up hints at one of them.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"gf_days is the follow-up\" names the follow-up column. \"whether the bad thing happened after transplant\" could mean pt_died or graft_failed; two columns fit, so the event is null and the harness will ask. No code is given. \"Adjust for DON_CREAT and REC_DIAL_YRS\" names the covariates. No strata are named.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days is the follow-up",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_CREAT",
+     "REC_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRE15",
+   "template_id": "r2.RE.15",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "Duration is wl_days. Outcome: whether the listing ended. Predictors CAN_CPRA and CAN_PREV_TX.",
+   "note": "The end of a listing has two causes in this file, so the event is asked, not chosen.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Duration is wl_days\" names the follow-up. \"whether the listing ended\" fits both died_on_list and removed_for_tx, since a listing ends either way; two columns could be meant, so the event is null. No code is given. \"Predictors CAN_CPRA and CAN_PREV_TX\" names the covariates. No strata are named.",
+    "time_column": "wl_days",
+    "time_evidence": "Duration is wl_days",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRE16",
+   "template_id": "r2.RE.16",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "use the duration measure in the file as follow-up, died_on_list as the event, and adjust for CAN_ABO.",
+   "note": "Two duration columns make a generic duration description ambiguous.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the duration measure in the file\" could mean wl_days or CAN_DIAL_YRS, both durations, so the follow-up is null. \"died_on_list as the event\" names the event column; no code is given. \"adjust for CAN_ABO\" names one covariate. No strata are named.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list as the event",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_ABO"
+    ]
+   }
+  },
+  {
+   "id": "CRE17",
+   "template_id": "r2.RE.17",
+   "profile": "tx_center_ehr",
+   "category": "RE",
+   "request": "Follow-up is months_followed. For the endpoint, take the yes/no outcome after transplant. Covariates: donor_type, tacrolimus_m3.",
+   "note": "A binary-outcome description fitting two indicator columns is left for the harness to ask.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Follow-up is months_followed\" names the follow-up. \"the yes/no outcome after transplant\" could mean death_flag or delayed_graft_function, both binary post-transplant outcomes, so the event is null. No code is given. \"Covariates: donor_type, tacrolimus_m3\" names the covariates. No strata are named.",
+    "time_column": "months_followed",
+    "time_evidence": "Follow-up is months_followed",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "tacrolimus_m3"
+    ]
+   }
+  },
+  {
+   "id": "CRE18",
+   "template_id": "r2.RE.18",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "I'm putting together the abstract for the regional meeting next month. Could you model the follow-up length against whether the endpoint was reached? DON_KDPI and REC_DIAB should go in.",
+   "note": "Narrative context does not disambiguate generic outcome descriptions.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the follow-up length\" could be days_to_death or gf_days, so it is null. \"whether the endpoint was reached\" could be pt_died or graft_failed, so it is null, with no code. \"DON_KDPI and REC_DIAB should go in\" names the covariates. No strata are named; the meeting is background.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRE19",
+   "template_id": "r2.RE.19",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "The follow-up is the days spent waiting for an organ, and the outcome is whether the candidate left the list. Use CAN_GENDER and CAN_DIAB.",
+   "note": "In one request a description can resolve for one role and stay ambiguous for another.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"the days spent waiting for an organ\" describes the waiting-list duration; wl_days is the only column it fits (CAN_DIAL_YRS is years on dialysis), so it is returned with that phrase. \"whether the candidate left the list\" fits both died_on_list and removed_for_tx, so the event is null. No code is given. \"Use CAN_GENDER and CAN_DIAB\" names the covariates. No strata are named.",
+    "time_column": "wl_days",
+    "time_evidence": "the days spent waiting for an organ",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_GENDER",
+     "CAN_DIAB"
+    ]
+   }
+  },
+  {
+   "id": "CRE20",
+   "template_id": "r2.RE.20",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "graft_failed is the event (1 = graft loss); measure the day count since transplant for follow-up.",
+   "note": "A day count from transplant fits two columns, so it is not resolved.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"graft_failed is the event\" names the event and \"1 = graft loss\" its code. \"the day count since transplant\" could be days_to_death or gf_days, both counted from transplant, so the follow-up is null. No covariates or strata are named.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed is the event",
+    "event_value": "1",
+    "event_value_evidence": "1 = graft loss",
+    "stratum_column": null,
+    "covariate_columns": null
+   }
+  },
+  {
+   "id": "CRE21",
+   "template_id": "r2.RE.21",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "Take the outcome flag for each candidate plus wl_days as follow-up; adjust for CAN_RACE.",
+   "note": "\"The outcome flag\" in a file with two flags is a gap, not a guess.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"wl_days as follow-up\" names the follow-up. \"the outcome flag for each candidate\" could be died_on_list or removed_for_tx, two indicator columns, so the event is null. No code is given. \"adjust for CAN_RACE\" names one covariate. No strata are named.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days as follow-up",
+    "event_column": null,
+    "event_evidence": null,
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_RACE"
+    ]
+   }
+  },
+  {
+   "id": "CRE22",
+   "template_id": "r2.RE.22",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "Patient survival: days_to_death and pt_died (1 = deceased). Adjust for DON_KDPI, REC_DIAB and REC_DIAL_YRS, and stratify by REC_CTR_ID.",
+   "note": "An explicit \"stratify by\" names the strata column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"days_to_death\" names the follow-up and \"pt_died\" the event, with \"1 = deceased\" as its code. \"Adjust for DON_KDPI, REC_DIAB and REC_DIAL_YRS\" names the covariates. \"stratify by REC_CTR_ID\" names the strata column, which is therefore not a covariate.",
+    "time_column": "days_to_death",
+    "time_evidence": "days_to_death",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died",
+    "event_value": "1",
+    "event_value_evidence": "1 = deceased",
+    "stratum_column": "REC_CTR_ID",
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_DIAB",
+     "REC_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRE23",
+   "template_id": "r2.RE.23",
+   "profile": "heart_failure",
+   "category": "RE",
+   "request": "Fit days_to_death_or_ltfu with dead as the event, keeping baseline hazards separate for each enrol_site. Covariates bnp, ef_pct, nyha_class.",
+   "note": "Separate baseline hazards per named column means stratification.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Fit days_to_death_or_ltfu\" names the follow-up and \"dead as the event\" the event; no code is given. \"baseline hazards separate for each enrol_site\" names enrol_site as the strata. \"Covariates bnp, ef_pct, nyha_class\" names the covariates; enrol_site is not among them.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "Fit days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead as the event",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "enrol_site",
+    "covariate_columns": [
+     "bnp",
+     "ef_pct",
+     "nyha_class"
+    ]
+   }
+  },
+  {
+   "id": "CRE24",
+   "template_id": "r2.RE.24",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "wl_days / died_on_list. CAN_LISTING_CTR_ID identifies the centre; fit stratified by it. Adjust for CAN_CPRA and CAN_DIAL_YRS.",
+   "note": "A column named first and then referred to by \"it\" in the stratifying clause is the strata column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"wl_days\" names the follow-up and \"died_on_list\" the event; no code is given. \"CAN_LISTING_CTR_ID identifies the centre; fit stratified by it\" names the strata column. \"Adjust for CAN_CPRA and CAN_DIAL_YRS\" names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "CAN_LISTING_CTR_ID",
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS"
+    ]
+   }
+  },
+  {
+   "id": "CRE25",
+   "template_id": "r2.RE.25",
+   "profile": "ckd_ehr",
+   "category": "RE",
+   "request": "Model years_to_eskd and eskd, stratified on clinic_id, with uacr, sbp, hba1c and on_raas as predictors.",
+   "note": "Terse stratification by a named clinic column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"years_to_eskd\" names the follow-up and \"eskd\" the event; no code is given. \"stratified on clinic_id\" names the strata. \"with uacr, sbp, hba1c and on_raas as predictors\" names the covariates.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "clinic_id",
+    "covariate_columns": [
+     "uacr",
+     "sbp",
+     "hba1c",
+     "on_raas"
+    ]
+   }
+  },
+  {
+   "id": "CRE26",
+   "template_id": "r2.RE.26",
+   "profile": "tx_center_ehr",
+   "category": "RE",
+   "request": "please stratify by campus. months_followed is follow-up, death_flag the outcome (1 = yes). adjust for donor_type, tacrolimus_m3, hemoglobin.",
+   "note": "The stratifying clause may come first in the request.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"stratify by campus\" names campus as the strata. \"months_followed is follow-up\" names the follow-up; \"death_flag the outcome\" names the event and \"1 = yes\" its code. \"adjust for donor_type, tacrolimus_m3, hemoglobin\" names the covariates.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed is follow-up",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag the outcome",
+    "event_value": "1",
+    "event_value_evidence": "1 = yes",
+    "stratum_column": "campus",
+    "covariate_columns": [
+     "donor_type",
+     "tacrolimus_m3",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRE27",
+   "template_id": "r2.RE.27",
+   "profile": "tx_center_ehr",
+   "category": "RE",
+   "request": "The records came from three campuses of our health system and were pooled last spring. Use months_followed and death_flag, adjusting for donor_type and delayed_graft_function.",
+   "note": "Mentioning several centres as background is not a request to stratify.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"three campuses of our health system\" is background about where the records came from; it asks for no stratification and names no column, so stratum_column is null. \"months_followed\" names the follow-up and \"death_flag\" the event; no code is given. \"adjusting for donor_type and delayed_graft_function\" names the covariates.",
+    "time_column": "months_followed",
+    "time_evidence": "months_followed",
+    "event_column": "death_flag",
+    "event_evidence": "death_flag",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "donor_type",
+     "delayed_graft_function"
+    ]
+   }
+  },
+  {
+   "id": "CRE28",
+   "template_id": "r2.RE.28",
+   "profile": "srtr_posttx",
+   "category": "RE",
+   "request": "These recipients were transplanted at many centres across the country. Graft outcome: gf_days with graft_failed. Adjust for DON_CREAT and REC_COLD_ISCH_TM.",
+   "note": "A centre column in the file is never filled in from background prose.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"transplanted at many centres across the country\" is background and names no column to stratify by, so stratum_column is null (REC_CTR_ID is not written). \"gf_days\" names the follow-up and \"graft_failed\" the event; no code is given. \"Adjust for DON_CREAT and REC_COLD_ISCH_TM\" names the covariates.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days",
+    "event_column": "graft_failed",
+    "event_evidence": "graft_failed",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_CREAT",
+     "REC_COLD_ISCH_TM"
+    ]
+   }
+  },
+  {
+   "id": "CRE29",
+   "template_id": "r2.RE.29",
+   "profile": "heart_failure",
+   "category": "RE",
+   "request": "enrol_site is just an administrative label, please ignore it. days_to_death_or_ltfu and dead, adjusting for sodium and creat_mg_dl.",
+   "note": "A centre column named in order to be ignored is not the strata column.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"enrol_site is just an administrative label, please ignore it\" names enrol_site only to set it aside; it is neither strata nor a covariate, so stratum_column is null. \"days_to_death_or_ltfu\" names the follow-up and \"dead\" the event; no code is given. \"adjusting for sodium and creat_mg_dl\" names the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "sodium",
+     "creat_mg_dl"
+    ]
+   }
+  },
+  {
+   "id": "CRE30",
+   "template_id": "r2.RE.30",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "Separate baseline hazard per CAN_ABO group, please. Follow-up wl_days, event removed_for_tx coded 1. Adjust for CAN_CPRA and CAN_PREV_TX.",
+   "note": "The strata need not be a centre; any column named for separate baseline hazards qualifies.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Separate baseline hazard per CAN_ABO group\" names CAN_ABO as the strata. \"Follow-up wl_days\" names the follow-up; \"event removed_for_tx\" names the event and \"coded 1\" its code. \"Adjust for CAN_CPRA and CAN_PREV_TX\" names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "Follow-up wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "event removed_for_tx",
+    "event_value": "1",
+    "event_value_evidence": "coded 1",
+    "stratum_column": "CAN_ABO",
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_PREV_TX"
+    ]
+   }
+  },
+  {
+   "id": "CRE31",
+   "template_id": "r2.RE.31",
+   "profile": "ckd_ehr",
+   "category": "RE",
+   "request": "Adjust for sbp, uacr and clinic_id, and also stratify by clinic_id. Endpoint eskd; follow-up years_to_eskd.",
+   "note": "A column named both as adjustment and as strata goes to the strata only.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"stratify by clinic_id\" names clinic_id as the strata. The request also lists clinic_id among the adjustment variables, but a strata column is not also a covariate, so the covariates are sbp and uacr. \"Endpoint eskd\" names the event, no code given; \"follow-up years_to_eskd\" names the follow-up.",
+    "time_column": "years_to_eskd",
+    "time_evidence": "follow-up years_to_eskd",
+    "event_column": "eskd",
+    "event_evidence": "Endpoint eskd",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "clinic_id",
+    "covariate_columns": [
+     "sbp",
+     "uacr"
+    ]
+   }
+  },
+  {
+   "id": "CRE32",
+   "template_id": "r2.RE.32",
+   "profile": "heart_failure",
+   "category": "RE",
+   "request": "Stratify by region_code (we coded the hospitals into regions). Use days_to_death_or_ltfu, dead, bnp and sodium.",
+   "note": "A strata column absent from the file is returned as written, not replaced by enrol_site.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"Stratify by region_code\" names a strata column that is not in the column list; it is returned exactly as written so the harness can say it is missing. \"days_to_death_or_ltfu\" names the follow-up and \"dead\" the event; no code is given. bnp and sodium are named in the same list and are the covariates.",
+    "time_column": "days_to_death_or_ltfu",
+    "time_evidence": "days_to_death_or_ltfu",
+    "event_column": "dead",
+    "event_evidence": "dead",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": "region_code",
+    "covariate_columns": [
+     "bnp",
+     "sodium"
+    ]
+   }
+  },
+  {
+   "id": "CRE33",
+   "template_id": "r2.RE.33",
+   "profile": "tx_center_ehr",
+   "category": "RE",
+   "request": "This is a matched sample: each recipient who passed away was matched to controls from the same transplant year, and tx_year identifies the matched sets. Event: death_flag, 1 = deceased. Covariates donor_type and hemoglobin.",
+   "note": "The matched-set identifier is returned in the strata field.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"tx_year identifies the matched sets\" names the matched-set identifier, returned as stratum_column. \"Event: death_flag\" names the event and \"1 = deceased\" its code. The request names no follow-up column for this matched design and describes none, so the follow-up is null. \"Covariates donor_type and hemoglobin\" names the covariates.",
+    "time_column": null,
+    "time_evidence": null,
+    "event_column": "death_flag",
+    "event_evidence": "Event: death_flag",
+    "event_value": "1",
+    "event_value_evidence": "1 = deceased",
+    "stratum_column": "tx_year",
+    "covariate_columns": [
+     "donor_type",
+     "hemoglobin"
+    ]
+   }
+  },
+  {
+   "id": "CRE34",
+   "template_id": "r2.RE.34",
+   "profile": "srtr_waitlist",
+   "category": "RE",
+   "request": "Fit wl_days with died_on_list, stratifying by the listing centre. Adjust for CAN_RACE and CAN_GENDER.",
+   "note": "A described strata column is never resolved, unlike a described follow-up or event.",
+   "source": "round 2 by error category (2026-10-05)",
+   "example": {
+    "reasoning": "\"wl_days\" names the follow-up and \"died_on_list\" the event; no code is given. \"stratifying by the listing centre\" asks for strata but only describes the column without naming it; strata are filled only from a name, so stratum_column is null and the harness will ask. \"Adjust for CAN_RACE and CAN_GENDER\" names the covariates.",
+    "time_column": "wl_days",
+    "time_evidence": "wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "died_on_list",
+    "event_value": null,
+    "event_value_evidence": null,
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_RACE",
+     "CAN_GENDER"
+    ]
+   }
   }
- ]
+ ],
+ "round2": "2026-10-05: + items by error category (jobs/v4/role_bank/raw, merge_roles.py)"
 }

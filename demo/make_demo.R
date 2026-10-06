@@ -29,7 +29,7 @@ make <- function(m, b, hla = FALSE, base = 0.0009, cens = 0.0006, maxt = 3650) {
 }
 coh <- make(n, b_int); coh$patient_id <- seq_len(n); coh$site <- rep(1:3, length.out = n)
 coh <- coh[, c("patient_id", "site", vars, "followup_days", "died")]
-invisible(make(5000, b_int))                      # the test set used when this example was chosen
+invisible(make(5000, b_int))                     # the test set used when this example was chosen
 reg <- make(20000, b_reg, hla = TRUE)
 covered <- c("age", "bmi", "egfr", "donor_age", "cold_ischemia")
 f <- coxph(as.formula(paste("Surv(followup_days, died) ~", paste(c(covered, "hla_mismatch"), collapse = "+"))), data = reg)

@@ -2,7 +2,7 @@
 
 The same mechanism as the role-reading examples (`fewshot.py`): a bank of synthetic analyst messages, each
 with its correct typing in the intent schema's own shape (`examples/intent_bank.json`, built by
-a separate script and checked there), and at the call the harness retrieves
+`/home/ybshao/jobs/v4/intent_bank/merge_bank.py` and checked there), and at the call the harness retrieves
 the k items most similar to the analyst's message and places them before it.
 
 Similarity is BM25 over column-masked text (the analyst's column names and the bank's own vocabulary
@@ -28,9 +28,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
-from . import fewshot
+from . import fewshot, retrieval
 
-BANK_PATH = Path(__file__).resolve().parent / "examples" / "intent_bank.json"
+BANK_PATH = Path(os.environ["BREGSURV_INTENT_BANK"]) if os.environ.get("BREGSURV_INTENT_BANK") else Path(__file__).resolve().parent / "examples" / "intent_bank.json"
 DEFAULT_K = 5
 _K1, _B = 1.5, 0.75
 
@@ -55,7 +55,10 @@ class Bank:
         data = json.loads(raw)
         self.items: List[Dict[str, Any]] = data["items"]
         self.vocab: List[str] = list(data.get("vocabulary") or [])
-        self.docs = [fewshot.tokens(fewshot.mask(it["message"], self.vocab)) for it in self.items]
+        self.path = path
+        self.masked = [fewshot.mask(it["message"], self.vocab) for it in self.items]
+        self.docs = [fewshot.tokens(t) for t in self.masked]
+        self.last_retrieval: Dict[str, Any] = {}
         self.avgdl = sum(len(d) for d in self.docs) / max(1, len(self.docs))
         df: Counter = Counter()
         for d in self.docs:
@@ -77,13 +80,16 @@ class Bank:
                  ) -> List[Dict[str, Any]]:
         if k <= 0:
             return []
-        q = fewshot.tokens(fewshot.mask(message, list(columns) + self.vocab))
+        qtext = fewshot.mask(message, list(columns) + self.vocab)
+        q = fewshot.tokens(qtext)
         want = _has_result(state)
-        scored = sorted(((self.score(q, i), i) for i in range(len(self.items))
-                         if _has_result(self.items[i]["state"]) == want), reverse=True)
+        cand = [i for i in range(len(self.items)) if _has_result(self.items[i]["state"]) == want]
+        bm = {i: self.score(q, i) for i in cand}
+        # V4: hybrid order (retrieval.py); BM25 alone under BREGSURV_RETRIEVAL=bm25
+        order, self.last_retrieval = retrieval.rank(Path(self.path), self.masked, qtext, bm, cand)
         out = []
-        for s, i in scored[:k]:
-            it = dict(self.items[i]); it["_score"] = round(s, 4)
+        for i in order[:k]:
+            it = dict(self.items[i]); it["_score"] = round(bm.get(i, 0.0), 4)
             out.append(it)
         return out
 
@@ -99,7 +105,9 @@ def render(examples: List[Dict[str, Any]]) -> str:
     parts = ["Worked examples of typing other analysts' messages (different cohorts; their words are never "
              "evidence for this message):"]
     for j, it in enumerate(examples, 1):
-        ans = {"reasoning": it["reasoning"], "intents": it["intents"]}
+        # the schema's current fields, in its order (V4 2026-10-06 added km_by after the bank was built)
+        ans = {"reasoning": it["reasoning"],
+               "intents": [{**i, "km_by": i.get("km_by")} for i in it["intents"]]}
         parts.append(f"Example {j}\n{it['state']}\nThe analyst wrote:\n{it['message']}\n"
                      f"Correct typing:\n{json.dumps(ans, ensure_ascii=False)}")
     return "\n\n".join(parts) + "\n\nNow type this message.\n\n"
@@ -109,7 +117,8 @@ def record(examples: List[Dict[str, Any]], k: int) -> Dict[str, Any]:
     b = bank()
     return {"k": k, "n_shown": len(examples), "ids": [e["id"] for e in examples],
             "scores": [e.get("_score") for e in examples],
-            "bank_sha256": b.sha256 if b else None, "bank_items": len(b.items) if b else 0}
+            "bank_sha256": b.sha256 if b else None, "bank_items": len(b.items) if b else 0,
+            "retrieval": dict(getattr(b, "last_retrieval", {}) or {}) if b else {}}
 
 
 def for_message(message: str, state: str, columns: Iterable[str] = ()):

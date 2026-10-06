@@ -154,7 +154,7 @@ coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, 
   if (isTRUE(standardize)) {
     mysd <- function(v) sqrt(sum((v - mean(v))^2) / length(v))
     std_scale <- apply(z_mat, 2, mysd)
-    std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1  # constant columns: leave as they are
+    std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1 # constant columns: leave as they are
     z_fit <- sweep(z_mat, 2, std_scale, "/")
   } else {
     z_fit <- z_mat

@@ -251,8 +251,8 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   # --------------------------------------------------------------------------
   n_eta        <- length(etas)
   results_list <- vector("list", n_eta)
-  fit_beta_list  <- vector("list", n_eta)  # full-data beta matrices, one per eta
-  lambda_list    <- vector("list", n_eta)  # lambda path, one per eta
+  fit_beta_list  <- vector("list", n_eta) # full-data beta matrices, one per eta
+  lambda_list    <- vector("list", n_eta) # lambda path, one per eta
 
   if (message) {
     cat("Cross-validation over etas sequence:\n")
@@ -283,7 +283,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
     # cox_indi_enet returns lists indexed by eta; eta_i is a single value here
     lambda_seq    <- fit0$lambda[[1]]
-    beta_full_mat <- fit0$beta[[1]]   # p x L
+    beta_full_mat <- fit0$beta[[1]]  # p x L
 
     fit_beta_list[[ei]] <- beta_full_mat
     lambda_list[[ei]]   <- lambda_seq
@@ -298,7 +298,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     } else if (cv.criteria == "CIndex_pooled") {
       numer <- rep(0.0, L)
       denom <- rep(0.0, L)
-    } else {                                 # CIndex_foldaverage
+    } else {                                # CIndex_foldaverage
       csum <- rep(0.0, L)
       cnt  <- rep(0L,  L)
     }
@@ -325,7 +325,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
         ...
       )
 
-      beta_f <- fit_f$beta[[1]]   # p x L (may have fewer cols if some lambdas dropped)
+      beta_f <- fit_f$beta[[1]]  # p x L (may have fewer cols if some lambdas dropped)
 
       # Align columns: if some lambdas were dropped during fold fit, fill with NA columns
       if (ncol(beta_f) < L) {
@@ -338,9 +338,9 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       }
 
       # Linear predictors for all internal obs and for test obs
-      LP_train <- z_int[train_idx, , drop = FALSE] %*% beta_f  # n_train x L
-      LP_all   <- z_int %*% beta_f                              # n_int x L
-      LP_test  <- z_int[test_idx,  , drop = FALSE] %*% beta_f  # n_test x L
+      LP_train <- z_int[train_idx, , drop = FALSE] %*% beta_f # n_train x L
+      LP_all   <- z_int %*% beta_f                             # n_int x L
+      LP_test  <- z_int[test_idx,  , drop = FALSE] %*% beta_f # n_test x L
 
       # Compute fold contribution
       if (cv.criteria == "V&VH") {
@@ -378,7 +378,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
           cnt  <- cnt  + as.integer(!is.na(cstat_vec))
         }
       }
-    }  # end fold loop
+    } # end fold loop
 
     # ---- 2d. Aggregate across folds for this eta ---------------------------
     if (cv.criteria == "V&VH") {
@@ -401,7 +401,7 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     )
 
     if (message) utils::setTxtProgressBar(pb_eta, ei)
-  }  # end eta loop
+  } # end eta loop
 
   if (message) close(pb_eta)
 

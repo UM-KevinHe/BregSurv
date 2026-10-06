@@ -35,7 +35,7 @@ tr  <- ExampleData_lowdim$train
 cc  <- ExampleData_cc_lowdim$train
 bex <- ExampleData_lowdim$beta_external_good
 
-z0 <- tr$z           # data.frame, 6 numeric columns
+z0 <- tr$z          # data.frame, 6 numeric columns
 d0 <- as.numeric(tr$status)
 t0 <- as.numeric(tr$time)
 ev <- which(d0 == 1)

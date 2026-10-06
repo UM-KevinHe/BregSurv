@@ -56,6 +56,22 @@ def _fmt(x: Any) -> str:
     return str(x)
 
 
+def selected_borrows_nothing(res: Dict[str, Any]) -> bool:
+    """True when the recommended member is a borrowing method whose chosen weight
+    is zero: at eta = 0 every borrowing family reduces to the fit to the cohort
+    alone with the same penalty, so the report must not call it borrowing."""
+    sel = res.get("selected") or {}
+    by = {c["key"]: c for c in res.get("candidates", [])}
+    b = (by.get(sel.get("key")) or {}).get("borrowing")
+    eta = sel.get("eta")
+    if b in (None, "none", "external") or eta is None:
+        return False
+    try:
+        return float(eta) == 0.0
+    except (TypeError, ValueError):
+        return False
+
+
 def build_references(res: Dict[str, Any]) -> Dict[str, Any]:
     """The typed set of quantities the model's prose may name."""
     f = res["facts"]
@@ -79,7 +95,8 @@ def build_references(res: Dict[str, Any]) -> Dict[str, Any]:
         "seed": res["partition"]["seed"],
         "n_candidates": len(cands),
         "selected_label": sel["label"],
-        "selected_borrowing": by.get(sel["key"], {}).get("borrowing"),
+        "selected_borrowing": ("none" if selected_borrows_nothing(res)
+                               else by.get(sel["key"], {}).get("borrowing")),
         "selected_penalty": by.get(sel["key"], {}).get("penalty"),
         "loss_best": sel["loss"],
         # the two ways of not borrowing, whichever row was fitted
@@ -216,6 +233,13 @@ def prose_facts(res: Dict[str, Any], refs: Dict[str, Any]) -> List[str]:
         out.append("Every term of the external model matched a column of the cohort.")
     out.append(f"Selected method: {sel['label']}. It was selected because it has the "
                "lowest cross-validated loss of the admissible set; nothing else was weighed.")
+    if selected_borrows_nothing(res):
+        out.append("The borrowing weight chosen for the selected method is zero, so it "
+                   "borrows nothing from the external information: it is the fit to the "
+                   "cohort alone with the same penalty. Do not describe it as borrowing.")
+    out.append("No measure of calibration is reported for any model, and the calibration slope the planner read "
+               "is a diagnostic of the release, not a result; do not call any model well or poorly calibrated, "
+               "and claim nothing the tables do not show.")
     if res.get("test_data"):
         out.append("The analyst supplied a separate test file; the selected model's "
                    "measures on it are the test_ references. The selection did not use it.")
@@ -526,12 +550,23 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
         # was done to it on the way in -- the two conversions the reader must
         # know about (a logged hazard ratio, an inverted covariance) and the
         # things recorded but not used (standard errors, a baseline hazard).
+        _records = (L.get("matched_by") == "external cohort"
+                    or f.get("external_form") == "individual-level data")
         if external:
-            bits = [f"Read from `{external.get('file')}` "
-                    f"({external.get('format')}; table "
-                    f"`{external.get('coefficient_table')}`, names from "
-                    f"`{external.get('name_column')}`, coefficients from "
-                    f"`{external.get('coefficient_column')}`)."]
+            if _records:
+                _tabs = external.get("tables") or []
+                _nrow = _tabs[0].get("n_rows") if len(_tabs) == 1 else None
+                bits = [f"Read from `{external.get('file')}` "
+                        f"({external.get('format')}): the records of another "
+                        f"cohort, one row per subject"
+                        + (f", {_nrow} rows" if _nrow else "")
+                        + ", not a published coefficient vector."]
+            else:
+                bits = [f"Read from `{external.get('file')}` "
+                        f"({external.get('format')}; table "
+                        f"`{external.get('coefficient_table')}`, names from "
+                        f"`{external.get('name_column')}`, coefficients from "
+                        f"`{external.get('coefficient_column')}`)."]
             if external.get("converted_from") == "hazard_ratio":
                 bits.append("The published values were **hazard ratios** and "
                             "were logged.")
@@ -577,7 +612,7 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
             out.append("")
         out.extend(_table(
             ["", "count", "variables"],
-            [["Covered by the external model", str(len(L["covered"])),
+            [["In the external cohort's records" if _records else "Covered by the external model", str(len(L["covered"])),
               ", ".join(L["covered"][:14]) + (" ..." if len(L["covered"]) > 14 else "")],
              ["In your data only, not borrowed", str(len(L["zero_padded"])),
               ", ".join(L["zero_padded"][:14]) + (" ..." if len(L["zero_padded"]) > 14 else "")],
@@ -587,7 +622,10 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
         # matching when the external vector is unnamed, and this sentence used to
         # say "by name" unconditionally with the actual value in parentheses beside
         # it -- so on a positional run the report contradicted itself in one line.
-        if L["matched_by"] == "name":
+        if _records:
+            out.append("Variables were matched **by name**: the external "
+                       "cohort's records carry the same columns as your data.")
+        elif L["matched_by"] == "name":
             out.append("Variables were matched **by name**. A variable your data has "
                        "but the external model lacks receives no borrowing; it is "
                        "still estimated from your own data.")
@@ -747,6 +785,11 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
         out.append("")
     out.append(f"**Recommended: {sel['label']}.**")
     out.append("")
+    if selected_borrows_nothing(res):
+        out.append("Cross-validation chose a borrowing weight of **0** for this method, "
+                   "so it borrows nothing from the external information: it is the fit "
+                   "to your data alone with the same penalty.")
+        out.append("")
     say("comparison")
 
     # ---- 4b. The analyst's test data -------------------------------
@@ -798,7 +841,11 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
     else:
         out.append("These are point estimates. The table shows what borrowing "
                    "actually did: what the external model said, what your data "
-                   "alone said, and where the recommended fit landed.")
+                   "alone said, and where the recommended fit landed."
+                   + (" Here the borrowing weight is zero, so the recommended fit "
+                      "uses your data alone; it differs from the unpenalised fit "
+                      "only through its penalty." if selected_borrows_nothing(res)
+                      else ""))
     out.append("")
     rows = []
     for c in res["coefficients"]:

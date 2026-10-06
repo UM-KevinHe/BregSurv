@@ -38,9 +38,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from . import textmatch
+from . import retrieval, textmatch
 
-BANK_PATH = Path(__file__).resolve().parent / "examples" / "fewshot_bank.json"
+BANK_PATH = Path(os.environ["BREGSURV_FEWSHOT_BANK"]) if os.environ.get("BREGSURV_FEWSHOT_BANK") else Path(__file__).resolve().parent / "examples" / "fewshot_bank.json"
 DEFAULT_K = 5
 _TOKEN = re.compile(r"[a-z]+")
 _K1, _B = 1.5, 0.75
@@ -96,9 +96,12 @@ class Bank:
         self.items: List[Dict[str, Any]] = list(raw.get("items", []))
         self._profiles = self._load_profiles()
         self.docs: List[List[str]] = []
+        self.masked: List[str] = []
         for it in self.items:
             cols = self._profiles.get(it["profile"], {}).get("columns", [])
-            self.docs.append(tokens(mask(it["request"], cols)))
+            self.masked.append(mask(it["request"], cols))
+            self.docs.append(tokens(self.masked[-1]))
+        self.last_retrieval: Dict[str, Any] = {}
         self.n = len(self.docs)
         self.avgdl = (sum(len(d) for d in self.docs) / self.n) if self.n else 0.0
         df: Counter = Counter()
@@ -143,11 +146,13 @@ class Bank:
         template suffix (`stated.reference.perturbation`) whose items are
         skipped; `exclude_ids` skips items by id."""
         cols = [str(c) for c in columns]
-        q = tokens(mask(request, cols))
+        qtext = mask(request, cols)
+        q = tokens(qtext)
         if not q or not self.n:
             return []
         skip_ids = set(exclude_ids)
-        scored: List[Tuple[float, int]] = []
+        cand: List[int] = []
+        bm: Dict[int, float] = {}
         for i, it in enumerate(self.items):
             if it["id"] in skip_ids:
                 continue
@@ -159,12 +164,16 @@ class Bank:
             # structural, not statistical
             if cols and textmatch.names_mentioned(it["request"], cols):
                 continue
-            s = self.score(q, i)
-            if s > 0:
-                scored.append((s, i))
-        scored.sort(key=lambda x: (-x[0], self.items[x[1]]["id"]))
+            cand.append(i)
+            bm[i] = self.score(q, i)
+        # V4: BM25 and a dense ranking fused, then reranked (retrieval.py); under
+        # BREGSURV_RETRIEVAL=bm25 or on any failure this is exactly the BM25 order it replaced
+        order, self.last_retrieval = retrieval.rank(Path(self.path), self.masked, qtext, bm, cand)
         out, seen = [], set()
-        for s, i in scored:
+        for i in order:
+            s = bm.get(i, 0.0)
+            if s <= 0 and self.last_retrieval.get("used") == "bm25":
+                continue      # BM25 alone: an item sharing no word with the request is not similar
             it = self.items[i]
             if it["template_id"] in seen:
                 continue
@@ -220,7 +229,8 @@ def record(examples: List[Dict[str, Any]], k: int, b: Optional[Bank] = None,
             "ids": [e["id"] for e in examples],
             "scores": [e.get("_score") for e in examples],
             "bank_sha256": b.sha256[:16], "bank_items": b.n,
-            "exclude_template": exclude_template}
+            "exclude_template": exclude_template,
+            "retrieval": dict(getattr(b, "last_retrieval", {}) or {})}
 
 
 def describe() -> Dict[str, Any]:

@@ -100,7 +100,7 @@ def main() -> int:
                                            "time_column": "t", "event_column": "d"})
     line = s1.with_profile("/x.csv", "D", prof, external=indi).state_line()
     check("individual-level records (3 columns)" in line,
-          "the individual-level cell no longer reads 'none' (the dict-key drift)", line)
+          "🔴 the individual-level cell no longer reads 'none' (the dict-key drift)", line)
     check("a file was uploaded and refused" in s1.with_profile(
               "/x.csv", "D", prof, external_refusal=[{"code": "x", "message": "m"}]).state_line(),
           "a refused file is a fact the model is told")

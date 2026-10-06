@@ -162,7 +162,7 @@ def call_log(clear: bool = False) -> List[Dict[str, Any]]:
 # BREGSURV_SEED a per-request seed for repeatable sampling
 QUOTING_ACTS = ("intent", "role_extraction", "external_roles", "published_model",
                 "plan_steps", "split_request")
-WRITING_ACTS = ("report_prose", "explain", "ask", "refusal")
+WRITING_ACTS = ("report_prose", "explain", "ask", "refusal", "chat")
 # V4: the acts that plan the analysis think before they answer; reading and
 # writing acts do not (the 2026-09 runs: thinking did not make the quoting acts
 # more accurate and made them several times slower)
@@ -628,6 +628,52 @@ def word_question(client, model: str, message: str, profile: Dict[str, Any],
         return result
     result["question"] = q
     return result
+
+
+CHAT_SCHEMA: Dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {"reasoning": {"type": "string", "maxLength": 600},
+                   "reply": {"type": "string", "maxLength": 1500}},
+    "required": ["reasoning", "reply"],
+}
+
+# a number next to one of these words in a conversational reply is a number about an analysis, which
+# the conversation never has (the report holds the numbers)
+_RESULT_NUMBER = re.compile(
+    r"(c-?index|concordance|loss|brier|ibs|auc|hazard ratio|coefficient|eta|lambda|p-?value)"
+    r"[^.\n]{0,25}\d|\d[^.\n]{0,10}(c-?index|hazard ratio)", re.I)
+
+
+def chat_reply(client, model: str, message: str, state: str, columns: List[str],
+               earlier: Optional[List[Tuple[str, str]]] = None, notes: str = "",
+               max_tokens: int = 500) -> Dict[str, Any]:
+    """V4: the model answers a message that is not an analysis request, in its own
+    words. One constrained call; it sees the state line, the file's column names, the method notes
+    that match, and the last few plain turns, never a row. Verified before use: not empty, no
+    column-like name outside the file, no number next to an analysis measure. A failing draft is
+    dropped, never repaired."""
+    turns = "\n".join(f"Analyst: {u}\nAssistant: {a}" for u, a in (earlier or [])[-3:])
+    user = (state + "\nColumns in the file: " + (", ".join(columns) if columns else "none loaded")
+            + (("\n\nEarlier turns:\n" + turns[-2000:]) if turns else "")
+            + (("\n\nNotes from the method documentation:\n" + notes[:3000]) if notes else "")
+            + "\n\nThe analyst wrote:\n" + (message or "").strip())
+    out = _chat(client, model, policy.load("chat"), user, CHAT_SCHEMA, "chat", max_tokens=max_tokens)
+    rec = CALLS[-1] if CALLS else {}
+    r = (out.get("reply") or "").strip()
+    res: Dict[str, Any] = {"reply": None, "dropped": None, "_reasoning": out.get("reasoning"),
+                           "_call": rec}
+    low = {n.lower() for n in columns}
+    idents = set(re.findall(r"`([^`]+)`", r)) | set(re.findall(r"\b[a-zA-Z]+_[a-zA-Z0-9_]+\b", r))
+    if not r:
+        res["dropped"] = "empty"
+    elif [x for x in idents if x.lower() not in low]:
+        res["dropped"] = "the reply named something that is not a column of the file"
+    elif _RESULT_NUMBER.search(r):
+        res["dropped"] = "the reply stated a number about an analysis"
+    else:
+        res["reply"] = r
+    return res
 
 
 def prose_problem(text: str, names: List[str]) -> Optional[str]:

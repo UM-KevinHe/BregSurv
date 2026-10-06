@@ -39,6 +39,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from . import ablation
 from . import plan as P
 
 MAX_REFINEMENTS = int(os.environ.get("BREGSURV_MAX_REFINEMENTS", "2") or 0)
@@ -120,7 +121,10 @@ class Options:
 
 def options_for(declaration: Any, ext_kw: Dict[str, Any], budget: int = P.DEFAULT_BUDGET) -> Options:
     from .pipeline import resolve_config
-    has_Q = bool(ext_kw.get("external_Q_inline") or ext_kw.get("external_Q_expr"))
+    # records are fitted into a coefficient vector with its covariance (run_candidates.R), so the
+    # Mahalanobis members there use a precision matrix as their metric
+    has_Q = bool(ext_kw.get("external_Q_inline") or ext_kw.get("external_Q_expr")
+                 or declaration.external_data_expr)
     design = declaration.design
     form = ("individual-level data" if declaration.external_data_expr
             else "none" if not (ext_kw.get("external_beta_inline") or ext_kw.get("external_beta_expr"))
@@ -346,7 +350,11 @@ def render_task(declaration: Any, card: Dict[str, Any], opts: Options, words: st
             L.append("  released terms with no column here (dropped): "
                      + ", ".join(ext["released_not_in_cohort"]))
     L.append("")
-    L.append("TRANSFER DIAGNOSTICS (training data only)")
+    if ablation.on("no_diagnostics"):
+        card = {"outcome": {}, "external": {}, "terms": [], "records": {}, "baseline": {}, "notes": []}
+        out, ext = {}, {}
+    else:
+        L.append("TRANSFER DIAGNOSTICS (training data only)")
     cal = ext.get("calibration") or {}
     if cal:
         L.append(f"the release's risk score on this cohort: calibration slope {_num(cal.get('slope'), 3)} "
@@ -418,6 +426,8 @@ def render_task(declaration: Any, card: Dict[str, Any], opts: Options, words: st
 
 
 def render_notes(names: List[str]) -> str:
+    if ablation.on("no_playbook"):
+        return ""
     notes = playbook(names)
     if not notes:
         return ""

@@ -660,7 +660,7 @@ setupLambdaCoxKL <- function(Z, time, delta, delta_tilde, RS, beta.init, stratum
   K <- table(group)
   K1 <- as.integer(if (min(group)==0) cumsum(K) else c(0, cumsum(K)))
   storage.mode(K1) <- "integer"
-  if (!is.null(tm)) {  ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+  if (!is.null(tm)) { ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
     LinPred <- rep(0, n)
     if (K1[1] != 0) {
       nullFit <- coxkl(Z[, group == 0, drop = FALSE], delta, time, stratum, RS, beta = NULL, eta,
@@ -870,7 +870,7 @@ newZG.Std <- function(Z, g, m){
     )
   }
 
-  nz <- which(scale > 1e-6)  # non-constant columns
+  nz <- which(scale > 1e-6) # non-constant columns
   if (length(nz) != ncol(Z)) {
     std.Z <- std.Z[, nz, drop = F]
     G <- subsetG(G, nz)
@@ -973,7 +973,7 @@ setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, Q, Qb
   storage.mode(K1) <- "integer"
 
 
-  if (!is.null(tm)) {  ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+  if (!is.null(tm)) { ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
     LinPred <- rep(0, n)
     Qbeta_Ustar <- rep(0, ncol(Z))
     if (K1[1] != 0) {
@@ -1054,7 +1054,7 @@ set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
   # weight when the external rows are weighted above 1
   n_eff <- max(sum(weight), nrow(Z))
 
-  if (!is.null(tm)) {  # Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+  if (!is.null(tm)) { # Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
     if (K1[1] != 0) {
       nullFit <- survival::coxph(
         survival::Surv(time, delta.obs) ~ Z[, group == 0, drop = FALSE] + survival::strata(ID),

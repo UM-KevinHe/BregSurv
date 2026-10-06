@@ -1,8 +1,21 @@
 """The R dispatch layer: find Rscript, hand it JSON, read JSON back.
 
-`_run_r` runs one script from `mcp/r_scripts/` with a JSON payload and returns its
-JSON result; `_find_rscript` locates the R interpreter. The agent needs nothing
-beyond R and these scripts to reach the estimator library.
+WHY THIS MODULE EXISTS. These two functions used to live in
+`mcp/server.py`, whose module level imports `FastMCP` for the Claude Desktop
+product. Nine call sites -- `pipeline.py` twice, `declaration.py`, and six test
+drivers -- wanted only `_run_r` and `_find_rscript` and dragged the whole MCP
+SDK in with them. It did not; it was file layout, not design.
+
+What that coupling actually cost, on Great Lakes 2026-08-18: `mcp/pyproject.toml`
+declared `mcp>=1.0.0` with no upper bound, a fresh install resolved to SDK 2.0.0,
+which removed `mcp.server.fastmcp`, and **every one of the six deterministic test
+suites died with ModuleNotFoundError before running a single assertion** -- on a
+machine with no interest in MCP whatsoever.
+
+The agent now runs anywhere R runs, with no MCP SDK present.
+
+The R scripts themselves (`mcp/r_scripts/`) are NOT part of MCP. They are the
+estimator dispatch this whole package is built on, and they stay.
 """
 from __future__ import annotations
 
@@ -22,7 +35,7 @@ DEFAULT_CV_SEED = 20260818
 _HERE = Path(__file__).resolve().parent
 
 # The R scripts live beside the package. `SURVBREGDIV_R_SCRIPTS` overrides it,
-# which is how a deployed container or a cluster job points at its own copy.
+# which is how a deployed container or a Great Lakes job points at its own copy.
 R_SCRIPTS = Path(os.environ.get("SURVBREGDIV_R_SCRIPTS",
                                 str(_HERE.parent / "mcp" / "r_scripts")))
 
@@ -96,7 +109,7 @@ def _run_r(script_name: str, payload: dict, timeout_s: int = 600) -> dict:
 
     * ``--no-save --no-restore --no-init-file``, NOT ``--vanilla``. `--vanilla`
       also implies `--no-environ`, which suppresses ``R_LIBS_USER`` -- and on
-      Windows (and on shared clusters) jsonlite and BregSurv are usually installed
+      Windows (and on Great Lakes) jsonlite and BregSurv are usually installed
       ONLY in the user library. Under `--vanilla` R cannot find its own packages.
     * ``stdin=subprocess.DEVNULL``. An inherited stdin makes R stall waiting for
       input that will never come, which presents as a hang rather than an error.

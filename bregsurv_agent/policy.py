@@ -40,7 +40,8 @@ POLICY_DIR = Path(__file__).resolve().parent / "policies"
 NAMES = ("intent", "role_extraction", "external_roles", "report_prose", "explain",
          "published_model", "ask", "plan_steps", "refusal",
          "analysis_plan", "next_step",          # V4: the planner's two acts
-         "split_request")                       # V4: evaluation by repeated splits, on request
+         "split_request",                       # V4: evaluation by repeated splits, on request
+         "chat")                                # V4: conversation that is not an analysis request
 
 HEADINGS = ("## What you are doing", "## What the system is",
             "## Before you decide", "## The fields", "## What you must not do")

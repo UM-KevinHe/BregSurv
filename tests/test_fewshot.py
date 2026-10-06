@@ -68,8 +68,11 @@ def main() -> int:
     hdr("A. the bank: verified, disjoint from the corpus, schema-shaped")
     b = fewshot.bank()
     check(b.n >= 250, f"the bank holds at least 250 items ({b.n})")
+    r1 = [it for it in b.items if "expect" in it]          # round 1: generated + rewritten
+    r2 = [it for it in b.items if "expect" not in it]      # round 2: by error category
+    check(len(r1) == 300 and len(r2) > 100, f"round 1 {len(r1)}, round 2 {len(r2)} items")
     bad = 0
-    for it in b.items:
+    for it in r1:
         ok, problems = check_item(it)
         problems = problems + check_spans(it, it["request"], it["spans"])
         bad += bool(problems)
@@ -80,22 +83,24 @@ def main() -> int:
           str(sorted(test_cols & bank_cols)))
     keys = ("reasoning", "time_column", "time_evidence", "event_column", "event_evidence",
             "event_value", "event_value_evidence", "covariate_columns")
-    check(all(set(it["example"]) == set(keys) for it in b.items),
-          "every example has exactly the schema's fields")
+    check(all(set(it["example"]) == set(keys) for it in r1),
+          "every round-1 example has exactly the schema's fields")
+    check(all(set(it["example"]) == set(keys) | {"stratum_column"} for it in r2),
+          "every round-2 example has the schema's fields with the strata column")
     ev_ok = all(all((it["example"][k] is None) or (it["example"][k].lower() in it["request"].lower())
                     for k in ("time_evidence", "event_evidence", "event_value_evidence"))
                 for it in b.items)
     check(ev_ok, "every evidence field of every example is a verbatim span of its request")
     check(all(len(it["example"]["reasoning"]) > 20 for it in b.items),
           "every example carries a reasoning line")
-    desc = [it for it in b.items if it["axes"]["reference"] == "described"]
+    desc = [it for it in r1 if it["axes"]["reference"] == "described"]
     resolved = [it for it in desc if it["example"]["time_column"] or it["example"]["event_column"]]
     left = [it for it in desc
             if (it["spans"].get("time") and it["example"]["time_column"] is None)
             or (it["spans"].get("event") and it["example"]["event_column"] is None)]
     check(resolved and left,
           f"described examples show both a resolution ({len(resolved)}) and an honest null ({len(left)})")
-    ghost = [it for it in b.items if it["axes"]["perturbation"] == "ghost_column"]
+    ghost = [it for it in r1 if it["axes"]["perturbation"] == "ghost_column"]
     check(ghost and all("hla_mismatch" in (it["example"]["covariate_columns"] or []) for it in ghost),
           "ghost-column examples quote the absent column as written")
     renal = sum(1 for it in b.items if it["profile"] != "heart_failure")
@@ -103,6 +108,7 @@ def main() -> int:
 
     # -------------------------------------------------------- B. retrieval
     hdr("B. retrieval: masked BM25, diverse, exclusions honoured, deterministic")
+    os.environ["BREGSURV_RETRIEVAL"] = "bm25"   # the hybrid ranking is tested in test_retrieval
     m = fewshot.mask("Follow-up time is in months_followed and death_flag marks the outcome, 3 cohorts",
                      BANK_PROFILES["tx_center_ehr"]["columns"])
     check("months_followed" not in m and "death_flag" not in m and "colname" in m and "num" in m,
@@ -134,9 +140,9 @@ def main() -> int:
     # a described request should pull described examples up
     qd = "We know how long each patient was followed and whether they reached the endpoint."
     exd = b.retrieve(qd, cols, k=5)
-    check(any(e["axes"]["reference"] == "described" for e in exd),
+    check(any(e.get("axes", {}).get("reference") == "described" or e.get("category") == "RE" for e in exd),
           "a descriptive request retrieves at least one described example",
-          str([e["axes"]["reference"] for e in exd]))
+          str([e.get("axes", {}).get("reference", e.get("category")) for e in exd]))
 
     # --------------------------------------------------------- C. the prompt
     hdr("C. the prompt and the record")
@@ -145,7 +151,7 @@ def main() -> int:
     check(boundary.examples_for(q, prof) == (None, None), "BREGSURV_FEWSHOT=off turns the examples off (the ablation arm)")
     os.environ.pop("BREGSURV_FEWSHOT", None)
     check(boundary.examples_for(q, prof)[0] is not None and fewshot.enabled(),
-          "few-shot is ON by default (the measured gain met the rule on both models)")
+          "few-shot is ON by default (3d.11: measured 2026-09-12, the rule was met on both models)")
     os.environ["BREGSURV_FEWSHOT"] = "on"
     exs, rec = boundary.examples_for(q, prof)
     check(exs is not None and len(exs) == fewshot.DEFAULT_K and rec["k"] == fewshot.DEFAULT_K

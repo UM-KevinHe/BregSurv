@@ -799,6 +799,56 @@ result <- tryCatch({
     add("indi_lasso", "Individual-level borrowing, lasso", "individual", "lasso",
         fn_indiE, c(base_indi, list(etas = ETAS_PEN_INDI, alpha = 1,
                                     nlambda = nlambda)))
+    # ---- the coefficient members from a model fitted on the records ----
+    # A cohort's records carry everything a coefficient release carries: fit a Cox model on them
+    # and the coefficients and their covariance are a release like any published one. Records are
+    # the finer release, so every member of the coefficient-and-covariance set is admissible here
+    # too (the paper's rule: a member is admitted at its release level and at any finer one).
+    # Without them the cell with the most external information held the fewest borrowing members.
+    # The metric is conditioned exactly as a released covariance is (external._condition).
+    if (!is_ncc) {
+      fx <- tryCatch({
+        fm <- if (!is.null(stratum_ext) && length(unique(stratum_ext)) > 1)
+          survival::coxph(survival::Surv(time_ext, delta_ext) ~ z_ext + survival::strata(stratum_ext),
+                          ties = "breslow")
+        else survival::coxph(survival::Surv(time_ext, delta_ext) ~ z_ext, ties = "breslow")
+        b <- setNames(as.numeric(coef(fm)), zn)
+        V <- unname(vcov(fm))
+        if (any(!is.finite(b)) || any(!is.finite(V))) stop("the Cox fit on the records did not converge")
+        Qr <- solve(V); Qr <- (Qr + t(Qr)) / 2
+        Qr <- Qr / mean(diag(Qr)); Qr <- 0.9 * Qr + 0.1 * diag(p); Qr <- (Qr + t(Qr)) / 2
+        dimnames(Qr) <- list(zn, zn)
+        list(beta = b, Q = Qr)
+      }, error = function(err) conditionMessage(err))
+      # a failed fit leaves NA coefficients, so each coefficient member records `failed` with the
+      # reason rather than vanishing from the set (the key-drift guard expects every key)
+      if (!is.list(fx)) fx <- list(beta = setNames(rep(NA_real_, p), zn), Q = diag(p))
+      {
+        b_rec <- fx$beta; Q_rec <- fx$Q
+        add("kl", "Kullback-Leibler", "kl", "none",
+            paste0("cv.", kl_plain), c(base, list(beta = b_rec, etas = ETAS)))
+        add("mahalanobis", "Mahalanobis", "mahalanobis", "none", "cv.cox_MDTL",
+            c(base, list(beta = b_rec, Q = Q_rec, etas = ETAS_MDTL)))
+        add("euclidean", "Euclidean", "euclidean", "none", "cv.cox_MDTL",
+            c(base, list(beta = b_rec, etas = ETAS_MDTL)))
+        add("internal_ridge", "Internal only, ridge", "none", "ridge",
+            "cv.coxkl_ridge", c(base, list(beta = beta_zero, etas = 0, nlambda = nlambda)))
+        add("kl_ridge", "Kullback-Leibler, ridge", "kl", "ridge",
+            "cv.coxkl_ridge", c(base, list(beta = b_rec, etas = ETAS_PEN, nlambda = nlambda)))
+        add("mahalanobis_ridge", "Mahalanobis, ridge", "mahalanobis", "ridge", "cv.cox_MDTL_ridge",
+            c(base, list(beta = b_rec, Q = Q_rec, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
+        add("euclidean_ridge", "Euclidean, ridge", "euclidean", "ridge", "cv.cox_MDTL_ridge",
+            c(base, list(beta = b_rec, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
+        add("kl_lasso", "Kullback-Leibler, lasso", "kl", "lasso",
+            "cv.coxkl_enet", c(base, list(beta = b_rec, etas = ETAS_PEN, alpha = 1, nlambda = nlambda)))
+        add("mahalanobis_lasso", "Mahalanobis, lasso", "mahalanobis", "lasso", "cv.cox_MDTL_enet",
+            c(base, list(beta = b_rec, Q = Q_rec, etas = ETAS_MDTL_ENET, alpha = 1,
+                         nlambda = nlambda, lambda.min.ratio = 1e-9)))
+        add("euclidean_lasso", "Euclidean, lasso", "euclidean", "lasso", "cv.cox_MDTL_enet",
+            c(base, list(beta = b_rec, etas = ETAS_MDTL_ENET, alpha = 1,
+                         nlambda = nlambda, lambda.min.ratio = 1e-9)))
+      }
+    }
   } else {
     add("internal", "Internal only", "none", "none",
         paste0("cv.", kl_plain), c(base, list(beta = beta_zero, etas = 0)))

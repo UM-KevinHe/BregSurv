@@ -278,9 +278,9 @@ cv.ncc_MDTL_enet <- function(y, z, stratum,
         ...
       )
 
-      beta_mat_fold <- fold_fit$beta  # p x L
+      beta_mat_fold <- fold_fit$beta # p x L
 
-      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold  # n_test x L
+      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold # n_test x L
 
       if (cv.criteria == "loss") {
         for (j in seq_len(L)) {

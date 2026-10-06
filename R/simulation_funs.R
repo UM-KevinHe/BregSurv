@@ -522,7 +522,7 @@ sim.binary <- function(n_stratum,
   if (!is.finite(rho)) stop("rho must be finite.")
 
   # --- stratum sizes (may be zero) & random intercepts ---
-  stratum_size <- rpois(n_stratum, stratum.size.mean)  # no lower bound
+  stratum_size <- rpois(n_stratum, stratum.size.mean) # no lower bound
   N <- sum(stratum_size)
   if (N == 0L) stop("All strata have size 0; increase stratum.size.mean or n_stratum.")
 

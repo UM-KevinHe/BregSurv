@@ -105,6 +105,17 @@ def main() -> int:
           "empty off the discrete-time row; the eleventh the files of an evaluation by "
           "repeated splits, empty unless asked for)", f"got {len(out2)}")
     history, _, session, cand_df, coef_df, rep, trc, rpr, cjs, *_ = out2
+    _km = Path(rep).parent / "km_curve.png"
+    check(_km.is_file() and (Path(rep).parent / "km_curve.pdf").is_file(),
+          "a full-cohort run draws the Kaplan-Meier estimate of the target cohort (PNG and PDF)")
+    check("km_curve.png" in Path(rep).read_text(), "the report points to the Kaplan-Meier figure")
+    _r = session.result.draw_km(Path(rep).parent, group_col="site")
+    check(bool(_r) and _r.get("status") == "ok" and _r.get("grouped_by") == "site"
+          and "by `site`" in Path(rep).read_text() and Path(rep).read_text().count("km_curve.png") == 1,
+          "a requested grouping redraws the curve by that column in place of the default one", str(_r))
+    _r = session.result.draw_km(Path(rep).parent, group_col="age")
+    check(bool(_r) and _r.get("grouping") == "median" and "split at its median" in Path(rep).read_text(),
+          "a numeric column with many values is split at its median", str(_r))
     card = history[-2][1]
     check("events            49 of 90 (54%)" in card,
           "the card states the consequence as a number the analyst can refute",
@@ -432,7 +443,7 @@ def main() -> int:
                                         "site?", h8, s8,
                                         "http://localhost:1/v1", "fake", "")
     check(all(r is None for r in r10) and 'You wrote "plot the survival curves"'
-          in h10[-1][1] and "not figures" in h10[-1][1],
+          in h10[-1][1] and "draws no figures" in h10[-1][1],
           "an out-of-scope request gets the catalogue text, nothing is fitted")
 
     # ---- 7c. component 2/9: a name the analyst did not write is not quoted
@@ -596,7 +607,7 @@ def main() -> int:
                                              write_prose=False, tz_known=True)
     texto = "\n".join(t for _, t in ho if t)
     check(cando is not None and so.declaration is not None and so.declaration.covariates == ["age", "bmi", "egfr"]
-          and "not figures" in texto,
+          and "draws no figures" in texto,
           "the analysis runs and the aside is declined in the same reply",
           (ho[-1][1][:120] if cando is None else "ran"))
     # the out-of-scope request that IS the message: refused, nothing fitted

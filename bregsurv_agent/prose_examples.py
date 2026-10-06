@@ -25,7 +25,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_K = 2
-FEATURES = ("design", "form", "coverage", "dropped", "family", "penalty", "test")
+FEATURES = ("design", "form", "coverage", "dropped", "family", "penalty", "test", "zero")
 _FORM_WORDS = {"coef": "coefficients alone", "cov": "coefficients and covariance",
                "indi": "individual-level data", "none": "no external information"}
 
@@ -51,6 +51,8 @@ def _valid(c: Dict[str, Any]) -> bool:
         return False
     if fam == "indi" and pen == "ridge":
         return False
+    if c["zero"] and fam in ("target", "released"):
+        return False      # a zero borrowing weight exists only for a borrowing member
     return True
 
 
@@ -67,7 +69,7 @@ def _refs(c: Dict[str, Any]) -> List[str]:
             r.append("p_dropped")
         if c["design"] == "cohort":
             r.append("loss_external")
-    if c["family"] not in ("target", "released"):
+    if c["family"] not in ("target", "released") and not c["zero"]:
         r.append("eta_best")
     if c["penalty"] != "none":
         r.append("lambda_best")
@@ -94,8 +96,17 @@ def _facts(c: Dict[str, Any]) -> List[str]:
            "space": "coefficient-space borrowing", "released": "the external model unchanged",
            "indi": "individual-level borrowing"}[c["family"]]
     pen = {"none": "", "ridge": " with a ridge penalty", "lasso": " with a lasso penalty"}[c["penalty"]]
+    if c["family"] == "released" and c["form"] == "indi":
+        fam = "the model fitted to the external cohort's records alone"
     out.append(f"Selected method: {fam}{pen}. It was selected because it has the lowest cross-validated loss of "
                "the admissible set; nothing else was weighed.")
+    if c["zero"]:
+        out.append("The borrowing weight chosen for the selected method is zero, so it borrows nothing from the "
+                   "external information: it is the fit to the cohort alone with the same penalty. Do not "
+                   "describe it as borrowing.")
+    out.append("No measure of calibration is reported for any model, and the calibration slope the planner read "
+               "is a diagnostic of the release, not a result; do not call any model well or poorly calibrated, "
+               "and claim nothing the tables do not show.")
     out.append("The analyst supplied a separate test file; the selected model's measures on it are the test_ "
                "references. The selection did not use it." if c["test"] else
                "No test file was supplied; the cross-validated loss is the only performance quantity in this report.")
@@ -140,9 +151,17 @@ def _sections(c: Dict[str, Any]) -> Dict[str, str]:
         sel = ("The selected method is [selected_label], which uses the cohort alone"
                + (" with [selected_penalty] at weight [lambda_best], keeping [n_nonzero] non-zero coefficients."
                   if pen != "none" else ", so the external information did not change its coefficients."))
+    elif fam == "released" and form == "indi":
+        sel = ("The selected method is [selected_label]: a model fitted to the external cohort's records alone, "
+               "scored on your cohort without being refitted to it.")
     elif fam == "released":
         sel = ("The selected method is [selected_label]: the external model is used as published, and no "
                "coefficient was re-estimated from the cohort.")
+    elif c["zero"]:
+        sel = ("The selected method is [selected_label]. Cross-validation chose a borrowing weight of zero for it, "
+               "so it borrows nothing from the external information and is the fit to the cohort alone"
+               + (" with [selected_penalty] at weight [lambda_best], keeping [n_nonzero] non-zero coefficients."
+                  if pen != "none" else "."))
     else:
         sel = ("The selected method is [selected_label]. It uses [selected_borrowing] with borrowing weight "
                "[eta_best]"
@@ -158,7 +177,7 @@ def _sections(c: Dict[str, Any]) -> Dict[str, str]:
 def bank() -> List[Dict[str, Any]]:
     vals = {"design": ("cohort", "ncc"), "form": ("coef", "cov", "indi", "none"), "coverage": ("full", "partial"),
             "dropped": (0, 1), "family": ("target", "kl", "space", "released", "indi"),
-            "penalty": ("none", "ridge", "lasso"), "test": (0, 1)}
+            "penalty": ("none", "ridge", "lasso"), "test": (0, 1), "zero": (0, 1)}
     out = []
     for combo in itertools.product(*(vals[f] for f in FEATURES)):
         c = dict(zip(FEATURES, combo))
@@ -186,11 +205,20 @@ def features_of(res: Dict[str, Any], refs: Dict[str, Any]) -> Dict[str, Any]:
     return {"design": "ncc" if "case-control" in str(f.get("design")) else "cohort", "form": form,
             "coverage": "partial" if refs.get("p_internal_only") else "full",
             "dropped": 1 if refs.get("p_dropped") else 0, "family": fam, "penalty": pen,
-            "test": 1 if res.get("test_data") else 0}
+            "test": 1 if res.get("test_data") else 0,
+            "zero": 1 if _borrows_nothing(res) else 0}
+
+
+def _borrows_nothing(res: Dict[str, Any]) -> bool:
+    from . import report_v3
+    try:
+        return report_v3.selected_borrows_nothing(res)
+    except Exception:
+        return False
 
 
 def nearest(feat: Dict[str, Any], k: int) -> List[Dict[str, Any]]:
-    w = {"design": 3, "form": 3, "family": 3, "penalty": 2, "coverage": 2, "dropped": 1, "test": 1}
+    w = {"design": 3, "form": 3, "family": 3, "penalty": 2, "coverage": 2, "dropped": 1, "test": 1, "zero": 3}
     scored = sorted(bank(), key=lambda e: (-sum(w[f] for f in FEATURES if e["features"][f] == feat.get(f)), e["id"]))
     return scored[:k]
 

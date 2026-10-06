@@ -378,9 +378,12 @@ def main() -> int:
               "the third form of external information is a recognised fact",
               "`indi` appeared zero times in run_candidates.R before today")
         ik = [x["key"] for x in ci["candidates"]]
-        check(ik == ["internal", "indi", "internal_lasso", "indi_lasso",
+        check(ik == ["internal", "indi", "internal_lasso", "indi_lasso", "kl", "mahalanobis",
+                     "euclidean", "internal_ridge", "kl_ridge", "mahalanobis_ridge",
+                     "euclidean_ridge", "kl_lasso", "mahalanobis_lasso", "euclidean_lasso",
                      "external"],
-              "five members, and no ridge among them", f"{ik}")
+              "the composite likelihood plus the whole coefficient-and-covariance set fitted "
+              "from the records (2026-10-05)", f"{ik}")
         check(all(x["status"] == "ok" for x in ci["candidates"]),
               "every member of the individual-level set fitted",
               f"selected {ci['selected']['label']}; "

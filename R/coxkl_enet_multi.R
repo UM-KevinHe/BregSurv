@@ -129,10 +129,10 @@ coxkl_enet.multi <- function(
 
     if (!is.null(fit_res)) {
       res_list[[k]]     <- as.vector(fit_res$best$best_beta)
-      fit_res_list[[k]] <- fit_res  # save full fit object
+      fit_res_list[[k]] <- fit_res # save full fit object
     } else {
       res_list[[k]]     <- rep(NA_real_, p)
-      fit_res_list[k]   <- list(NULL)  # store NULL WITHOUT deleting the element
+      fit_res_list[k]   <- list(NULL) # store NULL WITHOUT deleting the element
     }
 
     if (message) setTxtProgressBar(pb, k)
@@ -149,7 +149,7 @@ coxkl_enet.multi <- function(
       sum(valid_cols), K
     ))
     res_mat      <- res_mat[, valid_cols, drop = FALSE]
-    fit_res_list <- fit_res_list[valid_cols]  # keep only valid fits
+    fit_res_list <- fit_res_list[valid_cols] # keep only valid fits
   }
 
   if (ncol(res_mat) == 0) stop("No successful fits were obtained.", call. = FALSE)
@@ -169,8 +169,8 @@ coxkl_enet.multi <- function(
       seed         = seed,
       valid_sources = sum(valid_cols),
       combine      = combine,
-      ties         = .fit_ties(list(ties = list(...)$ties)),  # what `...` passed to cv.coxkl_enet
-      source_fits  = fit_res_list  # full fit objects for each valid source
+      ties         = .fit_ties(list(ties = list(...)$ties)), # what `...` passed to cv.coxkl_enet
+      source_fits  = fit_res_list # full fit objects for each valid source
     ),
     class = "coxkl_enet.multi"
   )

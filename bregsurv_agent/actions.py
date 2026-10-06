@@ -59,6 +59,7 @@ class Act(str, Enum):
     RUN_CORE = "run_core"
     SELECT_EXTERNAL = "select_external"        # M2: make a loaded release the active one
     COMPARE_RUNS = "compare_runs"              # M2: the harness compares the two latest runs
+    DRAW_KM = "draw_km"                        # V4: the Kaplan-Meier curve the analyst asked to see
 
 
 @dataclass(frozen=True)
@@ -131,6 +132,10 @@ SPECS: Dict[Act, ActionSpec] = {a.act: a for a in (
                "the name must be one of the loaded releases (an enum in M1's schema)", _LOADED),
     ActionSpec(Act.COMPARE_RUNS, "harness",
                "computed from the two latest fitted objects; every number the harness's", _LOADED),
+    ActionSpec(Act.DRAW_KM, "harness",
+               "the grouping column must be written in the message (M1) and be a column of the "
+               "file; drawn by survfit from the declared roles into the report, shown in the chat; "
+               "after the turn's run, or of the analysis already run", _LOADED),
     ActionSpec(Act.SHOW_EXTERNAL, "harness", "the card of the object already read", _LOADED),
     ActionSpec(Act.ANSWER_METHOD, "harness", "fixed text", _LOADED),
     ActionSpec(Act.NO_RESULT_YET, "harness", "fixed text", _LOADED),
@@ -179,6 +184,8 @@ def plan(session: Any, intents: Sequence[Any]) -> List[Act]:
             acts.append(Act.COMPARE_RUNS)
         elif k == "evaluate_by_splits":
             acts.append(Act.EVALUATE_BY_SPLITS)
+        elif k == "kaplan_meier":
+            acts.append(Act.DRAW_KM)
         elif k == "describe_external":
             acts.append(Act.SHOW_EXTERNAL if getattr(session, "external", None) is not None
                         else Act.NAME_PUBLISHED_MODEL)
@@ -192,6 +199,9 @@ def plan(session: Any, intents: Sequence[Any]) -> List[Act]:
     if Act.COMPARE_RUNS in acts:
         # the comparison follows any run this turn makes
         acts = [a for a in acts if a is not Act.COMPARE_RUNS] + [Act.COMPARE_RUNS]
+    if Act.DRAW_KM in acts:
+        # the curve is of the analysis this turn runs, if it runs one
+        acts = [a for a in acts if a is not Act.DRAW_KM] + [Act.DRAW_KM]
     if Act.EVALUATE_BY_SPLITS in acts:
         # the evaluation by splits is of the analysis this turn runs, if it runs one: last
         acts = [a for a in acts if a is not Act.EVALUATE_BY_SPLITS] + [Act.EVALUATE_BY_SPLITS]

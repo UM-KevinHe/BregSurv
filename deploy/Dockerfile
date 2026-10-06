@@ -54,6 +54,11 @@ COPY app/ /app/
 RUN python3 -c "from huggingface_hub import snapshot_download; \
 snapshot_download('Qwen/Qwen3-8B-AWQ', local_dir='/models/qwen3-8b-awq')"
 
+# The retrieval models for the example banks (Apache-2.0): embedding and reranker, run on the CPU
+RUN python3 -c "from huggingface_hub import snapshot_download; \
+snapshot_download('Qwen/Qwen3-Embedding-0.6B', local_dir='/models/retrieval/Qwen3-Embedding-0.6B'); \
+snapshot_download('Qwen/Qwen3-Reranker-0.6B', local_dir='/models/retrieval/Qwen3-Reranker-0.6B')"
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && mkdir -p /tmp/bregsurv && chmod 777 /tmp/bregsurv
 
@@ -61,6 +66,7 @@ ENV VLLM_MODEL_PATH=/models/qwen3-8b-awq \
     SURVBREGDIV_MODEL_NAME=qwen3-8b-awq \
     SURVBREGDIV_MODEL_ENDPOINT=http://127.0.0.1:8000/v1 \
     OPENAI_API_KEY=EMPTY \
+    BREGSURV_RETRIEVAL_MODELS=/models/retrieval \
     BREGSURV_THINKING=auto BREGSURV_PLANNER=on BREGSURV_MEMORY=off \
     VLLM_USE_FLASHINFER_SAMPLER=0 BREGSURV_PYTHON=/opt/appenv/bin/python \
     GRADIO_SERVER_NAME=0.0.0.0 GRADIO_SERVER_PORT=7860 \

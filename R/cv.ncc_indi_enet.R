@@ -283,9 +283,9 @@ cv.ncc_indi_enet <- function(y_int, z_int, stratum_int,
         ...
       )
 
-      beta_mat_fold <- fold_fit$beta[[1]]  # p x L
+      beta_mat_fold <- fold_fit$beta[[1]] # p x L
 
-      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold  # n_test x L
+      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold # n_test x L
 
       if (cv.criteria == "loss") {
         for (j in seq_len(L)) {

@@ -140,7 +140,7 @@ def main() -> int:
                                                        "covariates": "age, bmi"},
           "the declaration is remembered by file fingerprint", str(rec))
     check("time_zero" not in rec["answers"] and "time_zero" not in rec["sources"],
-          "time zero is NOT remembered: it stays a person's answer every time")
+          "🔴 time zero is NOT remembered: it stays a person's answer every time")
     check(rec["file"] == "cohort.csv" and rec["n_columns"] == 4 and rec.get("date"),
           "file name, column count and date travel with it")
     st.set_preference("write_prose", True)

@@ -626,7 +626,9 @@ def _missing_columns(session: Session) -> List[str]:
 
 # A column the analyst named is not in the file and the run stopped on it; a
 # reply such as "leave it out" removes that column from the covariates the
-# reading settled, and nothing else.
+# reading settled and nothing else (the session-(b) recording, 2026-10-04: the
+# plain reply re-asked the same question, because only a numbered list could
+# remove the name).
 _DROP_WORDS = re.compile(r"\b(leave (it|that|this|them|those)( one| column)?s? out|leave out|drop (it|that|this|them)|"
                          r"remove (it|that|this|them)|without (it|that|them)|skip (it|that|them)|"
                          r"ignore (it|that|them)|not needed|don'?t (need|use) (it|that|them))\b", re.I)
@@ -726,8 +728,14 @@ def _result_reply(session, question: str = "", client=None,
     facts += [x for x in (_vs("internal", "using your data alone"),
                           _vs("external", "using the external model as it is")) if x]
     k0 = sel.get("key", "")
-    if not (k0.startswith("internal") or k0.startswith("external")):
+    if report_v3.selected_borrows_nothing(c):
+        facts.append("The kept approach was given a borrowing weight of zero, so in the end it "
+                     "borrows nothing from the external information: it uses your data alone.")
+    elif not (k0.startswith("internal") or k0.startswith("external")):
         facts.append("So borrowing from the external information helped.")
+    facts += _more_facts(c, question)
+    facts.append("The report does not assess calibration and says nothing about how well any approach "
+                 "is calibrated.")
     # the short form: the clauses after the first comma made the answer read
     # "The chosen approach, the approach of combining ..., with ..., did better"
     refs = {"selected_label": _plain_label(k0).split(",")[0]}
@@ -740,6 +748,59 @@ def _result_reply(session, question: str = "", client=None,
         return a
     return ("I could not put that into words reliably. The PDF report has the "
             "full details; you can also ask the question another way.")
+
+
+def _more_facts(c: Dict[str, Any], question: str) -> List[str]:
+    """Plain-word facts the harness reads off the fitted objects for a follow-up question (V4,
+    2026-10-05): which approach did worst, how the approaches did on the analyst's test file, what the
+    report's tables hold, and, for a variable the question names, where the kept coefficient lies
+    relative to the external model's and to your data's. No digit; the model decides what answers
+    the question."""
+    from bregsurv_agent import textmatch
+    out: List[str] = []
+    ok = [k for k in c.get("candidates", []) if k.get("status") == "ok" and k.get("loss") is not None]
+    sel = c.get("selected") or {}
+    if len(ok) > 2:
+        worst = max(ok, key=lambda k: k["loss"])
+        out.append(f"The approach that did worst in this check was {_plain_label(worst['key']).split(',')[0]}.")
+    ho = [k for k in ok if (k.get("holdout") or {}).get("cindex") is not None]
+    if c.get("test_data") and ho:
+        best = max(ho, key=lambda k: k["holdout"]["cindex"])
+        bl = _plain_label(best["key"]).split(",")[0]
+        if best["key"] == sel.get("key"):
+            out.append("On your separate test file, the kept approach also ranked patients best of all "
+                       "the approaches tried.")
+        else:
+            out.append(f"On your separate test file, the approach that ranked patients best was {bl}; the "
+                       "kept approach was chosen by the check on your own data, which never looked at the "
+                       "test file.")
+        out.append("The report has a table of every approach's results on your test file.")
+    if c.get("coefficients"):
+        out.append("The report has a table that lists, for every variable, the external model's "
+                   "coefficient, the coefficient from your data alone, and the kept approach's.")
+        names = [r["variable"] for r in c["coefficients"]]
+        for v in textmatch.names_mentioned(question or "", names)[:3]:
+            r = next(x for x in c["coefficients"] if x["variable"] == v)
+            e, i, k = r.get("beta_external"), r.get("beta_internal"), r.get("beta_selected")
+            if k is None or i is None:
+                continue
+            if not r.get("covered_by_external") or e is None:
+                out.append(f"For {v}, the external model has no coefficient, so it was estimated from "
+                           "your data alone.")
+                continue
+            if abs(k - i) < 1e-9:
+                where = "is the same as the one from your data alone"
+            elif abs(k - e) < 1e-9:
+                where = "is the same as the external model's"
+            elif min(e, i) <= k <= max(e, i):
+                where = ("lies between the two, nearer the external model's" if abs(k - e) < abs(k - i)
+                         else "lies between the two, nearer the one from your data alone")
+            else:
+                where = "lies outside the range of the two"
+            sign = "agree in sign" if e * i > 0 else "differ in sign"
+            out.append(f"For {v}, the external model's coefficient and the one from your data alone "
+                       f"{sign}; the kept approach's coefficient {where}.")
+    return out
 
 
 def _compare_reply(session: Session) -> str:
@@ -830,6 +891,60 @@ def _evaluate_by_splits(out, chat_msg, client, model: str, message: str = ""):
                 n_analysed=sum(1 for x in sr.record["splits"] if x.get("status") == "ok"),
                 seed=sr.record["seed"], workers=sr.record["workers"], seconds=sr.seconds,
                 files=sr.paths)
+
+
+def _draw_km(out, chat_msg, by: Optional[str], evidence: str = ""):
+    """V4: the Kaplan-Meier curve the analyst asked to see, of the analysis just run
+    (or already run): pooled, by the declared strata, or by the column the analyst wrote (`by`,
+    checked against the file). Redrawn into the report in place of the default one and shown in
+    the chat; the harness draws it, the model only read the request."""
+    history, _, session, *rest = out
+    rest = (list(rest) + [None] * len(_EMPTY))[:len(_EMPTY)]
+
+    def done(text, image=None, **log):
+        history.append([chat_msg, text])
+        if image:
+            history.append([None, (image,)])
+        return (history, "", _log_action(session, route="kaplan_meier", **log)) + tuple(rest)
+
+    res = session.result
+    if res is None or not session.temp:
+        return done("The Kaplan-Meier curve is drawn with the analysis. Tell me which columns are "
+                    "the follow-up time and the event, and I will run it and draw the curve.",
+                    drawn=False, why="no result")
+    cols = [c["name"] for c in (session.profile or {}).get("columns", [])]
+    col = None
+    if by:
+        col = next((c for c in cols if c == by), None) or next(
+            (c for c in cols if textmatch.mentions(by, c, cols)), None)
+        if col is None:
+            return done(f"Your data has no column called `{by}`, so the curve was not split by it.",
+                        drawn=False, why="no such column", by=by)
+    km = res.draw_km(Path(session.temp[-1]), group_col=col)
+    if not km or km.get("status") != "ok":
+        why = (km or {}).get("reason") or "the curve could not be drawn"
+        return done(f"The Kaplan-Meier curve was not drawn: {why}.", drawn=False, why=why, by=col)
+    by_txt = {"levels": f" by `{km.get('grouped_by')}`", "strata": " by stratum",
+              "median": f" by `{km.get('grouped_by')}`, split at its median"}.get(km.get("grouping") or "", "")
+    return done(f"Here is the Kaplan-Meier estimate of your cohort{by_txt}; it is also in the report.",
+                image=km["png"], drawn=True, by=col, grouping=km.get("grouping"))
+
+
+def _chat_answer(client, model, msg, session, prof, history, notes: str = ""):
+    """V4: the model's own answer to a message that is not an analysis request, or None
+    (no model, or a draft the harness dropped). Returns (text or None, session)."""
+    if client is None:
+        return None, session
+    earlier = [(u, b) for u, b in (history or [])[-6:] if isinstance(u, str) and isinstance(b, str)]
+    try:
+        r = boundary.chat_reply(client, model, msg, session.state_line(),
+                                [c["name"] for c in (prof or {}).get("columns", [])],
+                                earlier=[(u[:500], b[:800]) for u, b in earlier], notes=notes)
+    except Exception as exc:
+        r = {"reply": None, "dropped": f"{type(exc).__name__}: {str(exc)[:200]}"}
+    session = _take_calls(session)
+    session = _log_action(session, route="chat", used=bool(r.get("reply")), dropped=r.get("dropped"))
+    return r.get("reply"), session
 
 
 def _execute_steps(steps, session, history, msg, replies, client, prof, write_prose,
@@ -1124,15 +1239,26 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                         session, by_kind["describe_external"], client, model, msg))
                     session = _take_calls(session)
                 elif act is actions.Act.ANSWER_METHOD:
-                    # component 8: the matching method notes, verbatim; no model
-                    shown = [n.id for n in knowledge.retrieve(msg)]
-                    replies.append(knowledge.answer_method(msg, intent.METHOD_ANSWER))
-                    session = _log_action(session, route="method_notes", notes=shown)
+                    # component 8: the matching method notes; 2026-10-06: the model answers in its
+                    # own words with the notes as its source, the notes verbatim when it cannot
+                    found = knowledge.retrieve(msg)
+                    shown = [n.id for n in found]
+                    said, session = _chat_answer(client, model, msg, session, prof, history,
+                                                 "\n\n".join(f"[{n.id}] {n.body}" for n in found))
+                    replies.append(said or knowledge.answer_method(msg, intent.METHOD_ANSWER))
+                    session = _log_action(session, route="method_notes", notes=shown,
+                                          worded_by_model=bool(said))
                 elif act in (actions.Act.EXPLAIN_RESULT, actions.Act.NO_RESULT_YET):
                     replies.append(_result_reply(session, msg, client, model))
                     session = _take_calls(session)
                 elif act is actions.Act.REFUSE:
-                    replies.append(intent.refusal(by_kind["out_of_scope"]))
+                    oos = by_kind["out_of_scope"]
+                    said = None
+                    if oos.out_of_scope_reason in (None, "other"):
+                        # 2026-10-06: something that is not an analysis this system declines (a general
+                        # question) is answered by the model; the named refusals stay as they are
+                        said, session = _chat_answer(client, model, msg, session, prof, history)
+                    replies.append(said or intent.refusal(oos))
                 elif act is actions.Act.SELECT_EXTERNAL:
                     it = by_kind.get("select_external") or by_kind.get("describe_external")
                     name = getattr(it, "external_name", None)
@@ -1230,7 +1356,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                             replies.append("I could not turn that into steps I can carry out. "
                                            "Say which external file to use, or ask for one "
                                            "analysis at a time.")
-                elif act is actions.Act.EVALUATE_BY_SPLITS:
+                elif act in (actions.Act.EVALUATE_BY_SPLITS, actions.Act.DRAW_KM):
                     # V4: carried out after the turn's run, if it makes one (below)
                     pass
                 elif act is actions.Act.ASK:
@@ -1240,6 +1366,17 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                             "ask about. "
                             if any(i.demoted_from == "ask_about_result" for i in intents)
                             else "I could not tell what you wanted from that. ")
+                    # 2026-10-06: a message that is not an analysis request is answered by the
+                    # model in its own words; the numbered form follows only while an analysis
+                    # is being declared
+                    said, session = _chat_answer(client, model, msg, session, prof, history)
+                    if said:
+                        replies.append(said + (
+                            "\n\nStill open for the analysis:\n\n```\n"
+                            + render_question(prof, only=comp.missing or None,
+                                              time_col=comp.answers.get("time")) + "\n```"
+                            if session.pending and comp.missing else ""))
+                        continue
                     replies.append(
                         lead + "You can name the columns in a sentence, ask how "
                         "this works, or reply by number:\n\n```\n"
@@ -1258,12 +1395,29 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                                   budget=actions.MODEL_CALLS_PER_TURN)
             # V4: an evaluation by repeated splits follows whatever this turn runs
             wants_splits = "evaluate_by_splits" in {i.kind for i in intents}
+            # V4: a Kaplan-Meier curve the analyst asked to see, drawn after the run
+            km_it = by_kind.get("kaplan_meier")
+            wants_km = km_it is not None
+
+            def _km(o, chat_msg=None):
+                return _draw_km(o, chat_msg, km_it.km_by, km_it.evidence) if wants_km else o
             if steps:
                 out = _execute_steps(steps, session, history, msg, replies, client,
                                      prof, write_prose, endpoint, model, api_key,
                                      tz_known)
-                return (_evaluate_by_splits(out, None, client, model, message=msg)
-                        if wants_splits else out)
+                return _km(_evaluate_by_splits(out, None, client, model, message=msg)
+                           if wants_splits else out)
+            wants_compare = actions.Act.COMPARE_RUNS in acts
+            if (actions.Act.COMPLETE not in acts and not replies and not wants_splits and not wants_km
+                    and "evaluate_on_test" in by_kind):
+                # V4: scoring on the supplied test file is part of every analysis; a
+                # message that asks only for it is answered from what the session holds
+                replies.append(
+                    "Every fitted model is scored on your test file; the report's table "
+                    "\"Performance on your test data\" gives the C-index, loss, integrated Brier "
+                    "score and time-dependent AUC of each." if session.test_data_path else
+                    "No test file was uploaded, so there is nothing held out to score the models on. "
+                    "Upload one with the same columns and every model is scored on it.")
             wants_compare = actions.Act.COMPARE_RUNS in acts
             if actions.Act.COMPLETE not in acts:
                 if wants_compare:
@@ -1273,12 +1427,16 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     # under the message itself unless other replies already did
                     if replies:
                         history.append([msg, "\n\n".join(replies)])
-                    return _evaluate_by_splits((history, "", session) + _EMPTY,
-                                               None if replies else msg, client, model,
-                                               message=msg)
+                    return _km(_evaluate_by_splits((history, "", session) + _EMPTY,
+                                                   None if replies else msg, client, model,
+                                                   message=msg))
+                if wants_km:
+                    if replies:
+                        history.append([msg, "\n\n".join(replies)])
+                    return _km((history, "", session) + _EMPTY, None if replies else msg)
                 history.append([msg, "\n\n".join(replies)])
                 return (history, "", session) + _EMPTY
-            if wants_compare or wants_splits:
+            if wants_compare or wants_splits or wants_km:
                 # the comparison and the evaluation follow the run this turn makes
                 out = _settle_and_run(session, history, msg, given, sources, replies,
                                       used_model, client, prof, write_prose, endpoint,
@@ -1289,8 +1447,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     h2.append([None, _compare_reply(s2)])
                 out = (h2, "", s2) + tuple(rest)
                 if wants_splits and ran:
-                    return _evaluate_by_splits(out, None, client, model, message=msg)
-                return out
+                    out = _evaluate_by_splits(out, None, client, model, message=msg)
+                return _km(out) if ran else out
     except DeclarationError as exc:
         session = _note_missing_column(session, exc)
         history.append([msg, f"**I could not use that.**\n\n{exc}"])
@@ -1835,7 +1993,7 @@ def _plain_label(key: str) -> str:
     else:
         base = "combining your data with the external information"
     if k.endswith("_lasso"):
-        base += ", leaving out variables that add nothing"
+        base += ", with a penalty that can drop variables that add nothing"
     elif k.endswith("_ridge"):
         base += ", with estimates shrunk to keep them stable"
     return base
@@ -1907,6 +2065,7 @@ table { border-collapse: collapse; margin: 6pt 0; font-size: 9pt; }
 th, td { border: 1px solid #d6dee8; padding: 3pt 6pt; text-align: left; }
 th { background: #eef3f8; } .col { color: #1f4e79; font-weight: 600; } code, pre { font-family: 'DejaVu Sans Mono', monospace; font-size: 9.5pt; color: #24425f; }
 pre { background: #f5f7fa; padding: 6pt; white-space: pre-wrap; }
+img { max-width: 100%; }
 """
 
 
@@ -1944,7 +2103,7 @@ def _report_pdf(session) -> Optional[str]:
         body = markdown.markdown(_with_reading_guide(md.read_text()), extensions=["tables", "fenced_code"])
         body = re.sub(r"<code>(.*?)</code>", r"<span class='col'>\1</span>", body)
         HTML(string=f"<html><head><meta charset='utf-8'><style>{_PDF_CSS}</style></head>"
-                    f"<body>{body}</body></html>").write_pdf(str(pdf))
+                    f"<body>{body}</body></html>", base_url=str(outdir)).write_pdf(str(pdf))
         return str(pdf)
     except Exception as exc:
         print(f"[app] weasyprint unavailable ({type(exc).__name__}); using xhtml2pdf", flush=True)
@@ -1987,7 +2146,9 @@ def _plain_turn(text: str) -> str:
         head, rest = t.split("**I could not use that.**\n\n", 1)
         t = head + "I could not use that: " + rest[:1].lower() + rest[1:]
     t = t.strip()
-    return t or "I have read the external file. Tell me what you want to analyse."
+    return t or ("I have the external information. To run the analysis, tell me which column is the "
+                 "follow-up time, which is the event and which value means it occurred, and what to adjust "
+                 "for; a sentence is enough.")
 
 
 def chat_turn(mm, history, session, ui):
@@ -2089,20 +2250,26 @@ def chat_turn(mm, history, session, ui):
             return history, None, session, ui
     if _TZ_STATED.search(text):
         ui["tz_ok"] = True
-    if not ui.get("tz_ok") and session is not None and session.result is None:
-        ui["tz_wait"] = text
-        history.append([text, "One question before I start: were all the variables "
-                              "you want to adjust for recorded at the start of "
-                              "follow-up (for example, at transplant)? Reply **yes** "
-                              "or **no**."])
-        return history, None, session, ui
+    # 2026-10-06: every message is read first (a greeting or a question is answered as such); the
+    # time-zero question is put only when it is the one thing left before a run (below)
 
     answered_yes = bool(history and history[-1][1] is None)
     if answered_yes:
         history.pop()
     n0 = len(history)
+    n_act0 = len(before.actions) if before is not None else 0
     out = submit_answer(text, history, session, ep, mdl, key, True, bool(ui.get("tz_ok")))
     history, session = list(out[0]), out[2]
+    asked = next((a.get("asked") for a in reversed(list(session.actions)[n_act0:])
+                  if isinstance(a, dict) and a.get("asked")), None) if session is not None else None
+    if asked and set(map(str, asked)) == {"6"} and not ui.get("tz_ok") and not _new_result(before, session):
+        # everything else is settled: the one question only the analyst can answer, in plain words
+        ui["tz_wait"] = text
+        history = history[:n0] + [[text, "One question before I start: were all the variables "
+                                         "you want to adjust for recorded at the start of "
+                                         "follow-up (for example, at transplant)? Reply **yes** "
+                                         "or **no**."]]
+        return history, None, session, ui
     if not _new_result(before, session):
         for i in range(n0, len(history)):
             if isinstance(history[i][1], str):
@@ -2120,6 +2287,11 @@ def chat_turn(mm, history, session, ui):
         pdf = _report_pdf(session)
         if pdf:
             history.append([None, (pdf,)])
+        # the Kaplan-Meier curve is in the report; the chat shows it only when the analyst asked
+        for u, b in new:
+            if isinstance(b, (tuple, list)) and b and str(b[0]).endswith("km_curve.png"):
+                history.append([None, (b[0],)])
+                break
     return history, None, session, ui
 
 
@@ -2133,7 +2305,7 @@ GREETING = "📊 What external data should your cohort learn from today?"
 EXAMPLE_REQUEST = EXAMPLE_QUERY + " All of these were recorded at transplant."
 
 
-_WAIT = "→ Working on it. A full analysis usually takes one to three minutes."
+_WAIT = "→ Reading your message…"
 
 
 def show_pending(mm, history):
