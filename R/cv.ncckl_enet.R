@@ -406,7 +406,7 @@ cv.ncckl_enet <- function(y, z, stratum,
 
   ## Extract full-data betas at best lambda for each eta
   beta_best_mat <- sapply(seq_len(n_eta), function(i) {
-    beta_mat   <- beta_full_list[[i]]    # p x L_i
+    beta_mat   <- beta_full_list[[i]]  # p x L_i
     lambda_seq <- lambda_list[[i]]
 
     lambda_target <- best_per_eta$lambda[i]

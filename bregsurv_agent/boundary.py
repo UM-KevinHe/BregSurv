@@ -219,9 +219,12 @@ def _last_decode_error(text: str) -> Exception:
 
 def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
           name: str, temperature: Optional[float] = None,
-          max_tokens: int = 1200, extra_record: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+          max_tokens: int = 1200, extra_record: Optional[Dict[str, Any]] = None,
+          on_text=None) -> Dict[str, Any]:
     """One constrained generation. No tools, ever. `extra_record` is merged
-    into the call record (e.g. which few-shot examples were shown)."""
+    into the call record (e.g. which few-shot examples were shown). With
+    `on_text`, the answer is streamed and the callback receives the text so
+    far after every chunk; the record and the checks are the same."""
     import time as _time
     t0 = _time.time()
     dec = decoding_for(name)
@@ -255,6 +258,9 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
         fmt = {"response_format": {"type": "json_schema",
                                    "json_schema": {"name": name, "schema": schema,
                                                    "strict": True}}}
+    if on_text is not None:
+        return _chat_streamed(client, model, system, user, name, dec, kw, fmt, max_tokens,
+                              allowance, unconstrained, extra_record, on_text, t0)
     completion = client.chat.completions.create(
         model=model,
         messages=[{"role": "system", "content": system},
@@ -645,9 +651,115 @@ _RESULT_NUMBER = re.compile(
     r"[^.\n]{0,25}\d|\d[^.\n]{0,10}(c-?index|hazard ratio)", re.I)
 
 
+class _Msg:
+    def __init__(self, content, reasoning):
+        self.content, self.reasoning_content, self.model_extra = content, reasoning, {}
+
+
+class _Choice:
+    def __init__(self, content, reasoning, finish):
+        self.message, self.finish_reason = _Msg(content, reasoning), finish
+
+
+class _Completion:
+    def __init__(self, content, reasoning, finish, usage):
+        self.choices, self.usage = [_Choice(content, reasoning, finish)], usage
+
+
+class _Fake:
+    """Hands an already-collected streamed answer to the ordinary path of `_chat`."""
+    def __init__(self, completion, base_url):
+        self.base_url = base_url
+        self.chat = self
+        self.completions = self
+        self._c = completion
+
+    def create(self, **_):
+        return self._c
+
+
+def _chat_streamed(client, model, system, user, name, dec, kw, fmt, max_tokens, allowance,
+                   unconstrained, extra_record, on_text, t0):
+    """The streamed form of one call: the chunks are collected, the callback sees the text so far,
+    and the collected answer then goes through exactly the record and checks of `_chat`."""
+    stream = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "system", "content": system},
+                  {"role": "user", "content": user}],
+        max_tokens=max_tokens, stream=True, stream_options={"include_usage": True},
+        **fmt, **kw)
+    text, think, finish, usage = [], [], None, None
+    if getattr(stream, "choices", None) is not None:
+        # a client that does not stream (a test double) answered in one piece
+        stream = [type("C", (), {"usage": getattr(stream, "usage", None),
+                                  "choices": [type("D", (), {"delta": stream.choices[0].message,
+                                                             "finish_reason": stream.choices[0].finish_reason})()]})()]
+    for ch in stream:
+        if getattr(ch, "usage", None):
+            usage = ch.usage
+        for c in (getattr(ch, "choices", None) or []):
+            d = getattr(c, "delta", None)
+            if d is not None:
+                extra = getattr(d, "model_extra", None) or {}
+                r = getattr(d, "reasoning_content", None) or extra.get("reasoning") or extra.get("reasoning_content")
+                if r:
+                    think.append(str(r))
+                if getattr(d, "content", None):
+                    text.append(d.content)
+                    try:
+                        on_text("".join(text))
+                    except Exception:
+                        pass
+            if getattr(c, "finish_reason", None):
+                finish = c.finish_reason
+    comp = _Completion("".join(text) or None, "".join(think) or None, finish, usage)
+    rest = {k: v for k, v in kw.items()}
+    temp = rest.pop("temperature", None)
+    out = _chat(_Fake(comp, getattr(client, "base_url", "")), model, system, user,
+                {"type": "object"} if not unconstrained else {}, name,
+                temperature=temp, max_tokens=max_tokens - allowance, extra_record=extra_record)
+    rec = CALLS[-1] if CALLS else {}
+    rec["seconds"] = round(__import__("time").time() - t0, 2)
+    rec["streamed"] = True
+    return out
+
+
+_REPLY_OPEN = re.compile(r'"reply"\s*:\s*"')
+
+
+def partial_reply(text: str) -> str:
+    """The reply field of a partly streamed chat answer, unescaped, or "" before it starts."""
+    m = _REPLY_OPEN.search(text or "")
+    if not m:
+        return ""
+    body, out, i = text[m.end():], [], 0
+    esc = {"n": "\n", "t": "\t", '"': '"', "\\": "\\", "/": "/", "r": ""}
+    while i < len(body):
+        ch = body[i]
+        if ch == "\\":
+            if i + 1 >= len(body):
+                break
+            nx = body[i + 1]
+            if nx == "u":
+                if i + 6 > len(body):
+                    break
+                try:
+                    out.append(chr(int(body[i + 2:i + 6], 16)))
+                except ValueError:
+                    pass
+                i += 6
+                continue
+            out.append(esc.get(nx, nx)); i += 2
+            continue
+        if ch == '"':
+            break
+        out.append(ch); i += 1
+    return "".join(out)
+
+
 def chat_reply(client, model: str, message: str, state: str, columns: List[str],
                earlier: Optional[List[Tuple[str, str]]] = None, notes: str = "",
-               max_tokens: int = 500) -> Dict[str, Any]:
+               max_tokens: int = 500, on_reply=None) -> Dict[str, Any]:
     """V4: the model answers a message that is not an analysis request, in its own
     words. One constrained call; it sees the state line, the file's column names, the method notes
     that match, and the last few plain turns, never a row. Verified before use: not empty, no
@@ -658,12 +770,31 @@ def chat_reply(client, model: str, message: str, state: str, columns: List[str],
             + (("\n\nEarlier turns:\n" + turns[-2000:]) if turns else "")
             + (("\n\nNotes from the method documentation:\n" + notes[:3000]) if notes else "")
             + "\n\nThe analyst wrote:\n" + (message or "").strip())
-    out = _chat(client, model, policy.load("chat"), user, CHAT_SCHEMA, "chat", max_tokens=max_tokens)
+    low = {n.lower() for n in columns}
+    cb = None
+    if on_reply is not None:
+        shown = {"stop": False}
+
+        def cb(text):
+            # what is shown while the reply streams passes the same checks as the final reply; at the
+            # first that fails nothing more is shown, and the final check decides what stays
+            if shown["stop"]:
+                return
+            part = partial_reply(text)
+            whole = part.rsplit(" ", 1)[0] if " " in part else ""
+            ids = set(re.findall(r"`([^`]+)`", whole)) | set(re.findall(r"\b[a-zA-Z]+_[a-zA-Z0-9_]+\b", whole))
+            if [x for x in ids if x.lower() not in low] or _RESULT_NUMBER.search(part):
+                shown["stop"] = True
+                on_reply("")
+                return
+            if whole:
+                on_reply(whole)
+    out = _chat(client, model, policy.load("chat"), user, CHAT_SCHEMA, "chat", max_tokens=max_tokens,
+                on_text=cb)
     rec = CALLS[-1] if CALLS else {}
     r = (out.get("reply") or "").strip()
     res: Dict[str, Any] = {"reply": None, "dropped": None, "_reasoning": out.get("reasoning"),
                            "_call": rec}
-    low = {n.lower() for n in columns}
     idents = set(re.findall(r"`([^`]+)`", r)) | set(re.findall(r"\b[a-zA-Z]+_[a-zA-Z0-9_]+\b", r))
     if not r:
         res["dropped"] = "empty"

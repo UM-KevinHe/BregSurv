@@ -3,7 +3,7 @@
 # then start the Gradio app in the foreground. Either process exiting stops the container.
 set -uo pipefail
 log() { printf '[entrypoint %s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
-MEM=${VLLM_GPU_MEM_UTIL:-0.85}; LEN=${VLLM_MAX_MODEL_LEN:-32768}
+MEM=${VLLM_GPU_MEM_UTIL:-0.75}; LEN=${VLLM_MAX_MODEL_LEN:-32768}
 log "starting vLLM (gpu memory ${MEM}, context ${LEN})"
 vllm serve "$VLLM_MODEL_PATH" --host 127.0.0.1 --port 8000 \
     --served-model-name "$SURVBREGDIV_MODEL_NAME" \
@@ -18,6 +18,10 @@ for i in $(seq 1 600); do
   kill -0 $VP 2>/dev/null || { log "vLLM exited before it was ready"; exit 1; }
   sleep 1
 done
+# one short request, so the first analyst does not pay for the server's first call
+curl -fs http://127.0.0.1:8000/v1/chat/completions -H 'Content-Type: application/json' \
+  -d "{\"model\": \"$SURVBREGDIV_MODEL_NAME\", \"messages\": [{\"role\": \"user\", \"content\": \"hello\"}], \"max_tokens\": 8}" \
+  > /dev/null && log "server warmed"
 cd /app && /opt/appenv/bin/python app.py & AP=$!
 log "app started on port ${GRADIO_SERVER_PORT}"
 wait -n $VP $AP; rc=$?

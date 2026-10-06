@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 MODELS_DIR = Path(os.environ.get("BREGSURV_RETRIEVAL_MODELS",
-                                 "/scratch/kevinhe_root/kevinhe1/ybshao/models/retrieval"))
+                                 "/models/retrieval"))
 DEFAULT_EMBED = "Qwen3-Embedding-0.6B"
 DEFAULT_RERANK = "Qwen3-Reranker-0.6B"
 POOL = 20          # candidates taken from each ranking, and the size of the reranked pool
@@ -44,6 +44,35 @@ _TASK = ("Given an analyst's request to a survival-analysis assistant, retrieve 
 
 _lock = threading.Lock()
 _models: Dict[str, Any] = {}
+
+
+def device() -> str:
+    """Where the two retrieval models run. `BREGSURV_RETRIEVAL_DEVICE` = cpu (the default, as
+    evaluated) or cuda (half precision, beside the language model; the hosted demo uses it)."""
+    v = (os.environ.get("BREGSURV_RETRIEVAL_DEVICE") or "cpu").strip().lower()
+    if v.startswith("cuda"):
+        try:
+            import torch
+            if torch.cuda.is_available():
+                return v
+        except Exception:
+            pass
+    return "cpu"
+
+
+def _dtype(torch):
+    return torch.float16 if device() != "cpu" else torch.float32
+
+
+def warm() -> None:
+    """Load both models now, so the first message does not wait for them. Never raises."""
+    try:
+        e = _get("embed", embed_name())
+        e.encode(["warm up"], query=True)          # the first forward pass initialises the kernels
+        if mode() == "rerank":
+            _get("rerank", rerank_name()).score("warm up", ["warm up"])
+    except Exception:
+        pass
 
 
 def mode() -> str:
@@ -78,7 +107,8 @@ class _Embedder:
         path = MODELS_DIR / name
         self.name, self.qwen = name, _is_qwen(name)
         self.tok = AutoTokenizer.from_pretrained(str(path), padding_side="left" if self.qwen else "right")
-        self.model = AutoModel.from_pretrained(str(path), dtype=torch.float32).eval()
+        self.dev = device()
+        self.model = AutoModel.from_pretrained(str(path), dtype=_dtype(torch)).to(self.dev).eval()
         self.torch = torch
 
     def encode(self, texts: Sequence[str], query: bool = False, batch: int = 16):
@@ -90,8 +120,8 @@ class _Embedder:
         with torch.no_grad():
             for i in range(0, len(texts), batch):
                 enc = self.tok(list(texts[i:i + batch]), padding=True, truncation=True,
-                               max_length=512, return_tensors="pt")
-                h = self.model(**enc).last_hidden_state
+                               max_length=512, return_tensors="pt").to(self.dev)
+                h = self.model(**enc).last_hidden_state.float()
                 if self.qwen:          # last-token pooling (left padding)
                     v = h[:, -1]
                 else:                  # BGE: the [CLS] vector
@@ -108,9 +138,10 @@ class _Reranker:
                                   AutoTokenizer)
         path = MODELS_DIR / name
         self.name, self.qwen, self.torch = name, _is_qwen(name), torch
+        self.dev = device()
         if self.qwen:
             self.tok = AutoTokenizer.from_pretrained(str(path), padding_side="left")
-            self.model = AutoModelForCausalLM.from_pretrained(str(path), dtype=torch.float32).eval()
+            self.model = AutoModelForCausalLM.from_pretrained(str(path), dtype=_dtype(torch)).to(self.dev).eval()
             self.yes = self.tok.convert_tokens_to_ids("yes")
             self.no = self.tok.convert_tokens_to_ids("no")
             self.prefix = ("<|im_start|>system\nJudge whether the Document meets the requirements based on "
@@ -119,7 +150,7 @@ class _Reranker:
             self.suffix = "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
         else:
             self.tok = AutoTokenizer.from_pretrained(str(path))
-            self.model = AutoModelForSequenceClassification.from_pretrained(str(path)).eval()
+            self.model = AutoModelForSequenceClassification.from_pretrained(str(path)).to(self.dev).eval()
 
     def score(self, query: str, docs: Sequence[str], batch: int = 10) -> List[float]:
         torch = self.torch
@@ -131,13 +162,13 @@ class _Reranker:
                     pairs = [f"{self.prefix}<Instruct>: {_TASK}\n<Query>: {query}\n<Document>: {d}"
                              f"{self.suffix}" for d in chunk]
                     enc = self.tok(pairs, padding=True, truncation=True, max_length=1024,
-                                   return_tensors="pt")
-                    logits = self.model(**enc).logits[:, -1, :]
+                                   return_tensors="pt").to(self.dev)
+                    logits = self.model(**enc).logits[:, -1, :].float()
                     two = torch.stack([logits[:, self.no], logits[:, self.yes]], dim=1)
                     out.extend(torch.log_softmax(two, dim=1)[:, 1].exp().tolist())
                 else:
                     enc = self.tok([query] * len(chunk), list(chunk), padding=True, truncation=True,
-                                   max_length=512, return_tensors="pt")
+                                   max_length=512, return_tensors="pt").to(self.dev)
                     out.extend(self.model(**enc).logits.view(-1).float().tolist())
         return out
 

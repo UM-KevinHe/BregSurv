@@ -106,6 +106,8 @@ HERE = Path(__file__).resolve().parent
 
 # Progress of the current turn, shown in the chat while the turn runs.
 _PROGRESS: "contextvars.ContextVar[Optional[List[str]]]" = contextvars.ContextVar("progress", default=None)
+# the conversational reply as it streams, shown in place of the progress steps
+_PARTIAL: "contextvars.ContextVar[Optional[List[str]]]" = contextvars.ContextVar("partial", default=None)
 
 
 def _step(text: str) -> None:
@@ -930,6 +932,12 @@ def _draw_km(out, chat_msg, by: Optional[str], evidence: str = ""):
                 image=km["png"], drawn=True, by=col, grouping=km.get("grouping"))
 
 
+def _show_partial(text: str) -> None:
+    box = _PARTIAL.get()
+    if box is not None:
+        box[0] = text or ""
+
+
 def _chat_answer(client, model, msg, session, prof, history, notes: str = ""):
     """V4: the model's own answer to a message that is not an analysis request, or None
     (no model, or a draft the harness dropped). Returns (text or None, session)."""
@@ -939,7 +947,8 @@ def _chat_answer(client, model, msg, session, prof, history, notes: str = ""):
     try:
         r = boundary.chat_reply(client, model, msg, session.state_line(),
                                 [c["name"] for c in (prof or {}).get("columns", [])],
-                                earlier=[(u[:500], b[:800]) for u, b in earlier], notes=notes)
+                                earlier=[(u[:500], b[:800]) for u, b in earlier], notes=notes,
+                                on_reply=_show_partial)
     except Exception as exc:
         r = {"reply": None, "dropped": f"{type(exc).__name__}: {str(exc)[:200]}"}
     session = _take_calls(session)
@@ -2336,6 +2345,8 @@ def chat_turn_ui(mm, history, session, ui):
     steps: List[str] = []
     ctx = contextvars.copy_context()
     ctx.run(_PROGRESS.set, steps)
+    partial = [""]
+    ctx.run(_PARTIAL.set, partial)
     box: List[Any] = []
 
     def work():
@@ -2347,9 +2358,10 @@ def chat_turn_ui(mm, history, session, ui):
     t.start()
     while t.is_alive():
         if shown is not None:
-            yield (gr.update(value=history + [[shown, _render_progress(steps)]], visible=True),
+            live = partial[0] or _render_progress(steps)
+            yield (gr.update(value=history + [[shown, live]], visible=True),
                    gr.skip(), gr.skip(), gr.skip(), gr.update(visible=False), gr.update(visible=False))
-        t.join(1.0)
+        t.join(0.25 if partial[0] else 1.0)
     r = box[0] if box else RuntimeError("no result")
     if isinstance(r, Exception):
         h = history + [[shown, f"Something went wrong: {type(r).__name__}: {r}"]]
@@ -2410,6 +2422,9 @@ def _resolve_auth():
 
 
 if __name__ == "__main__":
+    # load the retrieval models before the first message, beside the page starting up
+    threading.Thread(target=__import__("bregsurv_agent.retrieval", fromlist=["warm"]).warm,
+                     daemon=True).start()
     demo.queue()
     _auth = _resolve_auth()
     if _auth is not None:

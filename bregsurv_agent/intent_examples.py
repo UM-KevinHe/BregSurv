@@ -1,8 +1,8 @@
 """Retrieved worked examples for the intent-typing call (M1), V4.
 
 The same mechanism as the role-reading examples (`fewshot.py`): a bank of synthetic analyst messages, each
-with its correct typing in the intent schema's own shape (`examples/intent_bank.json`, built by
-`/home/ybshao/jobs/v4/intent_bank/merge_bank.py` and checked there), and at the call the harness retrieves
+with its correct typing in the intent schema's own shape (`examples/intent_bank.json`, built
+by a merge script that checks every item), and at the call the harness retrieves
 the k items most similar to the analyst's message and places them before it.
 
 Similarity is BM25 over column-masked text (the analyst's column names and the bank's own vocabulary
