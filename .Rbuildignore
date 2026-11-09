@@ -4,7 +4,6 @@
 ^bregsurv_agent$
 ^demo$
 ^mcp$
-^tests$
 ^deploy$
 ^assets$
 ^Dockerfile$
@@ -12,3 +11,14 @@
 ^\.dockerignore$
 ^requirements\.txt$
 ^README\.md$
+^tests/.*\.py$
+^tests/poison_fixtures\.R$
+^eval$
+^docs$
+^pkgdown$
+^_pkgdown\.yml$
+^tools$
+^llms\.txt$
+^THIRD_PARTY\.md$
+^LICENSE\.md$
+^\.gitattributes$

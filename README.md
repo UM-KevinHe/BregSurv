@@ -62,20 +62,23 @@ docker build -t bregsurv-agent .
 docker run --gpus all -p 7860:7860 bregsurv-agent
 ```
 
-Open **http://localhost:7860**. The first start takes a few minutes while the model loads. The same chat interface as the online demo runs entirely on your machine — your data stays there.
+Open **http://localhost:7860**. The first start takes a few minutes while the model loads. The same chat interface as the online demo runs entirely on your machine — your data stays there. Settings, and running without Docker or without any language model, are in [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
 ### Option 3 — Use the R package directly
 
-The estimator library behind the agent is a standalone R package:
+The estimator library behind the agent is a standalone R package with one interface for every analysis:
 
 ```r
 # install.packages("remotes")
 remotes::install_github("UM-KevinHe/BregSurv")
 library(BregSurv)
-?coxkl          # Kullback–Leibler borrowing from published coefficients
-?cox_MDTL       # Mahalanobis-distance borrowing (with or without a covariance)
-?cox_indi       # borrowing from another cohort's individual-level records
+fit <- cv.bregsurv(target  = target_cox(time, event, z),
+                   release = release_coef(beta_registry),   # what the external source published
+                   member  = "kl")                          # how it enters the objective
 ```
+
+See [the R package](#-the-r-package-one-bregman-divergence-objective) below and the
+[package website](https://um-kevinhe.github.io/BregSurv/).
 
 ---
 
@@ -136,7 +139,97 @@ flowchart LR
 ¹ The coefficients are used; the baseline hazard is used only for discrete-time follow-up.  
 ² Borrowing on a discrete time grid needs the external baseline hazard.
 
-Also supported: tied event times (Breslow correction), stratified cohorts, ridge and lasso penalties, a separate test set you supply, and — on request — evaluation over repeated random train/test splits with box plots.
+Also supported: tied event times (Breslow correction), stratified cohorts, ridge and lasso penalties, a neural-network member for discrete-time follow-up, a separate test set you supply, and — on request — evaluation over repeated random train/test splits with box plots.
+
+---
+
+## 📦 The R package: one Bregman-divergence objective
+
+### One objective, three decisions
+
+Every estimator in the package minimizes
+
+$$
+Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
+$$
+
+where $\ell$ is your cohort's log-likelihood and $\mathcal{B}_G$ is a Bregman divergence between your
+model and the external one. The objective separates three decisions, and the package has one object for
+each:
+
+| decision | made by | in the package |
+|---|---|---|
+| the **target** model | you, from your data | `target_cox()` (strata, tied times), `target_ncc()`, `target_discrete()`, with a linear or `nn_score()` neural risk score |
+| the **release** | the external source | `release_records()`, `release_coef()`, `release_score()`, `release_model()` |
+| the **member**: what is borrowed, and how strongly | your data, by cross-validation | `member = "composite"`, `"mahalanobis"` or `"kl"`, and the integration weight $\eta$ |
+
+The release fixes the generator $G$, and with it the divergence:
+
+| what the external source released | divergence | `member` |
+|---|---|---|
+| individual-level records | composite likelihood | `"composite"` |
+| coefficients with their uncertainty | Mahalanobis (Euclidean when no uncertainty is given) | `"mahalanobis"` |
+| a fitted model or risk score alone | Kullback–Leibler on the model's conditional distributions | `"kl"` |
+
+A release can also enter at every level below its own (records yield coefficients, coefficients yield a
+risk score), so your data can compare several members. Every linear target takes a ridge, lasso or
+elastic-net penalty, with the penalty path built for each $\eta$.
+
+### A first fit
+
+```r
+library(BregSurv)
+data(ExampleData_lowdim)
+tr <- ExampleData_lowdim$train
+
+target  <- target_cox(time = tr$time, event = tr$status, z = tr$z)
+release <- release_coef(ExampleData_lowdim$beta_external_poor)   # a published model on 2 of 6 covariates
+
+kl  <- cv.bregsurv(target, release, member = "kl")
+euc <- cv.bregsurv(target, release, member = "mahalanobis")
+own <- cv.bregsurv(target)                                        # your data alone
+
+# one partition, one criterion: the cross-validated losses compare directly (lower is better)
+c(target_only = own$value, kullback_leibler = kl$value, euclidean = euc$value)
+#>      target_only kullback_leibler        euclidean
+#>            2.625            2.513            2.520
+```
+
+The published model alone predicts held-out subjects worse than your own data does (C-index 0.613
+against 0.619), yet borrowing from it gives 0.640. [Get started](https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html)
+walks through this example, a high-dimensional one and a discrete-time one.
+
+The same call fits the other targets:
+
+```r
+cv.bregsurv(target_ncc(case, set, z), release_coef(beta), member = "kl", penalty = "lasso")
+cv.bregsurv(target_discrete(interval, event, z), release_model(beta, baseline = dH0))
+cv.bregsurv(target_discrete(interval, event, z, score = nn_score()), release_model(beta, baseline = dH0))
+```
+
+On Cox and nested case–control targets, `cv.bregsurv()` calls the package's estimators (`cv.coxkl`,
+`cv.cox_MDTL_enet`, `cv.ncc_indi`, ...) and returns exactly their result, so those functions remain
+available with all their options. Neural targets need the `torch` package.
+
+### Installation
+
+Not yet on CRAN. Install from GitHub:
+
+```r
+install.packages("remotes")
+remotes::install_github("UM-KevinHe/BregSurv")
+```
+
+Requires R ≥ 4.0 and a C++17 compiler; neural targets also need `install.packages("torch")`.
+
+### Documentation
+
+- **Get started**: <https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html>
+- **The framework**, the objective and where every function sits in it:
+  <https://um-kevinhe.github.io/BregSurv/articles/framework.html>
+- **Function reference**: <https://um-kevinhe.github.io/BregSurv/reference/>
+- **For AI coding assistants**, a compact map of the package following the
+  [llms.txt](https://llmstxt.org/) convention: <https://um-kevinhe.github.io/BregSurv/llms.txt>
 
 ---
 
@@ -147,10 +240,13 @@ BregSurv/
 ├── app.py               # the chat interface (Gradio)
 ├── bregsurv_agent/      # the agent: reading, planning, checks, reports
 ├── mcp/r_scripts/       # the R side of the agent (profiling, fitting, diagnostics)
+├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time members
 ├── R/ src/ man/ data/   # the BregSurv R package (estimator library)
+├── vignettes/ docs/     # the package website and its articles
 ├── demo/                # synthetic example data
-├── tests/               # test suites
-├── deploy/              # files for the Hugging Face Space
+├── eval/                # synthetic example banks and the fixtures the tests read
+├── tests/               # the agent's test suites (*.py) and the package's tests (testthat/)
+├── deploy/              # deployment guide and the Hugging Face Space files
 └── Dockerfile           # one-command local deployment
 ```
 
@@ -162,7 +258,7 @@ If you use BregSurv or BregSurv Agent, please cite the accompanying paper (citat
 
 ## 📄 License
 
-GPL-3. See [LICENSE.md](LICENSE.md). The bundled `DiscreteKL` package (Di Wang) is GPL (≥ 2).
+GPL-3. See [LICENSE.md](LICENSE.md). Third-party code, the `DiscreteKL` package (Di Wang, GPL ≥ 2) and the DiSKD network (Deng et al., ICML 2026), is listed in [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## ✉️ Contact
 

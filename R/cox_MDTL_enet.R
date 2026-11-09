@@ -123,7 +123,7 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   aligned <- align_beta_Q(z, beta, Q)
   beta <- aligned$beta
   Q <- aligned$Q
-  ## Did the analyst supply the metric, or did align_beta_Q manufacture it?  A supplied
+  ## Did the analyst supply the metric, or did align_beta_Q() manufacture it?  A supplied
   ## metric carries its own units (an external information matrix does) and the Mahalanobis
   ## penalty is left exactly as specified; a manufactured one is an arbitrary identity, and
   ## under standardize = TRUE it is taken on the standardized scale -- one standard deviation
@@ -167,22 +167,64 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   
   #orthogonal transformation for external information
   ord <- if (isTRUE(std.Z$reorder)) std.Z$ord else seq_len(ncol(Z))
+
+  ## ---- 1.5.1: a diagonal metric is kept as its diagonal ------------------------
+  ## When Q is exactly diagonal (the manufactured masked identity, or a supplied diagonal
+  ## Q) and the group transform T is diagonal too (every group a single column, the
+  ## default), every matrix below is diagonal: Q_std = D^{-1} Q D^{-1} (or Q) and
+  ## Q' = T^{-1}' Q_std T^{-1}.  They are formed here as vectors with the same products
+  ## in the same order as the dense path (((1/s) q) (1/s), then (t q) t), so the values
+  ## are the same; the C++ engine takes a p x 1 matrix as the diagonal.  p x p products
+  ## (two p^3 multiplications for a supplied Q, several p x p copies) are avoided.
+  ## Any other Q, or a non-diagonal T (orthonormalised groups), runs the 1.5.0 path below.
+  ## T itself is read off its diagonal: solve() on the sparse T falls through to
+  ## solve.default, which densifies it (p x p) and runs a dense LU -- the p^3 step that
+  ## dominated the p = 20,502 fit.  For a diagonal T the LU solve returns exactly 1/t
+  ## (one division per entry, the identity right-hand side), checked in the test suite.
+  q_diag <- if (ncol(Z) > 1L) .Q_diag(Q) else NULL
+  Tinv <- NULL
+  t_diag <- NULL
+  if (!is.null(q_diag)) {
+    Tmat <- get_T_from_stdZ(std.Z)
+    t_mat <- .T_diag(Tmat, ncol(Z))
+    if (!is.null(t_mat) && all(t_mat != 0)) t_diag <- 1 / t_mat
+  }
+  diag_path <- !is.null(q_diag) && !is.null(t_diag)
+
+  if (diag_path) {
+    q_diag <- q_diag[ord]
+    beta   <- beta[ord]
+    Q <- NULL
+    if (isTRUE(standardize)) {
+      sc       <- std.Z$scale[ord]
+      dinv     <- 1 / sc
+      q_std    <- if (Q_supplied) (dinv * q_diag) * dinv else q_diag
+      beta_std <- as.numeric(sc * beta)
+    } else {
+      q_std    <- q_diag
+      beta_std <- beta
+    }
+    q_prime         <- (t_diag * q_std) * t_diag
+    beta_ext_prime  <- as.numeric(t_diag * beta_std)
+    Qbeta_ext_prime <- q_prime * beta_ext_prime
+    Q_prime         <- matrix(q_prime, ncol = 1L)
+  } else {
   Q    <- Q[ord, ord, drop = FALSE]
   beta <- beta[ord]
   
-  ## ---- the metric under standardization --------------------------
+  ## ---- the metric under standardization (2026-09-25) --------------------------
   ## beta_std = D beta with D = diag(scale) keeps the linear predictor.  What the
   ## Mahalanobis metric should become depends on where it came from:
   ##   * a Q the caller SUPPLIED carries its own units (an external information matrix
   ##     does), so Q_std = D^{-1} Q D^{-1} leaves
   ##     (beta_std - beta_ext_std)' Q_std (beta_std - beta_ext_std)
   ##       = (beta - beta_ext)' Q (beta - beta_ext)  exactly as specified;
-  ##   * with Q = NULL align_beta_Q built a MASKED IDENTITY, and "one unit of whatever
+  ##   * with Q = NULL align_beta_Q() built a MASKED IDENTITY, and "one unit of whatever
   ##     the column happens to be measured in" is arbitrary and scale dependent.  The
   ##     matrix of ones and zeros is the same on either scale, so leaving it alone puts
   ##     the identity on the STANDARDIZED scale: one standard deviation per covariate,
   ##     free of the covariates' units.  This is the same convention as
-  ##     cox_MDTL_ridge, so the two members of the family agree on what "no covariance
+  ##     cox_MDTL_ridge(), so the two members of the family agree on what "no covariance
   ##     was released" means.
   ## Before 1.2.0 both cases used Q_std = D Q D, which for Q = NULL makes the metric
   ## acting on the original coefficients diag(scale^4).  Measured on the transplant
@@ -197,12 +239,15 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
     beta_std <- beta
   }
   
-  Tmat <- get_T_from_stdZ(std.Z)
-  Tinv <- solve(Tmat)            
+  if (is.null(Tinv)) {
+    Tmat <- get_T_from_stdZ(std.Z)
+    Tinv <- solve(Tmat)
+  }
   
   Q_prime         <- as.matrix(t(Tinv) %*% Q_std %*% Tinv)
   beta_ext_prime  <- as.vector(Tinv %*% beta_std)
   Qbeta_ext_prime <- as.vector(Q_prime %*% beta_ext_prime)
+  }
 
   
   group <- std.Z$g  
@@ -286,7 +331,7 @@ cox_MDTL_enet <- function(z, delta, time, stratum = NULL,
   # Original scale
   beta <- unorthogonalize(beta, std.Z$std.Z, group)
   rownames(beta) <- colnames(Z)
-  if (std.Z$reorder == TRUE){ # original order of beta
+  if (std.Z$reorder == TRUE){  # original order of beta
     beta <- beta[std.Z$ord.inv, , drop = F]
   }
   if (standardize == T) {

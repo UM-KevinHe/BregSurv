@@ -98,6 +98,10 @@ ncc_MDTL <- function(y, z, stratum,
     stop("stratum must be provided for ncc_MDTL in 1:m matched settings.", call. = FALSE)
   }
 
+  ## the case first in every matched set (1.4.0; see .ncc_case_first)
+  o_cf <- .ncc_case_first(y, stratum)
+  y <- y[o_cf]; z <- z[o_cf, , drop = FALSE]; stratum <- stratum[o_cf]
+
   # Map CLR problem to Cox PH problem: time = 1, delta = y
   delta <- y
   time  <- rep(1, length(y))
@@ -118,6 +122,7 @@ ncc_MDTL <- function(y, z, stratum,
     beta_initial = beta_initial
   )
 
+  res <- .ncc_restore(res, o_cf)
   class(res) <- c("ncc_MDTL", class(res))
   return(res)
 }

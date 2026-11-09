@@ -35,4 +35,10 @@ void gd_KLCox_highdim(arma::vec &beta, const arma::mat &Z, arma::vec &r, arma::v
 double gd_KLCox_highdim_betaChange(const arma::mat &Z, arma::vec &r, int g, const arma::vec &K1, 
                                    const int n_obs, double &lam1, double &lam2);
 
+// 1.5.0: Newton step in the n-dimensional (Woodbury) form, used when p > n and the penalty Hessian is diagonal
+arma::vec newton_step_wide(const double N, const arma::mat& Z, const arma::vec& delta, const arma::vec& lin,
+                           const arma::vec& theta, const arma::uvec& ind_start, const arma::vec& n_each_stratum,
+                           const arma::uvec& tf, const bool use_ties, const arma::vec& g_pen, arma::vec D,
+                           arma::vec& grad);
+
 #endif // UTILS_H

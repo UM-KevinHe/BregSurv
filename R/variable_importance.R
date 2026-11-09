@@ -23,7 +23,7 @@
 #' @param seed Optional integer seed for reproducibility.
 #' @param message Logical. Whether to print progress messages. Default FALSE.
 #' @param ncores Integer. Number of parallel cores. Default 1 (sequential execution).
-#' @param ... Additional arguments passed to \code{cv.coxkl_enet} (e.g., \code{alpha},
+#' @param ... Additional arguments passed to \code{cv.coxkl_enet()} (e.g., \code{alpha},
 #'   \code{lambda}, \code{nlambda}, \code{lambda.min.ratio}, \code{nfolds},
 #'   \code{cv.criteria}, \code{c_index_stratum}, etc.).
 #'

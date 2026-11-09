@@ -97,16 +97,32 @@ arma::vec BetaUpdate_MDTL(const double N,
                           const double eta,
                           bool backtrack,
                           const arma::uvec& tf,
-                          const bool use_ties) {
+                          const bool use_ties,
+                          const bool q_is_diag = false) {
 
   const arma::uword p = Z.n_cols;       
   const arma::uword S = n_each_stratum.n_elem;
 
   // double loglik = 0.0;
-  arma::vec L1(p, arma::fill::zeros);
-  arma::mat L2(p, p, arma::fill::zeros);
-
   arma::vec theta = Z * beta;
+  arma::vec d_beta;
+  arma::vec L1;
+
+  // 1.5.0: more columns than rows and a diagonal metric (the masked identity, a diagonal Q) -- the
+  // Newton step in the n-dimensional (Woodbury) form; nothing p x p beyond Q itself is formed.
+  // Every other case runs the path below unchanged.
+  // 1.5.1: q_is_diag means Q arrived as its diagonal (a p x 1 matrix); the caller only passes it
+  // that way when p > n and backtrack is off, so the wide step below is the one taken.
+  const bool wide = p > Z.n_rows && (q_is_diag || Q.is_diagmat());
+  if (wide) {
+    arma::vec diff_beta = beta - external_beta;
+    arma::vec qd = q_is_diag ? arma::vec(Q.col(0)) : arma::vec(Q.diag());
+    arma::vec D = eta * qd + lambda + 1e-8;
+    d_beta = newton_step_wide(N, Z, delta, delta, theta, ind_start, n_each_stratum, tf, use_ties,
+                              eta * (qd % diff_beta) + lambda * beta, D, L1);
+  } else {
+  L1 = arma::vec(p, arma::fill::zeros);
+  arma::mat L2(p, p, arma::fill::zeros);
   // arma::vec exp_theta = arma::exp(theta);
 
   for (arma::uword s = 0; s < S; ++s) {
@@ -165,13 +181,13 @@ arma::vec BetaUpdate_MDTL(const double N,
   L2 += eta * Q + lambda * arma::eye<arma::mat>(p, p);
 
   L2.diag() += 1e-8;
-  arma::vec d_beta;
   bool ok = arma::solve(d_beta, L2, L1, arma::solve_opts::likely_sympd);
   if (!ok) {
     arma::mat L2_reg = L2;
     L2_reg.diag() += 1e-4;
     ok = arma::solve(d_beta, L2_reg, L1, arma::solve_opts::likely_sympd);
     if (!ok) Rcpp::stop("Hessian solve failed.");
+  }
   }
 
   if (backtrack) {
@@ -248,9 +264,21 @@ arma::vec Cox_MDTL_cpp(const double N,
     ind_start(i) = ind_start(i - 1) + n_each_stratum(i - 1);
   }
 
+  // 1.5.1: a diagonal metric may arrive as its diagonal alone, a p x 1 matrix (p > 1).  With more
+  // columns than rows and no line search the n-dimensional step uses the diagonal directly, as 1.5.0
+  // did after testing Q.is_diagmat(); otherwise the dense diagonal matrix is formed here once and the
+  // 1.5.0 code runs on it unchanged.
+  const arma::uword p_cols = Z.n_cols;
+  const bool q_vec = p_cols > 1 && Q.n_cols == 1 && Q.n_rows == p_cols;
+  const bool q_vec_wide = q_vec && p_cols > Z.n_rows && !backtrack;
+  arma::mat Q_dense;
+  if (q_vec && !q_vec_wide) Q_dense = arma::diagmat(Q.col(0));
+  const arma::mat& Q_use = (q_vec && !q_vec_wide) ? Q_dense : Q;
+
   for (int iter = 0; iter < max_iter; ++iter) {
     arma::vec d_beta = BetaUpdate_MDTL(N, Z, delta, beta, ind_start, n_each_stratum,
-                                       external_beta, Q, lambda, eta, backtrack, tf, use_ties);
+                                       external_beta, Q_use, lambda, eta, backtrack, tf, use_ties,
+                                       q_vec_wide);
     
     double step_size = 1.0;
     if (!backtrack && arma::abs(d_beta).max() > 1.0) {

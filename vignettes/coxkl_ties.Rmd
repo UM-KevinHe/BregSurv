@@ -1,8 +1,8 @@
 ---
-title: "Cox KL Divergence: Handling Tied Event Times"
+title: "Extension: tied event times"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Cox KL Divergence: Handling Tied Event Times}
+  %\VignetteIndexEntry{Extension: tied event times}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options:

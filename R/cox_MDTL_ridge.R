@@ -97,7 +97,7 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
   aligned <- align_beta_Q(z, beta, Q)
   beta <- aligned$beta
   Q <- aligned$Q
-  ## Did the analyst supply the metric, or did align_beta_Q manufacture it?  A supplied
+  ## Did the analyst supply the metric, or did align_beta_Q() manufacture it?  A supplied
   ## metric carries its own units (an external information matrix does) and the Mahalanobis
   ## penalty is left exactly as specified; a manufactured one is an arbitrary identity, and
   ## under standardize = TRUE it is taken on the standardized scale -- one standard deviation
@@ -138,20 +138,27 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
   n_obs <- nrow(z_mat)
   
 
-  ## ---- Standardization of the design matrix ----------------------
-  ## See coxkl_ridge for why: the ridge part lambda * ||beta||^2 is not scale free.
+  ## ---- Standardization of the design matrix (2026-09-25) ----------------------
+  ## See coxkl_ridge() for why: the ridge part lambda * ||beta||^2 is not scale free.
   ## Only the ridge part is meant to change.  The Mahalanobis part
   ## eta/2 (beta - beta_ext)' Q (beta - beta_ext) is handled by whether the caller
   ## supplied Q.  A SUPPLIED Q carries its own units, so with beta_std = D beta and
   ## D = diag(std_scale), Q_std = D^{-1} Q D^{-1} gives
   ##   (beta_std - beta_ext_std)' Q_std (beta_std - beta_ext_std)
   ##     = (beta - beta_ext)' Q (beta - beta_ext),
-  ## i.e. standardize = TRUE at lambda = 0 reproduces cox_MDTL exactly.  With
+  ## i.e. standardize = TRUE at lambda = 0 reproduces cox_MDTL() exactly.  With
   ## Q = NULL the masked identity is taken on the STANDARDIZED scale (the matrix of
   ## ones and zeros is the same either way), so the metric is one standard deviation
   ## per covariate and the whole member is free of the covariates' units.  Both are
   ## asserted in the test suite.  Scaling only, no centering (a constant shift of
   ## every linear predictor cannot change a Cox fit).
+  ## 1.5.1: an exactly diagonal Q (the manufactured masked identity, a supplied diagonal Q)
+  ## is kept as its diagonal and handed to the C++ engine as a p x 1 matrix; the products
+  ## are the same elementwise ones the dense path computes (q / (s s), q b), so the values
+  ## are the same.  Not used with backtrack = TRUE (its line search evaluates the dense
+  ## quadratic form) or for a single covariate (where the two are one and the same).
+  q_diag <- if (n_vars > 1L && !isTRUE(backtrack)) .Q_diag(Q) else NULL
+  if (!is.null(q_diag)) Q <- NULL
   std_scale <- rep(1, n_vars)
   if (isTRUE(standardize)) {
     mysd <- function(v) sqrt(sum((v - mean(v))^2) / length(v))
@@ -159,11 +166,20 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
     std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1
     z_fit        <- sweep(z_mat, 2, std_scale, "/")
     beta_ext_fit <- beta * std_scale
-    Q_fit        <- if (Q_supplied) Q / outer(std_scale, std_scale) else Q
+    if (!is.null(q_diag)) {
+      Q_fit <- if (Q_supplied) q_diag / (std_scale * std_scale) else q_diag
+    } else {
+      Q_fit <- if (Q_supplied) Q / outer(std_scale, std_scale) else Q
+    }
   } else {
-    z_fit <- z_mat; beta_ext_fit <- beta; Q_fit <- Q
+    z_fit <- z_mat; beta_ext_fit <- beta; Q_fit <- if (!is.null(q_diag)) q_diag else Q
   }
-  Qbeta_ext <- as.vector(Q_fit %*% beta_ext_fit)
+  if (!is.null(q_diag)) {
+    Qbeta_ext <- as.numeric(Q_fit * beta_ext_fit)
+    Q_fit     <- matrix(Q_fit, ncol = 1L)
+  } else {
+    Qbeta_ext <- as.vector(Q_fit %*% beta_ext_fit)
+  }
   beta_ext <- beta_ext_fit
   
   if (is.null(lambda)) {
@@ -218,7 +234,7 @@ cox_MDTL_ridge <- function(z, delta, time, stratum = NULL, beta = NULL, Q = NULL
     LP_mat[, i] <- LP_train
     likelihood_mat[i] <- .pl_ties(LP_train, delta, time, n.each_stratum, ties)
     
-    beta_initial <- beta_est # "warm start"
+    beta_initial <- beta_est  # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   if (message) close(pb)

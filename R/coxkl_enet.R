@@ -206,7 +206,7 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
     lambda.seq <- lambda.fit$lambda.seq
     beta <- lambda.fit$beta
   } else {
-    nlambda <- length(lambda) # Note: lambda can be a single value
+    nlambda <- length(lambda)  # Note: lambda can be a single value
     lambda.seq <- as.vector(sort(lambda, decreasing = TRUE))
     beta <- beta.init
   }
@@ -258,7 +258,7 @@ coxkl_enet <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, e
   # Original scale
   beta <- unorthogonalize(beta, std.Z$std.Z, group)
   rownames(beta) <- colnames(Z)
-  if (std.Z$reorder == TRUE){ # original order of beta
+  if (std.Z$reorder == TRUE){  # original order of beta
     beta <- beta[std.Z$ord.inv, , drop = F]
   }
   if (standardize == T) {

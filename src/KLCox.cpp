@@ -108,10 +108,19 @@ arma::vec BetaUpdate(const double N,
 
 
   // arma::vec exp_theta = arma::exp(theta);
+  arma::vec theta = Z * beta;
+  arma::vec L1_pen;
+  arma::vec d_beta;
+
+  if (p > Z.n_rows) {
+    // 1.5.0: more columns than rows -- the Newton step in the n-dimensional (Woodbury) form; the
+    // p x p Hessian (and the len x p x p array below) is never formed. The p <= n path is unchanged.
+    arma::vec D(p); D.fill(lambda + 1e-8);
+    d_beta = newton_step_wide(N, Z, delta, delta_eta, theta, ind_start, n_each_stratum, tf, use_ties,
+                              lambda * beta, D, L1_pen);
+  } else {
   arma::vec L1(p, arma::fill::zeros);
   arma::mat L2(p, p, arma::fill::zeros);
-
-  arma::vec theta = Z * beta;
 
   for (arma::uword s = 0; s < S; ++s) {
     const arma::uword start = ind_start(s);
@@ -166,14 +175,13 @@ arma::vec BetaUpdate(const double N,
   L1 /= N;
   L2 /= N;
 
-  arma::vec L1_pen = L1 - lambda * beta;
+  L1_pen = L1 - lambda * beta;
   arma::mat L2_pen = L2;
   L2_pen.diag() += lambda;
 
   // Small numerical ridge (independent of lambda)
   L2_pen.diag() += 1e-8;
 
-  arma::vec d_beta;
   bool ok = arma::solve(d_beta, L2_pen, L1_pen, arma::solve_opts::likely_sympd);
 
   if (!ok) {
@@ -181,6 +189,7 @@ arma::vec BetaUpdate(const double N,
     L2_reg.diag() += 1e-4;
     ok = arma::solve(d_beta, L2_reg, L1_pen, arma::solve_opts::likely_sympd);
     if (!ok) Rcpp::stop("Hessian solve failed.");
+  }
   }
 
   if (backtrack) {

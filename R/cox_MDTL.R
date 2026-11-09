@@ -124,6 +124,15 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
   N <- nrow(z_mat)
   n_eta <- length(etas)
   
+  ## 1.5.1: an exactly diagonal Q is handed to the C++ engine as its diagonal (a p x 1 matrix).
+  ## The engine forms the same dense matrix when it needs one (p <= n), and with more columns
+  ## than rows uses the diagonal as 1.5.0 already did, without testing a p x p matrix per step.
+  ## Not used with backtrack = TRUE or a single covariate.
+  if (ncol(z_mat) > 1L && !isTRUE(backtrack)) {
+    q_diag <- .Q_diag(Q)
+    if (!is.null(q_diag)) Q <- matrix(q_diag, ncol = 1L)
+  }
+
   ## ---- Initialization ----
   LP_mat <- matrix(NA, nrow = N, ncol = n_eta)
   beta_mat <- matrix(NA, nrow = ncol(z_mat), ncol = n_eta)
@@ -159,7 +168,7 @@ cox_MDTL <- function(z, delta, time, stratum = NULL,
     beta_mat[, i] <- beta_train
     likelihood_mat[i] <- .pl_ties(LP_train, delta, time, as.numeric(n.each_stratum), ties)
     
-    beta_initial <- beta_train # "warm start"
+    beta_initial <- beta_train  # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   

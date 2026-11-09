@@ -152,7 +152,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
   ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
   ## future/future.apply returns a DIFFERENT split from the same seed, hence a
-  ## different cross-validated loss. The caller's RNG state
+  ## different cross-validated loss. Measured 2026-08-18. The caller's RNG state
   ## is captured and restored on exit, so a parallel worker's stream is left
   ## exactly as it was found.
   if (!is.null(seed)) {
@@ -233,9 +233,9 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
   }
 
   if (cv.criteria == "loss") {
-    ## POOLED, NOT THE MEAN OF PER-FOLD MEANS. 
+    ## 🔴 POOLED, NOT THE MEAN OF PER-FOLD MEANS. Changed 2026-08-19.
     ##
-    ## This used to be colMeans over per-fold mean losses, while the elastic
+    ## This used to be colMeans() over per-fold mean losses, while the elastic
     ## net NCC drivers pooled (loss_sum / loss_n) and the whole COHORT side
     ## pools too (colSums over folds, then -2 * sum / n). The two are equal only
     ## when the folds are the same size, and get_fold_cc assigns whole matched
@@ -296,7 +296,7 @@ cv.ncc_indi <- function(y_int, z_int, stratum_int,
       criteria      = cv.criteria,
       nfolds        = nfolds,
       ## the split actually used, so a replay can be checked rather than
-      ## trusted. this is `get_fold_cc`, NOT `get_fold`,
+      ## trusted. 🔴 Corrected 2026-08-19: this is `get_fold_cc`, NOT `get_fold`,
       ## and it is assigned on the CALLER'S row order -- these drivers never
       ## reorder. The cohort claim this comment used to make was copied from
       ## cv.coxkl and was wrong here. `get_fold_cc` is also fully deterministic

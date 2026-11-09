@@ -160,7 +160,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
   ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
   ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
   ## future/future.apply returns a DIFFERENT split from the same seed, hence a
-  ## different cross-validated loss. The caller's RNG state
+  ## different cross-validated loss. Measured 2026-08-18. The caller's RNG state
   ## is captured and restored on exit, so a parallel worker's stream is left
   ## exactly as it was found.
   if (!is.null(seed)) {
@@ -191,7 +191,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
     time_train <- time[train_idx]
     stratum_train <- stratum[train_idx]
 
-    beta_initial <- rep(0, ncol(z)) # warm start for each fold
+    beta_initial <- rep(0, ncol(z))  # warm start for each fold
 
 
     ## ----- Cross-validation over eta sequence (internal model) -----
@@ -216,7 +216,7 @@ cv.cox_MDTL <- function(z, delta, time, stratum = NULL,
                                beta_initial = beta_initial)
 
       beta_train <- cox_estimate$beta
-      beta_initial <- beta_train # warm start
+      beta_initial <- beta_train  # warm start
 
       z_test <- z[test_idx, , drop = FALSE]
       delta_test <- delta[test_idx]

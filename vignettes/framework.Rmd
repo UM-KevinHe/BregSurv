@@ -1,0 +1,148 @@
+---
+title: "The Bregman-divergence framework"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The Bregman-divergence framework}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE, collapse = TRUE, comment = "#>")
+```
+
+Every estimator in `BregSurv` minimizes the same objective. This page sets out that objective, shows how
+it separates three decisions that methods for borrowing external information usually tie together, and
+maps each combination to what the package fits. [Get started](BregSurv.html) shows the calls.
+
+## Two cohorts, one objective
+
+You have a **target cohort**, your own time-to-event data, and an **external source**: a registry, a
+published model, another study. The external source decides what it releases: individual records,
+fitted coefficients with their uncertainty, or only a fitted model. Its population may differ from
+yours, so borrowing must be tunable, and must be able to switch off.
+
+With $\ell(\theta)$ the target log-likelihood, every estimator minimizes
+
+$$
+Q_\eta(\theta) \;=\; -\ell(\theta) \;+\; \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
+$$
+
+where $\mathcal{B}_G$ is a Bregman divergence between the target model and the external one,
+$B_G(\mathbf u \,\|\, \mathbf v) = G(\mathbf u) - G(\mathbf v) - \nabla G(\mathbf v)^\top(\mathbf u - \mathbf v)$,
+for a strictly convex generator $G$.
+
+* The **integration weight** $\eta$ sets how strongly to borrow. At $\eta = 0$ the fit is the target
+  model alone; as $\eta$ grows, the fit is pulled toward the external model. `cv.bregsurv()` chooses
+  $\eta$ by cross-validation on the target data.
+* The **generator** $G$ sets the geometry of the borrowing, and is fixed by what the external source
+  released.
+
+The objective separates three decisions, made by three different parties, and the package has an
+object for each:
+
+| decision | made by | `cv.bregsurv()` argument |
+|---|---|---|
+| the target model | the analyst, from the data and the question | `target = target_cox(...)`, `target_ncc(...)`, `target_discrete(...)`, linear or `nn_score()` |
+| the form of the release | the external source | `release = release_records(...)`, `release_coef(...)`, `release_score(...)`, `release_model(...)` |
+| what is borrowed, and how strongly | the target data, by cross-validation | `member = ...`, and the chosen `eta` |
+
+## The release decides the divergence
+
+| what the external source released | generator $G$ | divergence | `member` |
+|---|---|---|---|
+| **individual-level records** | $-\ell_{\text{ext}}$, the external log-likelihood | composite likelihood | `"composite"` |
+| **coefficients with their uncertainty** | $\tfrac12 \mathbf u^\top A \mathbf u$ | Mahalanobis distance to $\tilde{\boldsymbol\beta}$ | `"mahalanobis"` |
+| **a fitted model or risk score alone** | negative entropy on the model's conditional distributions | Kullback--Leibler divergence | `"kl"` |
+
+**Individual-level records.** With $G = -\ell_{\text{ext}}$ the objective becomes, up to a constant,
+$-\ell(\theta) - \eta\,\ell_{\text{ext}}(\theta)$: a weighted fit to the stacked cohorts in which each
+cohort keeps its own baseline and the external events carry weight $\eta$.
+
+**Coefficients with their uncertainty.** The penalty is
+$\tfrac12(\boldsymbol\beta - \tilde{\boldsymbol\beta})^\top A\,(\boldsymbol\beta - \tilde{\boldsymbol\beta})$,
+with $A$ a *precision* matrix: the external information matrix, the inverse of a reported covariance, or
+a diagonal of inverse variances when only standard errors were published. Without one, $A$ is the
+identity on the covariates the external model covers and zero elsewhere, a Euclidean distance. When $A$
+is the observed information, this penalty is the second-order approximation of the composite likelihood
+around $\tilde{\boldsymbol\beta}$.
+
+**A fitted model or risk score alone.** The two models are compared through the conditional
+distributions they induce: on a Cox target, which member of each risk set fails; on a discrete target,
+whether each subject at risk fails in each interval. The Kullback--Leibler divergence between them
+reduces the objective to the target likelihood with each outcome replaced by a blend of the observed
+outcome and the external model's prediction, $(\delta + \eta\,\tilde\delta)/(1+\eta)$. On a Cox target
+the external model enters only through its risk score, which may come from a model of any form and may
+use only part of your covariates; on a discrete target it enters through its absolute risk, the interval
+hazards.
+
+The three forms are levels of access, not rival methods. Records yield coefficients and a precision
+matrix, and coefficients yield a risk score, so a release enters at its own level and every level
+below it, and cross-validation on the target data decides which member borrows best.
+
+## What the target can be
+
+| target | constructor | likelihood | members |
+|---|---|---|---|
+| Cox model | `target_cox()` | stratified partial likelihood; `ties = "breslow"` or `"exact"` for tied times | all three |
+| Nested case--control design | `target_ncc()` | conditional likelihood of the case within its matched set | all three |
+| Discrete-time model | `target_discrete()` | grouped-time Bernoulli likelihood, complementary log-log or logit link | all three |
+| Neural network (Cox or discrete) | `score = nn_score()` | the same likelihoods, with a network risk score | Kullback--Leibler |
+
+Every linear target takes `penalty = "ridge"`, `"lasso"` or `"enet"`; the penalty path is built for each
+$\eta$ separately. `coxkl_enet.multi()` combines several external sources, each with its own weight.
+
+## Choosing what to borrow and how strongly
+
+`cv.bregsurv()` uses a fixed `seed` by default, and the fold assignment depends only on the seed, the
+events and the strata. Members fitted to the same target are therefore scored on the same partition by
+the same criterion, and their `value`s compare directly:
+
+| target | criterion |
+|---|---|
+| Cox, linear or neural | cross-validated partial-likelihood loss of Verweij and Van Houwelingen |
+| nested case--control | cross-validated conditional-likelihood loss |
+| discrete time, linear or neural | held-out negative log-likelihood per subject, pooled over the folds |
+
+The two endpoints that borrow nothing belong in the same comparison: the target model alone
+(`cv.bregsurv(target)`), and, on a Cox target, the external model used unchanged (`vvh_loss_fixed()` on
+the same folds).
+
+```{r compare}
+library(BregSurv)
+data(ExampleData_lowdim)
+tr <- ExampleData_lowdim$train
+target  <- target_cox(tr$time, tr$status, tr$z)
+release <- release_coef(ExampleData_lowdim$beta_external_fair)
+
+fits <- list(kullback_leibler = cv.bregsurv(target, release, member = "kl"),
+             euclidean        = cv.bregsurv(target, release, member = "mahalanobis"),
+             kl_lasso         = cv.bregsurv(target, release, member = "kl", penalty = "lasso"),
+             target_only      = cv.bregsurv(target))
+as_is <- vvh_loss_fixed(as.matrix(tr$z), tr$status, tr$time,
+                        beta = ExampleData_lowdim$beta_external_fair, folds = fits[[1]]$folds)
+c(sapply(fits, `[[`, "value"), external_as_is = as_is$VVH_Loss)
+```
+
+This is how the agent in this repository works: it fits the members the facts admit, on one partition,
+and selects by that number.
+
+## Where each call goes
+
+On Cox and matched targets `cv.bregsurv()` calls the package's estimators and returns their result
+unchanged; the `engine` field of the result names the one used.
+
+| target | member | none | ridge | lasso / elastic net |
+|---|---|---|---|---|
+| Cox | composite | `cv.cox_indi` | `cv.cox_indi_ridge` | `cv.cox_indi_enet` |
+| Cox | Mahalanobis | `cv.cox_MDTL` | `cv.cox_MDTL_ridge` | `cv.cox_MDTL_enet` |
+| Cox | Kullback--Leibler | `cv.coxkl` (`cv.coxkl_ties` for exact ties) | `cv.coxkl_ridge` | `cv.coxkl_enet` |
+| nested case--control | composite | `cv.ncc_indi` | -- | `cv.ncc_indi_enet` |
+| nested case--control | Mahalanobis | `cv.ncc_MDTL` | `cv.ncc_MDTL_ridge` | `cv.ncc_MDTL_enet` |
+| nested case--control | Kullback--Leibler | `cv.ncckl` | `cv.ncckl_ridge` | `cv.ncckl_enet` |
+| discrete time | all three | Fisher scoring | Fisher scoring | proximal Newton |
+| neural network | Kullback--Leibler | `torch` | | |
+
+[The estimators behind each member](engines.html) walks through the Cox and matched estimators with all
+their options.

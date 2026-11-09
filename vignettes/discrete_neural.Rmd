@@ -1,0 +1,123 @@
+---
+title: "Discrete-time and neural targets"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Discrete-time and neural targets}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(eval = FALSE, collapse = TRUE, comment = "#>")
+```
+
+The framework does not fix the target model. This page covers the two targets beyond the Cox model:
+the grouped-time model of an outcome recorded in intervals, and a neural-network risk score. Both enter
+the same objective, $-\ell(\theta) + \eta\,\mathcal{B}_G(\theta)$, through `cv.bregsurv()`.
+
+## The grouped-time model
+
+Subject $i$ is at risk in intervals $1, \dots, t_i$; the event, if any, happens in interval $t_i$. The
+hazard of interval $k$ is
+
+$$
+h_{ik} = g^{-1}\!\left(\gamma_{s(i)k} + \mathbf z_i^\top \boldsymbol\beta\right),
+$$
+
+with one baseline parameter $\gamma_{sk}$ per stratum and interval and the complementary log-log link
+(`link = "cloglog"`, the grouped proportional-hazards model, whose $\boldsymbol\beta$ has the meaning
+of a Cox model's) or the logit link. The log-likelihood is a Bernoulli likelihood over the
+person-intervals at risk.
+
+```{r}
+tg <- target_discrete(interval = week, event = died, z = x, stratum = center)
+```
+
+An interval in which no training subject has the event has a maximum-likelihood hazard of zero; its
+baseline parameter is held at a floor corresponding to a hazard of $10^{-8}$ instead of diverging.
+
+### The three members on a discrete target
+
+**Kullback--Leibler: absolute risk.** The divergence is taken between the external and target hazards
+of every interval at risk. It reduces to the Bernoulli likelihood with each outcome replaced by a soft
+target, $(y_{ik} + \eta\,\tilde h_{ik})/(1+\eta)$, exactly as the Cox member replaces each event
+indicator. It needs the external model's interval hazards $\tilde h_{ik}$, which a Cox model gives
+together with its baseline hazard:
+
+```{r}
+# a registry Cox model: coefficients plus baseline cumulative-hazard increments over your K intervals
+rl <- release_model(beta = beta_registry, baseline = dH0)
+# or the interval hazards themselves, one row per subject
+rl <- release_model(hazard = H_registry)
+fit_kl <- cv.bregsurv(tg, rl, member = "kl")
+```
+
+A coefficient vector alone says nothing about interval hazards, so `release_coef()` cannot inform this
+member on a discrete target.
+
+**Mahalanobis.** Under the complementary log-log link the coefficients compare directly with a Cox
+model's, so a released coefficient vector (with its precision matrix, if any) enters as for a Cox target:
+
+```{r}
+fit_m <- cv.bregsurv(tg, release_coef(beta_registry, Q), member = "mahalanobis")
+```
+
+**Composite likelihood.** External records on the same intervals enter with weight $\eta$ and their own
+baseline parameters:
+
+```{r}
+rec <- release_records(z_ext, interval = week_ext, event = died_ext)
+fit_c <- cv.bregsurv(tg, rec)
+```
+
+Every member accepts `penalty = "ridge"`, `"lasso"` or `"enet"`. Fits use Fisher scoring with the
+baseline parameters profiled out, and proximal Newton with coordinate descent under an $\ell_1$ penalty.
+The objective is scaled per subject, as for the Cox estimators, so $\eta$ has the same meaning on both
+targets.
+
+### Choosing the weight
+
+Every discrete member, linear or neural, is scored by the same criterion: the held-out negative
+log-likelihood per subject of the grouped-time model, pooled over the folds. With the same `seed`, all of
+them share one partition, so their `value`s compare directly.
+
+```{r}
+own <- cv.bregsurv(tg)
+c(target_only = own$value, kl = fit_kl$value, mahalanobis = fit_m$value)
+predict(fit_kl, newz = x_new, stratum = center_new, type = "survival")
+```
+
+The Kullback--Leibler member on the grouped-time model is the method of @wang2025discretekl; with
+$\eta = 0$ every member reduces to the target-only grouped-time model.
+
+## Neural-network risk scores
+
+`score = nn_score()` replaces $\mathbf z^\top\boldsymbol\beta$ by a feed-forward network. Only the
+Kullback--Leibler member is defined for it, since the other two compare coefficients.
+
+* On a **discrete target** the network outputs one logit per interval, a logistic-hazard model, trained
+  on the soft targets above: the external model is distilled into the network, and $\eta = 0$ is the
+  network trained on your data alone.
+* On a **Cox target** the network outputs a risk score, trained on the partial likelihood with each event
+  indicator blended with the external pseudo-event weight. It is scored by the same cross-validated
+  partial-likelihood loss as the linear Cox members, on the same folds, so a network and a linear model
+  can be compared.
+
+```{r}
+install.packages("torch"); torch::install_torch()   # once
+
+spec <- nn_score(hidden = c(128, 128, 128, 128), dropout = 0.1)
+tg_nn <- target_discrete(interval = week, event = died, z = x, score = spec)
+net <- cv.bregsurv(tg_nn, release_model(beta = beta_registry, baseline = dH0))
+net$eta; net$path
+```
+
+The training protocol: within each fold, an event-stratified 20% of the training part is held out for
+early stopping, the covariates are standardized on the rest, and every candidate starts from the same
+initialization. The learning rate is chosen first, at $\eta = 0$, then $\eta$; the final network is
+trained on all the data for the median best epoch of the selected setting. The default network has four
+residual blocks of width 128, each a linear layer, layer normalization, ReLU and dropout.
+
+Networks are random even with a seed fixed, across platforms and versions of `torch`; on one machine and
+one version, a fixed `seed` reproduces the fit.

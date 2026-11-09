@@ -113,14 +113,14 @@ check_etas <- function(etas, scalar = FALSE, arg = "etas") {
 
 # Coerce an event / case indicator to numeric, refusing the inputs that would
 # otherwise be coerced into a plausible but wrong answer. A drop-in replacement
-# for `as.numeric` at every point where an outcome indicator enters a fit.
+# for `as.numeric()` at every point where an outcome indicator enters a fit.
 #
 # Measured against this package on 2026-08-18, `as.numeric(delta)` alone let
 # three distinct wrong inputs through WITHOUT error or warning:
 #   * a three-level status column {0 = censored, 1 = death, 2 = competing event}
 #     entered the partial likelihood with the competing event weighted 2, giving
 #     coefficients matching neither the composite nor the cause-specific fit;
-#   * a 0/1 column stored as a FACTOR became {1, 2}, because as.numeric on a
+#   * a 0/1 column stored as a FACTOR became {1, 2}, because as.numeric() on a
 #     factor returns its category codes, so every subject counted as an event;
 #   * a character column coerced silently, which is harmless for "0"/"1" but not
 #     for anything else.
@@ -159,7 +159,7 @@ check_etas <- function(etas, scalar = FALSE, arg = "etas") {
 }
 
 
-# Internal worker shared by align_beta and align_beta_Q.
+# Internal worker shared by align_beta() and align_beta_Q().
 # Returns list(beta = <length-ncol(z), ordered to colnames(z)>, provided = <logical>).
 .align_beta <- function(z, beta, arg = "beta") {
   p <- ncol(z)
@@ -226,13 +226,13 @@ check_etas <- function(etas, scalar = FALSE, arg = "etas") {
 #' Name-based alignment signals an error if \code{beta} has duplicated names, or if
 #' any name in \code{beta} is not one of \code{colnames(z)} (covariates that exist
 #' only in the external source must be dropped by the caller). Whenever at least one
-#' covariate is zero-padded, a \code{message} listing the padded covariates is
+#' covariate is zero-padded, a \code{message()} listing the padded covariates is
 #' emitted.
 #'
 #' @param z Internal covariate matrix or data frame. Its columns define the
 #'   target coefficient space; column names, when present, are used for matching.
 #' @param beta External coefficient vector (optionally named). A one-column matrix is
-#'   also accepted -- the shape in which a \code{coef} result or a stored
+#'   also accepted -- the shape in which a \code{coef()} result or a stored
 #'   external-model artifact typically arrives -- and its row names are promoted to
 #'   the names of the resulting vector.
 #' @param arg Name used for \code{beta} in error messages.
@@ -264,6 +264,37 @@ align_beta <- function(z, beta, arg = "beta") {
 }
 
 
+## 1.5.1: the diagonal of a square numeric matrix whose every off-diagonal entry is exactly zero,
+## unnamed; NULL for any other matrix (or one holding a missing value).  The off-diagonal is read a
+## block of columns at a time, so no p x p temporary is allocated.  Used to keep a diagonal
+## Mahalanobis metric as its diagonal in the MDTL fits (p = 20,000 makes a dense metric p^3 work).
+.Q_diag <- function(Q) {
+  if (!is.matrix(Q) || !is.numeric(Q)) return(NULL)
+  p <- nrow(Q)
+  if (ncol(Q) != p || anyNA(Q)) return(NULL)
+  if (p == 0L) return(numeric(0))
+  bs <- max(1L, as.integer(2^20 %/% p))   # 8 MB blocks
+  for (s in seq.int(1L, p, by = bs)) {
+    cols <- s:min(p, s + bs - 1L)
+    blk <- Q[, cols, drop = FALSE]
+    blk[cbind(cols, seq_along(cols))] <- 0
+    if (any(blk != 0)) return(NULL)
+  }
+  dq <- diag(Q)
+  names(dq) <- NULL
+  dq
+}
+
+## 1.5.1: the diagonal of a p x p (sparse or dense) matrix that is exactly diagonal, else NULL.
+.T_diag <- function(Tm, p) {
+  if (!identical(as.integer(dim(Tm)), as.integer(c(p, p)))) return(NULL)
+  if (!Matrix::isDiagonal(Tm)) return(NULL)
+  td <- as.numeric(Matrix::diag(Tm))
+  if (anyNA(td)) return(NULL)
+  td
+}
+
+
 #' Align an external coefficient vector and weighting matrix for MDTL
 #'
 #' @description
@@ -280,7 +311,7 @@ align_beta <- function(z, beta, arg = "beta") {
 #' \code{beta} and 0 on padded positions. This ensures that padded-zero
 #' coefficients are not penalized as if they were genuine external information.
 #'
-#' Symmetry of \code{Q} is checked with \code{isSymmetric} at tolerance
+#' Symmetry of \code{Q} is checked with \code{isSymmetric()} at tolerance
 #' \code{1e-8}, and positive semi-definiteness by requiring the smallest eigenvalue
 #' to be at least \code{-1e-8}; violations of either are errors. Name-based
 #' alignment of \code{Q} engages only when \code{rownames(Q)} is non-\code{NULL}
@@ -340,10 +371,12 @@ align_beta_Q <- function(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q") {
     ## not turn a manufactured metric into one the analyst appears to have supplied.
     was_manufactured <- isTRUE(attr(Q, "manufactured"))
     Q <- as.matrix(Q)
-    ## t does not carry an arbitrary attribute, so isSymmetric below would compare
+    ## t() does not carry an arbitrary attribute, so isSymmetric() below would compare
     ## Q against a t(Q) that lacks the mark and declare an ordinary matrix asymmetric.
     attr(Q, "manufactured") <- NULL
-    if (!isSymmetric(unname(Q), tol = 1e-8)) {
+    ## 1.5.1: a diagonal Q is symmetric by construction, so the O(p^2) copy and comparison of
+    ## isSymmetric(unname(Q)) are skipped for it; every other Q is checked as before.
+    if (is.null(.Q_diag(Q)) && !isSymmetric(unname(Q), tol = 1e-8)) {
       stop(sprintf("'%s' must be symmetric.", arg_Q), call. = FALSE)
     }
     qnames <- rownames(Q)
@@ -372,7 +405,13 @@ align_beta_Q <- function(z, beta, Q = NULL, arg_beta = "beta", arg_Q = "Q") {
       }
       Q_full <- Q
     }
-    ev <- eigen(Q_full, symmetric = TRUE, only.values = TRUE)$values
+    ## A diagonal metric (the manufactured masked identity on every second alignment, a diagonal Q)
+    ## has its diagonal as eigenvalues; the O(p^3) decomposition is kept for every other Q (1.5.0).
+    dq <- diag(Q_full)
+    ## 1.5.1: the diagonality test is done a block of columns at a time (.Q_diag), not with a p x p
+    ## logical; a Q holding a missing value keeps the 1.5.0 test so its error is unchanged.
+    is_diag <- if (anyNA(Q_full)) sum(Q_full != 0) == sum(dq != 0) else !is.null(.Q_diag(Q_full))
+    ev <- if (is_diag) dq else eigen(Q_full, symmetric = TRUE, only.values = TRUE)$values
     if (min(ev) < -1e-8) {
       stop(sprintf("'%s' must be positive semi-definite.", arg_Q), call. = FALSE)
     }
@@ -660,7 +699,7 @@ setupLambdaCoxKL <- function(Z, time, delta, delta_tilde, RS, beta.init, stratum
   K <- table(group)
   K1 <- as.integer(if (min(group)==0) cumsum(K) else c(0, cumsum(K)))
   storage.mode(K1) <- "integer"
-  if (!is.null(tm)) { ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+  if (!is.null(tm)) {   ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
     LinPred <- rep(0, n)
     if (K1[1] != 0) {
       nullFit <- coxkl(Z[, group == 0, drop = FALSE], delta, time, stratum, RS, beta = NULL, eta,
@@ -743,12 +782,12 @@ subsetG <- function(g, nz) { # nz: index of non-constant features
   lev <- attr(g, 'levels')
   m <- attr(g, 'm')
   new <- g[nz] # only include non-constant columns
-  dropped <- setdiff(g, new) # If the entire group has been dropped
+  dropped <- setdiff(g, new)  # If the entire group has been dropped
   if (length(dropped) > 0) {
     lev <- lev[-dropped] # remaining group
     m <- m[-dropped]
     group.factor <- factor(new) #remaining group factor
-    new <- as.integer(group.factor) - 1 * any(levels(group.factor) == '0') #new group index
+    new <- as.integer(group.factor) - 1 * any(levels(group.factor) == '0')  #new group index
   }
   structure(new, levels = lev, m = m)
 }
@@ -796,7 +835,7 @@ standardize.Z <- function(Z){
 ## converting standardized betas back to original variables
 unstandardize <- function(beta, gamma, std.Z){
   original.beta <- matrix(0, nrow = length(std.Z$scale), ncol = ncol(beta))
-  original.beta[std.Z$nz, ] <- beta / std.Z$scale[std.Z$nz] # modified beta
+  original.beta[std.Z$nz, ] <- beta / std.Z$scale[std.Z$nz]  # modified beta
   original.gamma <- t(apply(gamma, 1, function(x) x - crossprod(std.Z$center, original.beta))) # modified intercepts (gamma)
   return(list(gamma = original.gamma, beta = original.beta))
 }
@@ -819,12 +858,12 @@ orthogonalize <- function(Z, group) {
     if (length(ind) == 0) { # skip 0-length group
       next
     }
-    SVD <- svd(Z[, ind, drop = FALSE], nu = 0) # Q matrix (orthonormal matrix of eigenvectors)
-    r <- which(SVD$d > 1e-10) #remove extremely small singular values
+    SVD <- svd(Z[, ind, drop = FALSE], nu = 0)  # Q matrix (orthonormal matrix of eigenvectors)
+    r <- which(SVD$d > 1e-10)  #remove extremely small singular values
     QL[[j]] <- sweep(SVD$v[, r, drop = FALSE], 2, sqrt(n)/SVD$d[r], "*") # Q * Lambda^{-1/2}
-    orthog.Z[, ind[r]] <- Z[, ind] %*% QL[[j]] # group orthogonalized X, where (X^T * X)/n = I
+    orthog.Z[, ind[r]] <- Z[, ind] %*% QL[[j]]  # group orthogonalized X, where (X^T * X)/n = I
   }
-  nz <- !apply(orthog.Z == 0, 2, all) #find all zero
+  nz <- !apply(orthog.Z == 0, 2, all)  #find all zero
   orthog.Z <- orthog.Z[, nz, drop = FALSE]
   attr(orthog.Z, "QL") <- QL
   attr(orthog.Z, "group") <- group[nz]
@@ -838,7 +877,7 @@ unorthogonalize <- function(beta, Z, group) {
   if (sum(group == 0) > 0){ #some groups are unpenalized
     ind0 <- which(group==0)
     original.beta <- as.matrix(rbind(beta[ind0, , drop = FALSE], QL %*% beta[-ind0, , drop = FALSE]))
-  } else { # all groups are penalized
+  } else {  # all groups are penalized
     original.beta <- as.matrix(QL %*% beta)
   }
   return(original.beta)
@@ -870,7 +909,7 @@ newZG.Std <- function(Z, g, m){
     )
   }
 
-  nz <- which(scale > 1e-6) # non-constant columns
+  nz <- which(scale > 1e-6)   # non-constant columns
   if (length(nz) != ncol(Z)) {
     std.Z <- std.Z[, nz, drop = F]
     G <- subsetG(G, nz)
@@ -973,7 +1012,7 @@ setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, Q, Qb
   storage.mode(K1) <- "integer"
 
 
-  if (!is.null(tm)) { ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+  if (!is.null(tm)) {   ## Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
     LinPred <- rep(0, n)
     Qbeta_Ustar <- rep(0, ncol(Z))
     if (K1[1] != 0) {
@@ -988,7 +1027,7 @@ setupLambda_MDTL <- function(Z, time, delta, beta.init, stratum, beta_ext, Q, Qb
   } else if (K1[1]!=0) {
     nullFit <- cox_MDTL(Z[, group == 0, drop = FALSE], delta, time, stratum,
                         beta = beta_ext, Q = Q, etas = eta)
-    beta_U_star <- as.numeric(nullFit$beta) #low-dim unpenalized beta estimate
+    beta_U_star <- as.numeric(nullFit$beta)  #low-dim unpenalized beta estimate
     Qbeta_Ustar <- as.vector(Q[, group == 0, drop = FALSE] %*% beta_U_star) #for calculate lambda_max
 
     LinPred <- as.numeric(nullFit$linear.predictors)
@@ -1051,10 +1090,10 @@ set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
   storage.mode(K1) <- "integer"
 
   # the same denominator as the solver (src/cox_indi_enet.cpp): the row count, or the total
-  # weight when the external rows are weighted above 1
+  # weight when the external rows are weighted above 1 (2026-09-21)
   n_eff <- max(sum(weight), nrow(Z))
 
-  if (!is.null(tm)) { # Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
+  if (!is.null(tm)) {   # Breslow (1.3.0): the score at the null fit, with the tie-corrected risk sets
     if (K1[1] != 0) {
       nullFit <- survival::coxph(
         survival::Surv(time, delta.obs) ~ Z[, group == 0, drop = FALSE] + survival::strata(ID),
@@ -1174,7 +1213,7 @@ set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
 ## Breslow (1.3.0): each row's cumulative hazard at its own time, sum over the event times up to and
 ## including it of (event weight) / (risk-set sum), with the risk set of a tie group starting at its first
 ## row and every row of a tie group carrying the hazard up to its last row. `dw` is the event weight per
-## row (delta, or weight * delta); data sorted by stratum then time, `tm` from .tie_maps.
+## row (delta, or weight * delta); data sorted by stratum then time, `tm` from .tie_maps().
 .breslow_cumhaz <- function(lp, dw, stratum, tm) {
   ex <- exp(as.numeric(lp)); n <- length(ex)
   rsk <- numeric(n); H <- numeric(n)
@@ -1189,4 +1228,45 @@ set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
 .fit_ties <- function(object) {
   t <- object$ties
   if (is.null(t)) "none" else .check_ties(t)
+}
+
+## ---------------------------------------------------------------------------------------------------
+## Matched sets with the case first (1.4.0)
+##
+## The matched-set wrappers fit the conditional likelihood as a stratified Cox partial likelihood with
+## every row at time 1 and no tie correction, so the risk set of a row is the rows from it to the end of
+## its set. That is the whole set for the case only when the case is the first row of its set; in any
+## other order the case's risk set drops the controls listed before it and the fit is not conditional
+## logistic regression (measured on ExampleData_cc_lowdim, case first in 18% of sets: 0.13 on the
+## coefficients). The wrappers therefore put the case first in every set before fitting and restore the
+## caller's row order afterwards. On data already listed case first the permutation leaves the engine's
+## input order unchanged, so those fits are bit-identical to earlier releases.
+.ncc_case_first <- function(y, stratum) {
+  s <- as.character(stratum)
+  order(match(s, unique(s)), -as.numeric(y))
+}
+.ncc_unpermute <- function(x, o) {
+  n <- length(o)
+  if (is.null(x)) return(x)
+  if (is.list(x) && !is.data.frame(x)) return(lapply(x, .ncc_unpermute, o = o))
+  if (is.matrix(x) || is.data.frame(x)) {
+    if (nrow(x) != n) return(x)
+    out <- x; out[o, ] <- x; return(out)
+  }
+  if (length(x) == n) { out <- x; out[o] <- x; return(out) }
+  x
+}
+.ncc_restore <- function(fit, o) {
+  for (nm in c("linear.predictors", "W")) if (!is.null(fit[[nm]])) fit[[nm]] <- .ncc_unpermute(fit[[nm]], o)
+  if (is.list(fit$data)) fit$data <- lapply(fit$data, .ncc_unpermute, o = o)
+  fit
+}
+.ncc_restore_indi <- function(fit, o_int, o_ext) {
+  if (!is.null(fit$linear.predictors_int)) fit$linear.predictors_int <- .ncc_unpermute(fit$linear.predictors_int, o_int)
+  if (!is.null(fit$linear.predictors_ext)) fit$linear.predictors_ext <- .ncc_unpermute(fit$linear.predictors_ext, o_ext)
+  if (is.list(fit$data)) for (nm in names(fit$data)) {
+    if (endsWith(nm, "_int")) fit$data[[nm]] <- .ncc_unpermute(fit$data[[nm]], o_int)
+    if (endsWith(nm, "_ext")) fit$data[[nm]] <- .ncc_unpermute(fit$data[[nm]], o_ext)
+  }
+  fit
 }

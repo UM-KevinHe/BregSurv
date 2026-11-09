@@ -1,0 +1,188 @@
+url: https://um-kevinhe.github.io/BregSurv/
+template:
+  bootstrap: 5
+  bslib:
+    base_font: {google: "Roboto"}
+    heading_font: {google: "Roboto Slab"}
+    code_font: {google: "JetBrains Mono"}
+  params:
+    bootswatch: lumen
+  math-rendering: mathjax
+  in_header:
+    - pkgdown/extra.css
+toc:
+  depth: 6
+navbar:
+  type: inverse
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "Get started"
+      href: articles/BregSurv.html
+    - text: "Framework"
+      href: articles/framework.html
+    - text: "Articles"
+      menu:
+        - text: "Targets"
+        - text: "Discrete-time and neural targets"
+          href: articles/discrete_neural.html
+        - text: "Extension: tied event times"
+          href: articles/coxkl_ties.html
+        - text: "Extension: the nested case-control design"
+          href: articles/ncc.html
+        - text: "---"
+        - text: "Members"
+        - text: "The Kullback-Leibler member"
+          href: articles/coxkl.html
+        - text: "The estimators behind each member"
+          href: articles/engines.html
+        - text: "---"
+        - text: "Tuning"
+        - text: "Cross-validation criteria"
+          href: articles/CV_Criteria.html
+    - text: "Reference"
+      href: reference/index.html
+  right:
+    - icon: fa-github fa-lg
+      href: https://github.com/UM-KevinHe/BregSurv
+      aria-label: "GitHub repository"
+articles:
+  - title: "The framework"
+    contents:
+      - BregSurv
+      - framework
+  - title: "Targets"
+    contents:
+      - discrete_neural
+      - coxkl_ties
+      - ncc
+  - title: "Members"
+    contents:
+      - coxkl
+      - engines
+  - title: "Tuning"
+    contents:
+      - CV_Criteria
+reference:
+  - title: "The interface"
+    desc: >
+      One call per analysis: a target model, an external release, and the member of the
+      framework through which the release enters. `cv.bregsurv()` chooses the integration
+      weight (and the penalty) by cross-validation; `bregsurv()` fits at a given weight.
+    contents:
+      - cv.bregsurv
+      - bregsurv
+      - targets
+      - releases
+      - nn_score
+      - predict.cv.bregsurv
+  - title: "Engines: the composite-likelihood member (records)"
+    desc: >
+      The external cohort's records are available. The generator is the negative
+      external log-partial likelihood, so the objective is a composite likelihood
+      in which external events carry weight `eta`. Full cohort (`cox_*`) and nested
+      case-control (`ncc_*`); each fit has a `cv.` counterpart that chooses `eta`
+      (and `lambda`) by cross-validation.
+    contents:
+      - cox_indi
+      - cv.cox_indi
+      - cox_indi_ridge
+      - cv.cox_indi_ridge
+      - cox_indi_enet
+      - cv.cox_indi_enet
+      - ncc_indi
+      - cv.ncc_indi
+      - ncc_indi_enet
+      - cv.ncc_indi_enet
+  - title: "Engines: the Mahalanobis member (coefficients with uncertainty)"
+    desc: >
+      The external source released coefficients and a measure of their precision.
+      The generator is a quadratic form, so the penalty is the Mahalanobis distance
+      to the external coefficients, weighted by the precision matrix `Q`. With
+      `Q = NULL` it is the Euclidean distance on the covariates the external model
+      covers.
+    contents:
+      - cox_MDTL
+      - cv.cox_MDTL
+      - cox_MDTL_ridge
+      - cv.cox_MDTL_ridge
+      - cox_MDTL_enet
+      - cv.cox_MDTL_enet
+      - ncc_MDTL
+      - cv.ncc_MDTL
+      - ncc_MDTL_ridge
+      - cv.ncc_MDTL_ridge
+      - ncc_MDTL_enet
+      - cv.ncc_MDTL_enet
+  - title: "Engines: the Kullback-Leibler member (a model or risk score)"
+    desc: >
+      Only the external model's risk score is needed (`RS`, or coefficients `beta`).
+      The generator is the negative entropy on the risk-set distributions, so the
+      penalty is a Kullback-Leibler divergence. `coxkl_ties` also offers Cox's exact
+      method for tied event times; every full-cohort estimator accepts
+      `ties = "breslow"`.
+    contents:
+      - coxkl
+      - cv.coxkl
+      - coxkl_ties
+      - cv.coxkl_ties
+      - coxkl_ridge
+      - cv.coxkl_ridge
+      - coxkl_enet
+      - cv.coxkl_enet
+      - ncckl
+      - cv.ncckl
+      - ncckl_ridge
+      - cv.ncckl_ridge
+      - ncckl_enet
+      - cv.ncckl_enet
+  - title: "Several external sources"
+    desc: >
+      One integration weight per source, in one fit.
+    contents:
+      - coxkl_enet.multi
+  - title: "Preparing the external information"
+    desc: >
+      Match a named external coefficient vector (and its precision matrix) to your
+      covariates by name; absent covariates are set to zero. The fitting functions
+      call these for you when `beta` is named.
+    contents:
+      - align_beta
+      - align_beta_Q
+  - title: "Choosing the integration weight"
+    contents:
+      - generate_eta
+      - bopt.coxkl
+      - cv.plot
+  - title: "Scoring a fixed model"
+    desc: >
+      Score fixed coefficients, such as the external model used unchanged, on the
+      same cross-validation folds as the fitted members.
+    contents:
+      - vvh_loss_fixed
+  - title: "Variable selection, stability and bagging"
+    contents:
+      - variable_importance
+      - coxkl_enet.StabSelect
+      - cox_MDTL_enet.StabSelect
+      - coxkl_enet_bagging
+      - cox_MDTL_enet_bagging
+  - title: "Plotting"
+    contents:
+      - plot.coxkl
+      - plot.coxkl_ridge
+      - plot.coxkl_enet
+      - plot.cox_MDTL
+      - plot.cox_MDTL_ridge
+      - plot.cox_MDTL_enet
+      - plot.coxkl_enet.multi
+      - plot.StabSelect
+      - plot.variable_importance
+  - title: "Example data"
+    contents:
+      - ExampleData_lowdim
+      - ExampleData_highdim
+      - ExampleData_indi
+      - ExampleData_cc_lowdim
+      - ExampleData_cc_highdim
+      - ExampleData_cc_indi

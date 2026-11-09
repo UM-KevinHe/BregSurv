@@ -1,8 +1,8 @@
 ---
-title: "NCC KL Divergence-Based Transfer Learning"
+title: "Extension: the nested case-control design"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{NCC KL Divergence-Based Transfer Learning}
+  %\VignetteIndexEntry{Extension: the nested case-control design}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 

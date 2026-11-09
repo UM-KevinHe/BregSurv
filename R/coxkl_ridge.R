@@ -139,7 +139,7 @@ coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, 
   n_vars <- ncol(z_mat)
   n_obs <- nrow(z_mat)
 
-  ## ---- Standardization of the design matrix ----------------------
+  ## ---- Standardization of the design matrix (2026-09-25) ----------------------
   ## The ridge penalty lambda * ||beta||^2 is NOT scale free: with covariates on
   ## different scales a single lambda penalises a variable measured in thousands
   ## essentially not at all and a 0/1 indicator enormously.  Measured on a real
@@ -154,7 +154,7 @@ coxkl_ridge <- function(z, delta, time, stratum = NULL, RS = NULL, beta = NULL, 
   if (isTRUE(standardize)) {
     mysd <- function(v) sqrt(sum((v - mean(v))^2) / length(v))
     std_scale <- apply(z_mat, 2, mysd)
-    std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1 # constant columns: leave as they are
+    std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1   # constant columns: leave as they are
     z_fit <- sweep(z_mat, 2, std_scale, "/")
   } else {
     z_fit <- z_mat

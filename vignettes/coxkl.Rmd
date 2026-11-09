@@ -1,8 +1,8 @@
 ---
-title: "KL Divergence-Based Transfer Learning for Cox Model"
+title: "The Kullback-Leibler member"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{KL Divergence-Based Transfer Learning for Cox Model}
+  %\VignetteIndexEntry{The Kullback-Leibler member}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 

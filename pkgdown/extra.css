@@ -1,0 +1,127 @@
+/* pkgdown/extra.css */
+
+/* ---------------------------
+   Global typography
+---------------------------- */
+body {
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+/* Make the main content slightly narrower for readability */
+main.container,
+.container .col-md-9,
+.container .col-lg-9,
+.container .col-xl-9 {
+  max-width: 900px;
+}
+
+/* Headings */
+h1 { font-size: 2.2rem; line-height: 1.15; }
+h2 { font-size: 1.75rem; line-height: 1.2; }
+h3 { font-size: 1.45rem; line-height: 1.25; }
+h4 { font-size: 1.2rem; line-height: 1.3; }
+h5 { font-size: 1.05rem; line-height: 1.35; }
+h6 { font-size: 0.95rem; line-height: 1.4; }
+
+/* Paragraph spacing */
+p {
+  margin-bottom: 0.9rem;
+}
+
+/* ---------------------------
+   Sidebar / TOC styling
+---------------------------- */
+#pkgdown-sidebar {
+  font-size: 0.92rem;
+}
+
+#pkgdown-sidebar .nav-link {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* Slightly tighter TOC nesting */
+#pkgdown-sidebar ul {
+  line-height: 1.3;
+}
+
+/* Improve active section visibility */
+#pkgdown-sidebar .nav-link.active {
+  font-weight: 600;
+}
+
+/* ---------------------------
+   Navbar
+---------------------------- */
+.navbar {
+  font-size: 0.98rem;
+}
+
+/* ---------------------------
+   Code blocks and inline code
+---------------------------- */
+pre, code, kbd, samp {
+  font-size: 0.88rem;
+}
+
+pre {
+  line-height: 1.45;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+}
+
+/* Inline code: avoid huge highlight blocks */
+code {
+  padding: 0.1em 0.25em;
+  border-radius: 0.35rem;
+}
+
+/* ---------------------------
+   Tables
+---------------------------- */
+table {
+  font-size: 0.95rem;
+}
+
+.table {
+  margin-bottom: 1.2rem;
+}
+
+/* ---------------------------
+   MathJax sizing
+---------------------------- */
+.MathJax,
+mjx-container {
+  font-size: 1.05em !important;
+}
+
+/* ---------------------------
+   Links and anchors
+---------------------------- */
+a {
+  text-underline-offset: 0.15em;
+}
+
+/* ---------------------------
+   Callouts / alerts (if used)
+---------------------------- */
+.alert {
+  border-radius: 0.9rem;
+}
+
+/* ---------------------------
+   Small screens
+---------------------------- */
+@media (max-width: 768px) {
+  body {
+    font-size: 15.5px;
+  }
+  #pkgdown-sidebar {
+    font-size: 0.95rem;
+  }
+  pre, code, kbd, samp {
+    font-size: 0.9rem;
+  }
+}

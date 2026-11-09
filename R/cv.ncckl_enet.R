@@ -181,7 +181,7 @@ cv.ncckl_enet <- function(y, z, stratum,
   }
   if (!is.null(RS)) {
     ## Coerce once so that the documented plain-vector form of RS also supports
-    ## the fold-wise row subsetting RS[train_idx,, drop = FALSE] used below.
+    ## the fold-wise row subsetting RS[train_idx, , drop = FALSE] used below.
     RS <- as.matrix(RS)
   }
   if (!is.null(beta)) {
@@ -250,7 +250,7 @@ cv.ncckl_enet <- function(y, z, stratum,
   ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
   ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
   ## future/future.apply returns a DIFFERENT split from the same seed, hence a
-  ## different cross-validated loss. The caller's RNG state
+  ## different cross-validated loss. Measured 2026-08-18. The caller's RNG state
   ## is captured and restored on exit, so a parallel worker's stream is left
   ## exactly as it was found.
   if (!is.null(seed)) {
@@ -336,10 +336,10 @@ cv.ncckl_enet <- function(y, z, stratum,
         ...
       )
 
-      beta_mat_fold <- fold_fit$beta # p x L
+      beta_mat_fold <- fold_fit$beta  # p x L
 
       ## For each lambda, compute test linear predictors
-      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold # n_test x L
+      lp_test_mat <- as.matrix(z_test) %*% beta_mat_fold  # n_test x L
 
       if (cv.criteria == "loss") {
         for (j in seq_len(L)) {
@@ -406,7 +406,7 @@ cv.ncckl_enet <- function(y, z, stratum,
 
   ## Extract full-data betas at best lambda for each eta
   beta_best_mat <- sapply(seq_len(n_eta), function(i) {
-    beta_mat   <- beta_full_list[[i]]  # p x L_i
+    beta_mat   <- beta_full_list[[i]]      # p x L_i
     lambda_seq <- lambda_list[[i]]
 
     lambda_target <- best_per_eta$lambda[i]
@@ -436,7 +436,7 @@ cv.ncckl_enet <- function(y, z, stratum,
       alpha                       = alpha,
       nfolds                      = nfolds,
       ## the split actually used, so a replay can be checked rather than
-      ## trusted. this is `get_fold_cc`, NOT `get_fold`,
+      ## trusted. 🔴 Corrected 2026-08-19: this is `get_fold_cc`, NOT `get_fold`,
       ## and it is assigned on the CALLER'S row order -- these drivers never
       ## reorder. The cohort claim this comment used to make was copied from
       ## cv.coxkl and was wrong here. `get_fold_cc` is also fully deterministic

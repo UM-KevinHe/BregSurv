@@ -86,6 +86,11 @@ ncc_indi <- function(y_int, z_int, stratum_int,
 
   check_etas(etas)
 
+  ## the case first in every matched set, in both samples (1.4.0; see .ncc_case_first)
+  o_int <- .ncc_case_first(y_int, stratum_int); o_ext <- .ncc_case_first(y_ext, stratum_ext)
+  y_int <- y_int[o_int]; z_int <- z_int[o_int, , drop = FALSE]; stratum_int <- stratum_int[o_int]
+  y_ext <- y_ext[o_ext]; z_ext <- z_ext[o_ext, , drop = FALSE]; stratum_ext <- stratum_ext[o_ext]
+
   # Map CLR problem to Cox PH problem: time = 1, delta = y
   time_int <- rep(1, length(y_int))
   time_ext <- rep(1, length(y_ext))
@@ -105,6 +110,7 @@ ncc_indi <- function(y_int, z_int, stratum_int,
     message     = message
   )
 
+  res <- .ncc_restore_indi(res, o_int, o_ext)
   class(res) <- c("ncc_indi", class(res))
   return(res)
 }

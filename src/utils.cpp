@@ -543,3 +543,82 @@ double gd_KLCox_highdim_betaChange(const arma::mat &Z, arma::vec &r, int g, cons
 }
 
 
+
+
+/*
+ * Newton step of a stratified Cox partial likelihood (KL or Mahalanobis form) when the design has more
+ * columns than rows (p > n), in the n-dimensional (Woodbury) form. Added in 1.5.0; the p <= n path of
+ * every engine is unchanged.
+ *
+ * With w_i the risk-set weights exp(theta_j) / S0_i of event i (over the rows j of its risk set), the
+ * data part of the Hessian is Z' A Z / N with A = sum_i d_i (diag(w_i) - w_i w_i'), an n x n matrix of
+ * rank at most n, and the score is Z' (lin - r) / N with r = sum_i d_i w_i. For a penalty whose
+ * Hessian is diagonal (diag(D), D > 0: the ridge term, the masked identity, a diagonal metric),
+ *   (diag(D) + Z' B Z)^{-1} g = g / D - (1/D) o Z' (I_n + B G)^{-1} B Z (g / D),  B = A / N, G = Z diag(1/D) Z',
+ * so nothing of size p x p is formed and the cost is O(n^2 p + n^3) instead of O(n p^2 + p^3).
+ *
+ *   lin      - the linear term of the score per row: delta (Cox, Mahalanobis) or delta_eta (KL)
+ *   g_pen    - the penalty part of the gradient, subtracted from the data score (p)
+ *   D        - the diagonal of the penalty Hessian (p), each element > 0
+ * Returns the Newton direction (p); `grad` returns the penalized gradient, for the line search.
+ */
+arma::vec newton_step_wide(const double N, const arma::mat& Z, const arma::vec& delta, const arma::vec& lin,
+                           const arma::vec& theta, const arma::uvec& ind_start, const arma::vec& n_each_stratum,
+                           const arma::uvec& tf, const bool use_ties, const arma::vec& g_pen, arma::vec D,
+                           arma::vec& grad) {
+  const arma::uword n = Z.n_rows;
+  const arma::uword S = n_each_stratum.n_elem;
+  arma::mat A(n, n, arma::fill::zeros);
+  arma::vec r(n, arma::fill::zeros);
+  for (arma::uword s = 0; s < S; ++s) {
+    const arma::uword start = ind_start(s);
+    const arma::uword len = n_each_stratum(s);
+    if (len == 0) continue;
+    const arma::uword end = start + len - 1;
+    arma::vec theta_s = theta.subvec(start, end);
+    for (arma::uword i = 0; i < len; ++i) {
+      const double d_i = delta(start + i);
+      if (d_i <= 0) continue;
+      const arma::uword k = use_ties ? tf(start + i) - start : i;   // Breslow: the tie group's risk set
+      // the risk set's own maximum: at large p one step can spread the linear predictor over thousands,
+      // and a stratum-wide shift would underflow a whole risk set to 0 / 0
+      arma::vec th = theta_s.subvec(k, len - 1);
+      arma::vec w = arma::exp(th - th.max());
+      w /= arma::accu(w);
+      const arma::uword a = start + k;
+      r.subvec(a, end) += d_i * w;
+      A.submat(a, a, end, end) += d_i * (arma::diagmat(w) - w * w.t());
+    }
+  }
+  grad = Z.t() * (lin - r) / N - g_pen;
+  // (I + B G)^{-1} B = C (I + C G C)^{-1} C with C = B^{1/2}: the n x n system is symmetric positive
+  // definite whatever the conditioning of G (at lambda = 0, D is the 1e-8 numerical ridge alone)
+  arma::mat B = (A + A.t()) / (2.0 * N);
+  if (!B.is_finite() || !grad.is_finite()) Rcpp::stop("Hessian solve failed (non-finite score or information).");
+  arma::vec ev; arma::mat V;
+  bool okE = arma::eig_sym(ev, V, B, "dc");
+  if (!okE) okE = arma::eig_sym(ev, V, B, "std");
+  if (!okE) Rcpp::stop("Hessian solve failed (eigen-decomposition).");
+  ev.transform([](double v) { return v > 0.0 ? std::sqrt(v) : 0.0; });
+  arma::mat C = V * arma::diagmat(ev) * V.t();
+  for (int attempt = 0; attempt < 2; ++attempt) {
+    arma::vec Dinv = 1.0 / D;
+    arma::mat ZD = Z.each_row() % Dinv.t();             // Z diag(1/D)
+    arma::mat G = ZD * Z.t();                            // n x n
+    arma::mat M = arma::eye<arma::mat>(n, n) + C * G * C;
+    M = (M + M.t()) / 2.0;
+    arma::vec gD = grad % Dinv;
+    arma::vec y;
+    bool ok = arma::solve(y, M, C * (Z * gD), arma::solve_opts::likely_sympd);
+    if (ok && y.is_finite()) {
+      arma::vec d = gD - Dinv % (Z.t() * (C * y));
+      // a damped step: no subject's linear predictor moves by more than 2 in one iteration (the fixed
+      // point is unchanged; without it the first steps at large p overshoot by orders of magnitude)
+      const double mv = arma::abs(Z * d).max();
+      if (mv > 2.0) d *= 2.0 / mv;
+      return d;
+    }
+    D += 1e-4;                                            // as the p <= n path: a small extra ridge, once
+  }
+  Rcpp::stop("Hessian solve failed (n-dimensional system).");
+}

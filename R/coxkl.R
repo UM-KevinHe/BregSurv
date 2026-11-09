@@ -155,7 +155,7 @@ coxkl <- function(z, delta, time, stratum = NULL,
     pb <- txtProgressBar(min = 0, max = n_eta, style = 3, width = 30)
   }
 
-  for (i in seq_along(etas)){ #"etas" already in ascending order
+  for (i in seq_along(etas)){  #"etas" already in ascending order
     eta <- etas[i]
     delta_eta <- (eta * delta_tilde + delta)/(1 + eta)
 
@@ -167,7 +167,7 @@ coxkl <- function(z, delta, time, stratum = NULL,
     beta_mat[, i] <- beta_est
     likelihood_mat[i] <- .pl_ties(LP, delta, time, n.each_stratum, ties)
 
-    beta_initial <- beta_est # "warm start"
+    beta_initial <- beta_est  # "warm start"
     if (message) setTxtProgressBar(pb, i)
   }
   if (message) close(pb)

@@ -17,7 +17,7 @@
 #'   and the vector is reordered, so an external source covering only a subset of
 #'   the internal covariates may be supplied directly. An unnamed `beta` is
 #'   aligned positionally and must have length `ncol(z)`. A one-column matrix with
-#'   row names is accepted as a named vector. See [align_beta].
+#'   row names is accepted as a named vector. See [align_beta()].
 #' @param etas Numeric vector of non-negative candidate tuning values to be
 #'   cross-validated. Must be finite and \eqn{\ge 0}. This argument is
 #'   **required**: leaving it at its `NULL` default is an error. The values are
@@ -156,7 +156,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
   ## Pin the fold assignment. `set.seed(seed)` on its own is NOT enough: it
   ## inherits the ambient RNG *kind*, and a session left in "L'Ecuyer-CMRG" by
   ## future/future.apply returns a DIFFERENT split from the same seed, hence a
-  ## different cross-validated loss. The caller's RNG state
+  ## different cross-validated loss. Measured 2026-08-18. The caller's RNG state
   ## is captured and restored on exit, so a parallel worker's stream is left
   ## exactly as it was found.
   if (!is.null(seed)) {
@@ -174,7 +174,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
   if (cv.criteria == "LinPred") {
     cv_all_linpred <- matrix(NA, nrow = n, ncol = n_eta)
   } else if (cv.criteria == "CIndex_pooled") {
-    cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2)) # [fold, eta, numer/denom]
+    cv_pooled_cindex_array <- array(0, dim = c(nfolds, n_eta, 2))  # [fold, eta, numer/denom]
   }
 
   ## Storage for external baseline, matched to each criteria
@@ -207,7 +207,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
     stratum_train <- stratum[train_idx]
     RS_train <- RS[train_idx, , drop = FALSE]
 
-    beta_initial <- rep(0, ncol(z)) # warm start for each fold
+    beta_initial <- rep(0, ncol(z))  # warm start for each fold
 
     if (message) {
       cat("Cross-validation over eta sequence:\n")
@@ -230,7 +230,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
                             beta_initial = beta_initial)
 
       beta_train <- cox_estimate$beta
-      beta_initial <- beta_train # warm start
+      beta_initial <- beta_train  # warm start
 
       z_test <- z[test_idx, , drop = FALSE]
       delta_test <- delta[test_idx]
@@ -241,7 +241,7 @@ cv.coxkl <- function(z, delta, time, stratum = NULL,
         LP_train <- as.matrix(z_train) %*% as.matrix(beta_train)
         LP_internal <- as.matrix(z) %*% as.matrix(beta_train)
         n.each_stratum_train <- as.numeric(table(stratum_train))
-        n.each_stratum_full  <- n.each_stratum_full # already computed
+        n.each_stratum_full  <- n.each_stratum_full  # already computed
 
         result_mat[f, i] <-
           .pl_ties(LP_internal, delta, time, n.each_stratum_full, ties) -

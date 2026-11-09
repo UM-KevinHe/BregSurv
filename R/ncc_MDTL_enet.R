@@ -150,6 +150,10 @@ ncc_MDTL_enet <- function(y, z, stratum,
 
   if (!is.null(eta)) check_etas(eta, scalar = TRUE)
 
+  ## the case first in every matched set (1.4.0; see .ncc_case_first)
+  o_cf <- .ncc_case_first(y, stratum)
+  y <- y[o_cf]; z <- z[o_cf, , drop = FALSE]; stratum <- stratum[o_cf]
+
   # Map CLR problem to Cox PH problem: time = 1, delta = y
   delta <- y
   time  <- rep(1, length(y))
@@ -187,6 +191,7 @@ ncc_MDTL_enet <- function(y, z, stratum,
     ...
   )
 
+  fit <- .ncc_restore(fit, o_cf)
   class(fit) <- c("ncc_MDTL_enet", class(fit))
   return(fit)
 }

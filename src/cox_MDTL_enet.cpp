@@ -12,13 +12,24 @@ using namespace Rcpp;
 using namespace std;
 using namespace arma;
 
+// 1.5.1: a diagonal Mahalanobis metric may arrive as its diagonal alone, a p x 1 matrix (qvec).
+// These two read Q(j, j) and apply Qbeta += Q.col(j) * c either way; for a diagonal metric the
+// off-diagonal terms the dense form adds are exact zeros, so the values are the same.
+static inline double q_jj(const arma::mat &Q, const bool qvec, const int j) {
+  return qvec ? Q(j, 0) : Q(j, j);
+}
+static inline void q_add_col(arma::vec &Qbeta, const arma::mat &Q, const bool qvec, const int j, const double c) {
+  if (qvec) Qbeta(j) += Q(j, 0) * c;
+  else Qbeta += Q.col(j) * c;
+}
+
 void gd_MDTL_enet(arma::vec &beta, const arma::mat &Z, arma::vec &r, arma::vec &eta, const arma::vec &old_beta,
                   const int g, const arma::vec &K1, const int n_obs, const double lambda, const double alpha,
                   const double eta_mdtl, const arma::mat &Q, const arma::vec &Qbeta_ext, arma::vec &Qbeta,
-                  double &df, double &MaxChange_beta) {
+                  double &df, double &MaxChange_beta, const bool qvec) {
   const int K = K1(g + 1) - K1(g);
   for (int j = K1(g); j < K1(g + 1); j++) {
-    const double Qpp = Q(j, j);
+    const double Qpp = q_jj(Q, qvec, j);
     const double a_p = 1.0 + eta_mdtl * Qpp + lambda * (1.0 - alpha);
     const double c_p = mean_crossprod(Z, r, j, n_obs) + old_beta(j);
     const double t_p = c_p - eta_mdtl * ((Qbeta(j) - Qpp * beta(j)) - Qbeta_ext(j));
@@ -29,7 +40,7 @@ void gd_MDTL_enet(arma::vec &beta, const arma::mat &Z, arma::vec &r, arma::vec &
       beta(j) = beta_new;
       r -= Z.col(j) * beta_change;
       eta += Z.col(j) * beta_change;
-      Qbeta += Q.col(j) * beta_change;
+      q_add_col(Qbeta, Q, qvec, j, beta_change);
       if (std::abs(beta_change) > MaxChange_beta) MaxChange_beta = std::abs(beta_change);
     }
   }
@@ -43,10 +54,11 @@ void gd_MDTL_enet(arma::vec &beta, const arma::mat &Z, arma::vec &r, arma::vec &
 double gd_MDTL_BetaChange(const arma::mat &Z, const arma::vec &r, const arma::vec &old_beta,
                           const int g, const arma::vec &K1, const int n_obs, const double lambda,
                           const double alpha, const double eta_mdtl, const arma::mat &Q,
-                          const arma::vec &Qbeta_ext, const arma::vec &Qbeta, const arma::vec &beta) {
+                          const arma::vec &Qbeta_ext, const arma::vec &Qbeta, const arma::vec &beta,
+                          const bool qvec) {
   double max_len = 0.0;
   for (int j = K1(g); j < K1(g + 1); j++) {
-    const double Qpp = Q(j, j);
+    const double Qpp = q_jj(Q, qvec, j);
     const double a_p = 1.0 + eta_mdtl * Qpp + lambda * (1.0 - alpha);
     const double m_j = mean_crossprod(Z, r, j, n_obs) + old_beta(j);
     const double t_p = m_j - eta_mdtl * ((Qbeta(j) - Qpp * beta(j)) - Qbeta_ext(j));
@@ -67,10 +79,11 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
                   const double tol, const arma::vec &ind_start, arma::vec &active_group,
                   const int n_obs, const int n_group, const bool actSet, const int actIter,
                   const int activeGroupNum, const bool actSetRemove,
-                  const arma::uvec &tf, const arma::uvec &tl, const bool use_ties) {
+                  const arma::uvec &tf, const arma::uvec &tl, const bool use_ties,
+                  const bool qvec) {
 
   arma::vec old_beta = beta, r(n_obs), rsk(n_obs), h(n_obs);
-  arma::vec Qbeta = Q * beta;
+  arma::vec Qbeta = qvec ? arma::vec(Q.col(0) % beta) : arma::vec(Q * beta);
   double loss = 0.0, df = 0.0, MaxChange_beta = 0.0, lambda_g = 0.0, s, v = 1.0;
   int iter = 0;
 
@@ -125,7 +138,7 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
         arma::uvec update_order_unpenalized = arma::randperm(K0);
         for (int j = 0; j < K0; j++) {
           const int col = update_order_unpenalized(j);
-          const double Qpp = Q(col, col);
+          const double Qpp = q_jj(Q, qvec, col);
           const double a_p = 1.0 + eta_mdtl * Qpp;
           const double c_p = mean_crossprod(Z, r, col, n_obs) + old_beta(col);
           const double t_p = c_p - eta_mdtl * ((Qbeta(col) - Qpp * beta(col)) - Qbeta_ext(col));
@@ -135,7 +148,7 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
             beta(col) = beta_new;
             r -= Z.col(col) * diff;
             eta += Z.col(col) * diff;
-            Qbeta += Q.col(col) * diff;
+            q_add_col(Qbeta, Q, qvec, col, diff);
             if (std::abs(diff) > MaxChange_beta) MaxChange_beta = std::abs(diff);
             df += 1.0;
           }
@@ -146,7 +159,7 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
         if (active_group(g) == 1) {
           lambda_g = lambda * group_multiplier(g);
           gd_MDTL_enet(beta, Z, r, eta, old_beta, g, K1, n_obs, lambda_g, alpha,
-                       eta_mdtl, Q, Qbeta_ext, Qbeta, df, MaxChange_beta);
+                       eta_mdtl, Q, Qbeta_ext, Qbeta, df, MaxChange_beta, qvec);
         }
       }
       
@@ -171,7 +184,7 @@ Cox_MDTL_enet_fit(const arma::vec &delta, const arma::mat &Z, const arma::vec &n
           const double lambda_g2 = lambda * group_multiplier(g);
           Current_len_group(g) = gd_MDTL_BetaChange(Z, r, old_beta, g, K1, n_obs,
                                                     lambda_g2, alpha, eta_mdtl,
-                                                    Q, Qbeta_ext, Qbeta, beta);
+                                                    Q, Qbeta_ext, Qbeta, beta, qvec);
         }
       }
       int if_add_new = 0;
@@ -206,6 +219,8 @@ List cox_MDTL_enet_cpp(const arma::vec &delta, const arma::mat &Z, const arma::v
   const arma::uvec tf = tie_index(tie_first, Z.n_rows), tl = tie_index(tie_last, Z.n_rows);
 
   const int n_obs = Z.n_rows, n_beta = Z.n_cols, n_lambda = lambda_seq.n_elem, n_group = K1.n_elem - 1;
+  // 1.5.1: the metric as its diagonal (a p x 1 matrix, p > 1), see q_jj / q_add_col
+  const bool qvec = n_beta > 1 && vcov.n_cols == 1 && (int) vcov.n_rows == n_beta;
   int tol_iter = 0;
   const int count_stratum = n_each_prov.n_elem;
 
@@ -248,7 +263,7 @@ List cox_MDTL_enet_cpp(const arma::vec &delta, const arma::mat &Z, const arma::v
       Cox_MDTL_enet_fit(delta, Z, n_each_prov, beta_l, eta_l, K0, K1, lambda, alpha, eta_mdtl,
                         vcov, Qbeta_ext, tol_iter, max_total_iter, max_each_iter, group_multiplier,
                         count_stratum, tol, ind_start, active_group, n_obs, n_group,
-                        actSet, actIter, activeGroupNum, actSetRemove, tf, tl, use_ties);
+                        actSet, actIter, activeGroupNum, actSetRemove, tf, tl, use_ties, qvec);
 
     beta = beta_l;
     eta = eta_l;
