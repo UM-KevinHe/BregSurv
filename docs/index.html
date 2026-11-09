@@ -216,58 +216,6 @@
 <hr>
 </div>
 <div class="section level2">
-<h2 id="-what-it-can-analyse">🧪 What it can analyse<a class="anchor" aria-label="anchor" href="#-what-it-can-analyse"></a>
-</h2>
-<table class="table">
-<colgroup>
-<col width="10%">
-<col width="17%">
-<col width="17%">
-<col width="17%">
-<col width="17%">
-<col width="17%">
-</colgroup>
-<thead><tr class="header">
-<th></th>
-<th align="center">Coefficients</th>
-<th align="center">Coefficients + covariance</th>
-<th align="center">Coefficients + baseline hazard</th>
-<th align="center">Another cohort’s records</th>
-<th align="center">No external data</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><strong>Full cohort (Cox)</strong></td>
-<td align="center">✅</td>
-<td align="center">✅</td>
-<td align="center">✅ ¹</td>
-<td align="center">✅</td>
-<td align="center">✅</td>
-</tr>
-<tr class="even">
-<td><strong>Nested case–control (matched sets)</strong></td>
-<td align="center">✅</td>
-<td align="center">✅</td>
-<td align="center">—</td>
-<td align="center">✅</td>
-<td align="center">✅</td>
-</tr>
-<tr class="odd">
-<td><strong>Discrete-time follow-up</strong></td>
-<td align="center">— ²</td>
-<td align="center">—</td>
-<td align="center">✅</td>
-<td align="center">—</td>
-<td align="center">✅</td>
-</tr>
-</tbody>
-</table>
-<p>¹ The coefficients are used; the baseline hazard is used only for discrete-time follow-up.<br>
-² Borrowing on a discrete time grid needs the external baseline hazard.</p>
-<p>Also supported: tied event times (Breslow correction), stratified cohorts, ridge and lasso penalties, a neural-network member for discrete-time follow-up, a separate test set you supply, and — on request — evaluation over repeated random train/test splits with box plots.</p>
-<hr>
-</div>
-<div class="section level2">
 <h2 id="-the-r-package-one-bregman-divergence-objective">📦 The R package: one Bregman-divergence objective<a class="anchor" aria-label="anchor" href="#-the-r-package-one-bregman-divergence-objective"></a>
 </h2>
 <div class="section level3">

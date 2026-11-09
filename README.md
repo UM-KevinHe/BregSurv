@@ -128,21 +128,6 @@ flowchart LR
 
 ---
 
-## 🧪 What it can analyse
-
-| | Coefficients | Coefficients + covariance | Coefficients + baseline hazard | Another cohort's records | No external data |
-|---|:---:|:---:|:---:|:---:|:---:|
-| **Full cohort (Cox)** | ✅ | ✅ | ✅ ¹ | ✅ | ✅ |
-| **Nested case–control (matched sets)** | ✅ | ✅ | — | ✅ | ✅ |
-| **Discrete-time follow-up** | — ² | — | ✅ | — | ✅ |
-
-¹ The coefficients are used; the baseline hazard is used only for discrete-time follow-up.  
-² Borrowing on a discrete time grid needs the external baseline hazard.
-
-Also supported: tied event times (Breslow correction), stratified cohorts, ridge and lasso penalties, a neural-network member for discrete-time follow-up, a separate test set you supply, and — on request — evaluation over repeated random train/test splits with box plots.
-
----
-
 ## 📦 The R package: one Bregman-divergence objective
 
 ### One objective, three decisions
