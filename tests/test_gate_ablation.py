@@ -7,7 +7,7 @@ happens if you take the gate away**, and it is answered here by fitting each
 poisoned dataset directly, with no gate in the path, and recording what comes
 back.
 
-THE ANSWER IS NOT "IT CRASHES". Most of these datasets produce a coefficient
+🔴 THE ANSWER IS NOT "IT CRASHES". Most of these datasets produce a coefficient
 vector. Several produce one that sits within a hair of the coefficients the
 CLEAN data gives, so there is nothing in the output -- no warning, no NA, no
 implausible magnitude -- to tell an analyst that the follow-up times were

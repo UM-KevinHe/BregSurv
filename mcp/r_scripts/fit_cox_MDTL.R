@@ -5,7 +5,7 @@
 #   Rscript fit_cox_MDTL.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions,
-# calls BregSurv::cox_MDTL with external beta and optional precision matrix
+# calls BregSurv::cox_MDTL() with external beta and optional precision matrix
 # Q, writes results as JSON. On any error, writes a structured
 # {status:"error",...} payload.
 
@@ -30,7 +30,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -161,7 +161,7 @@ result <- tryCatch({
     stop("Provide only one of: Q_expr, Q_inline")
   }
   # Shape / symmetry / PSD / name validation is delegated to the package's
-  # align_beta_Q: a NAMED Q may cover a subset of colnames(z) and is
+  # align_beta_Q(): a NAMED Q may cover a subset of colnames(z) and is
   # zero-padded; only an UNNAMED Q must be exactly ncol(z) x ncol(z).
   # Do not re-check it here -- the bridge cannot express that contract.
 
@@ -172,7 +172,7 @@ result <- tryCatch({
   Mstop        <- if (!is.null(input$Mstop))     as.integer(input$Mstop)     else 50L
   backtrack    <- if (!is.null(input$backtrack)) as.logical(input$backtrack) else FALSE
 
-  # --- Call cox_MDTL ---
+  # --- Call cox_MDTL() ---
   .lk  <- link_external(z, beta, Q)
   beta <- .lk$beta
   Q    <- .lk$Q

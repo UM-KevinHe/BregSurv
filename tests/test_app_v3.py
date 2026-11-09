@@ -1,6 +1,6 @@
 """The web UI's state machine, driven exactly as Gradio drives it.
 
-WHY THIS EXISTS RATHER THAN A BROWSER TEST. The classic Gradio failure is a
+🔴 WHY THIS EXISTS RATHER THAN A BROWSER TEST. The classic Gradio failure is a
 handler that returns a different number of values than its `outputs=` list
 expects. It imports cleanly, it renders cleanly, and it fails the first time a
 user presses the button -- which in this app is after the analysis has already
@@ -8,7 +8,7 @@ run. Nothing short of executing the handler catches it, and executing the
 handler needs no browser.
 
 What is checked here is the wiring and the STATE MACHINE, not the statistics.
-The shape changed on 2026-09-11 (decide, run, disclose -- no approval step):
+The shape is decide, run, disclose -- no approval step:
 
   * the arity of every handler against the `outputs=` list it is bound to;
   * that step 1 posts the question and fits nothing;
@@ -208,7 +208,7 @@ def main() -> int:
                                        [], fresh, "", "", "")
     check(all(r is None for r in r5) and "no column called 'death'" in h5[-1][1],
           "a ghost column is refused by name, nothing is fitted")
-    # 2026-10-01: once corrected, the report says what became of the name the file lacks
+    # once corrected, the report says what became of the name the file lacks
     h5b, _, s5b, *r5b = app.submit_answer("1) followup_days\n2) died\n6) yes", h5, s5, "", "", "")
     rep5b = h5b[-1][1]
     check(s5b["declaration"] is not None and "You also named `death`" in rep5b
@@ -409,8 +409,8 @@ def main() -> int:
     check(s8["model_calls"] and s8["model_calls"][-1]["name"] == "explain",
           "the explain call is logged in the session")
     # the reference set of a run holds only quantities that HAVE a value in it
-    # (report rubric, 2026-09-15: "[n_intervals]" on a continuous-time run
-    # rendered "not available"), and no runtime
+    # ("[n_intervals]" on a continuous-time run would render "not available"),
+    # and no runtime
     check("n_intervals" not in refs8 and "runtime_seconds" not in refs8
           and all(v is not None for v in refs8.values()),
           "references without a value in this run are not offered", str(sorted(refs8))[:120])
@@ -497,7 +497,7 @@ def main() -> int:
                                              "", write_prose=False, tz_known=True)
     sd_src = (sd.declaration.sources or {}) if sd.declaration else {}
     check(candd is not None and sd.declaration.event_col == "died"
-          and sd_src.get("event") == 'described: "death during follow-up"',
+          and str(sd_src.get("event") or "").startswith('described: "death during follow-up"'),
           "a described event column is resolved by the model and disclosed with its phrase",
           str(sd_src))
     check("described:" in hd[-2][1], "the card shows the phrase the column was read from")
@@ -534,10 +534,10 @@ def main() -> int:
           "a draft that names a column the file lacks (or writes a digit) is dropped; the list still asks")
     _Fake.ask_out = None
 
-    # ---- 7d. 2026-09-13: a refusal names the item; a failed reader ends in the form
+    # ---- 7d. a refusal names the item; a failed reader ends in the form
     hdr("7d. a refused value names its item; a model failure falls back to the numbered form")
-    # the model returns the analyst's whole phrase as the event value (Qwen2.5 did,
-    # 19 times in the MIUM run); the refusal must say which item to correct
+    # the model returns the analyst's whole phrase as the event value (Qwen2.5 has
+    # been seen to); the refusal must say which item to correct
     msg_v = ("Time is followup_days and died is 1 if they died, 0 if not. "
              "Please adjust for age, bmi and egfr.")
     _Fake.intent_out = {"reasoning": "q", "intents": [
@@ -580,7 +580,7 @@ def main() -> int:
                                              "", write_prose=False, tz_known=True)
     check(candb is not None, "and the numbered reply runs the analysis without the model")
 
-    # ---- 7e. 2026-09-13: a message that names the file's columns declares roles, whatever M1 typed
+    # ---- 7e. a message that names the file's columns declares roles, whatever M1 typed
     hdr("7e. M1 misses declare_roles on a message that names columns: the rule adds it")
     msg_m = ("Time is followup_days and died is 1 if the patient died. Please adjust for age, bmi "
              "and egfr, using the published coefficients from the registry.")
@@ -595,7 +595,7 @@ def main() -> int:
     check(candm is not None and sm.declaration is not None and sm.declaration.covariates == ["age", "bmi", "egfr"]
           and any(a.get("route") == "declare_roles_by_rule" for a in sm.actions),
           "the analysis runs and the added intent is logged as a rule", str([a for a in sm.actions if a.get("route") == "declare_roles_by_rule"])[:120])
-    # an out-of-scope ASIDE typed alone (hard set H071, 2026-09-15): the roles the
+    # an out-of-scope ASIDE typed alone: the roles the
     # message writes outside the refused span still declare; the aside is declined
     msg_o = ("Time is followup_days and died is 1 if the patient died; adjust for age, bmi and "
              "egfr. Also, could you draw a Kaplan-Meier curve by site for the slides?")
@@ -674,7 +674,7 @@ def main() -> int:
           hg[-1][1][:120])
     _Fake.extract_out = None
 
-    # ---- 7e. several messages (rubric task H070, 2026-10-01) ---------------
+    # ---- 7e. several messages ---------------------------------------------
     hdr("7e. a later message edits the declaration already run; selecting the file keeps the edit")
     url = "http://localhost:1/v1"
     _Fake.intent_out = {"reasoning": "q", "intents": [
@@ -707,8 +707,7 @@ def main() -> int:
           str(getattr(se["declaration"], "covariates", None)))
 
     # ---- 7f. an open question survives a later message; a value stated for
-    # a column the file lacks is not carried to the corrected column
-    # (rubric tasks H063 and H045, 2026-10-02) ------------------------------
+    # a column the file lacks is not carried to the corrected column -----
     hdr("7f. the event value is asked again, never filled, after these two turns")
     def _say(text, ev_span, extract):
         _Fake.intent_out = {"reasoning": "q", "intents": [
@@ -770,7 +769,7 @@ def main() -> int:
 
     # ---- arity against the graph ----------------------------------------
     hdr("8. every handler's arity matches the outputs it is bound to")
-    # : a seventh result slot, repro_diskd.py (the discrete-time row's
+    # a seventh result slot, repro_diskd.py (the discrete-time row's
     # Python replay), so every handler bound to the results grew by one
     # V4: an eighth, the files of an evaluation by repeated splits
     for fn, ret in (("show_pending", 5), ("example_pending", 5),

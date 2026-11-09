@@ -10,15 +10,15 @@ harness does the routing.
   declare_roles      the message names a column for at least one role
   edit_declaration   it changes a role declared earlier
   describe_external  it describes or points to external information
-  evaluate_by_splits evaluate the methods on repeated random train/test splits (V4,
-                     2026-10-04; `splits.py`), alone or with a declaration
+  evaluate_by_splits evaluate the methods on repeated random train/test splits (V4;
+                     `splits.py`), alone or with a declaration
   ask_about_result   a question about the report already produced
   ask_about_method   a question about how the system works
   out_of_scope       something this system does not do
   other              none of the above, or too unclear to type
 
 There is deliberately NO `approve` kind and no approval step for it to route
-to. the analyst is asked only what the harness cannot
+to. By design, the analyst is asked only what the harness cannot
 decide from the request and the data; everything else is decided, run, and
 DISCLOSED in the report, where a wrong decision is visible and corrected by one
 more message (`edit_declaration`). A typing error here is therefore always the
@@ -165,8 +165,14 @@ def classify(client, model: str, message: str, state: str,
     from . import intent_examples
     prefix, rec = intent_examples.for_message(message, state, columns or [])
     user = f"{prefix}{state}\n\nThe analyst wrote:\n{message}"
+    # the reading quotes the message (the reasoning field and each intent's evidence), so its
+    # length grows with the message: a fixed 600 tokens cut off the JSON on a request listing
+    # fifty covariates and the turn fell back to the numbered form with nothing read.
+    # Two copies of the message at about two characters a
+    # token (column names such as lab_01 split finely), plus the fixed part.
+    budget = min(4000, 600 + len(message or ""))
     return boundary._chat(client, model, _INTENT_SYSTEM, user,
-                          schema_for(externals), "intent", max_tokens=600,
+                          schema_for(externals), "intent", max_tokens=budget,
                           extra_record=({"examples": rec} if rec else None))
 
 
@@ -183,7 +189,8 @@ def validate(message: str, raw: Dict[str, Any],
     of `out_of_scope` on words that are not there. Deterministic.
 
     `result_present`, when given, is the phase rule for `ask_about_result`: a
-    question about a result cannot exist before a result does. on the A40: both models typed "Please analyse my transplant
+    question about a result cannot exist before a result does. Models have
+    typed "Please analyse my transplant
     data and tell me what predicts survival" and "Can you plot the
     Kaplan-Meier curves" as `ask_about_result` with no result in the state.
     Such an intent is demoted to `other` (the harness then asks), and the
@@ -192,8 +199,8 @@ def validate(message: str, raw: Dict[str, Any],
     out: List[Intent] = []
     seen = set()
     # duplicates are dropped BEFORE the cap, so a kind the model repeated cannot
-    # crowd out a different one (live smoke 2026-10-04: two `declare_roles`
-    # pushed the split request past the cap)
+    # crowd out a different one (two `declare_roles` would otherwise push the
+    # split request past the cap)
     for item in (raw.get("intents") or [])[:MAX_INTENTS_RAW]:
         if len(out) >= MAX_INTENTS:
             break

@@ -1,4 +1,4 @@
-"""The routing cells the V3 agent could not reach until 2026-08-19.
+"""The routing cells the V3 agent originally could not reach.
 
 Before this, `pipeline.run` reached exactly ONE of the seven states the family
 defines: full cohort with external coefficients. The nested case-control half was
@@ -31,7 +31,7 @@ What each block here pins down:
      cells, and External-only manufactured by fitting the external cohort
      rather than read off a paper.
 
-NO PATIENT DATA. Every fixture is generated here.
+🔴 NO PATIENT DATA. Every fixture is generated here.
 
 Run:  python test_family_cells.py
 """
@@ -187,7 +187,7 @@ def main() -> int:
                   str(exc)[:90])
 
         # ---- B2. the set column named AS the follow-up time ------------------
-        # 2026-09-15 (synth200 F08_1, F20_8): "Matched set = set_id" read as the
+        # "Matched set = set_id" read as the
         # time column passes the backing check (the name is in the message) and
         # would run the matched study as a cohort with the set number as its
         # follow-up. The data flags the column; the design question is reopened.
@@ -208,7 +208,7 @@ def main() -> int:
         # a coarse follow-up time looks set-shaped too (many small groups) but its
         # groups vary in size: the rule needs the regular shape of a matched sample
         import copy
-        # (2026-09-30: a coarse time also lacks the profile's `one_case_per_set` --
+        # (a coarse time also lacks the profile's `one_case_per_set` --
         # exactly one event in every group is the matched sample's defining fact,
         # so the model of a coarse time drops both)
         prof_irregular = copy.deepcopy(prof)
@@ -252,7 +252,7 @@ def main() -> int:
         wrong = parse_reply(prof, dict(answers, event_value="0"))
         vw = verify(prof, wrong, ncc, "NC", run_r=_run_r)
         codes = [r["code"] for r in vw.refusals]
-        # The event RATE cannot catch this: 25% and 75% are both plausible
+        # 🔴 The event RATE cannot catch this: 25% and 75% are both plausible
         # sampling ratios. An earlier version of the gate asked only whether any
         # set had NO case, which this passes -- every set has three.
         check(not vw.admissible and "matched_sets_not_one_case" in codes,
@@ -272,9 +272,9 @@ def main() -> int:
               "the design reached the fitter",
               "unreachable before today: design was a constant")
         keys = [x["key"] for x in c["candidates"]]
-        check(len(keys) == 7 and not any("ridge" in k for k in keys),
-              "seven candidates, none of them ridge",
-              "the library has no NCC ridge, so the set must not claim one")
+        check(len(keys) == 10 and sum("ridge" in k for k in keys) == 3,
+              "ten candidates, three of them ridge (BregSurv 1.4.0)",
+              ", ".join(keys))
         check(c.get("scorer") == "cc_loglik/pooled",
               "one scale for the whole matched comparison",
               f"scorer={c.get('scorer')!r}")
@@ -282,9 +282,9 @@ def main() -> int:
               and c["partition"]["seed_is_effective"] is False,
               "the matched partition reports its own provenance honestly",
               "get_fold_cc never reorders and never draws")
-        check("ridge" not in res.report.split("## 4.")[0].split("## 3.")[1],
-              "the report does not claim a ridge fit that never happened")
-        # 2026-10-01: a matched sample has no follow-up, and the report must not speak of one
+        check("ridge" in res.report.split("## 4.")[0].split("## 3.")[1],
+              "the report names the ridge fits the matched set now holds")
+        # a matched sample has no follow-up, and the report must not speak of one
         check("over the follow-up actually observed" not in res.report
               and "in these matched sets, as they were sampled" in res.report,
               "the matched report's limits do not describe a follow-up it does not have")
@@ -319,7 +319,7 @@ def main() -> int:
         check(cn["facts"]["external_form"] == "none",
               "the absence of external information is a stated fact")
         nk = [x["key"] for x in cn["candidates"]]
-        # Internal-only is manufactured as `beta = zeros, eta = 0`, so leaving
+        # 🔴 Internal-only is manufactured as `beta = zeros, eta = 0`, so leaving
         # the borrowing members in would give nine rows carrying ONE number and
         # an argmin breaking the tie arbitrarily -- then reporting a "borrowing"
         # method as the winner of a comparison that never happened.
@@ -378,7 +378,7 @@ def main() -> int:
               "the third form of external information is a recognised fact",
               "`indi` appeared zero times in run_candidates.R before today")
         ik = [x["key"] for x in ci["candidates"]]
-        check(ik == ["internal", "indi", "internal_lasso", "indi_lasso", "kl", "mahalanobis",
+        check(ik == ["internal", "indi", "internal_lasso", "indi_lasso", "indi_ridge", "kl", "mahalanobis",
                      "euclidean", "internal_ridge", "kl_ridge", "mahalanobis_ridge",
                      "euclidean_ridge", "kl_lasso", "mahalanobis_lasso", "euclidean_lasso",
                      "external"],
@@ -416,11 +416,11 @@ def main() -> int:
               ci["selected"]["label"])
 
         # The decoy: same width, same names, different ORDER.
-        # The DECLARATION path is immune by construction and that is worth
+        # 🔴 The DECLARATION path is immune by construction and that is worth
         # stating: as_exprs addresses both tables BY NAME, so `PERM[, c("age",
         # "bmi", "egfr", "donor_age")]` undoes the permutation on the way in.
         # The R check exists for a direct caller handing over raw matrices --
-        # which is what fit_cox_indi.R has always allowed, comparing ncol and
+        # which is what fit_cox_indi.R has always allowed, comparing ncol() and
         # nothing else. Positional selection below is how that caller looks.
         bad = _run_r("run_candidates.R", {
             "data_path": ind, "seed": 20260818, "nfolds": 5, "nlambda": 6,
@@ -431,7 +431,7 @@ def main() -> int:
             "z_ext_expr": "PERM[, 1:4]",
             "time_ext_expr": 'PERM[["followup_days"]]',
             "delta_ext_expr": 'PERM[["died"]]'}, timeout_s=900)
-        # fit_cox_indi.R compares ncol and nothing else, so this fits
+        # 🔴 fit_cox_indi.R compares ncol() and nothing else, so this fits
         # happily and attaches every borrowed coefficient to the wrong variable.
         check(bad.get("status") == "error"
               and "same order" in str(bad.get("message", "")),
@@ -448,7 +448,7 @@ def main() -> int:
               "the set is derived from ONE form; choosing between them silently "
               "is the judgement this design removes")
 
-        # ---- H. the discrete-time row: the third data fact ------------
+        # ---- H. the discrete-time row: the third data fact --------------------
         # The map of the family is kept in one place. The cells are enumerated
         # here; the fits, the gate and the replays are exercised end to end
         # by mcp/test_discrete.py (with DiSKD through the bridge).
@@ -476,8 +476,8 @@ def main() -> int:
               "the rows are never ranked against each other (ruling 4)")
 
 
-        # a single declared covariate is an analysis, not an R error (hard set
-        # H075, 2026-09-15: "incorrect number of dimensions" from the gate)
+        # a single declared covariate is an analysis, not an R error
+        # (otherwise "incorrect number of dimensions" from the gate)
         d1 = parse_reply(pc, {"time": "followup_days", "event": "died", "event_value": "1",
                               "covariates": "age", "time_zero": "yes"})
         check(d1.as_exprs("D")["z_expr"].endswith("drop = FALSE]"),
@@ -487,10 +487,10 @@ def main() -> int:
               f"refusals={[r['code'] for r in v1.refusals]}")
 
         # ---- F. the declaration decides the external table's design ----------
-        # 2026-09-15 (synth200 F21, 8 of 8 with Qwen3-8B): another matched
-        # sample, read BEFORE the declaration, had a covariate named as its
-        # follow-up time; the line-up check then refused and told the analyst
-        # to rename columns that already matched. The declaration is the fact.
+        # another matched sample, read BEFORE the declaration, can have a
+        # covariate named as its follow-up time; the line-up check would then
+        # refuse and tell the analyst to rename columns that already match.
+        # The declaration is the fact.
         hdr("F. a matched sample named with a time column is read under the matched declaration")
         import app as APP
         from bregsurv_agent import external as X
@@ -509,7 +509,7 @@ def main() -> int:
         check(r.returncode == 0, "the csv fixtures were written", r.stderr[-200:])
         h, s, *_ = APP.start_session(ncc_csv, None)
         tabs = X.read_tables(ext_csv)
-        # the model's reading on F21: a covariate as the follow-up time
+        # a model's reading of this case: a covariate as the follow-up time
         asg = [{"table": tabs[0].name, "role": "individual_level_data",
                 "time_column": "age", "event_column": "case", "event_value": "1"}]
         o = X.canonicalise(tabs, asg, {"file": "external_cohort.csv", "path": ext_csv,
@@ -543,9 +543,9 @@ def main() -> int:
               h4[-1][1][:160])
 
         # ---- G. a refused release, selected in the message that declares -----
-        # 2026-09-15 (synth200 F24, a risk-score file): with the same refusal on
-        # record, Qwen3-8B ran on the cohort alone and Qwen2.5-7B, which typed
-        # "use it if you can" as a selection, waited for ever. The declared
+        # (a risk-score file): with the same refusal on record, one model ran
+        # on the cohort alone and another, which typed "use it if you can" as a
+        # selection, waited for ever. The declared
         # analysis runs; the reply restates the refusal and that nothing is borrowed.
         hdr("G. a refused release named in the declaring message: the cohort alone, said so")
         scores = tdp / "external_scores.csv"

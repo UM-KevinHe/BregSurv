@@ -1,12 +1,12 @@
 #!/usr/bin/env Rscript
 # fit_ncckl_enet.R - dispatcher for the fit_ncckl_enet MCP tool.
 #
-# Calls BregSurv::ncckl_enet — NCC conditional logistic regression with
+# Calls BregSurv::ncckl_enet() — NCC conditional logistic regression with
 # elastic-net penalty + KL divergence integration of external β. Single-eta
 # convention.
 #
-# IMPORTANT: ncckl_enet accepts BOTH `beta` AND `RS` (mutually exclusive),
-# UNLIKE base ncckl which only accepts `beta`. Mirrors coxkl_enet's design.
+# IMPORTANT: ncckl_enet() accepts BOTH `beta` AND `RS` (mutually exclusive),
+# UNLIKE base ncckl() which only accepts `beta`. Mirrors coxkl_enet's design.
 
 suppressPackageStartupMessages({
   library(jsonlite)
@@ -29,7 +29,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {

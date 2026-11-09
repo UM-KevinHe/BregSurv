@@ -206,7 +206,7 @@ def test_parse(p):
         ("a value that does not occur in the event column is refused",
          {"time": str(i_t), "event": str(i_e), "event_value": "2", "covariates": "A"},
          "does not occur in", "3"),
-        ("the whole phrase as an event value is refused (Qwen2.5 on MIUM)",
+        ("the whole phrase as an event value is refused (seen with Qwen2.5)",
          {"time": str(i_t), "event": str(i_e), "event_value": "1 if they died, 0 if not",
           "covariates": "A"},
          "does not occur in", "3"),
@@ -298,7 +298,7 @@ def test_dictionary(rda, td):
     print("4. a data dictionary NARROWS the question; it does not answer it")
     print("=" * 78)
 
-    # (a) a dictionary shaped like the real one: two time units, a complement pair
+    # (a) a realistic dictionary: two time units, a complement pair
     amb = td / "dict_ambiguous.csv"
     with open(amb, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -335,20 +335,6 @@ def test_dictionary(rda, td):
           and d.event_col == "survival_event" and d.source == "dictionary",
           "an unambiguous dictionary answers it with no question asked",
           f"{d.time_col} / {d.event_col} / {d.covariates}" if d else "declined")
-
-    # (c) the real artifact this protocol was designed around, when present
-    real = (REPO.parent.parent / "real_data" / "EHR" / "mimiciv31_20260816"
-            / "kidney_tx_mimiciv31" / "output" / "metadata" / "data_dictionary.csv")
-    if real.exists():
-        rows = list(csv.DictReader(open(real, encoding="utf-8-sig")))
-        outcome = [r["variable"] for r in rows
-                   if "outcome" in (r.get("role") or "").lower()]
-        check(len(outcome) > 2,
-              "the real dictionary marks many columns outcome-ish",
-              f"{len(outcome)} variables across "
-              f"{len({r['role'] for r in rows if 'outcome' in r['role'].lower()})} roles")
-    else:
-        skip("the real dictionary is checked too", "not on this machine")
 
 
 def main():

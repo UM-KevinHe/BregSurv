@@ -185,7 +185,7 @@ result <- tryCatch({
   }
 
   ## ---- the release on the internal data: discrimination and calibration of its linear predictor ----
-  rel <- if (!is.null(beta)) beta else ref    # for records: the external cohort's own ridge fit
+  rel <- if (!is.null(beta)) beta else ref     # for records: the external cohort's own ridge fit
   if (!is.null(rel) && length(covered)) {
     lp <- as.numeric(z[, covered, drop = FALSE] %*% rel[covered])
     if (!is_ncc) {
@@ -228,7 +228,7 @@ result <- tryCatch({
   }
 
   ## the covariates the release does not cover: what the target-only fit says about each, so the planner can
-  ## weigh what padding them with zero would assert
+  ## weigh what padding them with zero would assert (the harness gathers, the model decides)
   if (!is.null(b_int) && p > length(covered)) {
     external$absent <- lapply(setdiff(zn, covered), function(v)
       list(term = v, beta_target_only = num(b_int[[v]], 5), sd = num(sds[[v]], 4),

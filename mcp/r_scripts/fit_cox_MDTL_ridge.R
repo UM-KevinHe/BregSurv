@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 # fit_cox_MDTL_ridge.R - dispatcher for the fit_cox_MDTL_ridge MCP tool.
 #
-# Calls BregSurv::cox_MDTL_ridge — Cox PH with Ridge (L2) penalty +
+# Calls BregSurv::cox_MDTL_ridge() — Cox PH with Ridge (L2) penalty +
 # Mahalanobis-distance penalty toward external β. High-dimensional companion
-# of cox_MDTL.
+# of cox_MDTL().
 #
 # DESIGN: same singular-eta convention as fit_coxkl_ridge — fit at one
 # scalar eta, return the beta path along the lambda sequence at that eta.
@@ -33,7 +33,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -153,7 +153,7 @@ result <- tryCatch({
   }
   if (length(Q_sources) > 1L) stop("Provide only one of: Q_expr, Q_inline")
   # Shape / symmetry / PSD / name validation is delegated to the package's
-  # align_beta_Q: a NAMED Q may cover a subset of colnames(z) and is
+  # align_beta_Q(): a NAMED Q may cover a subset of colnames(z) and is
   # zero-padded; only an UNNAMED Q must be exactly ncol(z) x ncol(z).
   # Do not re-check it here -- the bridge cannot express that contract.
 

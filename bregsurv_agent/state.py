@@ -10,7 +10,7 @@ a `coefs` key that only a coefficient table sets.
 
 Four properties, each a design decision:
 
-* **typed** -- fields are declared; `get`/`[]` exist for the drivers and
+* **typed** -- fields are declared; `get()`/`[]` exist for the drivers and
   tests that still index by name, but an unknown name raises instead of
   returning None;
 * **derived, not stored** -- the PHASE is computed from the fields on every
@@ -20,7 +20,7 @@ Four properties, each a design decision:
   that returns a NEW session (the app never mutated the old dict either) and
   records the phase before and after in the typed action log, so the trace
   shows the walk, not just the routes;
-* **serialisable** -- `to_provenance` is a JSON-safe snapshot that goes
+* **serialisable** -- `to_provenance()` is a JSON-safe snapshot that goes
   into `trace.json` under `provenance.session`, from which the evaluation's
   "questions per request" and "completed in one message" are read directly.
 
@@ -46,7 +46,7 @@ class Phase(str, Enum):
 
 ROLE_KEYS = ("time", "event", "event_value", "covariates", "time_zero",
              "stratum", "external_data_expr",
-             "discrete")                    # : item 7, the time scale
+             "discrete")                    # item 7, the time scale
 
 
 def _ext_name(ext: Any) -> str:
@@ -77,10 +77,14 @@ class Session:
     questions: int = 0                         # turns that ended in a question to the analyst
     data_sha256: Optional[str] = None          # the cohort file's fingerprint (memory key)
     remembered: Optional[Dict[str, Any]] = None  # component 4: the declaration recalled for this file
-    # : the analyst's own test file, if one was supplied (never a split
+    # the analyst's own test file, if one was supplied (never a split
     # the agent draws); carried into the declaration at verify time
     test_data_path: Optional[str] = None
     test_data_expr: Optional[str] = None
+    # sessions: which stored session this is, when past analyses are kept
+    # (`sessions.SessionStore`). None in a deployment that keeps none, and
+    # nothing in the agent reads it -- the store does the rest.
+    sid: Optional[str] = None
 
     # ------------------------------------------------------------ derived
     @property
@@ -137,7 +141,7 @@ class Session:
         if len(self.results) > 1:
             extra += f" | runs so far: {len(self.results)}"
         if self.test_data_expr:
-            # : so a question about held-out performance is typed as a
+            # so a question about held-out performance is typed as a
             # question about the result, not as out of scope
             extra += " | test data: supplied (held-out performance reported)"
         return (f"State: cohort loaded: {'yes' if self.profile else 'no'} | "
@@ -257,7 +261,7 @@ class Session:
         # a role with no value keeps its source only when the source is an
         # open question ("ask: ..."): the message's wording contradicted the
         # value read, and a later message that does not answer it must not
-        # let the 0/1 rule fill it (rubric task H063, 2026-10-02)
+        # let the 0/1 rule fill it
         src = {k: v for k, v in (sources or {}).items()
                if k in pend or str(v).startswith("ask:")}
         new = self._step("pending", pending=pend, pending_sources=src)
@@ -305,6 +309,9 @@ class Session:
         return {
             "phase": self.phase.value,
             "phase_walk": self.phase_walk(),
+            # sessions: which stored session this run came out of, so a trace can be
+            # put back beside the conversation that produced it
+            "session_id": self.sid,
             "turns": self.turns,
             "questions_asked": self.questions,
             # taken at run time (before `with_result`): the first message

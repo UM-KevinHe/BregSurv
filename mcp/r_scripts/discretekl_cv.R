@@ -5,10 +5,7 @@
 ## The estimator is DiscreteKL::discSurvKL_cloglog (Newton-Raphson in C++); this
 ## file adds what a fit needs around it: the Cox-to-discrete teacher, feature
 ## scaling, the exact complementary log-log log-likelihood, K-fold selection of
-## eta by held-out NLL, and prediction.  The same steps produced the
-## DiscreteKL / Internal-DiscreteKL rows of the MIUM comparison
-## (60_refit_discretekl_deviance.R); the code below is that logic without the
-## manifest bookkeeping.
+## eta by held-out NLL, and prediction.
 ##
 ## Data convention
 ##   time_bin  integer 1..K (K discrete intervals), event 0/1, x numeric n x p matrix
@@ -123,7 +120,7 @@ dkl_cv <- function(time_bin, x, event, teacher, etas = c(0, 1, 5, 10, 20, 50, 10
   x <- as.matrix(x); time_bin <- as.integer(time_bin); event <- as.integer(event)
   etas <- sort(unique(as.numeric(etas)))
   if (!any(etas == 0)) stop("etas must contain 0 (the internal-only model)")
-  if (is.null(folds)) { # event-stratified folds
+  if (is.null(folds)) {  # event-stratified folds
     set.seed(seed, kind = "Mersenne-Twister")
     folds <- integer(length(event))
     for (v in c(0L, 1L)) { i <- sample(which(event == v)); folds[i] <- 1L + (seq_along(i) - 1L) %% nfold }
@@ -169,7 +166,7 @@ if (!interactive() && any(commandArgs(trailingOnly = TRUE) == "--self-test")) {
   ev <- apply(u < h, 1L, function(r) if (any(r)) which(r)[1L] else NA)
   tb <- ifelse(is.na(ev), K, ev); event <- as.integer(!is.na(ev))
   cens <- sample.int(K, n, replace = TRUE); cc <- cens < tb; tb[cc] <- cens[cc]; event[cc] <- 0L
-  tb[1L] <- K # make sure interval K is observed
+  tb[1L] <- K  # make sure interval K is observed
   teacher <- dkl_teacher(setNames(beta, colnames(x)), exp(alpha), colnames(x))
   tr <- 1:120; te <- 121:n
   cv <- dkl_cv(tb[tr], x[tr, ], event[tr], teacher, etas = c(0, 1, 5, 20, 100), seed = 3)

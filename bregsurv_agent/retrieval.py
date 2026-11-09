@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 MODELS_DIR = Path(os.environ.get("BREGSURV_RETRIEVAL_MODELS",
-                                 "/models/retrieval"))
+                                 "models/retrieval"))
 DEFAULT_EMBED = "Qwen3-Embedding-0.6B"
 DEFAULT_RERANK = "Qwen3-Reranker-0.6B"
 POOL = 20          # candidates taken from each ranking, and the size of the reranked pool

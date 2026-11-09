@@ -2,8 +2,9 @@
 # Everything runs inside: Qwen3-8B-AWQ served by vLLM, the harness, R and BregSurv.
 # No external API is called. The model weights are baked in at build time.
 #
-#   docker build -t bregsurv-agent .
-#   docker run --gpus all -p 7860:7860 bregsurv-agent      # then open http://localhost:7860
+#   from the repository root:  docker compose up --build      (or: docker build -t bregsurv-agent .
+#                              && docker run --gpus all -p 7860:7860 bregsurv-agent)
+#   then open http://localhost:7860. See deploy/DEPLOY.md.
 FROM vllm/vllm-openai:v0.27.1-cu129
 
 ENV DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC PYTHONUNBUFFERED=1 \
@@ -37,20 +38,21 @@ RUN . /etc/os-release && R -q -e " \
     miss <- pk[!vapply(pk, requireNamespace, logical(1), quietly = TRUE)]; \
     if (length(miss)) stop('R packages failed: ', paste(miss, collapse = ', '))"
 
-# The estimator library (this repository's R package) and the discrete-time package, from source
+# The estimator library (this repository) and the discrete-time package, from source
 COPY DESCRIPTION NAMESPACE LICENSE.md /opt/r_pkgs/BregSurv/
 COPY R/ /opt/r_pkgs/BregSurv/R/
 COPY src/ /opt/r_pkgs/BregSurv/src/
 COPY man/ /opt/r_pkgs/BregSurv/man/
 COPY data/ /opt/r_pkgs/BregSurv/data/
 COPY mcp/r_pkgs/DiscreteKL/ /opt/r_pkgs/DiscreteKL/
-RUN R CMD INSTALL /opt/r_pkgs/BregSurv && R CMD INSTALL /opt/r_pkgs/DiscreteKL \
+RUN rm -f /opt/r_pkgs/BregSurv/src/*.o /opt/r_pkgs/BregSurv/src/*.so /opt/r_pkgs/BregSurv/src/*.dll \
+    && R CMD INSTALL /opt/r_pkgs/BregSurv && R CMD INSTALL /opt/r_pkgs/DiscreteKL \
     && R -q -e "library(BregSurv); library(DiscreteKL); cat('BregSurv', as.character(packageVersion('BregSurv')), '\n')"
 
 # The harness and the UI
 # The app gets its own environment on top of the image's Python, so Gradio's web stack cannot
 # disturb vLLM's; torch (for the discrete-time network members) is shared from the image.
-COPY requirements.txt /app/requirements.txt
+COPY deploy/requirements.txt /app/requirements.txt
 RUN python3 -m venv --system-site-packages /opt/appenv \
     && /opt/appenv/bin/pip install -r /app/requirements.txt
 COPY app.py /app/
@@ -63,6 +65,11 @@ COPY mcp/py_scripts/ /app/mcp/py_scripts/
 RUN python3 -c "from huggingface_hub import snapshot_download; \
 snapshot_download('Qwen/Qwen3-8B-AWQ', local_dir='/models/qwen3-8b-awq')"
 
+# The retrieval models for the example banks (Apache-2.0): embedding and reranker, run on the CPU
+RUN python3 -c "from huggingface_hub import snapshot_download; \
+snapshot_download('Qwen/Qwen3-Embedding-0.6B', local_dir='/models/retrieval/Qwen3-Embedding-0.6B'); \
+snapshot_download('Qwen/Qwen3-Reranker-0.6B', local_dir='/models/retrieval/Qwen3-Reranker-0.6B')"
+
 COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh && mkdir -p /tmp/bregsurv && chmod 777 /tmp/bregsurv
 
@@ -70,6 +77,7 @@ ENV VLLM_MODEL_PATH=/models/qwen3-8b-awq \
     SURVBREGDIV_MODEL_NAME=qwen3-8b-awq \
     SURVBREGDIV_MODEL_ENDPOINT=http://127.0.0.1:8000/v1 \
     OPENAI_API_KEY=EMPTY \
+    BREGSURV_RETRIEVAL_MODELS=/models/retrieval BREGSURV_RETRIEVAL_DEVICE=cuda \
     BREGSURV_THINKING=auto BREGSURV_PLANNER=on BREGSURV_MEMORY=off \
     VLLM_USE_FLASHINFER_SAMPLER=0 BREGSURV_PYTHON=/opt/appenv/bin/python \
     GRADIO_SERVER_NAME=0.0.0.0 GRADIO_SERVER_PORT=7860 \

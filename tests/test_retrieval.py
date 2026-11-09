@@ -1,4 +1,4 @@
-"""Hybrid retrieval (V4, 2026-10-05): BM25 order unchanged under bm25 mode; hybrid / rerank run with the
+"""Hybrid retrieval (V4): BM25 order unchanged under bm25 mode; hybrid / rerank run with the
 real models when present; stale or missing vectors fall back to BM25 and the record says so."""
 import os, sys, json, tempfile, time
 from pathlib import Path

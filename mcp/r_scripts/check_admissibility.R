@@ -8,17 +8,17 @@
 # calls it: it is a deterministic precondition on the data, run before any fit,
 # and its verdict is not a matter of judgement.
 #
-# WHY IT EXISTS.  Measured against the installed package on 2026-08-18, SIX of
+# WHY IT EXISTS.  Measured against the installed package, SIX of
 # nine poisoned fixtures returned a silently WRONG number through the bridge
-# rather than an error.  Reference fit on the clean data:
+# rather than an error.  Compared with the fit on the clean data, each of these
+# ran and returned shifted coefficients with no warning:
 #
-#     clean                       0.5045  -0.3130   0.2350   0.0671
-#     competing risks {0,1,2}     0.3871  -0.2652   0.1923   0.1043   <- silent
-#     event column is a factor    0.2923  -0.2278   0.1798   0.1085   <- silent
-#     every subject an event      0.4751  -0.2905   0.2244   0.0604   <- silent
-#     NA follow-up time           0.4949  -0.2730   0.2141   0.1388   <- silent
-#     negative follow-up time     0.5039  -0.3133   0.2353   0.0657   <- silent
-#     NA event indicator          ran, every coefficient NA
+#     competing risks {0,1,2}
+#     event column is a factor
+#     every subject an event
+#     NA follow-up time
+#     negative follow-up time
+#     NA event indicator          (ran, every coefficient NA)
 #
 # A wrong fit of this kind passes every downstream numeric check perfectly,
 # which is why the gate is P0 and number-grounding is not.
@@ -31,7 +31,7 @@
 #
 # NOT CHECKED, DELIBERATELY: proportional hazards.  R survival >= 3.0-10
 # switched `cox.zph` to the "actual" calculation and with correlated covariates
-# its false-positive rate reaches 100% at n=100 and n=1,000.  Correlated
+# its false-positive rate can approach 100% at moderate and large n.  Correlated
 # covariates are the EHR norm, so a p < 0.05 -> refuse rule would over-refuse
 # catastrophically, and the behaviour depends on the installed R version.
 #
@@ -168,7 +168,7 @@ result <- tryCatch({
   col_of <- function(i) if (is.data.frame(z_raw)) z_raw[[i]] else z_raw[, i]
 
   # A non-numeric covariate does NOT reach the estimator as itself. The bridge
-  # does as.matrix then storage.mode(z) <- "double", which turns a factor or
+  # does as.matrix() then storage.mode(z) <- "double", which turns a factor or
   # character column into an ALL-NA column; the fit then dies deep inside with
   # "Hessian solve failed.", a message no analyst can act on. Name it here.
   bad_type <- character(0)
@@ -244,8 +244,8 @@ result <- tryCatch({
 
   # Rank deficiency is an ADVISORY, deliberately. A linearly dependent group is
   # not identified by the unpenalised fits -- the split between the columns is
-  # arbitrary, and measured on a synthetic cohort one coefficient moved from
-  # 0.411 to 0.115 when a duplicate column was added -- but ridge and the
+  # arbitrary, and on a synthetic cohort adding a duplicate column cut one
+  # coefficient to a fraction of its value -- but ridge and the
   # elastic net identify it perfectly well. Refusing would delete the candidates
   # that handle the situation, and letting cross-validation choose among them is
   # exactly what this agent is for.
@@ -274,7 +274,7 @@ result <- tryCatch({
 
   n_obs <- length(ev_raw)
 
-  # A FACTOR event column is the quietest failure of the lot. as.numeric on a
+  # A FACTOR event column is the quietest failure of the lot. as.numeric() on a
   # factor returns its integer CODES, so a 0/1 column stored as a factor becomes
   # {1,2}: every subject counts as an event, with weights 1 and 2. Nothing warns.
   if (is.factor(ev_raw)) {
@@ -319,7 +319,7 @@ result <- tryCatch({
                 event_value = as.character(event_value)))
   }
 
-  # A CHARACTER event column must be refused, not coerced. as.numeric on
+  # 🔴 A CHARACTER event column must be refused, not coerced. as.numeric() on
   # "Dead"/"Alive" returns all NA with only a warning, so `n_events` becomes 0,
   # the gate reports admissible with an event rate of 0%, and the run dies far
   # downstream inside the estimator -- after the analyst has approved a
@@ -342,7 +342,7 @@ result <- tryCatch({
   n_events <- sum(ev_num == suppressWarnings(as.numeric(event_value)), na.rm = TRUE)
 
   ## ---- matched sets ---------------------------------------------------
-  # stratum_expr was DOCUMENTED in this header and never read. The cost was
+  # 🔴 stratum_expr was DOCUMENTED in this header and never read. The cost was
   # not cosmetic: run_candidates.R hard-errors with "stratum_expr is required
   # for a nested case-control design", and it does so AFTER the analyst has
   # approved the configuration -- so the gate said "admissible" and the run died
@@ -363,7 +363,7 @@ result <- tryCatch({
                            "outcome has %d."), length(st_raw), n_obs),
              list(n_stratum = length(st_raw), n_obs = n_obs))
     } else if (anyNA(st_raw)) {
-      # table and tapply both drop NA silently, so a matched-set column
+      # 🔴 table() and tapply() both drop NA silently, so a matched-set column
       # with missing entries yields a set count and a one-case count computed
       # over FEWER subjects than the file has -- and the card then reports a
       # structure the analysis will not actually use. Time, event and the
@@ -388,14 +388,14 @@ result <- tryCatch({
         # A set with no case contributes nothing to the conditional likelihood;
         # a set of one has no within-set contrast. Both are silent -- the fit
         # returns numbers estimated from fewer sets than the analyst thinks.
-        # EXACTLY ONE CASE PER SET is the 1:m contract the cv.* layer
+        # 🔴 EXACTLY ONE CASE PER SET is the 1:m contract the cv.* layer
         # enforces, and it is the falsification device for a matched design.
         # An earlier version of this check asked only whether any set had NO
         # case, which does not catch the mistake it exists to catch: declaring
         # the CONTROLS as cases leaves every set with m cases and none empty, so
         # it sailed through while the card read "sets with exactly one case:
-        # 0 of 150". Under a cohort the analyst catches a complement mix-up from
-        # an event rate of 75%; here the rate is the sampling ratio and looks
+        # 0 of <n>". Under a cohort the analyst catches a complement mix-up from
+        # an implausible event rate; here the rate is the sampling ratio and looks
         # perfectly normal either way, so this count is what has to refuse.
         if (matched$n_one_case != matched$n_strata) {
           refuse("matched_sets_not_one_case",
@@ -445,7 +445,7 @@ result <- tryCatch({
                    "anyway and returns different coefficients, with no warning."),
              list(n_missing = sum(is.na(tm)), n_obs = length(tm)))
     }
-    # Inf is not caught by anyNA. Measured: an infinite follow-up time runs and
+    # Inf is not caught by anyNA(). Measured: an infinite follow-up time runs and
     # returns different coefficients, silently.
     n_inf <- sum(is.infinite(tm))
     if (n_inf > 0L) {
@@ -454,7 +454,7 @@ result <- tryCatch({
                    "anyway and returns different coefficients, with no warning."),
              list(n_infinite = n_inf, n_obs = length(tm)))
     }
-    # On a DECLARED discrete grid a time of exactly zero is a
+    # 🔴 On a DECLARED discrete grid a time of exactly zero is a
     # subject observed in the first interval -- an event on the day of
     # transplant is recorded as day 0 and floor(0 / width) + 1 is interval 1
     # -- so only a negative time is refused there. The continuous-time
@@ -474,15 +474,15 @@ result <- tryCatch({
                   min_time = min(tm, na.rm = TRUE)))
     }
     # Ties are a routing decision, never a refusal: the library represents them.
-    # which, not a bare logical index. An NA in `ev_num` makes the index NA,
+    # 🔴 which(), not a bare logical index. An NA in `ev_num` makes the index NA,
     # and `tm[NA]` RETURNS an NA element rather than dropping the row -- so
-    # duplicated counts every NA after the first as a tie and the reported tie
-    # fraction is invented. which drops NA positions outright.
+    # duplicated() counts every NA after the first as a tie and the reported tie
+    # fraction is invented. which() drops NA positions outright.
     ev_times <- tm[which(!is.na(tm)
                          & ev_num == suppressWarnings(as.numeric(event_value)))]
     tie_frac <- if (length(ev_times)) sum(duplicated(ev_times)) / length(ev_times) else 0
     if (tie_frac > tie_thresh) {
-      # DISCLOSURE, NOT AN INSTRUCTION. whether a
+      # 🔴 DISCLOSURE, NOT AN INSTRUCTION. By design: whether a
       # tie-corrected estimator is used is the ANALYST'S call, never something
       # inferred from the data, and the default is no correction. This message
       # used to read "the tie-handling estimators are required", which made the
@@ -502,15 +502,15 @@ result <- tryCatch({
     tie_frac <- 0
   }
 
-  ## ---- the discrete-time grid ----------------------------------
+  ## ---- the discrete-time grid ------------------------------------------
   # The analyst declared that follow-up is in discrete intervals (item 7).
-  # The grid is part of the model (ruling 1): the harness cuts the time
+  # The grid is part of the model: the harness cuts the time
   # column into the declared intervals here, exactly as run_candidates.R
   # will, and reports what the cut does -- how many subjects fall beyond the
   # horizon, whether the last interval is reached, how the events spread --
   # so the declaration can be falsified from counts before anything is
   # fitted. The external baseline hazard, when one was read, is checked to
-  # cover the horizon; its presence never raised the question (ruling 6).
+  # cover the horizon; its presence never raises the question.
   disc <- NULL
   if (!is.null(input$discrete)) {
     d <- input$discrete
@@ -554,12 +554,12 @@ result <- tryCatch({
           bin <- as.integer(round(tm))
         }
       } else {
-        # floor, not ceiling: interval k covers [(k-1) w, k w). This is the
-        # MIUM grid (floor_bins in diskd.py), and the card states it.
+        # 🔴 floor, not ceiling: interval k covers [(k-1) w, k w). This is the
+        # grid floor_bins in diskd.py uses, and the card states it.
         raw_bin <- floor(tm / width) + 1
         beyond <- raw_bin > K
         bin <- as.integer(pmin(raw_bin, K))
-        ev_is[beyond] <- FALSE         # administrative censoring at the horizon
+        ev_is[beyond] <- FALSE          # administrative censoring at the horizon
       }
       if (!is.null(bin)) {
         n_at   <- tabulate(bin, nbins = K)
@@ -659,7 +659,7 @@ result <- tryCatch({
     }
   }
 
-  ## ---- the analyst's test data ----------------------------------
+  ## ---- the analyst's test data -----------------------------------------
   # A second file the analyst supplied and named as their test set. It must
   # carry the declared columns (time, event, covariates, stratum) under the
   # same names, hold at least one event and one non-event, and pass the same

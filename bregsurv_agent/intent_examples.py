@@ -10,7 +10,7 @@ replaced by one placeholder, digits by another), so it is about phrasing, never 
 drawn first from the bank entries whose state agrees with the session on whether a result exists, since
 that fact changes the correct typing of the same words (a question about results before anything was
 run). The bank's messages, its column vocabulary and its wording are disjoint from every evaluation set
-(the 120 labelled intents, the rubric tasks and the hand-written requests); the merge script checks it.
+(the labelled intents, the evaluation tasks and the hand-written requests); the merge script checks it.
 
 What this does NOT change: the typing is still validated by `intent.validate` (evidence must be a
 substring of the analyst's own message, so an example's words can never become evidence), and the
@@ -105,7 +105,7 @@ def render(examples: List[Dict[str, Any]]) -> str:
     parts = ["Worked examples of typing other analysts' messages (different cohorts; their words are never "
              "evidence for this message):"]
     for j, it in enumerate(examples, 1):
-        # the schema's current fields, in its order (V4 2026-10-06 added km_by after the bank was built)
+        # the schema's current fields, in its order (V4 added km_by after the bank was built)
         ans = {"reasoning": it["reasoning"],
                "intents": [{**i, "km_by": i.get("km_by")} for i in it["intents"]]}
         parts.append(f"Example {j}\n{it['state']}\nThe analyst wrote:\n{it['message']}\n"

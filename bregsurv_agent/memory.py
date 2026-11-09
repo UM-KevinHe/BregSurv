@@ -6,7 +6,7 @@ Two memories, both small on purpose.
    `bregsurv_agent/registry/published_models.json`. Metadata only -- what a
    release is (organ, population, outcome, horizon, release cycle), what it
    contains, how the analyst obtains it, and the checksums of files that were
-   published. The agent never downloads: the SRTR
+   published. 🔴 The agent never downloads: the SRTR
    releases sit in a Shiny application behind a session-scoped link and a
    reCAPTCHA, a scraper would be brittle and would put a browser into an
    air-gapped deployment, and none of it has anything to do with the model.
@@ -27,9 +27,9 @@ Two memories, both small on purpose.
 
    A remembered role is a SOURCE like any other -- the card and the report
    say `remembered: you declared this for the same file on <date>` -- and one
-   message edits it. The time-zero answer is never remembered: it is the
-   one question that stays with a person every time (master memory section
-   3d, the automation ruling), and a remembered "yes" would be exactly the
+   message edits it. 🔴 The time-zero answer is never remembered: it is the
+   one question that stays with a person every time (by design), and a
+   remembered "yes" would be exactly the
    pre-filled suggestion the protocol avoids.
 
 Never stored: rows, values, the external file, model calls, prompts.
@@ -177,8 +177,8 @@ _ORGAN_WORDS = {
 
 def supported_by(message: str, m: Dict[str, Any]) -> bool:
     """Do the analyst's OWN words carry the entry's organ, outcome and horizon?
-    A deterministic check that does not depend on how the model quotes: the
-    2026-09-11 Qwen3 run matched the right ids but copied the catalogue line
+    A deterministic check that does not depend on how the model quotes: a
+    Qwen3 run has matched the right ids but copied the catalogue line
     as evidence, and a match the message supports must not be lost to that."""
     msg = _norm(message)
     organ = _norm(m.get("organ", ""))

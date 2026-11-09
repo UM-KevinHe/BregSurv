@@ -1,5 +1,5 @@
 """A stratum or matched-set column the analyst NAMES reaches the declaration from prose
-(2026-09-30, found by the simulation prompt search: the role reading had no field for it, so
+(found by a prompt search on simulated requests: the role reading had no field for it, so
 "stratify by stratum" ran an unstratified cohort and a matched sample always cost a design
 question), and another cohort's records in the analyst's own layout take their outcome columns
 from the declaration when the reading cannot name them (the matched sample `set_id, cc_status,
@@ -61,7 +61,7 @@ def main() -> int:
                               "stratum_column": "stratum", "covariate_columns": None})
     check("stratum" not in b and u.get("stratum") == "stratum",
           "a stratum the message does not write is dropped and logged", str(u))
-    # 2026-09-30, prompt search strat_v3: the reading gave `stratum` the strata role AND listed it
+    # a reading has given `stratum` the strata role AND listed it
     # as the only covariate; the run stopped on "the outcome is listed among the predictors"
     msg3 = ("We followed patients in several strata, recorded in the column stratum. The column "
             "time holds each patient's follow-up and status records whether the event happened (1) "

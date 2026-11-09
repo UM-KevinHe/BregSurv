@@ -15,27 +15,26 @@
 # count, not about p. So it is not judged. Every member of the row is fitted and
 # cross-validation picks. That is why the agent needs no routing model.
 #
-# ONE PARTITION.  Every candidate is scored on the SAME folds, or the
-# comparison is meaningless. `get_fold` depends only on (delta, stratum), and
+# 🔴 ONE PARTITION.  Every candidate is scored on the SAME folds, or the
+# comparison is meaningless. `get_fold()` depends only on (delta, stratum), and
 # since the package now pins the RNG kind, one seed gives one partition across
-# every cv.* function, every beta and every penalty. Verified 2026-08-18 across
+# every cv.* function, every beta and every penalty. Verified across
 # eight variants. The External-only member does not refit at all, so it is scored
-# with `vvh_loss_fixed` on the fold vector the first candidate returned.
+# with `vvh_loss_fixed()` on the fold vector the first candidate returned.
 #
-# THE SET CONTAINS THE TWO WAYS OF NOT BORROWING.  Internal-only is the
+# 🔴 THE SET CONTAINS THE TWO WAYS OF NOT BORROWING.  Internal-only is the
 # external vector replaced by zeros with eta pinned at 0; External-only is the
-# published model used unchanged. Both must be able to win. On MIMIC-IV the
-# external model beat 8 of the 9 fitted candidates, so an agent whose output
-# space held only integration models would have recommended something worse than
+# published model used unchanged. Both must be able to win. On real data the
+# external model can beat nearly every fitted candidate, so an agent whose output
+# space held only integration models could recommend something worse than
 # doing nothing.
 #
-# THE ETA GRIDS ARE NOT INTERCHANGEABLE and must not be thinned. The
-# Mahalanobis penalty is on a different scale from the KL divergence: measured on
-# the MIUM cohort, unpenalised cox_MDTL has already shrunk 99.7% of the way at
-# eta = 1, so the whole trade-off lives below eta = 3 and the grid needs a dense
-# low end, while the KL grid is exponential to 200. These defaults are the ones
-# tuned against the two real cohorts. Thinning them degrades the very selection
-# this tool performs.
+# 🔴 THE ETA GRIDS ARE NOT INTERCHANGEABLE and must not be thinned. The
+# Mahalanobis penalty is on a different scale from the KL divergence:
+# unpenalised cox_MDTL can be almost fully shrunk toward the external model at
+# eta = 1, so the whole trade-off lives at small eta and the grid needs a dense
+# low end, while the KL grid is exponential to 200. These defaults are tuned;
+# thinning them degrades the very selection this tool performs.
 #
 # input.json:
 #   data_path, z_expr, time_expr, delta_expr        cohort designs
@@ -55,7 +54,7 @@
 #   diskd_options optional list overriding the DiSKD training settings
 #                 (architecture, eta_grid, learning_rates, max_epochs,
 #                 patience) -- TESTING ONLY, like `include`; the product
-#                 always runs the released nested CV (ruling 2)
+#                 always runs the released nested CV
 ##   test_data     {path?, expr, time_col, event_col, covariates[], stratum_col?}
 #                 -- the analyst's OWN test file. Every fitted member is
 #                 scored on it once (C-index, loss, IBS, tdAUC via test_eval);
@@ -80,7 +79,7 @@ suppressPackageStartupMessages({
   library(BregSurv)
 })
 
-# 2026-09-30: the candidate set assumes BregSurv >= 1.2.0 -- the ridge family scales the
+# 🔴 The candidate set assumes BregSurv >= 1.2.0 -- the ridge family scales the
 # design before penalising, and the Mahalanobis metric acts on the scaled design. Under 1.1.0
 # every call below still runs and returns numbers (ridge unscaled, the metric in the wrong
 # direction), so an older copy earlier on the library path would give a different analysis
@@ -111,7 +110,7 @@ as_named_numeric <- function(x) {
 # The profile and the fitted numbers cross the boundary; the rows never do.
 # A tabular file becomes a single data.frame named after the file, so `data_expr`
 # can address it the same way as an object inside an .rda.
-# 2026-10-03 (V4 trial, H041): two members can reach the same loss to ~1e-9 (a Mahalanobis member at a
+# 🔴 Two members can reach the same loss to ~1e-9 (a Mahalanobis member at a
 # very large weight IS the released model unchanged), and a replay on another thread count then broke the tie
 # the other way. Losses within 1e-8 (relative) of the minimum are a tie, settled by the fixed member order,
 # so the selection does not depend on the last digits of the arithmetic.
@@ -152,7 +151,7 @@ load_any <- function(data_path) {
 result <- tryCatch({
   input <- fromJSON(input_path, simplifyVector = FALSE)
 
-  ## ---- V4: a PLAN chosen by the planner ------------------------------------------
+  ## ---- V4: a PLAN chosen by the planner -------------------------------------------------------
   # Absent, the script fits the V3 set exactly as before. Present, `plan` = {row: "cox" | "cox_ties"
   # | "discrete", ties: "breslow" | "exact", members: [{key, etas?, covariates?, mask?, pad_absent?,
   # nlambda?}], diskd_options?}: only the listed members are fitted, each with its own grid and
@@ -199,10 +198,10 @@ result <- tryCatch({
   is_ncc <- !is.null(input$y_expr) && nzchar(input$y_expr)
   design <- if (is_ncc) "nested case-control" else "full cohort"
   stratum <- eval_in(input$stratum_expr, e)
-  ## ---- fact 3: the internal outcome is in DISCRETE INTERVALS ------
+  ## ---- fact 3: the internal outcome is in DISCRETE INTERVALS -------------
   # Declared by the analyst (item 7), never inferred from the data and never
   # read off the release. It chooses a different row of the library, whose
-  # members are ranked among themselves only (ruling 4).
+  # members are ranked among themselves only.
   is_discrete <- !is.null(input$discrete)
   if (is_discrete && is_ncc)
     stop("the discrete-time row exists for cohort designs only; a matched design has no follow-up time to cut into intervals")
@@ -215,9 +214,14 @@ result <- tryCatch({
     delta <- as.numeric(eval_in(input$delta_expr, e))
     if (is.null(time) || is.null(delta)) stop("time_expr and delta_expr are required")
   }
+  # At least as many covariates as subjects (matched sets under a matched design) -- the
+  # unpenalized members are not identified and leave the set; for individual-level records the
+  # release fitted from them is not either. pipeline.wide_design passes the same answer as `wide`.
+  WIDE <- if (!is.null(input$wide)) isTRUE(input$wide) else
+    if (is_ncc) p >= length(unique(stratum)) else p >= nrow(z)
 
   ## ---- which value the analyst said means the event -------------------
-  # Until 2026-08-19 this script hard-coded 1 as the event and never received
+  # 🔴 An earlier version of this script hard-coded 1 as the event and never received
   # `event_value` at all, while the analyst declared it, the consequence card
   # printed it and the approval hash covered it. A declaration of event_value=0
   # on a genuine 0/1 column therefore fitted the exact complement of the
@@ -262,7 +266,7 @@ result <- tryCatch({
       stop(sprintf("Q_inline is %d x %d but beta_inline has %d names",
                    nrow(Q), ncol(Q), length(beta)))
   }
-  # NO EXTERNAL INFORMATION IS A SUPPORTED STATE as of 2026-08-19. It used to
+  # 🔴 NO EXTERNAL INFORMATION IS A SUPPORTED STATE. It used to
   # be `stop("An external coefficient vector is required")`, which is defensible
   # for a transfer-learning library but wrong for an agent: an analyst with no
   # published model to borrow from got an R error, not an analysis and not a
@@ -293,7 +297,7 @@ result <- tryCatch({
   has_indi <- !is.null(z_ext)
   time_ext <- delta_ext <- stratum_ext <- NULL
   if (has_indi) {
-    # The three forms of external information are ALTERNATIVES, not a menu to
+    # 🔴 The three forms of external information are ALTERNATIVES, not a menu to
     # combine. The candidate set is derived from ONE of them; deriving it from
     # two would mean silently choosing which, which is the judgement this whole
     # design exists to remove.
@@ -320,7 +324,7 @@ result <- tryCatch({
     }
     if (!is.null(ev_declared) && nzchar(as.character(ev_declared))) {
       ev_num_e <- suppressWarnings(as.numeric(as.character(ev_declared)))
-      # The SAME presence check the internal recode gets. Without it a value
+      # 🔴 The SAME presence check the internal recode gets. Without it a value
       # that never occurs in the external event column turns that whole column
       # into zeros -- an external cohort with no events at all -- and the fit
       # runs, borrows from nothing, and reports a number. The internal side
@@ -334,7 +338,7 @@ result <- tryCatch({
                            collapse = ", ")))
       if (!is.na(ev_num_e)) delta_ext <- as.numeric(delta_ext == ev_num_e)
     }
-    # NAMES, not just the count. fit_cox_indi.R compares ncol and nothing
+    # 🔴 NAMES, not just the count. fit_cox_indi.R compares ncol() and nothing
     # else, so two tables of the same width in a different column ORDER fit
     # happily and every borrowed coefficient lands on the wrong variable. The
     # coefficient path has matched by name since it existed; the path with the
@@ -387,17 +391,17 @@ result <- tryCatch({
   }
   beta_full <- rep(0, p); names(beta_full) <- zn
   if (has_external) beta_full[names(beta)] <- beta
-  # The Mahalanobis family takes the release as it stands, NOT beta_full.
+  # 🔴 The Mahalanobis family takes the release as it stands, NOT beta_full.
   # align_beta_Q masks its metric by NAME: every named entry counts as a
   # coordinate the release speaks for. beta_full names every column, with zeros
   # on the ones the release never mentioned, so the "masked identity" became a
   # full identity and every uncovered coefficient was pulled toward 0 with weight
-  # eta -- a claim the release never made (settled design, 2026-08-17; found
-  # 2026-09-28 on MIUM, where it cost the lasso member 0.03 in concordance). The
+  # eta -- a claim the release never made, and one that costs the lasso member
+  # concordance in practice. The
   # KL family is unaffected: a zero adds nothing to the risk score it borrows.
   beta_covered <- if (has_external && !has_indi) beta else NULL
-  has_Q <- has_external && !has_indi && !is.null(Q)  # the release carried a covariance
-  # In the individual-level cell there is no published vector, so beta_full
+  has_Q <- has_external && !has_indi && !is.null(Q)   # the release carried a covariance
+  # 🔴 In the individual-level cell there is no published vector, so beta_full
   # is the all-zero placeholder until the External-cohort-only member fits one
   # and overwrites it. If that member FAILS, the zeros survive and the report's
   # "external model" column renders a column of 0.000 as though the external
@@ -434,8 +438,8 @@ result <- tryCatch({
   if (is.na(K) || K < 2L) stop("n_intervals must be at least 2")
   if (!is_index && (is.na(width) || width <= 0)) stop("the interval width must be positive")
 
-  ## ---- the grid is part of the model (ruling 1) ----------------------
-  # interval k covers [(k-1) w, k w) -- floor, the MIUM grid; a subject
+  ## ---- the grid is part of the model ----------------------------------
+  # interval k covers [(k-1) w, k w) -- floor binning, as in diskd.py's floor_bins; a subject
   # observed beyond K w is censored at K (administrative censoring at the
   # horizon). The gate reported the same cut on the consequence card.
   beyond <- rep(FALSE, n)
@@ -474,21 +478,21 @@ result <- tryCatch({
     # function RIGHT-continuous as survival::basehaz reports it (H0(7)
     # includes a jump at day 7). A Cox jump exactly at an edge therefore
     # belongs to the preceding increment while an event exactly at an edge
-    # belongs to the following interval under floor binning -- the MIUM
-    # convention (its code/10_run_discretekl.R audits and retains it), kept
-    # here so the agent reproduces that run's teacher exactly.
+    # belongs to the following interval under floor binning -- the convention
+    # of the reference DiscreteKL analysis, kept here so the agent reproduces
+    # that analysis's teacher exactly.
     # Beyond the last published time point the step function is flat, so a
     # horizon past it adds nothing (the gate refused a baseline that ends
     # before the last interval begins).
     H_at <- function(t) { i <- sum(bt <= t); if (i == 0L) 0 else bc[i] }
     dH0 <- diff(vapply(edges, H_at, numeric(1)))
     if (!any(dH0 > 0)) stop("the external baseline hazard does not increase over the declared horizon; nothing can be borrowed")
-    teacher <- dkl_teacher(beta, dH0, zn)      # beta: covered names only
+    teacher <- dkl_teacher(beta, dH0, zn)       # beta: covered names only
   }
   # inert teacher for the eta = 0 fit when nothing can be borrowed
   teacher0 <- list(beta = beta_zero, gamma = rep(0, K))
   ETAS_DKL <- c(0, 1, 5, 10, 20, 50, 100)
-  if (!is.null(plan_of("discretekl")$etas))     # V4: the planner's grid for DiscreteKL
+  if (!is.null(plan_of("discretekl")$etas))      # V4: the planner's grid for DiscreteKL
     ETAS_DKL <- sort(unique(c(0, as.numeric(unlist(plan_of("discretekl")$etas)))))
   SCORER_D <- "discrete_nll/pooled"
   rows <- list(); fits <- list(); gammas <- list()
@@ -537,7 +541,7 @@ result <- tryCatch({
     }
   }
 
-  ## ---- the teacher scored unchanged (external_discrete, ruling 5) ------
+  ## ---- the teacher scored unchanged (external_discrete) ----------------
   if (has_teacher && want("external_discrete")) {
     t0 <- proc.time()[["elapsed"]]
     ll <- tryCatch(dkl_loglik(time_bin, z, delta, teacher$gamma, teacher$beta, per_subject = TRUE),
@@ -559,7 +563,7 @@ result <- tryCatch({
   }
 
   ## ---- the network members, through the Python bridge ------------------
-  # DiSKD is Python (ruling 3: the agent is Python; nothing R-only about it).
+  # DiSKD is Python (the agent is Python; nothing R-only about it).
   # mcp/py_scripts/run_diskd.py takes the same JSON handshake this script
   # takes, fits Internal-NN (eta = 0) and DiSKD on the SAME folds, and
   # returns the pooled held-out NLL of each. BREGSURV_PYTHON names the
@@ -634,7 +638,7 @@ result <- tryCatch({
                  paste(sort(scorers), collapse = " and ")))
   losses <- vapply(ok_rows, function(r) r$loss, numeric(1))
   win <- ok_rows[[pick_min(losses)]]
-  b_sel <- fits[[win$key]]                     # NULL for a network member
+  b_sel <- fits[[win$key]]                      # NULL for a network member
   b_int <- fits[["internal_discrete"]]
   coefs <- lapply(seq_len(p), function(i) list(
     variable = zn[i],
@@ -685,28 +689,26 @@ result <- tryCatch({
   )
   } else {
   ## ---- the eta grids ---------------------------------------------------
-  # These are the grids the manual EHR analyses used and the product was tuned on. A wider
-  # superset (KL to 2000, Mahalanobis to 1e5) was tried on 2026-09-12 and REVERTED the same
-  # evening: on MIUM the Mahalanobis CV curve falls monotonically toward the external-only
-  # limit, so every finite top is "the top", and the penalised members' lambda paths made a
-  # run twice as long (4-5 -> 8-11 min). a design decision: the agent must agree with the hand-run
-  # at the same settings; finding the best eta-lambda is not the goal. What stays from that
-  # trial is the disclosure: a member whose selected eta is the top of its grid is flagged
-  # `eta_at_grid_max` and the report says so. Density is unchanged (never thinned).
-  # 2026-09-27: the grids above could not express the amount of borrowing that is often
+  # These grids follow the manual analyses the product is designed to agree with. A wider
+  # superset (KL to 2000, Mahalanobis to 1e5) was tried and REVERTED: the Mahalanobis CV
+  # curve can fall monotonically toward the external-only limit, so every finite top is
+  # "the top", and the penalised members' lambda paths roughly doubled the run time. By
+  # design the agent must agree with a hand-run analysis at the same settings; finding the
+  # best eta-lambda is not the goal. What stays from that trial is the disclosure: a member
+  # whose selected eta is the top of its grid is flagged `eta_at_grid_max` and the report
+  # says so. Density is unchanged (never thinned).
+  # 🔴 The grids must be able to express the small amounts of borrowing that are often
   # best. `generate_eta(method = "exponential")` is an exponential RAMP, not a log grid, so its
-  # smallest positive point was 0.199 for KL, 0.554 for the penalised KL members and 0.909 for
-  # every Mahalanobis member -- the whole region below eta = 1 was unreachable -- and the
-  # Mahalanobis top was 1e3 where the hand analysis uses 1e6 and selects near that top on
-  # 39/204 splits. Measured on MIUM, reps 1..20, same library and same selection rule: the
-  # ramp gives a selected member at C-index 0.601, a log grid over the hand analysis's range
-  # gives 0.637. The rule below is stated as COVERAGE, not as one cohort's numbers: log spaced
-  # from eta = 0.01 (two decades below parity) to the family's upper end, at least five points
-  # per decade, with eta = 0 kept as the internal endpoint.
+  # smallest positive point is 0.199 for KL, 0.554 for the penalised KL members and 0.909 for
+  # every Mahalanobis member -- the whole region below eta = 1 is unreachable -- and its
+  # Mahalanobis top is 1e3 where a hand analysis uses 1e6. A log-spaced grid reaches the
+  # region below eta = 1 that the exponential ramp misses. The rule below is stated as
+  # COVERAGE: log spaced from eta = 0.01 (two decades below parity) to the family's upper
+  # end, at least five points per decade, with eta = 0 kept as the internal endpoint.
   log_eta <- function(hi, n, lo = 0.01) c(0, exp(seq(log(lo), log(hi), length.out = n)))
-  ETAS      <- log_eta(2e2, 81)  # KL, unpenalised
-  ETAS_PEN  <- log_eta(2e2, 41)  # KL under a ridge or lasso path
-  ETAS_MDTL <- log_eta(1e6, 81)  # Mahalanobis, unpenalised: it shrinks slowly, so it needs the reach
+  ETAS      <- log_eta(2e2, 81)   # KL, unpenalised
+  ETAS_PEN  <- log_eta(2e2, 41)   # KL under a ridge or lasso path
+  ETAS_MDTL <- log_eta(1e6, 81)   # Mahalanobis, unpenalised: it shrinks slowly, so it needs the reach
   ETAS_MDTL_RIDGE <- log_eta(1e6, 41)
   ETAS_MDTL_ENET  <- log_eta(1e3, 41)
   ETAS_INDI     <- ETAS
@@ -714,8 +716,8 @@ result <- tryCatch({
   CRIT <- if (is_ncc) "loss" else "V&VH"
 
   ## ---- the candidate set, derived from the two facts -------------------
-  # NO TIE-CORRECTED ESTIMATOR EVER ENTERS THE CANDIDATE SET, and it is not
-  # a question the data gets to answer. Settled with whether a
+  # 🔴 NO TIE-CORRECTED ESTIMATOR EVER ENTERS THE CANDIDATE SET, and it is not
+  # a question the data gets to answer. By design: whether a
   # tie correction is wanted is the analyst's decision, the default is none, and
   # nothing here should go looking for a reason to do otherwise.
   #
@@ -742,7 +744,7 @@ result <- tryCatch({
     # reaches the set through a future edit, and refuse the mixed comparison
     if (grepl("_ties$", fn)) return("vvh/breslow-or-exact")
     if (grepl("^cv\\.ncc", fn))
-      # Both NCC families pool as of 2026-08-19. The unpenalized drivers used to
+      # Both NCC families pool. The unpenalized drivers used to
       # average per-fold ratios instead, and this guard is what caught it: the
       # NCC set could not be ranked at all until they were unified.
       return("cc_loglik/pooled")
@@ -763,11 +765,11 @@ result <- tryCatch({
   base <- if (is_ncc) base_ncc else base_cohort
 
   # Internal-only: the external vector replaced by zeros, eta pinned at 0. This
-  # is how the two real cohorts computed it, and it reuses the same machinery
+  # is the standard way to compute it, and it reuses the same machinery
   # rather than a second code path that could drift.
   if (has_indi) {
     # ---- individual-level external data ---------------------------------
-    # The whole cell was absent: `indi` appeared ZERO times in this script.
+    # 🔴 The whole cell was absent: `indi` appeared ZERO times in this script.
     # Every member here comes from the individual-level family so the cell has
     # ONE tolerance, ONE scorer and one partition. cv.cox_indi at eta = 0 is the
     # internal-only fit -- the external rows sit in their own strata carrying
@@ -775,9 +777,10 @@ result <- tryCatch({
     # information -- which is the same masked-identity trick the coefficient
     # cells use, applied to the estimator this cell is actually about.
     #
-    # There is no ridge: the library has no cox_indi_ridge or ncc_indi_ridge, so
-    # the penalty axis here has two levels, not three, and the report derives
-    # that from the set rather than asserting three.
+    # Ridge (BregSurv 1.4.0): cox_indi_ridge exists for the full cohort, so the
+    # composite likelihood has all three penalty levels there; the matched side
+    # has no ncc_indi_ridge, and its target-only ridge member comes from the
+    # conditional-likelihood ridge (cv.ncckl_ridge at eta = 0).
     base_indi <- if (is_ncc)
       list(z_int = z, y_int = delta, stratum_int = stratum,
            z_ext = z_ext, y_ext = delta_ext, stratum_ext = stratum_ext,
@@ -799,14 +802,24 @@ result <- tryCatch({
     add("indi_lasso", "Individual-level borrowing, lasso", "individual", "lasso",
         fn_indiE, c(base_indi, list(etas = ETAS_PEN_INDI, alpha = 1,
                                     nlambda = nlambda)))
+    if (is_ncc) {
+      add("internal_ridge", "Internal only, ridge", "none", "ridge",
+          "cv.ncckl_ridge", c(base_ncc, list(beta = beta_zero, etas = 0, nlambda = nlambda)))
+    } else {
+      add("indi_ridge", "Individual-level borrowing, ridge", "individual", "ridge",
+          "cv.cox_indi_ridge", c(base_indi, list(etas = ETAS_PEN_INDI, nlambda = nlambda)))
+    }
     # ---- the coefficient members from a model fitted on the records ----
     # A cohort's records carry everything a coefficient release carries: fit a Cox model on them
     # and the coefficients and their covariance are a release like any published one. Records are
     # the finer release, so every member of the coefficient-and-covariance set is admissible here
-    # too (the paper's rule: a member is admitted at its release level and at any finer one).
+    # too (the admissibility rule: a member is admitted at its release level and at any finer one).
     # Without them the cell with the most external information held the fewest borrowing members.
     # The metric is conditioned exactly as a released covariance is (external._condition).
-    if (!is_ncc) {
+    if (!is_ncc && WIDE) {
+      add("internal_ridge", "Internal only, ridge", "none", "ridge",
+          "cv.coxkl_ridge", c(base, list(beta = beta_zero, etas = 0, nlambda = nlambda)))
+    } else if (!is_ncc) {
       fx <- tryCatch({
         fm <- if (!is.null(stratum_ext) && length(unique(stratum_ext)) > 1)
           survival::coxph(survival::Surv(time_ext, delta_ext) ~ z_ext + survival::strata(stratum_ext),
@@ -858,32 +871,32 @@ result <- tryCatch({
       add("mahalanobis", "Mahalanobis", "mahalanobis", "none",
           if (is_ncc) "cv.ncc_MDTL" else "cv.cox_MDTL",
           c(base, list(beta = beta_covered, Q = Q, etas = ETAS_MDTL)))
-      # A released covariance ADDS the Mahalanobis metric; it does not take the
-      # Euclidean one away. On MIUM the Euclidean lasso beats the covariance-
-      # weighted one (0.643 against 0.620), so a set that swapped one for the other
-      # lost its best member exactly when the analyst had more to give.
+      # 🔴 A released covariance ADDS the Mahalanobis metric; it does not take the
+      # Euclidean one away. The Euclidean lasso can beat the covariance-weighted
+      # one, so a set that swapped one for the other could lose its best member
+      # exactly when the analyst had more to give.
       if (has_Q)
         add("euclidean", "Euclidean", "euclidean", "none",
             if (is_ncc) "cv.ncc_MDTL" else "cv.cox_MDTL",
             c(base, list(beta = beta_covered, etas = ETAS_MDTL)))
     }
 
-    if (!is_ncc) {
-      # Ridge exists for the Cox family only; the NCC side has elastic net alone,
-      # by the library's own design.
-      add("internal_ridge", "Internal only, ridge", "none", "ridge",
-          "cv.coxkl_ridge", c(base, list(beta = beta_zero, etas = 0, nlambda = nlambda)))
-      if (has_external) {
-        add("kl_ridge", "Kullback-Leibler, ridge", "kl", "ridge",
-            "cv.coxkl_ridge", c(base, list(beta = beta_full, etas = ETAS_PEN, nlambda = nlambda)))
-        add("mahalanobis_ridge", "Mahalanobis, ridge", "mahalanobis", "ridge",
-            "cv.cox_MDTL_ridge",
-            c(base, list(beta = beta_covered, Q = Q, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
-        if (has_Q)
-          add("euclidean_ridge", "Euclidean, ridge", "euclidean", "ridge",
-              "cv.cox_MDTL_ridge",
-              c(base, list(beta = beta_covered, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
-      }
+    # Ridge for both designs: the matched side has its conditional-likelihood ridge
+    # members since BregSurv 1.4.0 (ncckl_ridge, ncc_MDTL_ridge).
+    ridge_kl   <- if (is_ncc) "cv.ncckl_ridge" else "cv.coxkl_ridge"
+    ridge_mdtl <- if (is_ncc) "cv.ncc_MDTL_ridge" else "cv.cox_MDTL_ridge"
+    add("internal_ridge", "Internal only, ridge", "none", "ridge",
+        ridge_kl, c(base, list(beta = beta_zero, etas = 0, nlambda = nlambda)))
+    if (has_external) {
+      add("kl_ridge", "Kullback-Leibler, ridge", "kl", "ridge",
+          ridge_kl, c(base, list(beta = beta_full, etas = ETAS_PEN, nlambda = nlambda)))
+      add("mahalanobis_ridge", "Mahalanobis, ridge", "mahalanobis", "ridge",
+          ridge_mdtl,
+          c(base, list(beta = beta_covered, Q = Q, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
+      if (has_Q)
+        add("euclidean_ridge", "Euclidean, ridge", "euclidean", "ridge",
+            ridge_mdtl,
+            c(base, list(beta = beta_covered, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
     }
 
     enet_kl   <- if (is_ncc) "cv.ncckl_enet" else "cv.coxkl_enet"
@@ -893,9 +906,9 @@ result <- tryCatch({
     if (has_external)
       add("kl_lasso", "Kullback-Leibler, lasso", "kl", "lasso",
           enet_kl, c(base, list(beta = beta_full, etas = ETAS_PEN, alpha = 1, nlambda = nlambda)))
-    # the Mahalanobis lambda path is strictly proportional to eta, so its floor
+    # 🔴 the Mahalanobis lambda path is strictly proportional to eta, so its floor
     # has to reach far lower than the elastic net default or the path misses the
-    # optimum entirely. Measured on the MIUM cohort.
+    # optimum entirely.
     if (has_external)
       add("mahalanobis_lasso", "Mahalanobis, lasso", "mahalanobis", "lasso",
           enet_mdtl, c(base, list(beta = beta_covered, Q = Q, etas = ETAS_MDTL_ENET, alpha = 1,
@@ -906,9 +919,11 @@ result <- tryCatch({
                                   nlambda = nlambda, lambda.min.ratio = 1e-9)))
   }
 
+  if (WIDE) spec <- Filter(function(s) s$penalty != "none", spec)
+
   ## ---- V4: the planner's row and its per-member settings --------------------------------------
   # The tie-corrected row: the planner judged from the data that tied event times call for a tie
-  # correction (2026-10-02, replacing the 2026-08-19 "only if the analyst asks"). Since BregSurv 1.3.0
+  # correction (replacing an earlier "only if the analyst asks" rule). Since BregSurv 1.3.0
   # every Cox-family estimator takes ties = "breslow", so the row is the WHOLE standard
   # set fitted on Breslow's likelihood: each member's key gains "_ties", the released model keeps the
   # key `external` and is scored by vvh_loss_fixed(ties = "breslow") below, and every member reports
@@ -1014,7 +1029,7 @@ result <- tryCatch({
     if (is.null(folds) && !is.null(r$folds)) {
       folds <- as.integer(r$folds)
       # Whose RNG kind actually produced it, taken from the estimator that
-      # produced the partition rather than asserted. Until 2026-08-19 this was
+      # produced the partition rather than asserted. Earlier this was
       # the literal string "Mersenne-Twister" while every cv.* returned its own.
       folds_from  <- s$key
       folds_rng   <- if (!is.null(r$rng_kind)) as.character(r$rng_kind) else NA_character_
@@ -1087,20 +1102,20 @@ result <- tryCatch({
   ## ---- the External-only member ----------------------------------------
   # It does not refit, so it has no cv.* to run; it is scored at the published
   # vector on the partition the others used.
-  if (has_indi && !is_ncc &&
+  if (has_indi && !is_ncc && !WIDE &&
       (is.null(input$include) || "external" %in% unlist(input$include))) {
-    # "EXTERNAL COHORT ONLY": fit nothing on the internal data and use a model
+    # 🔴 "EXTERNAL COHORT ONLY": fit nothing on the internal data and use a model
     # built entirely on the other one. A published coefficient vector is just
     # somebody elses fitted vector, so this is the SAME row as in the
     # coefficient cells -- it only has to be produced rather than read.
     #
     # It is NOT reachable by turning eta up. In cox_indi the internal rows always
     # carry weight 1, so "ignore my data entirely" is not a point on the path.
-    # On both real cohorts the published-vector version of this row BEAT
+    # On real data the published-vector version of this row can BEAT
     # internal-only, which is why it is worth manufacturing here.
     #
     # Unpenalized, matching internal-only. If it will not converge it records
-    # `failed` and the report discloses it -- what the MIUM run already did.
+    # `failed` and the report discloses it.
     t0 <- proc.time()[["elapsed"]]
     bx <- tryCatch({
       fx <- coxkl(z = z_ext, delta = delta_ext, time = time_ext,
@@ -1179,11 +1194,11 @@ result <- tryCatch({
     }
   }
 
-  ## ---- the analyst's test data: held-out performance, reported only --
+  ## ---- the analyst's test data: held-out performance, reported only ---------
   # An ADDITIONAL file the analyst supplied and named as their test set. It never
   # enters the selection -- eta and lambda inside each member, and the member
   # itself, are chosen by cross-validated loss on the cohort exactly as without
-  # it -- and it is never drawn by the harness (the agent
+  # it -- and it is never drawn by the harness (by design, the agent
   # splits nothing). Every member with a fitted vector is scored ONCE on it by
   # the library's own `test_eval`, with the Breslow baseline of that member on
   # the cohort (`get_baseline_hazard`) for the Brier score, so the four numbers
@@ -1222,7 +1237,7 @@ result <- tryCatch({
       r <- rows[[i]]
       b <- fits[[r$key]]
       if (!identical(r$status, "ok") || is.null(b)) next
-      if (isTRUE(r$reused) && !is.null(r$holdout)) next  # scored on this test file already
+      if (isTRUE(r$reused) && !is.null(r$holdout)) next   # scored on this test file already
       t0 <- proc.time()[["elapsed"]]
       bh <- tryCatch(get_baseline_hazard(z = z, delta = delta, time = time,
                                          beta = b, stratum = stratum),
@@ -1244,7 +1259,7 @@ result <- tryCatch({
                        role = "reported only; the selection used the cross-validated loss on the cohort")
   }
 
-  ## ---- every fitted member's coefficients, by name -----------
+  ## ---- every fitted member's coefficients, by name ----------------------
   # Until now only the selected member's vector left this script, so a member
   # that was NOT selected could not be scored on any data afterwards -- the
   # matched design in particular has no held-out block above. Additive: the
@@ -1261,10 +1276,10 @@ result <- tryCatch({
   ok_rows <- Filter(function(r) identical(r$status, "ok") && is.finite(r$loss), rows)
   if (!length(ok_rows)) stop("Every candidate failed; there is nothing to select.")
 
-  # AN ARGMIN IS ONLY MEANINGFUL OVER ONE SCALE. This guard fails closed, in
+  # 🔴 AN ARGMIN IS ONLY MEANINGFUL OVER ONE SCALE. This guard fails closed, in
   # the same shape as the candidate-key drift check on the Python side: if the
   # set was scored by more than one likelihood functional, no ranking exists and
-  # refusing is the only honest answer. after the partial
+  # refusing is the only honest answer. Added after the partial
   # tie-variant swap was found to have shipped, and it is the class fix -- the
   # instance fix is at the kl_plain line above. It will also fire the moment the
   # NCC path is wired up, because the unpenalized NCC drivers average per-fold
@@ -1285,14 +1300,14 @@ result <- tryCatch({
   ## ---- what borrowing did, variable by variable ------------------------
   b_sel <- fits[[win$key]]
   b_int <- fits[["internal"]]
-  if (is.null(b_int)) b_int <- fits[["internal_ties"]]  # V4: the tie-corrected row's target-only fit
+  if (is.null(b_int)) b_int <- fits[["internal_ties"]]   # V4: the tie-corrected row's target-only fit
   if (is.null(b_int)) b_int <- fits[["internal_lasso_ties"]]
   coefs <- lapply(seq_len(p), function(i) list(
     variable = zn[i],
     beta_external = unname(beta_full[i]),
     beta_internal = if (is.null(b_int)) NULL else unname(b_int[i]),
     beta_selected = unname(b_sel[i]),
-    # "Covered" means the external information says something about this
+    # 🔴 "Covered" means the external information says something about this
     # variable. With a published vector that is membership in its names. With an
     # external COHORT it is every variable, because the name-and-order check
     # refused anything else -- and `beta` is NULL there, so the membership test
@@ -1311,8 +1326,8 @@ result <- tryCatch({
                  n = nrow(z), n_events = sum(delta == 1), p = p,
                  p_covered = length(linkage$covered),
                  p_internal_only = length(linkage$zero_padded),
-                 # The candidate set NEVER uses a tie-corrected estimator.
-                 # that is the analyst's decision, not one
+                 # 🔴 The candidate set NEVER uses a tie-corrected estimator.
+                 # By design: that is the analyst's decision, not one
                  # to be inferred from the data, and the default is no
                  # correction. The gate still measures and reports the tie
                  # fraction so the analyst can ask for something else; the
@@ -1320,7 +1335,7 @@ result <- tryCatch({
                  tie_handling = "none (the default; not inferred from the data)"),
     partition = list(seed = seed, nfolds = nfolds,
                      folds = if (is.null(folds)) NULL else as.list(folds),
-                     # REPORTED, NOT ASSERTED. The kind comes from the
+                     # 🔴 REPORTED, NOT ASSERTED. The kind comes from the
                      # estimator that drew the split. For NCC it is NA on
                      # purpose: get_fold_cc contains no RNG call at all, so the
                      # split is deterministic and `seed` is provenance only --
@@ -1349,7 +1364,7 @@ result <- tryCatch({
     linkage = linkage,
     test_data = test_facts
   )
-  }  # end of the Cox row
+  }   # end of the Cox row
 }, error = function(err) {
   list(status = "error", message = conditionMessage(err),
        class = class(err)[1], where = "run_candidates.R")

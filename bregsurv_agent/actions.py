@@ -4,10 +4,10 @@ The three components collapse into one module because in this agent they are
 one thing. The TOOLS the model can reach are not the estimator library (it is
 addressed by the harness alone, from `run_candidates.R`, and a new estimator
 enters that file and never a prompt); they are the typed acts below. The
-ACTIONS are those acts. The PLANNER is `plan`: a deterministic function of
+ACTIONS are those acts. The PLANNER is `plan()`: a deterministic function of
 the session's phase and the typed intents M1 returned, so there is no model
-call that proposes "what next" -- that call was folded into M1 on 2026-09-11
-(master memory, M2), because on every path the harness would have
+call that proposes "what next" -- that call was folded into M1,
+because on every path the harness would have
 overridden it. The ORCHESTRATOR is `app.submit_answer`, which executes the plan
 in order, verifies each act's output the way it would verify a person's
 (a name must be in the message, an id must be in the catalogue, a reference
@@ -21,7 +21,7 @@ Invariants the module makes checkable:
   explanation cannot be asked for before a result exists and a role proposal
   cannot be made before a cohort is loaded;
 * a turn makes at most `MODEL_CALLS_PER_TURN` model calls, by construction of
-  `plan` (the intent call, at most one role proposal, at most one
+  `plan()` (the intent call, at most one role proposal, at most one
   published-model lookup, at most one explanation, and the report) -- there
   is no loop in which the model can call itself again.
 """
@@ -154,7 +154,7 @@ SPECS: Dict[Act, ActionSpec] = {a.act: a for a in (
 )}
 
 # the intent call, at most one role proposal, at most one published-model
-# lookup, at most one explanation, and the report: nothing in plan can
+# lookup, at most one explanation, and the report: nothing in plan() can
 # exceed this (the worst case is a message that names a model with no file
 # uploaded, declares roles, and asks about an existing result)
 MODEL_CALLS_PER_TURN = 5
@@ -258,7 +258,7 @@ def check(session: Any, acts: Sequence[Act]) -> List[str]:
 
 
 def registry_table() -> List[Dict[str, str]]:
-    """The action set as rows, for documentation and for the paper's appendix."""
+    """The action set as rows, for documentation."""
     return [{"act": s.act.value, "proposer": s.proposer,
              "verified by": s.verifier,
              "allowed in": ", ".join(p.value for p in s.allowed_in)}

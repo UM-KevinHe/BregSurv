@@ -1,10 +1,10 @@
-"""The six-section report (SS ), rendered from the fitted objects alone.
+"""The six-section report, rendered from the fitted objects alone.
 
 Written as a CHECKABLE SPECIFICATION, not a prompt. Every table here is rendered
 by this module from `run_candidates.R`'s output; the language model contributes
 prose and nothing else, and even that prose contains no digits.
 
-HOW NUMBERS REACH THE PROSE, and why it is built this way.  The model emits
+🔴 HOW NUMBERS REACH THE PROSE, and why it is built this way.  The model emits
 named references -- `[loss_best]`, `[selected_label]` -- and :func:`resolve`
 substitutes them at render time from a closed, typed set. The invariant "every
 numeric quantity returned to the analyst is an element of the fitted object" then
@@ -39,11 +39,11 @@ _REFERENCE_KEYS = {
     "n_candidates", "selected_label", "selected_borrowing", "selected_penalty",
     "loss_best", "loss_internal", "loss_external", "eta_best", "lambda_best",
     "n_nonzero",
-    # : the discrete-time row
+    # the discrete-time row
     "outcome_scale", "n_intervals",
 }
 
-_REF = re.compile(r"\[([a-z_]+)\]")
+_REF = re.compile(r"\[([a-z][a-z0-9_]*)\]")
 
 
 def _fmt(x: Any) -> str:
@@ -52,8 +52,96 @@ def _fmt(x: Any) -> str:
     if isinstance(x, float):
         if x != x:
             return "not available"
-        return f"{x:.4f}".rstrip("0").rstrip(".") if abs(x) < 1e4 else f"{x:.4g}"
+        # "6.104e+04" can be read as the number 6.104;
+        # a large value is printed whole
+        return f"{x:.4f}".rstrip("0").rstrip(".") if abs(x) < 1e4 else f"{x:.0f}"
     return str(x)
+
+
+def _ctx(res: Dict[str, Any]) -> Dict[str, Any]:
+    """pipeline.report_context: facts the fitted object does not carry."""
+    return res.get("report_context") or {}
+
+
+def form_words(res: Dict[str, Any]) -> str:
+    """The form of the external information, in words that are true of THIS
+    release: a released precision matrix is not a
+    covariance, and a file that was supplied and refused is not
+    "no external information"."""
+    form = res["facts"].get("external_form") or "none"
+    c = _ctx(res)
+    if form == "coefficients and covariance" and c.get("matrix_role") == "precision":
+        return "coefficients and precision matrix"
+    if form in ("none", "no external information") and c.get("release_refused"):
+        return "none usable (the file supplied could not be used)"
+    if form == "coefficients alone" and c.get("release_extras"):
+        return ("coefficients, with " + " and ".join(c["release_extras"])
+                + " that were recorded and not used")
+    return form
+
+
+def selected_family(res: Dict[str, Any]) -> str:
+    """How the recommended member uses the external information: none (the
+    cohort alone, including a borrowing member at weight zero), external (the
+    release unchanged), kl, mahalanobis, euclidean, individual, discretekl, diskd."""
+    if selected_borrows_nothing(res):
+        return "none"
+    by = {c["key"]: c for c in res.get("candidates", [])}
+    key = str((res.get("selected") or {}).get("key") or "")
+    b = (by.get(key) or {}).get("borrowing")
+    if b:
+        return str(b)
+    base = key[:-5] if key.endswith("_ties") else key
+    for pre, fam in (("internal", "none"), ("external", "external"), ("discretekl", "discretekl"),
+                     ("diskd", "diskd"), ("kl", "kl"), ("mahalanobis", "mahalanobis"),
+                     ("euclidean", "euclidean"), ("indi", "individual")):
+        if base.startswith(pre):
+            return fam
+    return "none"
+
+
+def _uncovered_sentence(res: Dict[str, Any]) -> str:
+    """What happens to a predictor the release does not cover, for the method that
+    was recommended. It used to say "receives no
+    borrowing; it is still estimated from your own data" for every method, which is
+    false for Kullback-Leibler borrowing (the external risk score has no term for
+    it, so a large weight draws its coefficient toward zero) and for a member fitted
+    with the absent terms padded with zero."""
+    if not (res.get("linkage") or {}).get("zero_padded"):
+        return ""
+    fam = selected_family(res)
+    if fam in ("kl", "discretekl"):
+        return (" For a variable your data has but the external model lacks, the recommended "
+                "Kullback-Leibler borrowing compares the fit with the external model's risk "
+                "score, which has no term for that variable, so the larger the borrowing "
+                "weight, the closer its coefficient is drawn toward zero.")
+    if fam in ("mahalanobis", "euclidean"):
+        if _ctx(res).get("selected_pad_absent"):
+            return (" The recommended method was fitted with the terms the external model "
+                    "lacks padded with zero: for a variable your data has but the external "
+                    "model lacks, it borrows the value zero, so that coefficient is drawn "
+                    "toward zero.")
+        return (" For a variable your data has but the external model lacks, the recommended "
+                "method's borrowing penalty does not act; that coefficient is estimated from "
+                "your own data.")
+    if fam == "external":
+        return (" A variable your data has but the external model lacks has no coefficient "
+                "in the external model used unchanged.")
+    if fam == "diskd":
+        return ""
+    return (" The recommended method uses your data alone, so a variable the external model "
+            "lacks is estimated from your own data like every other.")
+
+
+def selected_lambda_is_zero(res: Dict[str, Any]) -> bool:
+    sel = res.get("selected") or {}
+    by = {c["key"]: c for c in res.get("candidates", [])}
+    if (by.get(sel.get("key")) or {}).get("penalty") not in ("ridge", "lasso", "enet"):
+        return False
+    try:
+        return sel.get("lambda") is not None and float(sel["lambda"]) == 0.0
+    except (TypeError, ValueError):
+        return False
 
 
 def selected_borrows_nothing(res: Dict[str, Any]) -> bool:
@@ -89,7 +177,7 @@ def build_references(res: Dict[str, Any]) -> Dict[str, Any]:
         "p_internal_only": f["p_internal_only"],
         "p_dropped": len(res["linkage"]["dropped"]),
         "design": f["design"],
-        "external_form": f["external_form"],
+        "external_form": form_words(res),
         "criteria": res["criteria"],
         "nfolds": res["partition"]["nfolds"],
         "seed": res["partition"]["seed"],
@@ -108,9 +196,16 @@ def build_references(res: Dict[str, Any]) -> Dict[str, Any]:
         "lambda_best": sel.get("lambda"),
         "n_nonzero": sel.get("n_nonzero"),
     }
+    if "case-control" in str(f.get("design") or ""):
+        # under a matched
+        # design the case fraction is fixed by the sampling, not an event rate,
+        # and there is no follow-up time to have a scale; offered, the two read
+        # "an event rate of 20%" and "the outcome is measured on a continuous scale"
+        refs["event_rate"] = None
+        refs["outcome_scale"] = None
     td = res.get("test_data")
     if td:
-        # : the analyst's own test file, when one was supplied. These are
+        # the analyst's own test file, when one was supplied. These are
         # the only performance quantities in the report that are NOT
         # cross-validated; the selection never read them. Absent otherwise,
         # so the prose cannot name a held-out number that does not exist.
@@ -123,10 +218,9 @@ def build_references(res: Dict[str, Any]) -> Dict[str, Any]:
             "test_ibs_selected": ho.get("ibs"),
             "test_tdauc_selected": ho.get("tdauc"),
         })
-    # A reference without a value in THIS run is not offered: on a
+    # 🔴 A reference without a value in THIS run is not offered: on a
     # continuous-time run `[n_intervals]` rendered as "the outcome scale was
-    # continuous, evaluated over not available intervals" (report rubric on the
-    # cohort benchmark, 2026-09-15). A draft that names one anyway names a
+    # continuous, evaluated over not available intervals". A draft that names one anyway names a
     # quantity outside the closed set and its section is dropped, as any
     # unknown name is. (`runtime_seconds` is gone for the same reason: no table
     # of the report shows it, so a sentence naming it rests on nothing shown.)
@@ -140,8 +234,8 @@ class UnknownReference(KeyError):
 # How a reference reads inside a sentence. The model writes `[selected_borrowing]`
 # and the harness used to substitute the candidate's KEY ("kl", "none"), so the
 # prose said "which incorporated kl and none"; `[event_rate]` lost its percent
-# sign; `[criteria]` is the scorer's short name. Seen in the synthetic-benchmark
-# reports, 2026-09-14. The tables keep the raw values; only the prose changes.
+# sign; `[criteria]` is the scorer's short name.
+# The tables keep the raw values; only the prose changes.
 _PROSE_WORDING = {
     "selected_borrowing": {"kl": "Kullback-Leibler borrowing",
                            "mahalanobis": "Mahalanobis borrowing",
@@ -156,6 +250,8 @@ _PROSE_WORDING = {
                          "enet": "an elastic-net penalty"},
     "criteria": {"V&VH": "the Verweij-van Houwelingen cross-validated loss",
                  "CIndex": "the cross-validated concordance"},
+    "outcome_scale": {"continuous": "continuous follow-up time",
+                      "discrete intervals": "follow-up in discrete intervals"},
 }
 
 
@@ -168,13 +264,12 @@ def _fmt_in_prose(key: str, x: Any) -> str:
     return _fmt(x)
 
 
-# What the prose writer is told. Until now the model saw the
-# reference NAMES and the candidates' statuses and nothing else, so it could
+# 🔴 What the prose writer is told. Shown only the
+# reference NAMES and the candidates' statuses, the model could
 # not know which candidate was selected, whether the external model covers
 # every predictor, or what `[p_internal_only]` counts -- and it wrote stock
 # sentences ("not all variables were covered" on a fully covered release,
-# member and penalty misnamed, counts used for the wrong quantity: the report
-# rubric of 2026-09-15 and the rubric smoke of 2026-10-01). It is now given
+# member and penalty misnamed, counts used for the wrong quantity). It is now given
 # what each reference IS, and the facts of this run in words. No value
 # crosses: the facts are categorical and contain no digit.
 REFERENCE_MEANING = {
@@ -183,21 +278,21 @@ REFERENCE_MEANING = {
     "event_rate": "events as a percentage of subjects",
     "p": "number of predictors in the analysis",
     "p_covered": "predictors the external model has a coefficient for",
-    "p_internal_only": "predictors the external model does not cover (estimated from the cohort alone)",
-    "p_dropped": "external terms with no column in the cohort, set aside",
+    "p_internal_only": "predictors the external model does not cover (it has no term for them)",
+    "p_dropped": "external terms set aside because they are not predictors of this analysis (see the facts for why)",
     "design": "the study design",
     "external_form": "the form in which the external information arrived",
     "criteria": "the cross-validation criterion every candidate was scored by",
     "nfolds": "number of cross-validation folds",
     "seed": "the seed of the cross-validation partition",
-    "n_candidates": "number of candidate methods in the admissible set",
+    "n_candidates": "number of methods fitted and compared (the admissible set may be larger; see the facts)",
     "selected_label": "the name of the selected method",
     "selected_borrowing": "how the selected method uses the external information",
     "selected_penalty": "the penalty of the selected method",
     "loss_best": "cross-validated loss of the selected method",
     "loss_internal": "cross-validated loss of the model fitted to the cohort alone",
     "loss_external": "cross-validated loss of the external model used unchanged",
-    "outcome_scale": "continuous time or discrete intervals",
+    "outcome_scale": "whether follow-up time is continuous or in discrete intervals",
     "n_intervals": "number of discrete follow-up intervals",
     "eta_best": "the borrowing weight chosen for the selected method",
     "lambda_best": "the penalty weight chosen for the selected method",
@@ -219,24 +314,77 @@ def prose_facts(res: Dict[str, Any], refs: Dict[str, Any]) -> List[str]:
            + (" The rows are cases and their matched controls; there is no follow-up "
               "time and no censoring, and [n_events] counts the cases."
               if f["design"] == "nested case-control" else "")]
+    if f["design"] == "nested case-control":
+        out.append("The share of cases is fixed by how the matched sets were sampled; it is not "
+                   "an event rate and there is no follow-up time or time scale: never write "
+                   "an event rate, a follow-up, or a continuous or discrete scale.")
     form = f.get("external_form") or "none"
-    out.append(f"External information: {form}.")
+    c = _ctx(res)
+    fam = selected_family(res)
+    refused = form in ("none", "no external information") and c.get("release_refused")
+    if refused:
+        out.append("External information: an external file was supplied but could not be "
+                   "used, so nothing was borrowed and every method uses the cohort alone. "
+                   "Say that the file supplied could not be used; never say that no external "
+                   "information was supplied, and never describe the file as a coefficient table.")
+    else:
+        out.append(f"External information: {form_words(res)}.")
+    if c.get("per_level"):
+        out.append("Some variables of the external model came on several rows, one per level; "
+                   "each row was matched by name to the cohort's indicator column for that level.")
     if "p_internal_only" in refs and form not in ("none", "no external information"):
-        out.append("The external model covers every predictor of the analysis."
-                   if not refs["p_internal_only"] else
-                   "The external model does not cover every predictor; the uncovered ones "
-                   "are estimated from the cohort alone ([p_internal_only] of them).")
+        if not refs["p_internal_only"]:
+            out.append("The external model covers every predictor of the analysis.")
+        else:
+            how = {"kl": "the Kullback-Leibler penalty draws them toward zero as the borrowing "
+                         "weight grows, because the external model's risk score has no term for them",
+                   "discretekl": "the Kullback-Leibler penalty draws them toward zero as the "
+                                 "borrowing weight grows, because the external model has no term for them",
+                   "external": "the external model used unchanged gives them no coefficient",
+                   }.get(fam)
+            if fam in ("mahalanobis", "euclidean"):
+                how = ("the selected method padded them with zero, so it draws them toward zero"
+                       if c.get("selected_pad_absent") else
+                       "the selected method's penalty does not act on them, so they are "
+                       "estimated from the cohort alone")
+            out.append("The external model does not cover every predictor ([p_internal_only] of "
+                       "them are uncovered); " + (how or "they are estimated from the cohort alone") + ".")
     if refs.get("p_dropped"):
-        out.append("Some terms of the external model have no column in the cohort and "
-                   "were set aside ([p_dropped] of them).")
+        inf, absent = c.get("dropped_in_file") or [], c.get("dropped_absent") or []
+        if c and inf and not absent:
+            out.append("Some terms of the external model are columns of the cohort that the analyst "
+                       "did not choose as predictors, and were set aside ([p_dropped] of them); the "
+                       "cohort does contain them, so never say that it lacks them.")
+        elif c and inf and absent:
+            out.append("Some terms of the external model were set aside ([p_dropped] of them): "
+                       "some are not columns of the cohort, the others are columns the analyst did "
+                       "not choose as predictors.")
+        else:
+            out.append("Some terms of the external model have no column in the cohort and "
+                       "were set aside ([p_dropped] of them).")
     elif "p_dropped" in refs and form not in ("none", "no external information"):
-        out.append("Every term of the external model matched a column of the cohort.")
+        out.append("Every term of the external model matched a predictor of the analysis.")
     out.append(f"Selected method: {sel['label']}. It was selected because it has the "
-               "lowest cross-validated loss of the admissible set; nothing else was weighed.")
+               "lowest cross-validated loss of the methods fitted; nothing else was weighed.")
+    if fam == "none":
+        out.append("The selected method uses the cohort alone: nothing was borrowed from the "
+                   "external information, so do not say that borrowing changed or moved any "
+                   "coefficient.")
+    elif fam != "external":
+        out.append("The borrowing weight sets how strongly the fit is drawn toward the external "
+                   "model; it was chosen by cross-validation. It is not a fraction by which each "
+                   "coefficient moves, so never describe it as one.")
     if selected_borrows_nothing(res):
         out.append("The borrowing weight chosen for the selected method is zero, so it "
                    "borrows nothing from the external information: it is the fit to the "
                    "cohort alone with the same penalty. Do not describe it as borrowing.")
+    if selected_lambda_is_zero(res):
+        out.append("The penalty weight chosen for the selected method is zero, so its penalty "
+                   "does not shrink the fit; do not describe it as penalized or shrunk.")
+    n_adm = c.get("n_admissible")
+    if n_adm and n_adm != len(res.get("candidates", [])):
+        out.append("The planner chose which of the admissible methods to fit; [n_candidates] "
+                   "were fitted and compared, so do not call them the whole admissible set.")
     out.append("No measure of calibration is reported for any model, and the calibration slope the planner read "
                "is a diagnostic of the release, not a result; do not call any model well or poorly calibrated, "
                "and claim nothing the tables do not show.")
@@ -250,8 +398,8 @@ def prose_facts(res: Dict[str, Any], refs: Dict[str, Any]) -> List[str]:
 
 
 # A count that is zero in this run is not offered to the prose writer: given
-# `[p_internal_only]` = 0 it wrote "as 0 is zero" (rubric full run, first
-# reports, 2026-10-01). The fact sentence already says "covers every predictor".
+# `[p_internal_only]` = 0 it wrote "as 0 is zero".
+# The fact sentence already says "covers every predictor".
 # The reference stays in the closed set, so the tables and resolve are unchanged.
 _HIDE_WHEN_ZERO = {"p_internal_only", "p_dropped"}
 
@@ -267,8 +415,7 @@ def reference_glossary(refs: Dict[str, Any]) -> List[str]:
 
 # A label's own last word, written again by the model right after the
 # reference ("incorporated [selected_borrowing] borrowing" -> "Mahalanobis
-# borrowing borrowing", 3 of the first 9 cohort reports graded on 2026-09-15):
-# the rendering drops the repeat. Wording, never a quantity.
+# borrowing borrowing"): the rendering drops the repeat. Wording, never a quantity.
 _DUP_AFTER = re.compile(r"\[(selected_borrowing|selected_penalty|criteria)\]\s+(borrowing|penalty|loss)\b", re.I)
 
 
@@ -285,17 +432,16 @@ def resolve(text: str, refs: Dict[str, Any]) -> str:
         return word if word.lower().endswith(" " + m.group(2).lower()) else word + " " + m.group(2)
     text = _DUP_AFTER.sub(_dedup, text)
     # "[event_rate]%" -- the substitution already carries the percent sign
-    # ("69%%" in the first reports of the rubric run, 2026-10-01)
-    text = re.sub(r"\[event_rate\]\s*%", "[event_rate]", text)
+    # (otherwise the rendered text shows a doubled "%%")
+    text = re.sub(r"\[event_rate\]\s*(%|percent\b|per cent\b)", "[event_rate]", text)
     return _REF.sub(lambda m: _fmt_in_prose(m.group(1), refs[m.group(1)]), text)
 
 
 def not_prose(text: str) -> Optional[str]:
     """Why a draft section is not a sentence, or None when it is one. A list
     of reference names with no words around them ("[n], [event_rate]" ->
-    "343, 9.3%"), or a fragment ending in a stray brace, is a section the
-    model did not write; it is dropped like a digit, never rendered (report
-    rubric on the cohort benchmark, Qwen2.5-7B, 2026-09-15)."""
+    "500, 12.5%"), or a fragment ending in a stray brace, is a section the
+    model did not write; it is dropped like a digit, never rendered."""
     words = re.findall(r"[A-Za-z]{3,}", _REF.sub(" ", text or ""))
     if len(words) < 4:
         return "fewer than four words outside its references"
@@ -391,25 +537,30 @@ def render_plan(plan: Dict[str, Any], steps: Optional[List[Dict[str, Any]]], n_a
                    f"unchanged are always included, and that the plan stays within a fixed "
                    f"computing budget -- and cross-validation chose among what was fitted.")
     out.append("")
-    rows = [[f"`{m['key']}`", _plan_settings(m), _planner_words(m.get("reason"))] for m in members]
-    out.extend(_table(["method", "fitted with", "why (the planner's words)"], rows))
+    # 🔴 the planner's own words
+    # used to be printed here, and a reader takes what a report prints as a finding --
+    # "optimal", "has the lowest cross-validated loss" (it had not), "ensuring
+    # robustness", a refit "to the cox_ties row" that changed no row. They are
+    # its reasons for a decision, written before or between fits, and nothing
+    # checks them against the results. The report states only what the harness
+    # can check (what was fitted, with what settings); the words stay whole in
+    # trace.json under provenance.plan.
+    rows = [[f"`{m['key']}`", _plan_settings(m)] for m in members]
+    out.extend(_table(["method", "fitted with"], rows))
     out.append("")
-    if plan.get("reason") and not fb:
-        out.append("The plan as a whole: " + _planner_words(plan.get("reason")))
-        out.append("")
     refits = [s for s in steps if s.get("step") == "fit"][1:]
-    nexts = {(s.get("refinement")): s for s in steps
-             if s.get("step") == "next" and s.get("accepted") and s.get("action") == "refine"}
-    for i, fs in enumerate(refits, start=1):
-        st = nexts.get(i) or {}
-        out.append(f"After seeing the cross-validated results, the planner refitted "
-                   + ", ".join(f"`{k}`" for k in fs.get("members") or [])
-                   + "; the other methods were kept as fitted. Why: "
-                   + _planner_words(st.get("reason")))
+    by_key = {m.get("key"): m for m in members}
+    for fs in refits:
+        ks = fs.get("members") or []
+        out.append("After seeing the cross-validated results, the planner refitted "
+                   + ", ".join(f"`{k}` ({_plan_settings(by_key.get(k) or {})})" for k in ks)
+                   + "; the other methods were kept as fitted, and the recommendation below "
+                     "is the lowest cross-validated loss among all of them after the refit.")
         out.append("")
-    fin = [s for s in steps if s.get("step") == "next" and s.get("action") == "finish"]
-    if fin and not fb:
-        out.append("The planner then finished: " + _planner_words(fin[-1].get("reason")))
+    if not fb:
+        out.append("The planner's reasons for each decision are kept in the run's trace "
+                   "(trace.json); they are its expectations, not results of the analysis, "
+                   "and the comparison below is what decided.")
         out.append("")
     spent = sum(int(s.get("units") or 0) for s in steps if s.get("step") == "fit")
     if spent:
@@ -442,14 +593,14 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
     # ---- 1. Data ------------------------------------------------------------
     out.append("## 1. The data")
     out.append("")
-    # The declared outcome is stated, not left implicit. `render` has always
+    # 🔴 The declared outcome is stated, not left implicit. `render` has always
     # accepted a `declaration` and never read it, so the report could not say
     # WHICH column and WHICH value the analyst nominated -- the two things the
     # whole declaration protocol exists to pin down, and the two the reader
     # needs in order to spot a complement mix-up from the event count beside it.
     disc = res.get("discrete") if f.get("outcome_scale") == "discrete intervals" else None
     _rows = [["Study design", f["design"]]]
-    # 2026-10-01: a matched sample has no follow-up time and no censoring; its
+    # a matched sample has no follow-up time and no censoring; its
     # rows are cases and their controls, one case per matched set (the gate
     # refuses otherwise), so section 1 says that instead of "censored"
     _matched = f["design"] == "nested case-control"
@@ -460,7 +611,7 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                          if _matched and getattr(declaration, "stratum_col", None)
                          else f", followed up by `{declaration.time_col}`")])
     if disc:
-        #, ruling 1: the grid is part of the model and is stated here
+        # the grid is part of the model and is stated here
         # like the event value, with what the cut did to the data
         K = disc["n_intervals"]
         _tc = getattr(declaration, "time_col", None) or "the time column"
@@ -480,9 +631,9 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                ["Events", f"{f['n_events']} ({refs['event_rate']}%)"],
                ["Censored", str(f["n"] - f["n_events"])]])
     _rows += [["Predictors", str(f["p"])],
-              ["External information", f["external_form"]]]
+              ["External information", form_words(res)]]
     out.extend(_table(["", "value"], _rows))
-    # Where each role came from. Since 2026-09-11 the harness settles what
+    # 🔴 Where each role came from. The harness settles what
     # the analyst left unsaid wherever the data leaves one possibility, and
     # runs without asking. This table is the disclosure that replaces the
     # approval step: a wrong inference is read here and corrected by one
@@ -512,7 +663,7 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
         out.extend(_table(["role", "settled as", "how"],
                           [[r, v, srcs.get(k, "stated by you")]
                            for r, v, k in _how]))
-    # 2026-10-01: a column the analyst named that the file does not have was
+    # a column the analyst named that the file does not have was
     # asked back by name and left out at the reply (app._settle_and_run records
     # it in the notes); the report says so, so the analysis delivered is not
     # silently a different one from the analysis asked for
@@ -528,9 +679,8 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
     say("data")
 
     # ---- 2. Linkage ---------------------------------------------------------
-    # This is exactly what the analyst needs and exactly what the paper is not
-    # the place for.
-    # With nothing to borrow from, this whole section has no source. It used
+    # This is exactly what the analyst needs.
+    # 🔴 With nothing to borrow from, this whole section has no source. It used
     # to render anyway: a linkage table of three zeros, and a sentence about how
     # variables were matched against a model that does not exist. Saying less is
     # the only honest option, and the closed reference set the model may name
@@ -538,9 +688,22 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
     if f["external_form"] == "none":
         out.append("## 2. External information")
         out.append("")
-        out.append("No external model was supplied, so nothing was borrowed. "
-                   "Everything below was estimated from your data alone, and "
-                   "the methods that borrow were not among the options.")
+        rr = _ctx(res).get("release_refused")
+        if rr:
+            # a file that was supplied and refused is
+            # not "no external model was supplied"
+            out.append(("You supplied " + (f"`{rr['file']}`" if rr.get("file") else "an external file")
+                        + ", but it could not be used:"))
+            out.append("")
+            for why in rr.get("reasons") or ["it could not be read as external information"]:
+                out.append(f"- {why}")
+            out.append("")
+            out.append("So nothing was borrowed. Everything below was estimated from your "
+                       "data alone, and the methods that borrow were not among the options.")
+        else:
+            out.append("No external model was supplied, so nothing was borrowed. "
+                       "Everything below was estimated from your data alone, and "
+                       "the methods that borrow were not among the options.")
         out.append("")
         say("linkage")
     else:
@@ -591,6 +754,11 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                 if external.get("matrix_role_overridden"):
                     bits.append("Which of the two it is was decided from the file, not "
                                 f"from the reading ({external['matrix_role_overridden']}).")
+            if external.get("baseline_set_aside"):
+                bits.append("Its baseline cumulative hazard was set aside and not used, "
+                            "because it is not internally consistent ("
+                            + "; ".join(external["baseline_set_aside"])
+                            + "); the coefficients were used.")
             if external.get("baseline_table"):
                 if disc and f.get("has_baseline"):
                     bits.append(f"Its baseline cumulative hazard was read, evaluated "
@@ -610,15 +778,29 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                             "against the file.")
             out.append(" ".join(bits))
             out.append("")
-        out.extend(_table(
-            ["", "count", "variables"],
-            [["In the external cohort's records" if _records else "Covered by the external model", str(len(L["covered"])),
-              ", ".join(L["covered"][:14]) + (" ..." if len(L["covered"]) > 14 else "")],
-             ["In your data only, not borrowed", str(len(L["zero_padded"])),
-              ", ".join(L["zero_padded"][:14]) + (" ..." if len(L["zero_padded"]) > 14 else "")],
-             ["In the external model only, dropped", str(len(L["dropped"])),
-              ", ".join(L["dropped"][:14]) + (" ..." if len(L["dropped"]) > 14 else "")]]))
-        # DERIVED, NOT ASSERTED. run_candidates.R falls back to POSITIONAL
+        _c = _ctx(res)
+        if _c.get("per_level"):
+            out.append("Some variables of the external model came on several rows, one per "
+                       "level; each row was matched by name to your indicator column for that "
+                       "level: " + "; ".join(_c["per_level"].get("rows") or []) + ".")
+            out.append("")
+        _lst = lambda xs: ", ".join(xs[:14]) + (" ..." if len(xs) > 14 else "")
+        # a release
+        # term set aside because the analyst did not choose that column is not
+        # a term "your data does not contain"
+        if "dropped_in_file" in _c:
+            _in, _abs = _c.get("dropped_in_file") or [], _c.get("dropped_absent") or []
+        else:
+            _in, _abs = [], list(L["dropped"])
+        _rows = [["In the external cohort's records" if _records else "Covered by the external model",
+                  str(len(L["covered"])), _lst(L["covered"])],
+                 ["Your predictors the external model does not cover", str(len(L["zero_padded"])), _lst(L["zero_padded"])],
+                 ["In the external model, not in your data: set aside", str(len(_abs)), _lst(_abs)]]
+        if _in:
+            _rows.append(["In the external model and your data, not among your predictors: set aside",
+                          str(len(_in)), _lst(_in)])
+        out.extend(_table(["", "count", "variables"], _rows))
+        # 🔴 DERIVED, NOT ASSERTED. run_candidates.R falls back to POSITIONAL
         # matching when the external vector is unnamed, and this sentence used to
         # say "by name" unconditionally with the actual value in parentheses beside
         # it -- so on a positional run the report contradicted itself in one line.
@@ -626,9 +808,7 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
             out.append("Variables were matched **by name**: the external "
                        "cohort's records carry the same columns as your data.")
         elif L["matched_by"] == "name":
-            out.append("Variables were matched **by name**. A variable your data has "
-                       "but the external model lacks receives no borrowing; it is "
-                       "still estimated from your own data.")
+            out.append("Variables were matched **by name**." + _uncovered_sentence(res))
         else:
             out.append("> **Read this one carefully.** The external coefficient "
                        "vector arrived **without names**, so variables were matched "
@@ -638,12 +818,19 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                        "coefficient is attached to the wrong variable.")
         out.append("")
         if L["dropped"]:
-            # Stated plainly rather than buried: this is a real caveat, not
+            # 🔴 Stated plainly rather than buried: this is a real caveat, not
             # bookkeeping. The published coefficients were estimated CONDITIONAL on
             # these variables being in the model.
+            parts = []
+            if _abs:
+                parts.append(f"{len(_abs)} predictor(s) your data does not contain "
+                             f"({', '.join(_abs)})")
+            if _in:
+                parts.append(f"{len(_in)} predictor(s) that are columns of your data but not "
+                             f"among the predictors you chose ({', '.join(_in)})")
             out.append(f"> **Worth knowing.** The external model also reports "
-                       f"{len(L['dropped'])} predictor(s) your data does not contain "
-                       f"({', '.join(L['dropped'])}). They were dropped. Its published "
+                       + " and ".join(parts)
+                       + ". They were set aside. Its published "
                        f"coefficients were estimated with those variables in the model, "
                        f"so what is being borrowed is not quite the quantity that study "
                        f"reported.")
@@ -656,7 +843,7 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
     if disc:
         out.append(f"Three things decide which methods can apply at all: the study "
                    f"design (**{f['design']}**), the form the external information "
-                   f"came in (**{f['external_form']}**), and the time scale you "
+                   f"came in (**{form_words(res)}**), and the time scale you "
                    f"declared (**discrete intervals**). Follow-up in intervals "
                    f"calls for a different row of the library -- grouped-time "
                    f"models, scored by their own likelihood -- which is never "
@@ -684,12 +871,12 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
     elif plan:
         out.append(f"Two things about your data decide which methods can apply at "
                    f"all: the study design (**{f['design']}**) and the form the "
-                   f"external information came in (**{f['external_form']}**).")
+                   f"external information came in (**{form_words(res)}**).")
         out.append("")
     else:
         out.append(f"Two things about your data decide which methods can apply at "
                    f"all: the study design (**{f['design']}**) and the form the "
-                   f"external information came in (**{f['external_form']}**). Together "
+                   f"external information came in (**{form_words(res)}**). Together "
                    f"they admit **{len(res['candidates'])}** methods, and all of them "
                    f"were fitted. Nothing was chosen by judgement.")
         out.append("")
@@ -697,7 +884,7 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
         from . import plan as _P
         out.extend(render_plan(plan, plan_steps, n_admissible or len(res["candidates"]),
                                _P.DEFAULT_BUDGET))
-    # DERIVED FROM THE SET THAT ACTUALLY RAN. This paragraph used to assert
+    # 🔴 DERIVED FROM THE SET THAT ACTUALLY RAN. This paragraph used to assert
     # that "unpenalised, ridge and lasso were all fitted" and that both ways of
     # not borrowing "can win" -- neither survives a nested case-control design,
     # where the library has no ridge at all and External-only comes back
@@ -718,7 +905,14 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
             out.append("")
     _nb = [c for c in res["candidates"] if c.get("borrowing") in ("none", "external")]
     _nb_ok = [c for c in _nb if c.get("status") == "ok"]
-    if len(_nb_ok) == len(_nb) and len(_nb) > 1:
+    # with no external information every member "borrows
+    # none", so the old test (two or more such members) claimed the external
+    # model unchanged was in the set when it was not
+    _has_ext = any(c.get("borrowing") == "external" for c in _nb)
+    if f["external_form"] == "none":
+        out.append("Every method in the set uses your data alone: there was nothing to "
+                   "borrow from.")
+    elif len(_nb_ok) == len(_nb) and len(_nb) > 1 and _has_ext:
         out.append("The set also contains the two ways of **not** borrowing -- "
                    "your data alone, and the external model used unchanged -- so "
                    "either can win.")
@@ -790,9 +984,14 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                    "so it borrows nothing from the external information: it is the fit "
                    "to your data alone with the same penalty.")
         out.append("")
+    if selected_lambda_is_zero(res):
+        # "a ridge penalty at weight 0" would read as a penalized fit
+        out.append("Cross-validation chose a penalty weight of **0** for this method, so "
+                   "its penalty does not shrink the fit.")
+        out.append("")
     say("comparison")
 
-    # ---- 4b. The analyst's test data -------------------------------
+    # ---- 4b. The analyst's test data --------------------------------------
     # Printed only when the analyst supplied a test file. Every fitted member
     # is scored on it by the library; the recommendation above did not read
     # these numbers, and the text says so, because a reader who sees a
@@ -839,13 +1038,27 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                    "grouped proportional-hazards model fitted from your data "
                    "alone said, variable by variable.")
     else:
-        out.append("These are point estimates. The table shows what borrowing "
-                   "actually did: what the external model said, what your data "
-                   "alone said, and where the recommended fit landed."
-                   + (" Here the borrowing weight is zero, so the recommended fit "
-                      "uses your data alone; it differs from the unpenalised fit "
-                      "only through its penalty." if selected_borrows_nothing(res)
-                      else ""))
+        # "the table shows what borrowing actually did" must not be printed
+        # under a fit to the cohort alone
+        _fam = selected_family(res)
+        if f["external_form"] == "none":
+            out.append("These are point estimates. The recommended fit uses your data "
+                       "alone; nothing was borrowed.")
+        elif _fam == "external":
+            out.append("These are point estimates. The recommended model is the external "
+                       "model used unchanged; the table shows it beside what your data "
+                       "alone said.")
+        elif _fam == "none":
+            out.append("These are point estimates. The recommended fit uses your data "
+                       "alone, so nothing was borrowed; the table shows it beside what the "
+                       "external model said."
+                       + (" Its borrowing weight is zero, so it differs from the "
+                          "unpenalised fit only through its penalty."
+                          if selected_borrows_nothing(res) else ""))
+        else:
+            out.append("These are point estimates. The table shows what borrowing "
+                       "actually did: what the external model said, what your data "
+                       "alone said, and where the recommended fit landed.")
     out.append("")
     rows = []
     for c in res["coefficients"]:
@@ -968,7 +1181,7 @@ def render_model_use(prov: Dict[str, Any]) -> str:
     if m.get("truncated_calls"):
         line += f" {m['truncated_calls']} call(s) were cut off by the length limit."
     out.append(line)
-    # : retrieved worked examples, if any call was shown some
+    # retrieved worked examples, if any call was shown some
     shown = [c.get("few_shot") for c in calls if isinstance(c.get("few_shot"), dict)
              and c["few_shot"].get("n_shown")]
     if shown:

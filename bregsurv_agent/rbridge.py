@@ -1,12 +1,13 @@
 """The R dispatch layer: find Rscript, hand it JSON, read JSON back.
 
-WHY THIS MODULE EXISTS. These two functions used to live in
+🔴 WHY THIS MODULE EXISTS. These two functions used to live in
 `mcp/server.py`, whose module level imports `FastMCP` for the Claude Desktop
 product. Nine call sites -- `pipeline.py` twice, `declaration.py`, and six test
 drivers -- wanted only `_run_r` and `_find_rscript` and dragged the whole MCP
-SDK in with them. It did not; it was file layout, not design.
+SDK in with them. Testing the agent never required MCP; it was file layout,
+not design.
 
-What that coupling actually cost, on Great Lakes 2026-08-18: `mcp/pyproject.toml`
+What that coupling actually cost, on a cluster install: `mcp/pyproject.toml`
 declared `mcp>=1.0.0` with no upper bound, a fresh install resolved to SDK 2.0.0,
 which removed `mcp.server.fastmcp`, and **every one of the six deterministic test
 suites died with ModuleNotFoundError before running a single assertion** -- on a
@@ -26,7 +27,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-# Duplicated as `DEFAULT_CV_SEED` in every mcp/r_scripts/cv_*.R, so the R
+# 🔴 Duplicated as `DEFAULT_CV_SEED` in every mcp/r_scripts/cv_*.R, so the R
 # side has a default even when called directly. Moved here from tools.py when
 # the V2 tool layer was retired: the seed is a property of the R dispatch, and
 # test_reproducibility_e2e checks that the two copies still agree.
@@ -35,7 +36,7 @@ DEFAULT_CV_SEED = 20260818
 _HERE = Path(__file__).resolve().parent
 
 # The R scripts live beside the package. `SURVBREGDIV_R_SCRIPTS` overrides it,
-# which is how a deployed container or a Great Lakes job points at its own copy.
+# which is how a deployed container or a cluster job points at its own copy.
 R_SCRIPTS = Path(os.environ.get("SURVBREGDIV_R_SCRIPTS",
                                 str(_HERE.parent / "mcp" / "r_scripts")))
 
@@ -109,7 +110,7 @@ def _run_r(script_name: str, payload: dict, timeout_s: int = 600) -> dict:
 
     * ``--no-save --no-restore --no-init-file``, NOT ``--vanilla``. `--vanilla`
       also implies `--no-environ`, which suppresses ``R_LIBS_USER`` -- and on
-      Windows (and on Great Lakes) jsonlite and BregSurv are usually installed
+      Windows (and on many HPC clusters) jsonlite and BregSurv are usually installed
       ONLY in the user library. Under `--vanilla` R cannot find its own packages.
     * ``stdin=subprocess.DEVNULL``. An inherited stdin makes R stall waiting for
       input that will never come, which presents as a hang rather than an error.
@@ -147,15 +148,15 @@ def _run_r(script_name: str, payload: dict, timeout_s: int = 600) -> dict:
         cmd = [rscript, "--no-save", "--no-restore", "--no-init-file",
                str(script_path), in_path, out_path]
         # Under SLURM, pin R's BLAS/OpenMP threads to the allocation unless the
-        # job already did. (job 60965056 vs 60965940, same
-        # node): unpinned, R's BLAS spawned a thread per node core inside a
-        # 4-core cgroup and a 260-row elastic-net fit took 25 CPU-minutes and
-        # timed out; pinned, the whole suite took 5. Outside SLURM nothing changes.
+        # job already did. Unpinned, R's BLAS spawns a thread per node core
+        # inside a cgroup of a few cores, so even a small elastic-net fit
+        # oversubscribes the allocation and can time out. Outside SLURM
+        # nothing changes.
         env = os.environ.copy()
         if env.get("SLURM_CPUS_PER_TASK"):
             for k in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
                 env.setdefault(k, env["SLURM_CPUS_PER_TASK"])
-        # : the discrete row's network members run in Python, called back
+        # the discrete row's network members run in Python, called back
         # from R through mcp/py_scripts/run_diskd.py -- with THIS interpreter,
         # the one that has numpy and torch, unless the caller named another
         import sys as _sys

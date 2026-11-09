@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_cox_indi.R - dispatcher for the cv_cox_indi MCP tool.
 #
-# Cross-validates BregSurv::cox_indi over a candidate `etas` grid.
+# Cross-validates BregSurv::cox_indi() over a candidate `etas` grid.
 # Internal data are split into folds; for each fold the model is trained on
 # (internal-train + full external) and evaluated on the held-out internal
 # fold. External data are always fully included in training.
@@ -91,12 +91,12 @@ result <- tryCatch({
   max_iter <- if (!is.null(input$max_iter)) as.integer(input$max_iter) else 100L
   tol      <- if (!is.null(input$tol))      as.numeric(input$tol)      else 1e-7
   nfolds   <- if (!is.null(input$nfolds))   as.integer(input$nfolds)   else 5L
-  # A4: the seed is never NULL. Fold assignment is drawn with sample, so an
+  # A4: the seed is never NULL. Fold assignment is drawn with sample(), so an
   # absent seed hands the cross-validated loss -- and therefore the choice
-  # between candidates -- to the ambient RNG. over 30
-  # unseeded rounds the recommended estimator flipped 8 times out of 30,
-  # because the run-to-run wobble in the loss was four times the gap between
-  # the candidates. A fixed documented default costs nothing statistically
+  # between candidates -- to the ambient RNG. Unseeded, the run-to-run
+  # wobble in the loss can exceed the gap between the candidates, so the
+  # recommended estimator can change from one run to the next.
+  # A fixed documented default costs nothing statistically
   # (the partition is arbitrary) and makes the run repeatable by default.
   DEFAULT_CV_SEED <- 20260818L
   seed     <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED

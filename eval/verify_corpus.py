@@ -1,6 +1,6 @@
 """Check that rewriting the corpus into natural prose did not change its meaning.
 
-WHY THIS IS DETERMINISTIC AND NOT ANOTHER MODEL. The rewrite is done by a
+🔴 WHY THIS IS DETERMINISTIC AND NOT ANOTHER MODEL. The rewrite is done by a
 language model, and the failure it is prone to is a HELPFUL one: an item whose
 whole purpose is that no column is named ("adjust for the baseline variables")
 gets rewritten as "adjust for age, bmi and egfr", because that is what a helpful
@@ -35,7 +35,7 @@ from profiles import ALL_PROFILES  # noqa: E402
 from bank_profiles import BANK_PROFILES  # noqa: E402
 
 
-# ONE predicate for the corpus and the harness. The matcher moved to
+# 🔴 ONE predicate for the corpus and the harness. The matcher moved to
 # `bregsurv_agent/textmatch.py` so the standard the corpus is
 # built on is the standard boundary 1 enforces at runtime; the names below
 # are kept so every caller in eval/ is unchanged.

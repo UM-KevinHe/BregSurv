@@ -3,7 +3,7 @@
 #
 #   Rscript draw_splits.R <in.json> <out.json>
 #
-# HARNESS-INVOKED (V4, 2026-10-04: evaluation by repeated splits, on request). It draws the
+# HARNESS-INVOKED (V4: evaluation by repeated splits, on request). It draws the
 # splits and writes one train file (and, when the cohort itself is split, one test file) per
 # split; it fits nothing. Each split is then fitted by run_candidates.R exactly as an ordinary
 # analysis is, with the split's train file as the data and its test file as the test data.

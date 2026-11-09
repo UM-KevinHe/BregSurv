@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncc_indi_enet.R - dispatcher for the cv_ncc_indi_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet.
+# K-fold CV of (eta, lambda) for BregSurv::ncc_indi_enet().
 # NCC-family CV criteria whitelist enforced at dispatcher level.
 #
 # Internal data are split at the stratum level; the external cohort is fully
@@ -104,12 +104,12 @@ result <- tryCatch({
   lambda.min.ratio <- if (!is.null(input$lambda_min_ratio)) as.numeric(input$lambda_min_ratio) else NULL
 
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  # A4: the seed is never NULL. on the NCC side the
-  # fold assignment is NOT drawn with sample. `get_fold_cc` contains no RNG
+  # A4: the seed is never NULL. 🔴 On the NCC side the
+  # fold assignment is NOT drawn with sample(). `get_fold_cc` contains no RNG
   # call -- it assigns whole matched sets by a deterministic rule -- so the seed
   # changes nothing here and the split is reproducible without it. The A4
-  # measurement this comment cited (8 flips in 30 unseeded rounds) was made on
-  # the COHORT drivers, where get_fold does draw, and was copied across. The
+  # rationale for a default (an unseeded split can change the recommendation)
+  # holds for the COHORT drivers, where get_fold does draw. The
   # default is kept anyway so every bridge reports the same provenance fields
   # and a caller cannot tell the two families apart by accident.
   DEFAULT_CV_SEED <- 20260818L

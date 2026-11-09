@@ -13,7 +13,7 @@ tokens, gone from every request.
   boundary 2  write the report's connective prose. It emits NAMED REFERENCES and
               no digits; `report_v3.resolve` substitutes the values at render
               time from a closed, typed set.
-  explain     (M4, 2026-09-11) answer one question about a report that exists,
+  explain     (M4) answer one question about a report that exists,
               under exactly boundary 2's rules: named references, no digits,
               the closed set. A draft that breaks them is dropped, not fixed.
 
@@ -22,19 +22,16 @@ The intent call (M1) lives in `intent.py` and uses the same `_chat`.
 THE `reasoning` FIELD COMES FIRST in every schema, before the decision fields.
 In the study behind the "structured output hurts reasoning" result, 100% of the
 failures had emitted the answer key before the reason key. Putting it first is
-the single logged "reason-then-commit" step the design permits. It is a design
-bet, not a measured effect: on the 500-item run of 2026-08-20 the field held a
-placeholder or a bare column name on ~81% of calls, because its purpose lived
-only in a JSON-Schema `description` the server never shows the model. The purpose
-is now stated in the system prompt; whether the step executes is measured at the
-final evaluation, and the field is deleted if it still does not.
+the single logged "reason-then-commit" step the design permits. ⚠️ It is a design
+bet, not a measured effect. Its purpose is stated in the system prompt, because a
+JSON-Schema `description` is never shown to the model; left only there, the
+field tends to hold a placeholder or a bare column name.
 
-Every call is recorded (`call_log`): model, endpoint, prompt/completion tokens,
+Every call is recorded (`call_log()`): model, endpoint, prompt/completion tokens,
 finish_reason, seconds. The prompt-token count of a single-turn call IS its peak
 context, which is what the 32K window actually constrains. A response that is
 not valid JSON raises `ValueError` carrying finish_reason, completion_tokens and
-the raw text -- 48 of 500 calls on 2026-08-20 failed this way and were
-undiagnosable because the text was discarded.
+the raw text, so such a failure stays diagnosable.
 
 This module is OPTIONAL. `pipeline.run` without `write_prose` produces a complete
 report; the prose is connective tissue, not content. Nothing here can change a
@@ -61,7 +58,7 @@ ROLE_EXTRACTION_SCHEMA: Dict[str, Any] = {
         "time_column": {"type": ["string", "null"]},
         # the phrase of the request the column was read from, verbatim. A
         # column the request does not NAME may still be filled from a phrase
-        # that describes it (decision (b) revised 2026-09-11): the harness
+        # that describes it (decision (b)): the harness
         # accepts it only if the phrase is in the message and the column is
         # eligible for the role, and discloses it as `described`.
         "time_evidence": {"type": ["string", "null"]},
@@ -70,9 +67,9 @@ ROLE_EXTRACTION_SCHEMA: Dict[str, Any] = {
         "event_value": {"type": ["string", "null"]},
         "event_value_evidence": {"type": ["string", "null"]},
         # the column the analyst names as the stratum or the matched-set
-        # identifier (2026-09-30: without this field a request that says
+        # identifier (without this field a request that says
         # "stratify by stratum" or "set_id identifies each matched set" could
-        # not declare it, and a stratified cohort ran unstratified). Quoted
+        # not declare it, and a stratified cohort would run unstratified). Quoted
         # only: a name the request does not write is dropped by the backing
         # check, never described. The design still follows from what is
         # declared -- a stratum with a follow-up time is a stratified cohort,
@@ -84,13 +81,21 @@ ROLE_EXTRACTION_SCHEMA: Dict[str, Any] = {
         "covariate_columns": {"type": ["array", "null"],
                               "items": {"type": "string"},
                               "maxItems": 64},
-        # `stated_explicitly` is gone: the model asserted "read
-        # from the request" on 53% of the items where it had guessed. Whether a
-        # role was quoted is now decided by the harness, not declared by the model.
+        # when the request says the other columns are predictors,
+        # the columns of the file that cannot be baseline predictors (another outcome or its
+        # time, an identifier, a date), as the model reads them from the names. The harness
+        # checks only that they are columns of the file, leaves them out of "every other
+        # column" and says so on the card.
+        "not_predictors": {"type": ["array", "null"],
+                           "items": {"type": "string"},
+                           "maxItems": 32},
+        # there is no `stated_explicitly` field: the model asserts "read from
+        # the request" even where it guessed. Whether a role was quoted is
+        # decided by the harness, not declared by the model.
     },
     "required": ["reasoning", "time_column", "time_evidence", "event_column",
                  "event_evidence", "event_value", "event_value_evidence",
-                 "stratum_column", "covariate_columns"],
+                 "stratum_column", "covariate_columns", "not_predictors"],
 }
 
 REPORT_PROSE_SCHEMA: Dict[str, Any] = {
@@ -129,7 +134,7 @@ EXPLAIN_SCHEMA: Dict[str, Any] = {
 _EXPLAIN_SYSTEM = policy.load("explain")
 
 
-# Every call, in order. `call_log` reads it; app.py copies it into the run's
+# Every call, in order. `call_log()` reads it; app.py copies it into the run's
 # provenance. A single-turn call's prompt_tokens is its peak context.
 CALLS: List[Dict[str, Any]] = []
 
@@ -141,38 +146,102 @@ def call_log(clear: bool = False) -> List[Dict[str, Any]]:
     return out
 
 
+# ------------------------------------------------------------ context ablation
+# BREGSURV_CONTEXT=transcript (an ablation): the model is given
+# the conversation instead of the state. Every call then carries, after its
+# instruction, the whole exchange so far -- the analyst's messages, the replies
+# the analyst was shown and every earlier output of the model -- and the state
+# line is taken out of its own input, so what has been declared must be read
+# back from the exchange, as in an agent that keeps a transcript. Everything
+# else is unchanged: the same acts, schemas, verifiers and gate, the act still
+# chosen in code. Off unless set; recorded on every call as `context`.
+# The analyst's messages and the replies are added by the driver
+# (`transcript_note`); the model's outputs are added here. When the exchange
+# no longer fits the window the oldest messages are dropped, and the call
+# records how many.
+TRANSCRIPT: List[Dict[str, str]] = []
+_LAST_HISTORY: Dict[str, Any] = {}
+_STATE_LINE = re.compile(r"(?m)^State: cohort loaded:.*(?:\n|$)")
+
+
+def context_mode() -> str:
+    return ("transcript" if os.environ.get("BREGSURV_CONTEXT", "").strip().lower() == "transcript"
+            else "state")
+
+
+def transcript_reset() -> None:
+    TRANSCRIPT.clear()
+    _LAST_HISTORY.clear()
+
+
+def transcript_note(role: str, text: str) -> None:
+    """Add one message of the exchange (`user` for the analyst, `assistant` for a reply)."""
+    if context_mode() == "transcript" and text:
+        TRANSCRIPT.append({"role": role, "content": str(text)})
+
+
+def _messages(system: str, user: str, drop: int = 0) -> List[Dict[str, str]]:
+    if context_mode() != "transcript":
+        return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    return ([{"role": "system", "content": system}] + TRANSCRIPT[drop:]
+            + [{"role": "user", "content": _STATE_LINE.sub("", user)}])
+
+
+def _create(client, system: str, user: str, **kw):
+    """One request; under the transcript context, the oldest messages are dropped
+    while the server reports that the prompt exceeds the window."""
+    if isinstance(client, _Fake):
+        return client.create()
+    drop = 0
+    while True:
+        try:
+            out = client.chat.completions.create(messages=_messages(system, user, drop), **kw)
+            break
+        except Exception as exc:
+            msg = str(exc).lower()
+            if (context_mode() != "transcript" or drop >= len(TRANSCRIPT)
+                    or not ("context length" in msg or "maximum context" in msg
+                            or "too long" in msg or "max_model_len" in msg)):
+                raise
+            drop += max(1, (len(TRANSCRIPT) - drop) // 4)
+    if context_mode() == "transcript":
+        _LAST_HISTORY.clear()
+        _LAST_HISTORY.update({"history_messages": len(TRANSCRIPT) - drop, "history_dropped": drop})
+    return out
+
+
 # ------------------------------------------------------------ decoding policy
-# Temperature is a property of the ACT, not of the agent (
+# Temperature is a property of the ACT, not of the agent (by design:
 # temperature 0 everywhere turns the model into a pipeline). Quoting acts --
 # a name is in the message or it is not -- gain nothing from sampling and are
 # decoded greedily; writing acts are sampled. Reproducibility of the ANALYSIS
-# never rested on the model being deterministic (master memory ); for an
+# never rested on the model being deterministic; for an
 # EVALUATION that wants repeatable model output, set BREGSURV_SEED.
 #
-# BREGSURV_THINKING V4: thinking is a property of the act too.
-# unset or `auto` -> the acts in THINKING_ACTS think, the
-# others do not (chat_template_kwargs.enable_thinking is
-# sent on every call; a template without the switch
-# ignores it); `on` / `off` -> every act; a comma list of
-# act names -> exactly those acts. A thinking act follows
-# the Qwen3 guidance, never greedy (temp 0.6, top_p 0.95);
-# the hidden reasoning is recorded in the call record as
-# `thinking_text`, never shown to the analyst
-# BREGSURV_TEMPERATURE a global override, e.g. 0 to reproduce the 2026-08 runs
-# BREGSURV_SEED a per-request seed for repeatable sampling
+#   BREGSURV_THINKING   V4: thinking is a property of the act too.
+#                       unset or `auto` -> the acts in THINKING_ACTS think, the
+#                       others do not (chat_template_kwargs.enable_thinking is
+#                       sent on every call; a template without the switch
+#                       ignores it); `on` / `off` -> every act; a comma list of
+#                       act names -> exactly those acts. A thinking act follows
+#                       the Qwen3 guidance, never greedy (temp 0.6, top_p 0.95);
+#                       the hidden reasoning is recorded in the call record as
+#                       `thinking_text`, never shown to the analyst
+#   BREGSURV_TEMPERATURE  a global override, e.g. 0 for greedy decoding everywhere
+#   BREGSURV_SEED         a per-request seed for repeatable sampling
 QUOTING_ACTS = ("intent", "role_extraction", "external_roles", "published_model",
                 "plan_steps", "split_request")
 WRITING_ACTS = ("report_prose", "explain", "ask", "refusal", "chat")
 # V4: the acts that plan the analysis think before they answer; reading and
-# writing acts do not (the 2026-09 runs: thinking did not make the quoting acts
-# more accurate and made them several times slower)
+# writing acts do not (thinking did not make the quoting acts more accurate
+# and made them several times slower)
 THINKING_ACTS = ("analysis_plan", "next_step")
 
 
 # tokens added to an act's max_tokens when the model thinks first, so the
 # visible JSON keeps its own budget. Override with BREGSURV_THINKING_ALLOWANCE.
-# 2000 in V3; the 2026-10-02 rubric round found 34 calls whose thinking (10-14k
-# characters, unfinished) used the whole budget, so V4 starts at 8000.
+# 2000 in V3; an unfinished thinking pass can use the whole of a budget that
+# small, so V4 starts at 8000.
 THINKING_ALLOWANCE = int(os.environ.get("BREGSURV_THINKING_ALLOWANCE", "8000") or 0)
 
 
@@ -239,12 +308,11 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
         # then separates the hidden reasoning from the constrained content
         kw["extra_body"] = {"chat_template_kwargs": {"enable_thinking": dec["thinking"]}}
         if dec["thinking"]:
-            # the hidden reasoning is generated text and counts against
-            # max_tokens. The 2026-09-11 thinking-on run shared the per-act
-            # budget (300-900) between the reasoning and the JSON, so a long
-            # thought left no room for the answer: empty content, typed as
-            # "no intent" / "no coefficient table". The thinking arm measured
-            # the cap, not the reasoning. Thinking gets its own allowance.
+            # 🔴 the hidden reasoning is generated text and counts against
+            # max_tokens. Sharing the per-act budget (300-900) between the
+            # reasoning and the JSON lets a long thought leave no room for the
+            # answer: empty content, typed as "no intent" / "no coefficient
+            # table". Thinking gets its own allowance.
             allowance = THINKING_ALLOWANCE
             max_tokens = max_tokens + allowance
     from . import ablation
@@ -261,11 +329,10 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
     if on_text is not None:
         return _chat_streamed(client, model, system, user, name, dec, kw, fmt, max_tokens,
                               allowance, unconstrained, extra_record, on_text, t0)
-    completion = client.chat.completions.create(
+    completion = _create(
+        client, system, user,
         model=model,
-        messages=[{"role": "system", "content": system},
-                  {"role": "user", "content": user}],
-        # the whole point of C5: NO tools field at all. Measured on
+        # 🔴 the whole point of C5: NO tools field at all. Measured on
         # vLLM 0.27.1 -- `tools=[]` is rejected with 400 "`tools` must not be
         # an empty array. Either provide at least one tool or omit the field
         # entirely." Omitting it is what "the agent sends no schemas" means.
@@ -275,6 +342,8 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
     )
     choice = completion.choices[0]
     text = choice.message.content or "{}"
+    if context_mode() == "transcript" and (choice.message.content or "").strip():
+        TRANSCRIPT.append({"role": "assistant", "content": f"[{name}] {choice.message.content}"})
     if unconstrained:
         # free text: take the outermost braces, drop a code fence if any
         i, j = text.find("{"), text.rfind("}")
@@ -288,15 +357,16 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
            "prompt_tokens": getattr(usage, "prompt_tokens", None),
            "completion_tokens": getattr(usage, "completion_tokens", None),
            "finish_reason": getattr(choice, "finish_reason", None),
-           "seconds": round(_time.time() - t0, 2)}
+           "seconds": round(_time.time() - t0, 2), "context": context_mode()}
+    if context_mode() == "transcript":
+        rec.update(_LAST_HISTORY)
     if extra_record:
         rec.update(extra_record)
     # the hidden reasoning of a thinking model (vLLM's reasoning parser puts
     # it in a field the openai client does not model -- `reasoning` on vLLM
     # 0.27, `reasoning_content` on older builds -- so it sits in model_extra):
-    # recorded, never shown, never acted on. (job
-    # 60976281): under response_format the model thinks first and the
-    # grammar applies to the content after it.
+    # recorded, never shown, never acted on. Under response_format the model
+    # thinks first and the grammar applies to the content after it.
     think = getattr(choice.message, "reasoning_content", None)
     if not think:
         extra = getattr(choice.message, "model_extra", None) or {}
@@ -305,10 +375,10 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
         rec["thinking_text"] = str(think)[:6000]
         rec["thinking_chars"] = len(str(think))
     if not (choice.message.content or "").strip() and rec["finish_reason"] == "length":
-        # V4: a model that thinks until its budget runs out writes
+        # 🔴 V4: a model that thinks until its budget runs out writes
         # no answer at all. V3 read the empty content as "{}" -- an answer with
-        # every field empty -- and recorded no error (34 calls in the 2026-10-02
-        # rubric round). An unanswered call is a failure and is said to be one.
+        # every field empty -- and recorded no error. An unanswered call is a
+        # failure and is said to be one.
         rec["error"] = (f"no answer: the model used its whole budget of {max_tokens} tokens"
                         + (f" thinking ({rec.get('thinking_chars', 0)} characters)" if think else "")
                         + " before writing one")
@@ -319,8 +389,8 @@ def _chat(client, model: str, system: str, user: str, schema: Dict[str, Any],
         out = json.loads(text)
     except json.JSONDecodeError as exc:
         # one repair, recorded: an escaped single quote (\') is not a JSON
-        # escape, and Qwen2.5 writes it inside its reasoning strings (M5 on
-        # the ablation fixture F05, 2026-09-13: seven files refused for it)
+        # escape, and Qwen2.5 writes it inside its reasoning strings (without
+        # the repair, M5 refuses files for it)
         repaired = re.sub(r"\\'", "'", text)
         try:
             out = json.loads(repaired)
@@ -393,8 +463,16 @@ def describe_model(client, model: str) -> Dict[str, Any]:
 def extract_roles(client, model: str, request: str,
                   profile: Dict[str, Any],
                   examples: Optional[List[Dict[str, Any]]] = None,
-                  few_shot: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                  few_shot: Optional[Dict[str, Any]] = None,
+                  current: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Propose a role extraction from the analyst's own words.
+
+    `current`: the roles earlier messages already
+    settled, given when this message edits a declaration. Without it the model
+    sees "please also add smoker and prior_mi" alone, returns those two names,
+    and they replace the six already declared; "drop x9, x10" changes nothing.
+    With it the model returns the complete predictor set after the change, and
+    `backed_roles(..., settled_covariates=...)` accepts the settled names.
 
     The result is a PROPOSAL. It is never acted on directly: the caller builds a
     Declaration from it and `verify` shows the analyst what it means for their
@@ -407,11 +485,37 @@ def extract_roles(client, model: str, request: str,
     from . import fewshot as _fs
     names = [c["name"] for c in profile.get("columns", [])]
     block = _fs.render(examples) if examples else ""
+    settled = ""
+    if current:
+        bits = []
+        for key, label in (("time", "follow-up time"), ("event", "event column"),
+                           ("event_value", "event value"), ("stratum", "strata / matched sets")):
+            if current.get(key):
+                bits.append(f"{label}: {current[key]}")
+        if current.get("covariates"):
+            bits.append("predictors: " + ", ".join(current["covariates"]))
+        if bits:
+            # under the transcript context the earlier declaration is read from
+            # the exchange above, not restated here; the instruction is the same
+            settled = (("The analyst's earlier messages, above, already declared roles."
+                        if context_mode() == "transcript" else
+                        "Already declared by the analyst's earlier messages:\n  "
+                        + "\n  ".join(bits))
+                       + "\nThis message may change that declaration. If it adds or removes "
+                         "predictors, return in covariate_columns the COMPLETE predictor set "
+                         "after the change: the earlier predictors it does not remove, plus the "
+                         "ones it adds, without the ones it removes. If it says nothing about "
+                         "predictors, return null for covariate_columns. Return a time, event or "
+                         "value only if this message itself changes it.\n\n")
     user = (f"Columns in the file:\n{', '.join(names)}\n\n"
             + (block + "\n" if block else "")
+            + settled
             + f"The analyst wrote:\n{request}")
+    # the reading may list every column twice (the predictors and the columns set aside), so its
+    # allowance grows with the file's width; 1200 tokens stays the floor
     return _chat(client, model, _EXTRACT_SYSTEM, user, ROLE_EXTRACTION_SCHEMA,
-                 "role_extraction", extra_record=({"few_shot": few_shot} if few_shot else None))
+                 "role_extraction", max_tokens=max(1200, 600 + 24 * len(names)),
+                 extra_record=({"few_shot": few_shot} if few_shot else None))
 
 
 def examples_for(request: str, profile: Dict[str, Any],
@@ -446,8 +550,8 @@ def write_prose(client, model: str, max_tokens: int = 900):
         refs = ctx["references"]
         res = ctx["result"]
         rows = [f"{c['label']}: {c['status']}" for c in res["candidates"]]
-        # 2026-10-01: what each reference IS and the facts of this run, in words
-        # (report_v3.prose_facts); before, the model saw names alone and guessed
+        # what each reference IS and the facts of this run, in words
+        # (report_v3.prose_facts); with names alone the model guesses
         # V4: two worked examples generated by rule for the nearest combination of facts
         from . import prose_examples
         ex_prefix, ex_rec = prose_examples.for_run(res, refs)
@@ -456,9 +560,9 @@ def write_prose(client, model: str, max_tokens: int = 900):
             + "\n".join("  " + g for g in report_v3.reference_glossary(refs))
             + "\n\nFacts of this analysis:\n"
             + "\n".join("  " + s for s in report_v3.prose_facts(res, refs))
-            + "\n\nWhat was done: the admissible candidate set was derived from "
-              "two facts about the data, every member was fitted on one "
-              "cross-validation partition, and the lowest loss was selected.\n"
+            + "\n\nWhat was done: the methods listed below were fitted on one "
+              "cross-validation partition and the one with the lowest loss was "
+              "selected.\n"
               "Candidates:\n" + "\n".join("  " + r for r in rows)
             + "\n\nWrite one short paragraph for each of: data, linkage, "
               "candidates, comparison, selected."
@@ -468,9 +572,8 @@ def write_prose(client, model: str, max_tokens: int = 900):
                         "report_prose", max_tokens=max_tokens,
                         extra_record=({"prose_examples": ex_rec} if ex_rec else None))
         except ValueError as exc:
-            # A draft that is not valid JSON (a small model that ran out of
-            # its 900 tokens mid-string: Qwen2.5 P076, Qwen3-off P044/P047/P078
-            # of the 100-prompt run) is NO PROSE, not a failed analysis. The
+            # 🔴 A draft that is not valid JSON (a small model that ran out of
+            # its 900 tokens mid-string) is NO PROSE, not a failed analysis. The
             # fit is verified and finished by the time this runs; the report
             # renders from the numbers alone and says the draft was dropped.
             # The call record still travels, so the tokens are accounted for.
@@ -508,10 +611,30 @@ def explain(client, model: str, question: str, ctx: Dict[str, Any],
     caller told why. Returns `{"answer": str | None, "dropped": str | None,
     "_reasoning": str, "_call": record}`.
     """
-    from . import report_v3
-    refs = ctx["references"]
+    from . import report_v3, textmatch
+    refs = dict(ctx["references"])
     res = ctx["result"]
     rows = [f"  {c['label']}: {c['status']}" for c in res["candidates"]]
+    # a question about one variable's estimate ("how much did the external information
+    # change the estimate for age?") would otherwise have no reference to answer with, and
+    # the answer would say the report does not give it although its coefficient table does.
+    # The coefficients of every variable the question names are offered, by name.
+    coef_lines = []
+    cols = [str(r.get("variable")) for r in res.get("coefficients") or []]
+    for r in res.get("coefficients") or []:
+        v = str(r.get("variable"))
+        if not textmatch.mentions(question or "", v, cols):
+            continue
+        tag = re.sub(r"[^a-z0-9_]", "_", v.lower())
+        for k, lab in (("beta_selected", "the recommended model's coefficient"),
+                       ("beta_internal", "the coefficient fitted to the cohort alone"),
+                       ("beta_external", "the external model's coefficient")):
+            if isinstance(r.get(k), (int, float)):
+                refs[f"{k}_{tag}"] = r[k]
+                coef_lines.append(f"  [{k}_{tag}]  {lab} for {v} (log hazard ratio)")
+        if isinstance(r.get("beta_selected"), (int, float)) and isinstance(r.get("beta_internal"), (int, float)):
+            refs[f"change_{tag}"] = r["beta_selected"] - r["beta_internal"]
+            coef_lines.append(f"  [change_{tag}]  the recommended coefficient for {v} minus the cohort-alone one")
     decl = ctx.get("declaration")
     roles = ""
     if decl is not None:
@@ -533,7 +656,8 @@ def explain(client, model: str, question: str, ctx: Dict[str, Any],
     else:
       user = (
         "Reference names you may use, and nothing else, with what each one is:\n"
-        + "\n".join("  " + g for g in report_v3.reference_glossary(refs))
+        + "\n".join("  " + g for g in report_v3.reference_glossary(ctx["references"]))
+        + ("\n" + "\n".join(coef_lines) if coef_lines else "")
         + "\n\nFacts of this analysis:\n"
         + "\n".join("  " + s for s in report_v3.prose_facts(res, refs))
         + "\n\nWhat the report contains: the study design ([design]) and the "
@@ -620,8 +744,7 @@ def word_question(client, model: str, message: str, profile: Dict[str, Any],
             + "\n\nThe analyst wrote:\n" + (message or "").strip())
     # a multi-step turn reaches the question with no message of its own (the
     # harness's "So far" step): the lead-in is then worded from the settled
-    # state alone. Until 2026-09-14 this raised on None and the action log
-    # recorded the AttributeError as `dropped` on 11 of 98 synthetic requests.
+    # state alone (a None message must not raise here).
     out = _chat(client, model, policy.load("ask"), user, ASK_SCHEMA, "ask",
                 max_tokens=max_tokens)
     rec = CALLS[-1] if CALLS else {}
@@ -682,10 +805,9 @@ def _chat_streamed(client, model, system, user, name, dec, kw, fmt, max_tokens, 
                    unconstrained, extra_record, on_text, t0):
     """The streamed form of one call: the chunks are collected, the callback sees the text so far,
     and the collected answer then goes through exactly the record and checks of `_chat`."""
-    stream = client.chat.completions.create(
+    stream = _create(
+        client, system, user,
         model=model,
-        messages=[{"role": "system", "content": system},
-                  {"role": "user", "content": user}],
         max_tokens=max_tokens, stream=True, stream_options={"include_usage": True},
         **fmt, **kw)
     text, think, finish, usage = [], [], None, None
@@ -765,7 +887,10 @@ def chat_reply(client, model: str, message: str, state: str, columns: List[str],
     that match, and the last few plain turns, never a row. Verified before use: not empty, no
     column-like name outside the file, no number next to an analysis measure. A failing draft is
     dropped, never repaired."""
-    turns = "\n".join(f"Analyst: {u}\nAssistant: {a}" for u, a in (earlier or [])[-3:])
+    # the fixed window is the state design's one transcript; under the
+    # transcript context the whole exchange is already in the prompt
+    turns = ("" if context_mode() == "transcript" else
+             "\n".join(f"Analyst: {u}\nAssistant: {a}" for u, a in (earlier or [])[-3:]))
     user = (state + "\nColumns in the file: " + (", ".join(columns) if columns else "none loaded")
             + (("\n\nEarlier turns:\n" + turns[-2000:]) if turns else "")
             + (("\n\nNotes from the method documentation:\n" + notes[:3000]) if notes else "")
@@ -828,15 +953,15 @@ def prose_problem(text: str, names: List[str]) -> Optional[str]:
 
 
 # ------------------------------------------------------- the backing check for B1
-def backed_roles(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
-                 ) -> Tuple[Dict[str, str], Dict[str, Any], Dict[str, str]]:
+def backed_roles(msg: str, prof: Dict[str, Any], ext: Dict[str, Any],
+                 settled_covariates: Optional[List[str]] = None) -> Tuple[Dict[str, str], Dict[str, Any], Dict[str, str]]:
     """Keep what the analyst wrote, or described (component 9 guard for B1).
 
     Returns (backed, unbacked, sources). A name the message contains is
     `quoted`. A name it does not contain is `described: "<phrase>"` when the
     model returned the phrase it read the column from, that phrase is in the
     message word for word, and the column is eligible for the role (decision
-    (b) revised 2026-09-11: the model may resolve a description, the harness
+    (b): the model may resolve a description, the harness
     checks it and the card discloses it). Anything else is dropped and logged;
     the role then goes to `complete`, which fills it by a disclosed rule or
     asks. A ghost column the analyst wrote is BACKED (textmatch adds the name
@@ -853,9 +978,9 @@ def backed_roles(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
         # ablation cell: every name the model returned is taken as quoted. The
         # names the check WOULD have dropped are returned as `unbacked` all the
         # same (the caller logs them), so the fits that rest on a guess can be
-        # counted; under the paper's rule those are failures whichever column
-        # was named.
-        b, u, src = _backed_roles_checked(msg, prof, ext)
+        # counted; under the evaluation's rule those are failures whichever
+        # column was named.
+        b, u, src = _backed_roles_checked(msg, prof, ext, settled_covariates)
         for key, val in u.items():
             if key == "covariates":
                 b[key] = ", ".join(str(c) for c in (ext.get("covariate_columns") or []))
@@ -863,11 +988,11 @@ def backed_roles(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
                 b[key] = str(val)
             src[key] = "quoted (unbacked; ablation no_backing)"
         return b, u, src
-    return _backed_roles_checked(msg, prof, ext)
+    return _backed_roles_checked(msg, prof, ext, settled_covariates)
 
 
-def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
-                          ) -> Tuple[Dict[str, str], Dict[str, Any], Dict[str, str]]:
+def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any],
+                          settled_covariates: Optional[List[str]] = None) -> Tuple[Dict[str, str], Dict[str, Any], Dict[str, str]]:
     from . import textmatch
     cols = [c["name"] for c in prof.get("columns", [])]
     elig = prof.get("eligible", {}) or {}
@@ -888,7 +1013,10 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
                 backed[key], sources[key] = str(name), "quoted"
             elif _described(key, str(name), ext.get(f"{role[:-7]}_evidence")):
                 backed[key] = str(name)
-                sources[key] = f'described: "{str(ext.get(f"{role[:-7]}_evidence")).strip()}"'
+                # a description is an assumption, and is said to be one
+                sources[key] = (f'described: "{str(ext.get(f"{role[:-7]}_evidence")).strip()}" '
+                                f'(an assumption from your words, which name no column; reply '
+                                f'{"1" if key == "time" else "2"}) <column> to use another)')
             else:
                 unbacked[key] = str(name)
     val = ext.get("event_value")
@@ -897,12 +1025,11 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
             backed["event_value"], sources["event_value"] = str(val), "quoted"
         else:
             unbacked["event_value"] = str(val)
-    # The message's own words about the coding, read against the column:
-    # "alive ... is 0 when the patient died and 1 when they were alive" read
-    # as 1 (rubric tasks H009/H029/H045/H063/H078/H093), and "event_flag is 1
-    # if the event occurred, 0 otherwise" on a column holding 1 and 2 taken
-    # as written (H042/H044/H048). Both values were in the message, so the
-    # quoting check passed them. When the wording contradicts the value read,
+    # 🔴 The message's own words about the coding, read against the column:
+    # "alive ... is 0 when the patient died and 1 when they were alive" can be
+    # read as 1, and "event_flag is 1 if the event occurred, 0 otherwise" on a
+    # column holding 1 and 2 taken as written. Both values are in the message,
+    # so the quoting check passes them. When the wording contradicts the value read,
     # the value is ASKED (item 3) -- never filled by the 0/1 rule.
     ev = backed.get("event") or (str(ext.get("event_column")) if ext.get("event_column") else None)
     if ev and ev in cols and backed.get("event_value") is not None:
@@ -912,12 +1039,12 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
         if why:
             read = backed.pop("event_value")
             unbacked["event_value"] = read
-            # 2026-10-02 (the authors: what the analyst states, and the data does not
+            # (by design: what the analyst states, and the data does not
             # contradict, is the specification): when the message itself names
             # ONE code the column holds as the event, that code is what the
             # analyst wrote, so it is taken -- the reading's other value was the
-            # model's slip, not a question for the analyst (H009/H063/H093 asked
-            # "which value means the event" after "0 for death, 1 for alive").
+            # model's slip, not a question for the analyst (who would otherwise
+            # be asked "which value means the event" after "0 for death, 1 for alive").
             # A code the column lacks, or wording that labels no single code,
             # is still asked.
             code = _labelled_event_code(msg, ev, levels)
@@ -939,25 +1066,33 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
             unbacked["stratum"] = str(strat)
     covs = ext.get("covariate_columns") or []
     keep, drop, respelled = [], [], {}
+    # names an earlier message of this session already settled
+    # as predictors are backed by that message (the model was shown them and
+    # returned the complete set after this message's change)
+    settled = [s for s in (settled_covariates or []) if s in cols]
+    from_settled = []
     for c in covs:
         c = str(c)
         if textmatch.mentions(msg, c, cols):
             keep.append(c)
             continue
-        # The model's spelling, not the analyst's: Qwen3 writes `hla_mismatch`
-        # as `hl_a_mismatch` / `hlamismatch` (ablation F01/F04/F10/F13,
-        # 2026-09-13), and dropping the name silently narrowed the covariate
-        # set the analyst wrote. A dropped name that is, letter for letter,
+        if c in settled:
+            keep.append(c)
+            from_settled.append(c)
+            continue
+        # 🔴 The model's spelling, not the analyst's: Qwen3 writes `hla_mismatch`
+        # as `hl_a_mismatch` / `hlamismatch`, and dropping the name would
+        # silently narrow the covariate set the analyst wrote. A dropped name that is, letter for letter,
         # exactly one column of the file, and that column is in the message,
         # is that column -- a deterministic repair, recorded as such.
         same = [k for k in cols if _letters(k) == _letters(c)]
         if len(same) == 1 and same[0] not in keep and textmatch.mentions(msg, same[0], cols):
             keep.append(same[0]); respelled[c] = same[0]
             continue
-        # The analyst wrote a LONGER name the file does not have, and the
+        # 🔴 The analyst wrote a LONGER name the file does not have, and the
         # model read it as the file column inside it: "hla_mismatch_count"
-        # read as `hla_mismatch` (rubric task H046, 2026-10-01). Dropping the
-        # column as unwritten ran the analysis without it, with only a note;
+        # read as `hla_mismatch`. Dropping the column as unwritten would run
+        # the analysis without it, with only a note;
         # keeping the analyst's own name sends it to verify, which refuses it
         # by name, so the analyst says which column was meant.
         near = _written_near_miss(msg, c, cols) if c in cols else None
@@ -966,10 +1101,10 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
             unbacked.setdefault("near_miss", {})[near] = c
         else:
             drop.append(c)
-    # The same longer name when the reading LEFT IT OUT altogether: Qwen3
-    # returned "age, bmi, egfr, cold_ischemia" for "adjust for age, bmi, egfr,
-    # cold_ischemia and hla_mismatch_count only" and the run went ahead on four
-    # covariates with nothing said (rubric task H046, second pass, 2026-10-02).
+    # The same longer name when the reading LEFT IT OUT altogether: Qwen3 can
+    # return "age, bmi, egfr, cold_ischemia" for "adjust for age, bmi, egfr,
+    # cold_ischemia and hla_mismatch_count only", and the run would go ahead on
+    # four covariates with nothing said.
     # Only for an explicit list -- a message that says the other columns are
     # predictors settles the set by the rule below -- and never for a column
     # this reading gave another role.
@@ -982,11 +1117,11 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
             if near and near not in keep:
                 keep.append(near)
                 unbacked.setdefault("near_miss", {})[near] = c
-    # A column this reading already gave another role is not a predictor because the
+    # 🔴 A column this reading already gave another role is not a predictor because the
     # message writes its name. "patients in several strata, recorded in the column stratum"
     # names the strata; Qwen3 also listed `stratum` as the only covariate (its own reasoning
     # said the covariates were not named) and the run stopped on "the outcome is also listed
-    # among the predictors" (simulation prompt search, strat_v3, 2026-09-30). Such a name is
+    # among the predictors". Such a name is
     # taken out of the covariates and logged under its own key -- the analyst DID write it, so
     # it is not reported as unwritten; the covariates then fall to the rule or the question.
     # Only when the message says the OTHER columns are predictors and every written name in the
@@ -997,11 +1132,10 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
     if keep and all(c in role_cols for c in keep) and _REST_PHRASE.search(msg or ""):
         unbacked["covariates_named_as_role"] = list(keep)
         keep = []
-    # A RANGE the analyst wrote ("x1 to x10", "v11 through v50", "x1..x10"):
+    # 🔴 A RANGE the analyst wrote ("x1 to x10", "v11 through v50", "x1..x10"):
     # the model quotes the two endpoints, both are in the message, the check
     # accepts them, and the analysis runs on TWO covariates instead of ten --
-    # a wrong analysis that nothing refuses (hard request set H003/H007/H012/
-    # H024, 2026-09-14). A range whose endpoints are columns of the file and
+    # a wrong analysis that nothing refuses. A range whose endpoints are columns of the file and
     # appear in the message is expanded to every column of the same stem with
     # a number in between, deterministically, and the card says so.
     ranges = _ranges_in(msg, cols)
@@ -1016,7 +1150,7 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
             keep_set = set(keep) | set(expanded)
             keep = [c for c in cols if c in keep_set]      # the file's order
             respelled["ranges"] = ", ".join(f"{a} to {b}" for a, b, _ in ranges)
-    # "Everything else, including site" (hard set H009/H093, 2026-09-15): the
+    # 🔴 "Everything else, including site": the
     # model lists the file's other columns, which the message does not write,
     # beside the one it does; the check removes the unwritten names and the
     # fit would rest on `site` alone -- a narrowing the analyst never asked
@@ -1027,23 +1161,41 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
     # the written names stand alone, as before.
     # (a kept name the file lacks -- "add recipient_cmv_status" -- is left to
     # be refused by name, as before: the preset must not swallow a ghost)
-    # 2026-10-01: ANY unwritten file column in the reading is the sign, not
-    # ALL -- a name the model invented and nobody wrote (Qwen3's
-    # `hl_a_mismatch` among the fifty columns of rubric task H004) blocked the
-    # rule, and the range in a descriptive aside ("lab_01 to lab_40 are the
-    # lab values") became the covariate set in place of "every column other
-    # than those two". A ghost the ANALYST wrote is still kept and refused.
+    # ANY unwritten file column in the reading is the sign, not ALL -- a name
+    # the model invented and nobody wrote (e.g. Qwen3's `hl_a_mismatch` in a
+    # fifty-column file) would block the rule, and the range in a descriptive
+    # aside ("lab_01 to lab_40 are the lab values") would become the covariate
+    # set in place of "every column other than those two". A ghost the ANALYST wrote is still kept and refused.
     if (keep and drop and any(d in cols for d in drop) and all(k in cols for k in keep)
             and _REST_PHRASE.search(msg or "")):
         respelled.clear()
-        backed["covariates"] = "B"
+        # a covariate stored as text enters as written, so the
+        # admissibility check refuses it by name instead of the preset dropping it
+        from .declaration import text_columns
+        text = text_columns(prof, [backed.get(k) for k in ("time", "event", "stratum")])
+        role_taken = {backed.get(k) for k in ("time", "event", "stratum")} - {None}
+        _usable = set((prof or {}).get("eligible", {}).get("covariate", []) or [])
+        notp = [str(c) for c in (ext.get("not_predictors") or [])
+                if str(c) in _usable and str(c) not in role_taken and str(c) not in text]
+        notp = _plausible_not_predictors(notp, _usable, role_taken, unbacked, ext)
+        if notp and not text:
+            backed["covariates"] = "B minus " + ", ".join(notp)
+        else:
+            backed["covariates"] = "B" + (" plus " + ", ".join(text) if text else "")
         sources["covariates"] = ("inferred: the message says the other columns are predictors "
                                  "and the reading named columns of the file the message does "
-                                 "not write, so every usable column enters")
+                                 "not write, so every usable column enters"
+                                 + (" (with " + ", ".join(text) + ", which the file stores as text)"
+                                    if text else "")
+                                 + (", except " + ", ".join(notp) + ", which the reading took for "
+                                    "an outcome, an identifier or a date rather than a baseline "
+                                    "predictor" if notp and not text else ""))
+        if notp:
+            unbacked["not_predictors"] = notp
         unbacked["covariates"] = drop
         return backed, unbacked, sources
-    # A range with ONE endpoint the file lacks ("v11 to v51" on a file whose
-    # last column is v50: hard set H050, 2026-09-15). The range is real and the
+    # 🔴 A range with ONE endpoint the file lacks ("v11 to v51" on a file whose
+    # last column is v50). The range is real and the
     # endpoint is misnamed; left alone, the range collapses to its one existing
     # endpoint and the analysis runs on that column, with nothing refusing it.
     # The missing name is kept so that the declaration is refused BY NAME and
@@ -1051,6 +1203,26 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
     for miss in _broken_range_endpoints(msg, cols):
         if miss not in keep and textmatch.mentions(msg, miss, cols):
             keep.append(miss)
+    # an edit removes only what it names. A settled predictor the model left out
+    # of the complete set, and that this message does not mention, stays (without
+    # this, "drop bmi, add diabetes" could lose hla_mismatch as well).
+    # Only when the reading itself carried earlier predictors forward (an add/remove edit);
+    # a list of written names alone ("adjust for age and bmi only") replaces the set.
+    if settled and from_settled:
+        missing = [s for s in settled if s not in keep and not textmatch.mentions(msg, s, cols)]
+        for s in missing:
+            keep.append(s)
+            from_settled.append(s)
+        if missing:
+            unbacked["settled_kept_unmentioned"] = missing
+    if keep and from_settled:
+        backed["covariates"] = ", ".join(keep)
+        sources["covariates"] = ("quoted (the predictors your earlier message settled, "
+                                 "changed as this message says)")
+        unbacked["covariates_from_earlier_message"] = from_settled
+        if drop:
+            unbacked["covariates"] = drop
+        return backed, unbacked, sources
     if keep:
         backed["covariates"] = ", ".join(keep)
         rng = respelled.pop("ranges", None)
@@ -1058,9 +1230,41 @@ def _backed_roles_checked(msg: str, prof: Dict[str, Any], ext: Dict[str, Any]
             "quoted (" + "; ".join(x for x in (
                 ("spelling matched to the file: " + ", ".join(f"{a} -> {b}" for a, b in respelled.items())) if respelled else "",
                 (f"the range {rng} expanded to every column between") if rng else "") if x) + ")")
+    elif _REST_PHRASE.search(msg or "") and ext.get("not_predictors"):
+        # "use all the other variables" with nothing listed -- the
+        # every-usable-column rule applies, less the columns the reading took for another
+        # outcome, an identifier or a date (only names of the file, never a role column)
+        role_taken = {backed.get(k) for k in ("time", "event", "stratum")} - {None}
+        _usable = set((prof or {}).get("eligible", {}).get("covariate", []) or [])
+        notp = [str(c) for c in ext["not_predictors"] if str(c) in _usable and str(c) not in role_taken]
+        notp = _plausible_not_predictors(notp, _usable, role_taken, unbacked, ext)
+        if notp:
+            backed["covariates"] = "B minus " + ", ".join(notp)
+            sources["covariates"] = ("inferred: the message says the other columns are predictors, so "
+                                     "every usable column enters, except " + ", ".join(notp)
+                                     + ", which the reading took for an outcome, an identifier or a "
+                                     "date rather than a baseline predictor")
+            unbacked["not_predictors"] = notp
     if drop:
         unbacked["covariates"] = drop
     return backed, unbacked, sources
+
+
+def _plausible_not_predictors(notp, usable, role_taken, unbacked, ext=None):
+    """The columns the reading set aside from "all the other columns", unless that would set aside
+    every usable column. The analyst said the other columns are predictors; a reading that leaves
+    none is a misreading, not a fact about the file (otherwise a reading that takes every
+    covariate for "an identifier or an outcome" sends the empty set to the fitter).
+    The role columns the reading itself names count as taken, whether or not this message backs
+    them (a follow-up time settled by an earlier message is not a predictor left over).
+    The rejected list is logged, and the plain every-usable-column rule applies."""
+    taken = set(role_taken) | {str(v) for v in ((ext or {}).get(k) for k in
+                                                  ("time_column", "event_column", "stratum_column")) if v}
+    rest = [c for c in usable if c not in taken]
+    if notp and rest and not [c for c in rest if c not in notp]:
+        unbacked["not_predictors_rejected"] = list(notp)
+        return []
+    return notp
 
 
 _REST_PHRASE = re.compile(r"\b(everything else|every ?thing else|all (the |of the )?(other|others|remaining|rest)|the rest( of)?|"
@@ -1075,7 +1279,6 @@ def _ranges_in(msg: str, cols: List[str]) -> List[Tuple[str, str, List[str]]]:
     out = []
     for m in _RANGE.finditer(msg or ""):
         # the digits as written: "lab_01 to lab_40" names lab_01, not lab_1
-        # (hard set H004, 2026-09-15)
         stem, a, b = m.group(1), int(m.group(2)), int(m.group(3))
         first, last = f"{stem}{m.group(2)}", f"{stem}{m.group(3)}"
         if a >= b or first not in cols or last not in cols:
@@ -1240,9 +1443,8 @@ def explain_refusal(client, model: str, refusals: List[Dict[str, Any]],
 
 
 # the phrases by which a refusal explanation turns into advice. The rule
-# is explain, never advise; the 2026-09-11 Qwen2.5 draft
-# ended "Please specify only two levels in this column to proceed", which the
-# earlier six-word check let through. Deterministic, and a false positive
+# is explain, never advise; a Qwen2.5 draft ending "Please specify only two
+# levels in this column to proceed" got through an earlier six-word check. Deterministic, and a false positive
 # costs only the model's sentences: the harness's own refusal is always shown.
 ADVICE_MARKERS = ("you should", "you could", "you can", "you may", "you might",
                   "you need", "you will need", "you must", "please ", "instead",
@@ -1295,6 +1497,24 @@ def plan_steps(client, model: str, message: str, state: str,
     return out
 
 
+def _step_evidence_backed(message: str, ev: str, externals: List[str]) -> bool:
+    """A step's evidence is backed when it is a span of the message, or when it
+    names a loaded file that the message also names and every other piece of it
+    is itself a span of the message ("once with kp_release_KP.json" for a message
+    that says "once with each of them" and names kp_release_KP.json elsewhere).
+    Nothing else is accepted."""
+    from . import textmatch
+    if textmatch.phrase_in(message, ev):
+        return True
+    for f in externals:
+        if f and f in ev and textmatch.phrase_in(message, f):
+            pieces = [x.strip(" ,.;:") for x in ev.split(f)]
+            pieces = [x for x in pieces if x]
+            if pieces and all(textmatch.phrase_in(message, x) for x in pieces):
+                return True
+    return False
+
+
 def validate_steps(message: str, raw: Dict[str, Any], externals: List[str],
                    n_results: int) -> List[Dict[str, Any]]:
     """Deterministic: an act must be known, a file name loaded, the evidence
@@ -1310,7 +1530,7 @@ def validate_steps(message: str, raw: Dict[str, Any], externals: List[str],
         if not isinstance(item, dict) or len(steps) >= MAX_STEPS:
             break
         act, ext, ev = item.get("act"), item.get("external"), str(item.get("evidence") or "")
-        if act not in STEP_ACTS or not ev or not textmatch.phrase_in(message, ev):
+        if act not in STEP_ACTS or not ev or not _step_evidence_backed(message, ev, externals):
             break
         if act == "select_external":
             if ext not in externals:
@@ -1318,7 +1538,7 @@ def validate_steps(message: str, raw: Dict[str, Any], externals: List[str],
             current = ext
         elif ext is not None:
             # a loaded file named on a run step is a selection the model did
-            # not spell out ("run it with X"): the 2026-09-11 Qwen2.5 plan was
+            # not spell out ("run it with X"): a Qwen2.5 plan can be
             # run(A), run(B), compare. Insert the selection unless the plan
             # already selected that file; a name that is not loaded is cut.
             if ext not in externals:

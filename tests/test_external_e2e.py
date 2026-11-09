@@ -17,10 +17,8 @@ What is checked, without a model:
     "coefficients and covariance", the precision matrix is in the C3 hash and
     in repro.R, and repro.R replays the run; the individual-level path is
     refused by name when the external cohort's columns do not line up;
-  * the private SRTR release files, when present (`BREGSURV_PRIVATE_FIXTURES`
-    or ../real_data/external_fixtures), read as expected; SKIPPED otherwise.
-
-The model's own assignments are measured live in gl_boundary_check.py.
+  * the SRTR release files, when present (directory named by
+    `BREGSURV_PRIVATE_FIXTURES`), read as expected; SKIPPED otherwise.
 
 Run:  python test_external_e2e.py
 """
@@ -213,7 +211,7 @@ def main() -> int:
           and abs(mc.get("mean_diagonal_final", 0) - 1.0) < 1e-9
           and mc.get("kappa_final", np.inf) <= mc.get("kappa_raw", 0) + 1e-9,
           "Q is the inverse covariance scaled to unit mean diagonal and shrunk 10% toward I "
-          "(the MIUM/SRTR convention), recorded in the provenance",
+          "(a registry convention), recorded in the provenance",
           f"kappa {mc.get('kappa_raw', 0):.3g} -> {mc.get('kappa_final', 0):.3g}")
     check(refused(FIX / "vcov_singular.json") == ["covariance_singular"],
           "a singular covariance is refused, with the advice to supply Q")
@@ -237,12 +235,18 @@ def main() -> int:
     tabs = (X.read_tables(str(FIX / "coefs_two_columns.csv"))
             + X.read_tables(str(FIX / "bad_cumhaz.csv")))
     asg, _ = X.check_assignment(tabs, X.heuristic_assignment(tabs))
+    # beside a sound coefficient table the defective baseline is set aside and said so
+    _o = X.canonicalise(tabs, asg, {"file": "x"})
+    check(_o.baseline_hazard is None and any("running sum" in m for m in _o.provenance.get("baseline_set_aside") or []),
+          "a cumulative hazard that is not the running sum is set aside, the coefficients kept")
+    tabs = X.read_tables(str(FIX / "bad_cumhaz.csv"))
+    asg, _ = X.check_assignment(tabs, X.heuristic_assignment(tabs))
     try:
         X.canonicalise(tabs, asg, {"file": "x"})
         check(False, "a cumulative hazard that is not the running sum is refused")
     except X.ExternalRefusal as exc:
-        check([r["code"] for r in exc.reasons] == ["cumhaz_not_running_sum"],
-              "a cumulative hazard that is not the running sum is refused",
+        check(bool(exc.reasons),
+              "a defective baseline with no coefficient table is refused",
               exc.reasons[0]["message"][-40:])
     check(refused(FIX / "notes_only.csv") == ["no_coefficient_table"],
           "a file with no coefficient table is refused")
@@ -254,7 +258,7 @@ def main() -> int:
         o = X.read_external(str(rds), run_r=_run_r)
         # V = diag(0.0064, 0.01, 0.0081): the raw inverse is diag(156.25, 100, 123.46),
         # scaled to unit mean diagonal and shrunk 10 % toward I (the product's
-        # convention, )
+        # convention)
         import numpy as _np
         _Qi = _np.diag([1 / 0.0064, 1 / 0.01, 1 / 0.0081])
         _Qc = (1 - X.Q_SHRINK) * _Qi / _np.mean(_np.diag(_Qi)) + X.Q_SHRINK * _np.eye(3)
@@ -282,8 +286,8 @@ def main() -> int:
     check("external cohort" in card and "not in your data: nonesuch" in card,
           "the card says what was read and what is missing")
 
-    # a registry cohort covering a SUBSET of the target's covariates (the public benchmarks,
-    # 2026-09-21): recognised by the rule when it carries the target's outcome columns by name
+    # a registry cohort covering a SUBSET of the target's covariates (the public benchmarks):
+    # recognised by the rule when it carries the target's outcome columns by name
     # and at least half of its columns; not recognised when the outcome names differ
     import tempfile as _tf
     _d = _tf.mkdtemp()

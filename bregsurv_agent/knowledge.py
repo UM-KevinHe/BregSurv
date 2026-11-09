@@ -12,7 +12,7 @@ answers them from a small, versioned, hand-written file of digit-free notes,
 
 No model writes, selects or paraphrases a note: retrieval is keyword overlap,
 deterministic, and the text shown is the text in the file. RAG over the
-estimator library was rejected in the master memory (section ) and is not
+estimator library was rejected by design and is not
 what this is; the library is never in the model's reach.
 """
 from __future__ import annotations

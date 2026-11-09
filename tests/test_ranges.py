@@ -1,6 +1,6 @@
 """A covariate RANGE the analyst writes ("x1 to x10", "v11 through v50") is expanded by the
-backing check to every column of the file between its endpoints (2026-09-14, found by the hard
-request set: the model quoted the two endpoints, both were in the message, and the analysis ran
+backing check to every column of the file between its endpoints (found on hard
+requests: the model quoted the two endpoints, both were in the message, and the analysis ran
 on two covariates instead of ten with nothing refusing it).
 
 Run: python mcp/test_ranges.py
@@ -68,7 +68,7 @@ def main():
         check("v51" in str(exc), "the declaration with v51 is refused by name", str(exc)[:100])
     except Exception as exc:
         check(False, "the declaration with v51 is refused by name", f"{type(exc).__name__}: {exc}"[:120])
-    # zero-padded names: "lab_01 to lab_40" (hard set H004)
+    # zero-padded names: "lab_01 to lab_40"
     labs = [f"lab_{i:02d}" for i in range(1, 41)] + ["followup_days", "died"]
     rl = B._ranges_in("lab_01 to lab_40 are the lab values", labs)
     check(rl and rl[0][0] == "lab_01" and len(rl[0][2]) == 40, "a zero-padded range is read as written", str(rl)[:60])

@@ -74,7 +74,7 @@ def main() -> int:
               {"act": "fetch_data", "external": None, "evidence": "Run it"}]}, [], 0) == [],
           "an act outside the enum is cut")
     # a loaded file named on a run step is a selection the model did not spell
-    # out (the 2026-09-11 Qwen2.5 plan: run(A), run(B), compare)
+    # out (a Qwen2.5 plan: run(A), run(B), compare)
     terse = boundary.validate_steps(msg, {"reasoning": "q", "steps": [
         {"act": "run", "external": "one_year.csv", "evidence": "once with the one-year model"},
         {"act": "run", "external": "three_year.csv", "evidence": "once with the three-year model"},
@@ -288,7 +288,7 @@ def main() -> int:
           "select_external re-runs the current declaration on the named release")
 
     # ------------------------------------------------------------ E. a run step on a FRESH session
-    # The case-1 request under Qwen3 (job 61023996): the message names every role
+    # The case-1 request under Qwen3: the message names every role
     # and the file, the model types it multi_step and plans select_external ->
     # edit_and_run. The step must read the roles from the message, not stop at
     # "there is no declaration yet".
@@ -334,7 +334,7 @@ def main() -> int:
     check("no declaration yet" not in text_e, "the dead end is gone")
 
     hdr("F. an empty plan falls back to one analysis when the message names roles")
-    # the thinking arm on MIUM: M1 typed `multi_step` + `declare_roles`, and the
+    # with thinking on, M1 has typed `multi_step` + `declare_roles`, and the
     # plan_steps call spent its budget and returned {} -- the turn used to end with "I could not
     # turn that into steps". Now the other intents are planned as an ordinary turn.
     h0, s0, *_ = app.start_session()
@@ -380,7 +380,7 @@ def main() -> int:
           str(tc[-1]) if tc else "no turn_calls record")
 
     hdr("G. a plan that only selects a file, for a message that declares roles, runs")
-    # Qwen2.5 on MIUM P068: M1 typed `multi_step` + `declare_roles`, the plan was
+    # Qwen2.5 has been seen to type `multi_step` + `declare_roles` in M1, the plan was
     # "select_external" and nothing else, and the turn ended with a selection and no fit
     h0, s0, *_ = app.start_session()
 

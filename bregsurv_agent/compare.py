@@ -5,7 +5,7 @@ difference", "run it again without bmi and tell me what changed": the second
 half of each is a comparison of two fitted objects, and it is computed here,
 by the harness, with every number taken from the two `RunResult`s. The model
 may then explain the comparison under boundary 2's rules -- named references
-only, no digit -- from the reference set `references` builds, which
+only, no digit -- from the reference set `references()` builds, which
 suffixes every reference of each run with `_a` / `_b` and adds the
 differences.
 
@@ -79,6 +79,28 @@ def _f(x: Any, nd: int = 4) -> str:
     return "" if x is None else f"{float(x):.{nd}f}"
 
 
+def _verdict(cmp: Dict[str, Any]) -> List[str]:
+    """Which run's recommended model reaches the lower cross-validated loss --
+    stated only when the two losses are on the same scale. An argmin over two
+    numbers of the fitted objects, nothing more."""
+    if not cmp["same_partition"]:
+        return []
+    la, lb = cmp["labels"]
+    xa, xb = cmp["selected"]["a"].get("loss"), cmp["selected"]["b"].get("loss")
+    if xa is None or xb is None:
+        return []
+    ea, eb = cmp["config"]["a"].get("external"), cmp["config"]["b"].get("external")
+    name = lambda lab, e: f"{lab} ({e})" if e else lab
+    if float(xa) == float(xb):
+        return ["", f"Both recommended models reach the same cross-validated loss, {_f(xa)}."]
+    win, lose = ((la, ea, xa), (lb, eb, xb)) if float(xa) < float(xb) else ((lb, eb, xb), (la, ea, xa))
+    line = (f"Lower cross-validated loss for the recommended model: {name(win[0], win[1])}, "
+            f"{_f(win[2])} against {_f(lose[2])} for {name(lose[0], lose[1])}.")
+    if win[1] and lose[1] and win[1] != lose[1]:
+        line += f" On this partition, borrowing from {win[1]} fits your data better."
+    return ["", line]
+
+
 def render(cmp: Dict[str, Any]) -> str:
     la, lb = cmp["labels"]
     ca, cb = cmp["config"]["a"], cmp["config"]["b"]
@@ -109,6 +131,7 @@ def render(cmp: Dict[str, Any]) -> str:
         out.append(f"| {r['label']}{mark} | {_f(r['loss_a'])} | {_f(r['loss_b'])} | {_f(r['delta'])} |")
     out += ["", f"Selected: {la} -> {cmp['selected']['a']['label']}; "
                 f"{lb} -> {cmp['selected']['b']['label']}."]
+    out += _verdict(cmp)
     if cmp["coefficients"]:
         out += ["", f"| variable | selected coefficient, {la} | selected coefficient, {lb} | difference |",
                 "|---|---|---|---|"]

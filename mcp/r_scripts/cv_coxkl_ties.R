@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_coxkl_ties.R - dispatcher for the cv_coxkl_ties MCP tool.
 #
-# Cross-validates BregSurv::coxkl_ties over a candidate `etas` grid.
+# Cross-validates BregSurv::coxkl_ties() over a candidate `etas` grid.
 # Use this when event times have ties and you also want CV-based eta tuning.
 # Note: cv.coxkl_ties does NOT accept RS — `beta` is required.
 # Default cv.criteria here is "CIndex_pooled" (different from cv.coxkl's
@@ -37,7 +37,7 @@ extract_metric <- function(internal_stat) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -154,12 +154,12 @@ result <- tryCatch({
   tol      <- if (!is.null(input$tol))      as.numeric(input$tol)      else 1e-4
   Mstop    <- if (!is.null(input$Mstop))    as.integer(input$Mstop)    else 100L
   nfolds   <- if (!is.null(input$nfolds))   as.integer(input$nfolds)   else 5L
-  # A4: the seed is never NULL. Fold assignment is drawn with sample, so an
+  # A4: the seed is never NULL. Fold assignment is drawn with sample(), so an
   # absent seed hands the cross-validated loss -- and therefore the choice
-  # between candidates -- to the ambient RNG. over 30
-  # unseeded rounds the recommended estimator flipped 8 times out of 30,
-  # because the run-to-run wobble in the loss was four times the gap between
-  # the candidates. A fixed documented default costs nothing statistically
+  # between candidates -- to the ambient RNG. Unseeded, the run-to-run
+  # wobble in the loss can exceed the gap between the candidates, so the
+  # recommended estimator can change from one run to the next.
+  # A fixed documented default costs nothing statistically
   # (the partition is arbitrary) and makes the run repeatable by default.
   DEFAULT_CV_SEED <- 20260818L
   seed     <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED

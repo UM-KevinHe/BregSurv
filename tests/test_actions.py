@@ -75,7 +75,7 @@ def main() -> int:
                                         for r in rows),
           "registry_table() renders one row per act")
 
-    # ------------------------------------------------------------ B. plan
+    # ------------------------------------------------------------ B. plan()
     hdr("B. the plan is a deterministic function of phase and intents")
     ints = intent.dispatch_order([I("declare_roles"), I("describe_external")])
     check(actions.plan(base, ints) == [Act.NAME_PUBLISHED_MODEL, Act.PROPOSE_ROLES, Act.COMPLETE],

@@ -14,25 +14,24 @@
 # one-row-per-subject table cannot distinguish an event column from its own
 # complement, nor days from years.
 #
-# A data dictionary NARROWS the lists; it never decides. Measured against the
-# dictionary this protocol was designed around
-# (mimiciv31_20260816/.../metadata/data_dictionary.csv, 162 variables): `role =
-# primary_outcome` covers EIGHT variables -- survival_time_days AND
-# survival_time_years (same quantity, different units), survival_event AND
-# survival_censored (exact complements), plus a human-readable status and three
-# date columns -- and `role = outcome` carries a second complete time/event pair
-# on a different horizon. Thirteen columns are marked outcome-ish, containing at
-# least three valid (time, event) pairs. Reading roles and proceeding would mean
-# choosing among them, which is the guessing this protocol exists to prevent. So
-# the dictionary is used to shorten a 162-column list to 13, and the analyst
-# still declares which pair, in which units, with which value meaning the event.
+# 🔴 A data dictionary NARROWS the lists; it never decides. A typical EHR data
+# dictionary marks several variables at once as `role = primary_outcome` -- e.g.
+# survival_time_days AND survival_time_years (same quantity, different units),
+# survival_event AND survival_censored (exact complements), plus a
+# human-readable status and date columns -- and another role may carry a second
+# complete time/event pair on a different horizon, so the outcome-ish columns
+# contain several valid (time, event) pairs. Reading roles and proceeding would
+# mean choosing among them, which is the guessing this protocol exists to
+# prevent. So the dictionary is used to shorten a long column list to the
+# outcome-ish few, and the analyst still declares which pair, in which units,
+# with which value meaning the event.
 #
 # input.json:
 #   data_path             required
 #   data_expr             optional R expression selecting the data.frame/matrix
 #                         (e.g. "ExampleData_lowdim$train$z"). If omitted, the
 #                         first data.frame in the file is profiled.
-#   external_beta_expr    optional; its names become the name-match facts
+#   external_beta_expr    optional; its names() become the name-match facts
 #   external_beta_inline  optional; the same vector passed by value, for a
 #                         caller whose coefficients live in their own file
 #   dictionary_path       optional CSV with at least a variable-name column
@@ -171,8 +170,8 @@ result <- tryCatch({
   ## ---- external model names -------------------------------------------
   ext_names <- NULL
   beta <- eval_in(input$external_beta_expr, e)
-  # The published coefficients usually arrive as their OWN file -- that is
-  # how both real cohorts were run -- so they cannot always be addressed as an
+  # 🔴 The published coefficients usually arrive as their OWN file -- that is
+  # how published models are distributed -- so they cannot always be addressed as an
   # expression inside the data file. Passing them by value is the only way a web
   # form can offer them at all, and run_candidates.R has accepted `beta_inline`
   # since it existed; the profiler simply never learned to.
@@ -204,7 +203,7 @@ result <- tryCatch({
     # number and nothing in the data separates it from age or eGFR. Two levels is
     # the one fact that does narrow it: a column taking exactly two values is an
     # event-indicator candidate, not a duration. Without that exclusion the list
-    # ran to 7 of 11 columns here and would reach ~60 on a real EHR extract,
+    # would hold most numeric columns -- dozens on a typical EHR extract --
     # which defeats the point of shortening the question. The analyst can still
     # name any column explicitly; the numbered list is a convenience, not a
     # whitelist. What actually lets a clinician pick the right one at a glance is
@@ -214,7 +213,7 @@ result <- tryCatch({
     can_event <- nd == 2L
     can_cov <- numericish && nd > 1L
 
-    # A MATCHED-SET IDENTIFIER: many SMALL groups of near-equal size. This is
+    # 🔴 A MATCHED-SET IDENTIFIER: many SMALL groups of near-equal size. This is
     # what 1:m nested case-control sampling produces and almost nothing else
     # does. The two neighbours it has to be separated from are both common:
     #   * a site / centre / hospital column -- FEW LARGE groups, so it fails the
@@ -228,7 +227,7 @@ result <- tryCatch({
     can_stratum <- FALSE
     regular_sets <- FALSE
     if (nd >= 2L && nd < n_rows) {
-      # as.character FIRST. table on a FACTOR returns one count per LEVEL,
+      # 🔴 as.character FIRST. table() on a FACTOR returns one count per LEVEL,
       # including levels with zero observations, so a matched-set column stored
       # as a factor with unused levels gets group sizes of 0, fails the
       # median >= 2 test, and the design question is never asked -- a matched
@@ -238,13 +237,13 @@ result <- tryCatch({
       can_stratum <- length(grp) > 0L &&
                      nd >= max(2L, ceiling(n_rows / 20)) &&
                      stats::median(grp) >= 2 && max(grp) <= 20
-      # THE SHAPE OF A 1:m MATCHED SAMPLE, as a separate fact: nearly every
+      # 🔴 THE SHAPE OF A 1:m MATCHED SAMPLE, as a separate fact: nearly every
       # group the same size. A follow-up time on a coarse grid (months, weeks)
       # passes can_stratum too -- 64 months over 300 rows is "many small
       # groups" -- but its group sizes vary; a matched-set column's do not.
       # `regular_sets` is what lets a time column NAMED as the follow-up stand
-      # when it merely looks set-like (2026-09-15: the design question was
-      # reopened on every request of four coarse-time cohorts).
+      # when it merely looks set-like (otherwise the design question would be
+      # reopened on every request about a coarse-time cohort).
       if (can_stratum) {
         modal <- max(table(grp))
         regular_sets <- modal / length(grp) >= 0.9
@@ -287,7 +286,7 @@ result <- tryCatch({
       entry$summary <- list(min = unname(qs[1]), median = unname(qs[2]),
                             max = unname(qs[3]))
     }
-    # THE TIME-GRID FACTS. A follow-up time that sits on a coarse
+    # 🔴 THE TIME-GRID FACTS. A follow-up time that sits on a coarse
     # grid -- every value a multiple of one step, and not many distinct
     # values -- is the data fact that makes the discrete-time question worth
     # asking: "is follow-up recorded in intervals, and of what width?" These
@@ -295,7 +294,7 @@ result <- tryCatch({
     # integer months may be a continuous follow-up time rounded to months,
     # and only the analyst knows. The question is asked when
     # `possible_discrete` is TRUE; the answer decides. The presence of a
-    # baseline hazard in the external file never triggers it (ruling 6).
+    # baseline hazard in the external file never triggers it.
     if (can_time && numericish) {
       vv <- v[!is.na(v) & is.finite(v)]
       dv <- sort(unique(vv))
@@ -322,11 +321,11 @@ result <- tryCatch({
   names(cols) <- NULL
 
   ## ---- complementary binary pairs -------------------------------------
-  # The trap this catches, from the cohort this protocol was designed around:
+  # The trap this catches, common in EHR extracts:
   # `survival_event` (1 = death) and `survival_censored` (1 = censored) are exact
   # complements, both marked `primary_outcome`. Declaring the wrong one inverts
   # the analysis, and the data cannot tell them apart -- but it CAN say they are
-  # complements, and the consequence card then reads 15% events against 85%.
+  # complements, and the consequence card then shows the event rate under each.
   comp <- list()
   bn <- names(binary_vals)
   if (length(bn) >= 2L) {
@@ -345,13 +344,12 @@ result <- tryCatch({
   }
 
   ## ---- one case per set ---------------------------------------------------
-  # THE DEFINING FACT OF A MATCHED SAMPLE, measured jointly: every group of a
+  # 🔴 THE DEFINING FACT OF A MATCHED SAMPLE, measured jointly: every group of a
   # set-shaped column holds exactly one row at one level of some two-valued
-  # column (the case). `regular_sets` alone missed it (simulation prompt search,
-  # 2026-09-30): controls drawn at random from the risk set leave the late sets
-  # short, the group sizes vary, and a request that named the set id as the
-  # follow-up time ran a cohort analysis on the set number with nothing
-  # refusing it. A follow-up time on a coarse grid almost never holds exactly
+  # column (the case). `regular_sets` alone misses it: controls drawn at random
+  # from the risk set leave the late sets short, the group sizes vary, and a
+  # request that named the set id as the follow-up time would run a cohort
+  # analysis on the set number with nothing refusing it. A follow-up time on a coarse grid almost never holds exactly
   # one event at every value. Recorded as the two-valued columns that do it.
   for (i in seq_along(cols)) {
     if (!isTRUE(cols[[i]]$can_be_stratum)) next

@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# plot_km.R - the Kaplan-Meier estimate of the target cohort (V4, 2026-10-06).
+# plot_km.R - the Kaplan-Meier estimate of the target cohort (V4).
 #
 #   Rscript plot_km.R <in.json> <out.json>
 #

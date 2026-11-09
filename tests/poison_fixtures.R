@@ -10,10 +10,10 @@
 # the failure mode that would make the gate unusable in practice.
 #
 # These are deliberately built from data already in the repository rather than
-# from the two real EHR cohorts, so the suite runs anywhere, in CI, and on a
+# from real patient data, so the suite runs anywhere, in CI, and on a
 # machine that holds no patient data.
 #
-# Every poison here was MEASURED against the installed package on 2026-08-18
+# Every poison here was MEASURED against the installed package
 # before being written down. Six of them return a silently wrong number through
 # the bridge rather than an error; two die deep in the solver with a message no
 # analyst can act on ("Hessian solve failed."); one returns all-NA coefficients.
@@ -35,7 +35,7 @@ tr  <- ExampleData_lowdim$train
 cc  <- ExampleData_cc_lowdim$train
 bex <- ExampleData_lowdim$beta_external_good
 
-z0 <- tr$z        # data.frame, 6 numeric columns
+z0 <- tr$z            # data.frame, 6 numeric columns
 d0 <- as.numeric(tr$status)
 t0 <- as.numeric(tr$time)
 ev <- which(d0 == 1)
@@ -53,7 +53,7 @@ POISON <- list(
                         delta = { s <- d0
                                   s[sample(ev, max(1, floor(length(ev) / 3)))] <- 2
                                   s }),
-  # as.numeric on a factor returns CATEGORY CODES: 0/1 becomes 1/2, so every
+  # as.numeric() on a factor returns CATEGORY CODES: 0/1 becomes 1/2, so every
   # subject counts as an event. This is what a CSV read with factors produces.
   event_factor   = list(z = z0, time = t0, delta = factor(d0)),
   all_events     = list(z = z0, time = t0, delta = rep(1, length(d0))),
@@ -87,10 +87,9 @@ POISON <- list(
   # These three were missed by the first pass because it recorded the failures
   # that had been MEASURED rather than deriving the requirements the estimator
   # actually has. All three were then measured too, and all three run silently:
-  #   Inf follow-up time      0.4120 -0.2736  0.2113   against 0.4111 -0.2673 ...
-  #   20 duplicated subjects  0.4101 -0.2680  0.2187
-  #   a collinear covariate   0.1149 -0.2656  0.2145   <- the first coefficient
-  #                                                       loses two thirds of it
+  # an infinite follow-up time and duplicated subjects shift the coefficients
+  # a little, and a collinear covariate costs the first coefficient most of its
+  # value -- no error in any of them.
   time_infinite  = list(z = z0, delta = d0,
                         time = { t <- t0; t[4] <- Inf; t }),
   cov_infinite   = list(z = { d <- z0; d[6, 2] <- Inf; d },

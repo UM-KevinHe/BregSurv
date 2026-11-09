@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# plot_splits.R - box plots of an evaluation by repeated splits (V4, 2026-10-04).
+# plot_splits.R - box plots of an evaluation by repeated splits (V4).
 #
 #   Rscript plot_splits.R <in.json> <out.json>
 #

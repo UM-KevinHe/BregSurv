@@ -53,11 +53,11 @@ The follow-up time takes few distinct values on a regular step, as grouped follo
 
 ## records
 when: records
-The external information is another cohort's records. Borrowing then uses the composite likelihood over both cohorts; there is no ridge form, and the external-only member is a model fitted on the other cohort and scored here. The standardised mean differences in the diagnostics indicate how different the two populations are.
+The external information is another cohort's records. Borrowing then uses the composite likelihood over both cohorts, unpenalised or with a ridge or lasso path, and the external-only member is a model fitted on the other cohort and scored here. The standardised mean differences in the diagnostics indicate how different the two populations are.
 
 ## matched
 when: matched
-The design is matched sets. The released model unchanged cannot be scored on the conditional likelihood, so the plan's endpoint is the target-only fit alone, and there is no ridge form.
+The design is matched sets. The released model unchanged cannot be scored on the conditional likelihood, so the plan's endpoint is the target-only fit alone. Every member has an unpenalised, a ridge and a lasso form on the conditional likelihood.
 
 ## grid-edge
 when: grid_edge

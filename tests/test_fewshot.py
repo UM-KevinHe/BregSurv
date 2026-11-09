@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" -- retrieved few-shot examples for boundary 1: the bank, the
+"""Retrieved few-shot examples for boundary 1: the bank, the
 retrieval, the prompt, the record, and the one safety property (an example's
 column name can never reach a declaration). No model, no R, no GPU.
 
@@ -85,7 +85,7 @@ def main() -> int:
             "event_value", "event_value_evidence", "covariate_columns")
     check(all(set(it["example"]) == set(keys) for it in r1),
           "every round-1 example has exactly the schema's fields")
-    check(all(set(it["example"]) == set(keys) | {"stratum_column"} for it in r2),
+    check(all(set(it["example"]) - {"not_predictors"} == set(keys) | {"stratum_column"} for it in r2),
           "every round-2 example has the schema's fields with the strata column")
     ev_ok = all(all((it["example"][k] is None) or (it["example"][k].lower() in it["request"].lower())
                     for k in ("time_evidence", "event_evidence", "event_value_evidence"))
@@ -151,7 +151,7 @@ def main() -> int:
     check(boundary.examples_for(q, prof) == (None, None), "BREGSURV_FEWSHOT=off turns the examples off (the ablation arm)")
     os.environ.pop("BREGSURV_FEWSHOT", None)
     check(boundary.examples_for(q, prof)[0] is not None and fewshot.enabled(),
-          "few-shot is ON by default (3d.11: measured 2026-09-12, the rule was met on both models)")
+          "few-shot is ON by default (the rule was met on both models)")
     os.environ["BREGSURV_FEWSHOT"] = "on"
     exs, rec = boundary.examples_for(q, prof)
     check(exs is not None and len(exs) == fewshot.DEFAULT_K and rec["k"] == fewshot.DEFAULT_K

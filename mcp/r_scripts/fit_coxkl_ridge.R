@@ -1,9 +1,9 @@
 #!/usr/bin/env Rscript
 # fit_coxkl_ridge.R - dispatcher for the fit_coxkl_ridge MCP tool.
 #
-# Calls BregSurv::coxkl_ridge — Cox PH with Ridge (L2) penalty + KL
+# Calls BregSurv::coxkl_ridge() — Cox PH with Ridge (L2) penalty + KL
 # integration of external information. High-dimensional companion of
-# coxkl; useful when p >> n or under heavy collinearity.
+# coxkl(); useful when p >> n or under heavy collinearity.
 #
 # DESIGN: this fit takes a SINGLE `eta` (scalar) and returns the beta path
 # along the lambda sequence at that one eta. Multi-eta scanning belongs in
@@ -31,7 +31,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {

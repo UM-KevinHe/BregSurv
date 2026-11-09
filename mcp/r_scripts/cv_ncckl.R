@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncckl.R - dispatcher for the cv_ncckl MCP tool.
 #
-# Cross-validates BregSurv::ncckl over a candidate `etas` grid and
+# Cross-validates BregSurv::ncckl() over a candidate `etas` grid and
 # selects the best eta under the chosen cv.criteria.
 #
 # CV folds are constructed at the stratum level (via get_fold_cc) so the
@@ -43,7 +43,7 @@ extract_metric <- function(internal_stat) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -150,12 +150,12 @@ result <- tryCatch({
   tol      <- if (!is.null(input$tol))      as.numeric(input$tol)       else 1e-4
   Mstop    <- if (!is.null(input$Mstop))    as.integer(input$Mstop)     else 100L
   nfolds   <- if (!is.null(input$nfolds))   as.integer(input$nfolds)    else 5L
-  # A4: the seed is never NULL. on the NCC side the
-  # fold assignment is NOT drawn with sample. `get_fold_cc` contains no RNG
+  # A4: the seed is never NULL. 🔴 On the NCC side the
+  # fold assignment is NOT drawn with sample(). `get_fold_cc` contains no RNG
   # call -- it assigns whole matched sets by a deterministic rule -- so the seed
   # changes nothing here and the split is reproducible without it. The A4
-  # measurement this comment cited (8 flips in 30 unseeded rounds) was made on
-  # the COHORT drivers, where get_fold does draw, and was copied across. The
+  # rationale for a default (an unseeded split can change the recommendation)
+  # holds for the COHORT drivers, where get_fold does draw. The
   # default is kept anyway so every bridge reports the same provenance fields
   # and a caller cannot tell the two families apart by accident.
   DEFAULT_CV_SEED <- 20260818L

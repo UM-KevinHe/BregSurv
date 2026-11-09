@@ -1,12 +1,12 @@
 """End-to-end test driver for A4: the cross-validation run is reproducible, and
 ``repro.R`` CHECKS that rather than claiming it.
 
-What A4 was about, measured on 2026-08-18 against ExampleData_lowdim: the fold
-assignment is drawn with ``sample``, and the dispatcher left the seed at NULL
-when the caller omitted it. Over 30 unseeded rounds the recommended estimator
-FLIPPED -- Kullback-Leibler won 8 and Mahalanobis 22 -- because the run-to-run
-wobble in the cross-validated loss (0.035) was four times the gap between the two
-candidates (0.009). Under V3 that loss is the selection criterion, so the agent's
+What A4 was about, seen on ExampleData_lowdim: the fold
+assignment is drawn with ``sample()``, and the dispatcher left the seed at NULL
+when the caller omitted it. Over repeated unseeded rounds the recommended estimator
+FLIPPED between Kullback-Leibler and Mahalanobis, because the run-to-run
+wobble in the cross-validated loss was several times the gap between the two
+candidates. Under V3 that loss is the selection criterion, so the agent's
 recommendation itself was not reproducible.
 
 Separately, ``set.seed(seed)`` inherits the ambient RNG *kind*: the same seed in a
@@ -119,7 +119,7 @@ def test_determinism():
     print("2. an unseeded call is now deterministic, and says what pinned it")
     print("=" * 78)
     # The two designs differ by construction and the test has to say so.
-    # get_fold (cohort) draws with sample, so the seed controls the split and
+    # get_fold (cohort) draws with sample(), so the seed controls the split and
     # an unseeded run was non-reproducible. get_fold_cc (nested case-control)
     # uses NO randomness at all -- it greedily balances events across folds at
     # the stratum level -- so NCC cross-validation was always reproducible and
@@ -187,8 +187,8 @@ def test_rng_kind(fold_support):
 def test_repro():
     """The fold check has to be able to STOP, or it is decoration.
 
-    This is ported from the V2 suite, which exercised the same property
-    against the generator that was retired on 2026-08-19. The happy path -- a
+    🔴 This is ported from the V2 suite, which exercised the same property
+    against a generator that has since been retired. The happy path -- a
     replay that reproduces -- is covered by test_pipeline_e2e and
     test_family_cells. What neither covers is the failing path, and a guard
     whose failure branch is never executed is a comment: it will be the line

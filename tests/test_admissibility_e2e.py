@@ -145,7 +145,7 @@ def main() -> int:
                       f"{note}; refusals={got or 'none'}")
                 if name == "heavy_ties":
                     adv = [a["code"] for a in g["advisories"]]
-                    # Policy change 2026-08-19: heavy ties are DISCLOSED,
+                    # 🔴 Policy: heavy ties are DISCLOSED,
                     # never routed. Whether a tie correction is applied is the
                     # analyst's decision and the default is none, so the gate
                     # measures the fraction and says so without instructing

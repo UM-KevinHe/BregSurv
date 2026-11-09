@@ -1,7 +1,7 @@
 """Generate the elicitation corpus: sentences an analyst might write, with the
 correct reading of each one worked out at the same time.
 
-GROUND TRUTH IS BUILT WITH THE SENTENCE, NOT ANNOTATED AFTER IT. That is the
+🔴 GROUND TRUTH IS BUILT WITH THE SENTENCE, NOT ANNOTATED AFTER IT. That is the
 whole reason this file exists. Hand-annotating 500 sentences would be slow,
 unreviewable, and -- worse -- would put a second judgement call between the
 corpus and the truth. Here the generator decides "this sentence names the
@@ -82,8 +82,8 @@ PERTURBATIONS = ("none", "false_design", "false_coding", "false_external",
 
 REGISTERS = ("terse", "narrative", "bulleted", "email", "note")
 
-# Every word here is checked against every profile's column list by the
-# self-check in build. "the case notes were re-abstracted" was the first
+# 🔴 Every word here is checked against every profile's column list by the
+# self-check in build(). "the case notes were re-abstracted" was the first
 # draft and it collides with the `case` column in the matched profile -- which
 # would have turned sixty words of irrelevance into an accidental mention of
 # the outcome column.
@@ -104,10 +104,10 @@ def _loosen(name: str) -> str:
 def _describe(role: str, profile_id: str) -> str:
     """Point at a role WITHOUT naming a column.
 
-    These phrasings are load-bearing and the obvious ones are wrong. The
+    🔴 These phrasings are load-bearing and the obvious ones are wrong. The
     first draft said "whether the patient died" -- and the kidney profile's
     outcome column is called `died`, so an item whose entire purpose was that no
-    column is named was naming one. The self-check in build catches this class
+    column is named was naming one. The self-check in build() catches this class
     now; the wording below is what survives it across all six profiles.
     """
     return {
@@ -133,7 +133,7 @@ def _phrases(p: Dict[str, Any], stated, style: str, perturbation: str):
     spans: Dict[str, Optional[str]] = {"time": None, "event": None,
                                        "event_value": None, "covariates": None}
 
-    # `set_valued` is a COVARIATE style and nothing else. It used to fall
+    # 🔴 `set_valued` is a COVARIATE style and nothing else. It used to fall
     # through to the descriptive branch here too, which meant an item labelled
     # `all.set_valued` named no column at all -- a bucket whose name said
     # "everything was stated" while its ground truth was null throughout. The
@@ -251,7 +251,7 @@ def _meaningful(pid: str, stated_key: str, style: str, pert: str) -> bool:
         # never produce the item they are named after.
         return False
     if pert == "false_coding" and "event_value" not in stated:
-        # The false-coding sentence says "the outcome column is 1 for the
+        # 🔴 The false-coding sentence says "the outcome column is 1 for the
         # SURVIVORS". Where the analyst has ALSO said "it is 1 when the event
         # happened", quoting 1 is right and the contradiction is for the
         # consequence card to expose. Where they have NOT, that sentence is the
@@ -263,7 +263,7 @@ def _meaningful(pid: str, stated_key: str, style: str, pert: str) -> bool:
     if style == "set_valued" and "covariates" not in stated:
         return False
     if pid == "matched" and pert == "false_design":
-        # Two reasons, either sufficient. The claim "this is a nested
+        # 🔴 Two reasons, either sufficient. The claim "this is a nested
         # case-control study" is TRUE on this profile, so it is not a false
         # design claim at all. And the word "case" IS a column here, so the
         # sentence would name the outcome column while the key withholds it --
@@ -271,7 +271,7 @@ def _meaningful(pid: str, stated_key: str, style: str, pert: str) -> bool:
         # the self-check was added for.
         return False
     if pid == "matched" and stated_key == "time_only":
-        # The matched profile has no follow-up duration, so `_phrases` simply
+        # 🔴 The matched profile has no follow-up duration, so `_phrases` simply
         # emits no time clause and the key stays null -- there is nothing to
         # exclude. This rule used to drop EVERY matched combination that
         # mentioned time, which left the profile contributing five identical
@@ -302,7 +302,7 @@ def _self_check(item: Dict[str, Any]) -> List[str]:
 # resolution with its phrase; False when two columns could be it, so the
 # example shows the honest null. Decided by reading the column lists, not
 # computed -- the point of an example is to show judgement, and the judgement
-# is the same one `complete` makes from eligibility at run time.
+# is the same one `complete()` makes from eligibility at run time.
 BANK_DESCRIBABLE = {
     "srtr_waitlist": {"time": True, "event": False},   # died_on_list vs removed_for_tx
     "srtr_posttx":   {"time": False, "event": False},  # days_to_death vs gf_days; pt_died vs graft_failed
@@ -419,7 +419,7 @@ def build(scale: int, seed: int = 20260819,
                 # narrative one; spans are matched case-insensitively downstream
                 it["spans"] = {k: v for k, v in spans.items()}
                 it["example"] = bank_example(p, gt, spans, st)
-            # A LABEL WITHOUT THE THING IS WORSE THAN NO LABEL. `_meaningful`
+            # 🔴 A LABEL WITHOUT THE THING IS WORSE THAN NO LABEL. `_meaningful`
             # decides whether a combination is worth generating from the STATED
             # set, while `_phrases` decides whether the perturbation can be
             # applied from the resulting GROUND TRUTH -- and the two can
@@ -452,7 +452,7 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--scale", type=int, default=None)
     ap.add_argument("--bank", action="store_true",
-                    help="generate the few-shot example bank (3d.11): the bank "
+                    help="generate the few-shot example bank: the bank "
                          "profiles, seed %d, ids B####, schema-shaped answers" % BANK_SEED)
     a = ap.parse_args()
     if a.bank:
@@ -479,7 +479,7 @@ def main() -> int:
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(
         {"generated_by": "eval/generate_corpus.py" + (" --bank" if a.bank else ""),
-         "seed": seed, "purpose": ("few-shot example bank for boundary 1 (3d.11)"
+         "seed": seed, "purpose": ("few-shot example bank for boundary 1"
                                    if a.bank else "elicitation corpus"),
          "n_items": len(items), "n_templates": n_templates,
          "items": items}, indent=1, ensure_ascii=False), encoding="utf-8")

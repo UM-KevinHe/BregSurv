@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_coxkl_ridge.R - dispatcher for the cv_coxkl_ridge MCP tool.
 #
-# K-fold cross-validation of (eta, lambda) for BregSurv::coxkl_ridge.
+# K-fold cross-validation of (eta, lambda) for BregSurv::coxkl_ridge().
 # Internally evaluates a 2D grid of (eta x lambda); for each eta, the best
 # lambda is selected; among those per-eta winners, the global best (eta,
 # lambda) pair is reported.
@@ -51,7 +51,7 @@ metric_colname <- function(best_per_eta) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -167,12 +167,12 @@ result <- tryCatch({
   stratum         <- eval_in(input$stratum_expr, e)
   c_index_stratum <- eval_in(input$c_index_stratum_expr, e)
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  # A4: the seed is never NULL. Fold assignment is drawn with sample, so an
+  # A4: the seed is never NULL. Fold assignment is drawn with sample(), so an
   # absent seed hands the cross-validated loss -- and therefore the choice
-  # between candidates -- to the ambient RNG. over 30
-  # unseeded rounds the recommended estimator flipped 8 times out of 30,
-  # because the run-to-run wobble in the loss was four times the gap between
-  # the candidates. A fixed documented default costs nothing statistically
+  # between candidates -- to the ambient RNG. Unseeded, the run-to-run
+  # wobble in the loss can exceed the gap between the candidates, so the
+  # recommended estimator can change from one run to the next.
+  # A fixed documented default costs nothing statistically
   # (the partition is arbitrary) and makes the run repeatable by default.
   DEFAULT_CV_SEED <- 20260818L
   seed   <- if (!is.null(input$seed)) as.integer(input$seed) else DEFAULT_CV_SEED

@@ -1,8 +1,8 @@
-"""The discrete-time row of the library (master memory ).
+"""The discrete-time row of the library.
 
-`diskd.py` is the DiSKD estimator as handed over on 2026-09-12 (a logistic-hazard
+`diskd.py` is the DiSKD estimator (a logistic-hazard
 network distilled from an external Cox teacher; nested CV for the learning rate
-and the borrowing weight eta), vendored unchanged. The R members of the row
+and the borrowing weight eta), after Deng et al. (ICML 2026). The R members of the row
 (`DiscreteKL`, package source under `mcp/r_pkgs/DiscreteKL/`, driven by
 `mcp/r_scripts/discretekl_cv.R`) and this Python member are fitted by the
 same `run_candidates.R` branch on one shared, event-stratified partition; the

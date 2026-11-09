@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_ncc_MDTL_enet.R - dispatcher for the fit_ncc_MDTL_enet MCP tool.
 #
-# Calls BregSurv::ncc_MDTL_enet — NCC + elastic-net + Mahalanobis penalty
+# Calls BregSurv::ncc_MDTL_enet() — NCC + elastic-net + Mahalanobis penalty
 # toward external β. Single-eta convention.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional `Q`).
@@ -27,7 +27,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -144,7 +144,7 @@ result <- tryCatch({
   }
   if (length(Q_sources) > 1L) stop("Provide only one of: Q_expr, Q_inline")
   # Shape / symmetry / PSD / name validation is delegated to the package's
-  # align_beta_Q: a NAMED Q may cover a subset of colnames(z) and is
+  # align_beta_Q(): a NAMED Q may cover a subset of colnames(z) and is
   # zero-padded; only an UNNAMED Q must be exactly ncol(z) x ncol(z).
   # Do not re-check it here -- the bridge cannot express that contract.
 

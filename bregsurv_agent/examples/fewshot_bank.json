@@ -2,7 +2,7 @@
  "generated_by": "eval/generate_corpus.py --bank",
  "seed": 20260912,
  "purpose": "few-shot example bank for boundary 1 (3d.11)",
- "n_items": 468,
+ "n_items": 473,
  "n_templates": 60,
  "items": [
   {
@@ -16950,7 +16950,133 @@
      "CAN_GENDER"
     ]
    }
+  },
+  {
+   "id": "CRS01",
+   "template_id": "r3.S24.01",
+   "profile": "srtr_waitlist",
+   "category": "S24",
+   "request": "Follow-up runs in wl_days. The outcome is whether the candidate died on the list (1 = died). Adjust for CAN_CPRA and CAN_DIAL_YRS.",
+   "note": "Two outcomes in the file; the description fits the one whose name says it.",
+   "source": "round 3 by error category (2026-10-11)",
+   "example": {
+    "reasoning": "\"Follow-up runs in wl_days\" names the follow-up column. The file has two event-like columns, died_on_list and removed_for_tx; \"whether the candidate died on the list\" describes dying, which only died_on_list's name says, so it is the event column. \"1 = died\" gives the value. CAN_CPRA and CAN_DIAL_YRS are named as predictors.",
+    "time_column": "wl_days",
+    "time_evidence": "Follow-up runs in wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "The outcome is whether the candidate died on the list",
+    "event_value": "1",
+    "event_value_evidence": "1 = died",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS"
+    ],
+    "not_predictors": null
+   }
+  },
+  {
+   "id": "CRS02",
+   "template_id": "r3.S24.02",
+   "profile": "srtr_waitlist",
+   "category": "S24",
+   "request": "Time on the list is wl_days; the outcome is removal from the list for a transplant, coded 1. Predictors: CAN_CPRA, CAN_DIAL_YRS.",
+   "note": "Contrast with CRS01: the other outcome is described.",
+   "source": "round 3 by error category (2026-10-11)",
+   "example": {
+    "reasoning": "\"Time on the list is wl_days\" names the follow-up column. Of the two event-like columns, \"removal from the list for a transplant\" is what removed_for_tx's name says, not died_on_list. \"coded 1\" gives the value. The predictors are named.",
+    "time_column": "wl_days",
+    "time_evidence": "Time on the list is wl_days",
+    "event_column": "removed_for_tx",
+    "event_evidence": "the outcome is removal from the list for a transplant",
+    "event_value": "1",
+    "event_value_evidence": "coded 1",
+    "stratum_column": null,
+    "covariate_columns": [
+     "CAN_CPRA",
+     "CAN_DIAL_YRS"
+    ],
+    "not_predictors": null
+   }
+  },
+  {
+   "id": "CRS03",
+   "template_id": "r3.S24.03",
+   "profile": "srtr_posttx",
+   "category": "S24",
+   "request": "gf_days is the follow-up; the outcome is whether the transplanted kidney stopped working, 1 if so. Adjust for DON_KDPI and REC_COLD_ISCH_TM.",
+   "note": "Graft failure described; the patient-death column is the wrong outcome.",
+   "source": "round 3 by error category (2026-10-11)",
+   "example": {
+    "reasoning": "\"gf_days is the follow-up\" names the follow-up column. The file holds graft_failed and pt_died; a kidney that stopped working is a graft failure, which graft_failed's name says, not the patient's death. \"1 if so\" gives the value.",
+    "time_column": "gf_days",
+    "time_evidence": "gf_days is the follow-up",
+    "event_column": "graft_failed",
+    "event_evidence": "the outcome is whether the transplanted kidney stopped working",
+    "event_value": "1",
+    "event_value_evidence": "1 if so",
+    "stratum_column": null,
+    "covariate_columns": [
+     "DON_KDPI",
+     "REC_COLD_ISCH_TM"
+    ],
+    "not_predictors": null
+   }
+  },
+  {
+   "id": "CRS04",
+   "template_id": "r3.S24.04",
+   "profile": "srtr_posttx",
+   "category": "S24",
+   "request": "Patient survival: days_to_death is the follow-up and pt_died the event (1 = died). Use all the other variables as predictors.",
+   "note": "\"All the other variables\" with a second outcome and identifiers in the file.",
+   "source": "round 3 by error category (2026-10-11)",
+   "example": {
+    "reasoning": "days_to_death and pt_died are named for the follow-up and the event, \"1 = died\" gives the value. \"all the other variables\" names no predictor, so covariate_columns is null. Of the other columns, TRR_ID and REC_CTR_ID are identifiers, REC_TX_DT is a date, and gf_days and graft_failed are another outcome and its time, so they are not baseline predictors.",
+    "time_column": "days_to_death",
+    "time_evidence": "days_to_death is the follow-up",
+    "event_column": "pt_died",
+    "event_evidence": "pt_died the event",
+    "event_value": "1",
+    "event_value_evidence": "1 = died",
+    "stratum_column": null,
+    "covariate_columns": null,
+    "not_predictors": [
+     "TRR_ID",
+     "REC_CTR_ID",
+     "REC_TX_DT",
+     "gf_days",
+     "graft_failed"
+    ]
+   }
+  },
+  {
+   "id": "CRS05",
+   "template_id": "r3.S24.05",
+   "profile": "srtr_waitlist",
+   "category": "S24",
+   "request": "Our outcome is died_on_list (1 = event), followed for wl_days; every other column is a predictor.",
+   "note": "\"Every other column\" with a competing outcome column and identifiers.",
+   "source": "round 3 by error category (2026-10-11)",
+   "example": {
+    "reasoning": "died_on_list and wl_days are named, \"1 = event\" gives the value. \"every other column\" names no predictor, so covariate_columns is null. PX_ID and CAN_LISTING_CTR_ID are identifiers, CAN_LISTING_DT is a date and removed_for_tx is another outcome, so they are not baseline predictors.",
+    "time_column": "wl_days",
+    "time_evidence": "followed for wl_days",
+    "event_column": "died_on_list",
+    "event_evidence": "Our outcome is died_on_list",
+    "event_value": "1",
+    "event_value_evidence": "1 = event",
+    "stratum_column": null,
+    "covariate_columns": null,
+    "not_predictors": [
+     "PX_ID",
+     "CAN_LISTING_CTR_ID",
+     "CAN_LISTING_DT",
+     "removed_for_tx"
+    ]
+   }
   }
  ],
- "round2": "2026-10-05: + items by error category (jobs/v4/role_bank/raw, merge_roles.py)"
+ "round2": "2026-10-05: + items by error category (jobs/v4/role_bank/raw, merge_roles.py)",
+ "round3": "2026-10-11: + 5 items (two outcomes described; not_predictors under 'all the other')"
 }

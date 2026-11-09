@@ -1,7 +1,6 @@
-"""What the prose writer and the explanation call are told. Until then the model saw
-reference NAMES only and wrote stock sentences: "not all variables were covered" on a fully covered
-release, the selected member misnamed, a count used for the wrong quantity (report rubric of
-2026-09-15; rubric smoke of 2026-10-01). It is now given what each reference is and the facts of the
+"""What the prose writer and the explanation call are told. Given reference NAMES only, the model
+wrote stock sentences: "not all variables were covered" on a fully covered release, the selected
+member misnamed, a count used for the wrong quantity. It is now given what each reference is and the facts of the
 run in words. No R and no model: a fake client records the prompt.
 
 Run: python mcp/test_prose_facts.py

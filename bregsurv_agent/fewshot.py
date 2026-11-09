@@ -1,4 +1,4 @@
-"""Retrieved few-shot examples for boundary 1 (master memory ).
+"""Retrieved few-shot examples for boundary 1.
 
 A bank of worked examples ships with the agent: synthetic requests over
 registry-style and single-centre column layouts, each with its verified
@@ -50,14 +50,11 @@ _K1, _B = 1.5, 0.75
 def enabled() -> bool:
     """`BREGSURV_FEWSHOT` = on | off | <k>. ON unless set to off.
 
-    The default was decided by the measurement, not assumed: unstated roles left open RAW rose from 62 % to 85 % (Qwen2.5-7B)
-    and 71 % to 84 % (Qwen3-8B), whole items correct raw from 49 % to 78 % and
-    65 % to 77 %, named roles quoted correctly after the filter from 93 % to
-    99.9 % and 98 % to 99 %; after the filter the two models meet at 98 %
-    whole-item correct. Median prompt 883 -> 2390 tokens, latency unchanged.
-    The pre-agreed rule (>= 5 points on both raw rates without lowering
-    named-correct after the filter) was met by a wide margin on both models,
-    so the examples are on in the product; `off` remains the ablation arm."""
+    The default was decided by measurement, not assumed (k = 5, a
+    template-disjoint bank): the examples raised the share of unstated roles
+    left open and of whole items read correctly, without lowering how often a
+    named role is quoted correctly after the filter, on both models tried, so
+    the examples are on in the product; `off` remains the ablation arm."""
     v = os.environ.get("BREGSURV_FEWSHOT", "").strip().lower()
     return v not in ("off", "0", "false", "no")
 
@@ -199,7 +196,8 @@ def bank(path: Optional[str] = None) -> Bank:
 # the examples carry no stratum; an example is shown with the schema's
 # every field, so stratum_column renders as null (the bank's cohorts have none)
 _ORDER = ("reasoning", "time_column", "time_evidence", "event_column", "event_evidence",
-          "event_value", "event_value_evidence", "stratum_column", "covariate_columns")
+          "event_value", "event_value_evidence", "stratum_column", "covariate_columns",
+          "not_predictors")
 
 
 def render(examples: List[Dict[str, Any]], b: Optional[Bank] = None) -> str:

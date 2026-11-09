@@ -1,6 +1,6 @@
 """Synthetic column profiles for the elicitation corpus.
 
-NO PATIENT DATA, and none is needed. Boundary 1 sees exactly two things: the
+🔴 NO PATIENT DATA, and none is needed. Boundary 1 sees exactly two things: the
 list of column NAMES in the file, and the analyst's sentence. It never sees a
 row. So a corpus item needs a column list, not a dataset -- which is why 500
 items cost nothing to store and nothing to run.

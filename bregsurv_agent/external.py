@@ -24,7 +24,7 @@ any of those into the one shape, in three steps:
                monotone and equal to the running sum of the hazard. Any failure
                REFUSES the whole object with the reason; nothing is repaired.
 
-Scope: the agent does not do data processing. It does
+🔴 Scope: the agent does not do data processing. It does
 not put the external information on the cohort's scale, rebuild a spline
 basis, or reduce a per-level table to per-variable coefficients; the analyst
 does that before uploading, and a file that has not been reduced is refused
@@ -303,9 +303,8 @@ _ASSIGN_SYSTEM = policy.load("external_roles")
 def assignment_schema_for(tables: List[RawTable]) -> Dict[str, Any]:
     """The assignment schema with `table` an enum of the file's own table
     names. An R object's tables are named `file:object$element`, which the
-    model reproduced wrongly on every .rds fixture (release-reading
-    experiment, 2026-09-14: 9 of 15 .rds files refused as `unknown_table`);
-    the grammar now admits only names that exist, as the intent schema does
+    model can reproduce wrongly (an .rds file then refused as
+    `unknown_table`); the grammar admits only names that exist, as the intent schema does
     for the loaded releases."""
     import copy
     sch = copy.deepcopy(ASSIGNMENT_SCHEMA)
@@ -366,9 +365,8 @@ def heuristic_assignment(tables: List[RawTable],
     `time`/`hazard`/`cumulative_hazard`) is typed from them. A table that
     carries the cohort's own outcome columns by name and only columns of the
     cohort (or, when the outcome columns are not known, most of the cohort's
-    columns), with more rows than columns, is another cohort's records (2026-09-13,
-    for the model-free reference of the ablation benchmark; `cohort_outcome`
-    = (time column, event column) of the declaring cohort, and the table's
+    columns), with more rows than columns, is another cohort's records
+    (`cohort_outcome` = (time column, event column) of the declaring cohort, and the table's
     outcome columns are taken to be the same). Everything else is `ignore`,
     and :func:`canonicalise` then refuses for want of a coefficient table --
     with the advice to configure a model or reduce the file to two columns.
@@ -392,8 +390,8 @@ def heuristic_assignment(tables: List[RawTable],
             # A table that carries our outcome columns by name is another cohort laid out
             # like ours when its every column is one of ours (however few of our covariates
             # it carries: METABRIC's NPI release has 3 of 12) or when it shares at least half
-            # of our columns (Rotterdam's 8 of GBSG's 11, plus a term GBSG lacks) -- 2026-09-21,
-            # the public benchmarks: a registry covers a subset of the target's variables,
+            # of our columns (Rotterdam's 8 of GBSG's 11, plus a term GBSG lacks) -- in
+            # the public benchmarks a registry covers a subset of the target's variables,
             # which is the setting itself
             # a matched design declares (None, event): its records carry no duration, and
             # another matched sample laid out like it has none either
@@ -480,8 +478,8 @@ def check_assignment(tables: List[RawTable], raw: Dict[str, Any]
                 rec[f] = None
         if rec.get("coefficient_scale") not in SCALES:
             rec["coefficient_scale"] = None
-        # The headers are evidence the model does not get to overrule
-        # (2026-09-13, ablation fixtures F13 and F04 under Qwen2.5). A column
+        # 🔴 The headers are evidence the model does not get to overrule
+        # (a small model can mislabel the scale and the matrix role). A column
         # headed `hazard_ratio` IS on the hazard-ratio scale, whatever the
         # model wrote; a table named `vcov` / `covariance` IS a covariance and
         # one named `precision` / `information` a precision. Each correction is
@@ -560,7 +558,7 @@ class ExternalObject:
         if self.Q is not None:
             kw["external_Q_inline"] = [list(r) for r in self.Q]
         if self.baseline_hazard:
-            # : by value too; the discrete-time row is what reads it
+            # by value too; the discrete-time row is what reads it
             kw["external_baseline_inline"] = {
                 "time": list(self.baseline_hazard["time"]),
                 "cumhaz": list(self.baseline_hazard["cumhaz"])}
@@ -593,8 +591,11 @@ class ExternalObject:
                 out.append(f"  precision matrix      {len(self.Q)} x {len(self.Q)}"
                            f"   <- {self.Q_from}")
             if self.se:
+                # "no covariance was published" must not be printed
+                # beside a covariance that was read and inverted
                 out.append(f"  standard errors       {len(self.se)} recorded, not "
-                           "used (no covariance was published)")
+                           + ("used (the matrix above carries them)" if self.Q is not None
+                              else "used (no covariance was published)"))
             if self.baseline_hazard:
                 out.append(f"  baseline hazard       "
                            f"{len(self.baseline_hazard['time'])} time points, "
@@ -619,7 +620,35 @@ def _f(x: Any) -> Optional[float]:
     return v if math.isfinite(v) else None
 
 
-def _coefficients(t: RawTable, a: Dict[str, Any], reasons: List[Dict[str, Any]]
+def _per_level_names(t: RawTable, names: List[str], used: Tuple[Any, ...],
+                     cohort_columns: List[str]):
+    """(level column, [(name, level, combined name)]) when one text column of the
+    table, joined to the name column as <name>_<level>, makes every repeated
+    variable a set of distinct cohort columns; else None."""
+    cohort = set(cohort_columns)
+    for col in t.frame.columns:
+        if col in used:
+            continue
+        raw = list(t.frame[col])
+        lv = ["" if (x is None or x != x) else str(x).strip() for x in raw]
+        if all(v == "" for v in lv):
+            continue
+        try:
+            if all(v == "" or float(v) == float(v) for v in lv):
+                continue                     # a numeric column (an SE, a CI) is not a level
+        except ValueError:
+            pass
+        combined = [(n, v, f"{n}_{v}" if v else n) for n, v in zip(names, lv)]
+        cn = [c for _, _, c in combined]
+        if len(set(cn)) != len(cn):
+            continue
+        if all(c in cohort for _, v, c in combined if v):
+            return col, combined
+    return None
+
+
+def _coefficients(t: RawTable, a: Dict[str, Any], reasons: List[Dict[str, Any]],
+                  cohort_columns: Optional[List[str]] = None
                   ) -> Tuple[Dict[str, float], Optional[Dict[str, float]],
                              Optional[str]]:
     """Names -> log hazard ratios, with the checks. Appends refusals."""
@@ -635,6 +664,24 @@ def _coefficients(t: RawTable, a: Dict[str, Any], reasons: List[Dict[str, Any]]
                         "message": f"table {t.name!r}: column {nm!r} has empty "
                                    "variable names"})
     dup = sorted({n for n in names if names.count(n) > 1})
+    if dup and cohort_columns:
+        # 🔴 one variable on several rows, one row per
+        # level, against a cohort that already carries an indicator column for
+        # each level under the name <variable>_<level> (blood_group A / B / AB
+        # against blood_group_A / _B / _AB). The rows ARE per-column
+        # coefficients, named by the two columns together; reading them so is a
+        # naming match like the name match of every other row, not a recoding.
+        # Accepted only when every combined name is unique and every level row
+        # names a column of the cohort; anything else is refused as before.
+        mapped = _per_level_names(t, names, (nm, cc), cohort_columns)
+        if mapped is not None:
+            lvl_col, combined = mapped
+            a["per_level"] = {"level_column": lvl_col,
+                              "rows": [f"{n} {lv} -> {c}" for n, lv, c in combined
+                                       if c != n]}
+            names = [c for _, _, c in combined]
+            dup = []
+    dup = sorted({n for n in names if names.count(n) > 1}) if dup else []
     if dup:
         reasons.append({"code": "names_not_unique", "table": t.name,
                         "message": f"table {t.name!r}: column {nm!r} repeats "
@@ -654,10 +701,10 @@ def _coefficients(t: RawTable, a: Dict[str, Any], reasons: List[Dict[str, Any]]
     if reasons:
         return {}, None, None
     scale = a.get("coefficient_scale") or "log_hazard_ratio"
-    # The file's own header outranks the assignment's claim about the scale
-    # (2026-09-13, ablation fixture F13: Qwen2.5 assigned the column headed
-    # `hazard_ratio` as log hazard ratios, and 1.63 would have entered the
-    # penalty as a log coefficient). A header that says hazard ratio is read as
+    # 🔴 The file's own header outranks the assignment's claim about the scale
+    # (a model can assign the column headed `hazard_ratio` as log hazard
+    # ratios, and a hazard ratio would then enter the penalty as a log
+    # coefficient). A header that says hazard ratio is read as
     # hazard ratios; one that says coefficient / beta / log HR is read on the
     # log scale; the override is recorded, and a header that says nothing
     # leaves the assignment as it was.
@@ -794,7 +841,7 @@ def _square(t: RawTable, a: Dict[str, Any], terms: Dict[str, float],
 
 
 # the shrinkage of the precision matrix toward the identity, after scaling to
-# unit mean diagonal (the MIUM/SRTR convention; 0 = the raw inverse, 1 = the
+# unit mean diagonal (0 = the raw inverse, 1 = the
 # identity, i.e. the coefficients-alone member)
 Q_SHRINK = 0.10
 
@@ -924,9 +971,9 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
             tc = None
         set_like = any(str(c).lower() in _SET_HEADS for c in t.frame.columns)
         columns = [str(c) for c in t.frame.columns]
-        # Another cohort's records in the SAME layout as the analyst's own
-        # file (another matched sample `set_id, cc_status, Z1..Z20`: simulation
-        # prompt search, 2026-09-30), whose outcome columns the reading could
+        # 🔴 Another cohort's records in the SAME layout as the analyst's own
+        # file (e.g. another matched sample `set_id, cc_status, Z1..Z20`),
+        # whose outcome columns the reading could
         # not name because their headers say nothing about their role. The
         # release is read before any declaration exists; the line-up check at
         # declaration requires the external outcome columns to carry the
@@ -985,7 +1032,7 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
                 # the model named a value the column does not hold ("case",
                 # "yes"); on a 0/1 column the event is 1 by the same rule that
                 # applies when no value is named, and the note says what was
-                # named (release-reading experiment, 2026-09-14)
+                # named
                 notes.append(f"event value taken as 1 on a 0/1 column (the "
                              f"reading named {str(ev)!r}, which does not occur)")
                 ev = "1"
@@ -1010,7 +1057,7 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
     # ---- coefficients ---------------------------------------------------
     a = coef[0]
     t = by_name[a["table"]]
-    terms, se, converted = _coefficients(t, a, reasons)
+    terms, se, converted = _coefficients(t, a, reasons, cohort_columns)
     if reasons:
         raise ExternalRefusal(reasons)
     prov = dict(provenance, coefficient_table=t.name,
@@ -1018,6 +1065,10 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
                 coefficient_column=a.get("coefficient_column"),
                 converted_from=converted,
                 scale_overridden=a.get("scale_overridden"))
+    if a.get("per_level"):
+        prov["per_level"] = a["per_level"]
+        notes.append("one variable on several rows, one per level, matched by name to your "
+                     "indicator columns: " + "; ".join(a["per_level"]["rows"]))
 
     Q = None
     Q_from = None
@@ -1029,10 +1080,10 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
     elif sq:
         M = _square(by_name[sq[0]["table"]], sq[0], terms, reasons)
         if M is not None:
-            # Covariance or precision is a FACT of the file, not a claim of the
-            # reading (2026-09-13, ablation fixture F04: Qwen2.5 called the
-            # `vcov` table a precision matrix and the Mahalanobis penalty took
-            # the covariance uninverted). Two checks, deterministic: with
+            # 🔴 Covariance or precision is a FACT of the file, not a claim of the
+            # reading (a model can call a `vcov` table a precision matrix, and
+            # the Mahalanobis penalty would then take the covariance
+            # uninverted). Two checks, deterministic: with
             # standard errors in the coefficient table, the diagonal of a
             # covariance equals se^2 and that of a precision does not; without
             # them, a table named vcov / cov / covariance / precision /
@@ -1051,13 +1102,12 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
             else:
                 Q_raw, Q_from = M, "precision as published"
             if Q_raw is not None:
-                # CONDITIONED, and disclosed: the matrix
+                # 🔴 CONDITIONED, and disclosed: the matrix
                 # the Mahalanobis penalty takes is scaled to unit mean
                 # diagonal, so the eta grid means the same thing as with the
                 # identity, and shrunk Q_SHRINK toward the identity for
-                # conditioning -- the convention of the MIUM/SRTR analysis
-                # (`refit_20260831/01_build_srtr_external.R`), where the raw
-                # inverse had condition number 1.8e10. What was done and
+                # conditioning, because the raw inverse of a published
+                # covariance can be severely ill-conditioned. What was done and
                 # what it changed is printed on the card and in the report.
                 Q, cond = _condition(Q_raw)
                 prov["matrix_conditioning"] = cond
@@ -1074,8 +1124,19 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
         reasons.append({"code": "several_baseline_tables",
                         "message": "more than one baseline-hazard table"})
     elif bhs:
-        bh = _baseline(by_name[bhs[0]["table"]], bhs[0], reasons)
-        prov["baseline_table"] = bhs[0]["table"]
+        # a defective baseline hazard beside a sound
+        # coefficient table is set aside and said so; the coefficients are still
+        # usable. Without a coefficient table the defect remains a refusal.
+        br: List[Dict[str, Any]] = []
+        bh = _baseline(by_name[bhs[0]["table"]], bhs[0], br)
+        if br and roles.get("coefficients"):
+            bh = None
+            prov["baseline_set_aside"] = [r.get("message") for r in br]
+            notes.append("the baseline hazard was set aside and is not used: "
+                         + "; ".join(str(r.get("message")) for r in br))
+        else:
+            reasons.extend(br)
+            prov["baseline_table"] = bhs[0]["table"]
     if indi:
         notes.append("a table was read as another cohort's rows but a "
                      "coefficient table is present; the coefficients are used")
@@ -1087,21 +1148,26 @@ def canonicalise(tables: List[RawTable], assignment: List[Dict[str, Any]],
         link = {"matched": [n for n in terms if n in cohort_columns],
                 "unmatched": [n for n in terms if n not in cohort_columns]}
         if terms and not link["matched"]:
-            # Nothing to borrow from is a refusal, not a fit. A table whose
+            # 🔴 Nothing to borrow from is a refusal, not a fit. A table whose
             # names match no column of the cohort would be carried into the
             # candidate set as a vector of zeros over every covariate, and the
             # borrowing members would "win" an analysis that borrowed nothing
-            # (found 2026-09-14 on a per-subject risk-score file: 1000 rows of
-            # patient_id, risk_score read as 1000 coefficients, 0 matched).
+            # (e.g. a per-subject risk-score file: rows of patient_id,
+            # risk_score read as coefficients, none matched).
             names = list(terms)[:4]
             raise ExternalRefusal([{
                 "code": "no_term_matches_cohort",
-                "message": (f"none of the {len(terms)} names in the coefficient "
-                            f"table ({', '.join(names)}, ...) is a column of your "
-                            "data, so there is nothing to borrow from. A "
-                            "coefficient table has one row per variable, named "
-                            "as your columns are; a table with one row per "
-                            "subject (an id and a score) is not one.")}])
+                "message": (f"table {t.name!r} holds {len(terms)} rows named in "
+                            f"column {a.get('name_column')!r} ({', '.join(names)}, ...), "
+                            "and none of those names is a column of your data, so "
+                            "the file holds nothing to borrow from"
+                            + (": it is not a table of coefficients, one row per "
+                               "variable, but looks like one row per subject (an "
+                               "identifier and a value such as a risk score)."
+                               if len(terms) > 2 * max(len(cohort_columns), 1) else
+                               "; the names may refer to variables your data "
+                               "records under other names, which the agent does "
+                               "not rename."))}])
     form = ("coefficients_with_covariance" if Q is not None
             else "coefficients_with_baseline_hazard" if bh is not None
             else "coefficients")
@@ -1163,9 +1229,8 @@ def read_external(path: str, client=None, model: str = "",
             prov["assigned_by"] = "model"
             prov["assignment_reasoning"] = str(raw.get("reasoning") or "")[:1000]
         except ValueError as exc:
-            # The model's reading was not valid JSON (Qwen2.5 on the ablation
-            # fixture F05, 2026-09-13: a stray `<tool_call>` token inside a
-            # string ended the output). The reading falls back to the
+            # 🔴 The model's reading was not valid JSON (e.g. a stray
+            # `<tool_call>` token inside a string ended the output). The reading falls back to the
             # model-free heuristic, which names only what the headers say and
             # is checked like any assignment; the fallback and the failed call
             # are recorded and the card says the file was read by rule.
@@ -1174,10 +1239,10 @@ def read_external(path: str, client=None, model: str = "",
             prov["assigned_by"] = "heuristic (fallback: the model's reading was not valid JSON)"
             prov["model_error"] = str(exc)[:300]
         prov["model_call"] = boundary.CALLS[-1] if boundary.CALLS else None
-        # Another cohort's records the model did not recognise (Qwen2.5 on a
-        # matched case-control sample, synth200 F20/F21, 2026-09-14: it named
-        # no table at all, so the upload was refused and the analysis ran
-        # without the records). Whether a table IS the cohort's layout is a
+        # 🔴 Another cohort's records the model did not recognise (on a
+        # matched case-control sample a model can name no table at all, so the
+        # upload would be refused and the analysis run without the records).
+        # Whether a table IS the cohort's layout is a
         # fact of the headers -- at least 80 % of the cohort's columns -- that
         # the rule states without judgement; when the model names nothing
         # usable and the rule finds such a table, the rule's reading is taken

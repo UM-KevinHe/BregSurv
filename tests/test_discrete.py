@@ -1,4 +1,4 @@
-"""The discrete-time row (master memory ): DiscreteKL + DiSKD in the agent.
+"""The discrete-time row: DiscreteKL + DiSKD in the agent.
 
 What is checked, in order:
   A. without R -- the candidate-key matrix, item 7's parser, `complete`'s
@@ -7,8 +7,8 @@ What is checked, in order:
   B. with R -- the profiler's time-grid facts and trigger, the gate's discrete
      checks (horizon, index, baseline coverage, matched design), the R members
      through run_candidates.R with the network members skipped, and then the
-     whole pipeline with DiSKD through the bridge (ruling 2: the smoke test
-     must show the agent can call it), the artifacts, and both replays.
+     whole pipeline with DiSKD through the bridge (the smoke test must show
+     the agent can call it), the artifacts, and both replays.
 
 Run:  python mcp/test_discrete.py            (from the repository root)
       BREGSURV_DISCRETE_FAST=1 ...            skips the DiSKD end-to-end block

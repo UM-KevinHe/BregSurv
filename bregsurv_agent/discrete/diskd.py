@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """DiSKD: discrete-time survival knowledge distillation from a Cox teacher.
 
+Reference: Deng, F., Luo, L., Wang, D., Li, Q., Kong, L. and He, K. (2026). Discrete Survival
+Knowledge Distillation for Competing Risks Analysis. Proceedings of the 43rd International
+Conference on Machine Learning (PMLR 306). The network blocks follow that work's reference
+implementation; see THIRD_PARTY.md at the repository root.
+
 A logistic-hazard network is trained on the internal cohort against the soft
 target  (hard + eta * teacher) / (1 + eta)  on every interval up to and
 including the subject's own interval, where ``teacher`` is the interval hazard
 implied by an external Cox model.  ``eta = 0`` is the internal-only network.
 
-Protocol (identical to the MIUM comparison runner, 21_run_diskd_paper_nll.py):
+Protocol:
   1. K score folds over the training set; inside each, the other folds are
      split 80/20 (event-stratified) into a fit part and an early-stopping part.
      Features are standardised on the fit part only.

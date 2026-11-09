@@ -4,7 +4,7 @@
 # Called by mcp/server.py as:
 #   Rscript fit_coxkl_ties.R <input.json> <output.json>
 #
-# Like fit_coxkl, but uses BregSurv::coxkl_ties which handles tied event
+# Like fit_coxkl, but uses BregSurv::coxkl_ties() which handles tied event
 # times via the Breslow or Exact partial likelihood. Note: coxkl_ties does NOT
 # accept an external risk score (RS) — `beta` is required.
 
@@ -29,7 +29,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {

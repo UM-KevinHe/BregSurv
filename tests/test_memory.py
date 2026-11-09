@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Component 4 (Memory): the published-model catalogue, the one constrained
 call that names an entry (harness half only), the per-user store, and the
-remembered declaration flowing through `complete` and through the app.
+remembered declaration flowing through `complete()` and through the app.
 
 No model (a fake answers the one call), no GPU. Section E needs R and gradio
 (it runs the app end to end on a COPY of the demo cohort with memory pointed
@@ -108,7 +108,7 @@ def main() -> int:
           "an id outside the catalogue is dropped even with real evidence")
     check(memory.validate_proposal(msg, {"reasoning": "q", "matches": []}) == [],
           "an empty proposal is an empty list, not an error")
-    # the 2026-09-11 Qwen3 habit: the right id, but the catalogue line copied as evidence
+    # a Qwen3 habit: the right id, but the catalogue line copied as evidence
     got2 = memory.validate_proposal(msg, {"reasoning": "q", "matches": [
         {"id": "srtr.kiddadgs1y.202607",
          "evidence": "SRTR kidney, deceased donor, adult recipients (18+); graft survival; 1 year after transplant"}]})
@@ -174,7 +174,7 @@ def main() -> int:
     check(stb.recall_declaration("abc") is None and stb.remember_declaration("abc", {"time": "t"}, {}),
           "a corrupt file reads as empty and is rewritten; memory never breaks a run")
 
-    # ------------------------------------------------------------ E. complete
+    # ------------------------------------------------------------ E. complete()
     hdr("E. a remembered declaration is a disclosed SOURCE in complete()")
     prof = {"columns": [{"name": "t", "type": "numeric"}, {"name": "d", "type": "numeric",
                                                             "values": ["0", "1"]},

@@ -83,7 +83,7 @@ def main() -> int:
           "intent: every out-of-scope reason the schema offers is named")
     check("state line says a result exists" in i,
           "intent: 'about this result' vs 'about the method' is decided by the state line",
-          "case 1 (job 60955756) routed a result question to the method answer")
+          "case 1 routed a result question to the method answer")
 
     e = policy.load("external_roles")
     roles = ("coefficients", "covariance", "precision", "baseline_hazard",
@@ -210,7 +210,7 @@ def main() -> int:
             "event_column": "died", "event_evidence": "whether they reached the endpoint",
             "event_value": None, "covariate_columns": None})
         check(b3 == {"time": "followup_days", "event": "died"}
-              and h3["time"] == 'described: "how long each patient was followed"'
+              and h3["time"].startswith('described: "how long each patient was followed"')
               and h3["event"].startswith("described:"),
               "a described time and event column are accepted WITH the phrase, as `described`",
               f"{b3} {h3}")

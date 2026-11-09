@@ -5,7 +5,7 @@ Entry point for three deployment targets:
   * Docker container.
   * HuggingFace Space (HF picks up ``app.py`` at the repo root).
 
-WHAT CHANGED FROM V2, AND WHY THE OLD CONTROLS ARE GONE RATHER THAN MOVED.
+🔴 WHAT CHANGED FROM V2, AND WHY THE OLD CONTROLS ARE GONE RATHER THAN MOVED.
 
 The previous UI asked the analyst to choose the study type, the form of the
 external information, and the eta grid. Under V3 none of those is a choice:
@@ -13,14 +13,14 @@ external information, and the eta grid. Under V3 none of those is a choice:
   * the study design is DECLARED and then confirmed against the data, so a
     dropdown offering it would give a wrong claim somewhere to live;
   * the form of the external information is READ off the external object;
-  * the eta grids are fixed in run_candidates.R and tuned against the two real
-    cohorts. That file says in as many words that thinning them degrades the
+  * the eta grids are fixed in run_candidates.R and tuned on real data. That
+    file says in as many words that thinning them degrades the
     selection this tool performs. Exposing them as a slider invites exactly
     that.
 
 Keeping them would have made the interface contradict the method.
 
-THE SHAPE OF THE INTERACTION. decide, run, disclose.
+THE SHAPE OF THE INTERACTION: decide, run, disclose.
 
   1. data in -> profile -> a short message and the numbered list, for anyone
      who prefers to answer by number. No model is called.
@@ -95,7 +95,7 @@ _gc_utils._json_schema_to_python_type = _safe_json_to_pytype
 import gradio as gr  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from bregsurv_agent import ablation, actions, analyst, boundary, external, fewshot, guards, intent, knowledge, memory, pipeline, textmatch  # noqa: E402
+from bregsurv_agent import ablation, actions, analyst, boundary, external, fewshot, guards, intent, knowledge, memory, pipeline, sessions, textmatch  # noqa: E402
 from bregsurv_agent.state import Phase, Session  # noqa: E402
 from bregsurv_agent.declaration import (  # noqa: E402
     DeclarationError, complete, from_dictionary, parse_reply, render_question,
@@ -103,6 +103,11 @@ from bregsurv_agent.declaration import (  # noqa: E402
 from bregsurv_agent.rbridge import _run_r  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
+
+# sessions: past analyses, kept on this machine. One instance for the process; it is
+# off on a shared host and whenever BREGSURV_SESSIONS=off, and every method is
+# safe to call either way, so no call site has to ask whether it is on.
+STORE = sessions.SessionStore()
 
 # Progress of the current turn, shown in the chat while the turn runs.
 _PROGRESS: "contextvars.ContextVar[Optional[List[str]]]" = contextvars.ContextVar("progress", default=None)
@@ -124,7 +129,7 @@ DEFAULT_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 DEMO_COHORT = DEMO_DIR / "kidney_cohort.csv"
 DEMO_COEFS = DEMO_DIR / "registry_coefficients.csv"
 
-# THE EXAMPLE IS A SENTENCE, NOT A DROPDOWN. The cohort is already loaded and
+# 🔴 THE EXAMPLE IS A SENTENCE, NOT A DROPDOWN. The cohort is already loaded and
 # the question already asked when the page opens, so what a first-time visitor
 # needs is not a data picker -- it is one plausible thing to say. Tab fills this
 # in. It is deliberately written the way a clinician writes: the columns named
@@ -177,9 +182,10 @@ analysis without the language model.
 def _banner() -> str:
     """What actually happens to an uploaded file. Not a prohibition.
 
-    The old banner said uploads were DISABLED and warned that tool arguments
-    transit the LLM provider. Under V3 neither half is true: uploads are allowed, and the model sees column NAMES and one
-    sentence -- measured at 175 prompt tokens -- never a row. Telling people a
+    🔴 The old banner said uploads were DISABLED and warned that tool arguments
+    transit the LLM provider. Under V3 neither half is true: uploads are allowed
+    (a design decision), and the model sees column NAMES and one
+    sentence -- never a row. Telling people a
     danger that has moved is worse than telling them nothing, because they stop
     reading the banner that matters.
     """
@@ -194,18 +200,23 @@ def _banner() -> str:
             "this is a third-party host: for identifiable patient data, run it "
             "locally instead."
             "</div>")
+    kept = ("" if not STORE.enabled else
+            " Your analyses are kept on this machine, under "
+            "<code>~/.bregsurv/sessions</code>, and can be reopened later; "
+            "nothing leaves it.")
     return (
         "<div style='background:#e8f5e9;color:#2e7d32;padding:10px 14px;"
         "border-radius:6px;border:1px solid #a5d6a7;'>"
         "<b>Running locally.</b> Your data stays on this machine. The model, if "
         "one is configured, sees column names and your request — never a row."
+        + kept +
         "</div>")
 
 
 def _purge(session) -> None:
     """Delete everything this session put on disk. Never the shipped example.
 
-    THE BANNER MAKES A PROMISE AND THIS IS WHERE IT IS KEPT. It tells a
+    🔴 THE BANNER MAKES A PROMISE AND THIS IS WHERE IT IS KEPT. It tells a
     visitor their file is deleted when the session ends, and a promise about
     someone else's clinical data is not something to leave to a framework's
     default temp handling.
@@ -224,10 +235,18 @@ def _purge(session) -> None:
     if not isinstance(session, Session):
         return
     import shutil
+    root = STORE.root if STORE.enabled else None
     for path in session.temp:
         try:
             q = Path(path)
             if not q.exists() or q == DEMO_DIR or DEMO_DIR in q.parents:
+                continue
+            # 🔴 sessions: a kept session's files are not temporary. The two promises
+            # are per deployment and they contradict each other: a demo host
+            # promises the file is deleted when the visit ends, a local install
+            # promises the analysis can be reopened. The store being on IS the
+            # second promise, so nothing under its root is purged.
+            if root is not None and (q == root or root in q.parents):
                 continue
             if q.is_dir():
                 shutil.rmtree(q, ignore_errors=True)
@@ -349,7 +368,7 @@ def add_external(coef_uploaded=None, session=None, history=None, endpoint: str =
                               + f" (active: `{session.external_name}`). Say which to use, "
                                 "or ask me to run with each and compare."])
     else:
-        session = session.with_external(None, refusal)
+        session = session.with_external(None, _with_file(refusal, path))
         history.append([None, "**The external file could not be used:**\n"
                               + "\n".join(f"- {r['message']}" for r in (refusal or []))])
     return history, session
@@ -409,6 +428,7 @@ def start_session(uploaded=None, coef_uploaded=None, endpoint: str = "",
             ext, ext_refusal = _read_external(_upload_path(coef_uploaded),
                                               endpoint, model, api_key,
                                               cohort_columns=_cohort_header(data_path))
+            ext_refusal = _with_file(ext_refusal, _upload_path(coef_uploaded))
         else:
             data_path = str(DEMO_COHORT)
             # the shipped two-column file needs no model to be read
@@ -450,7 +470,7 @@ def start_session(uploaded=None, coef_uploaded=None, endpoint: str = "",
             # M5's model call, if any, joins the run's provenance
             model_calls=boundary.call_log(clear=True),
             data_sha256=data_sha, remembered=remembered,
-            # : the test file travels with the session and is attached
+            # the test file travels with the session and is attached
             # to the declaration when it is settled; it raises no question
             test_data_path=test_path,
             test_data_expr=_data_expr_for(test_path) if test_path else None)
@@ -498,8 +518,8 @@ _ITEM_LABEL = {"0": "the matched-set column", "1": "the follow-up time column",
 
 
 # time_is_event: one column named as both; the time is usually the one the
-# analyst wrote, so the event is the item to correct (simulation prompt search,
-# 2026-09-30: pointing at item 1 had the analyst re-send the same time column)
+# analyst wrote, so the event is the item to correct (pointing at item 1 had
+# the analyst re-send the same time column)
 _ITEM_OF_REFUSAL = {"covariate": "4", "outcome_used_as_covariate": "4",
                     "stratum_used_as_covariate": "4",
                     "time_is_event": "2", "time": "1",
@@ -532,6 +552,52 @@ def _same_column(prof, kind: str, a, b) -> bool:
     return res(a) == res(b)
 
 
+def _still_open(session: Session, prof, shown: str) -> str:
+    """What the analysis still needs, restated at the end of a turn that did not run it.
+
+    Without this, a question asked two turns earlier (a covariate the file lacks,
+    item 4) was not repeated when the next message only described the external file, and the
+    analyst, reading the latest reply, had nothing to answer; the analysis never ran. While roles
+    are pending, every reply that does not already ask says what is open.
+    """
+    pend = dict(session.pending or {})
+    if not pend or session.has_result or "Reply by number" in (shown or "") \
+            or "Still open for the analysis" in (shown or ""):
+        return ""
+    names = {c["name"] for c in (prof or {}).get("columns", [])}
+    covs = _pending_cov_list(pend.get("covariates"))
+    ghosts = [c for c in (covs or []) if c not in names]
+    try:
+        comp = complete(prof, pend, session.dict_decl, remembered=session.remembered,
+                        sources=dict(session.pending_sources or {}))
+        missing = list(comp.missing)
+        time_col = comp.answers.get("time")
+    except Exception:
+        missing, time_col = [], pend.get("time")
+    if ghosts and "4" not in missing:
+        missing.append("4")
+    if not missing:
+        return ""
+    lines = ["Still open for the analysis:"]
+    if ghosts:
+        lines.append("there is no column called " + ", ".join(repr(g) for g in ghosts)
+                     + " among your covariates. Reply by number to correct it: item 4, the covariates.")
+    lines.append("```\n" + render_question(prof, only=sorted(set(missing)), time_col=time_col)
+                 + "\n```")
+    return "\n\n".join(lines)
+
+
+def _pending_cov_list(v) -> Optional[List[str]]:
+    """An explicit covariate list the analyst gave (not a preset letter), or None."""
+    if not v:
+        return None
+    s = str(v).strip()
+    if re.match(r"^[AB](\s|$)", s):
+        return None
+    out = [c.strip() for c in s.split(",") if c.strip()]
+    return out or None
+
+
 def _correct_by_number(exc) -> str:
     """The last line of a refusal: which numbered item to reply with."""
     item = getattr(exc, "item", None)
@@ -548,7 +614,7 @@ def _answers_from_reply(text: str) -> Dict[str, str]:
     """
     key = {"0": "stratum", "1": "time", "2": "event", "3": "event_value",
            "4": "covariates", "5": "external_data_expr", "6": "time_zero",
-           "7": "discrete"}                      # : the time scale
+           "7": "discrete"}                      # item 7: the time scale
     out: Dict[str, str] = {}
     for line in text.splitlines():
         t = line.strip()
@@ -560,7 +626,7 @@ def _answers_from_reply(text: str) -> Dict[str, str]:
 
 
 # the seven result outputs, empty: nothing was fitted on this turn (the
-# seventh, repro_diskd.py, exists only on the discrete-time row -- )
+# seventh, repro_diskd.py, exists only on the discrete-time row)
 # V4: an eighth result slot, the files of an evaluation by repeated splits
 _EMPTY = (None, None, None, None, None, None, None, None)
 _ROLE_KEYS = ("time", "event", "event_value", "covariates", "time_zero",
@@ -569,7 +635,7 @@ _ROLE_KEYS = ("time", "event", "event_value", "covariates", "time_zero",
 
 def _answers_of(decl) -> Dict[str, str]:
     """A declaration back in parse_reply's vocabulary, as the base for an edit."""
-    # : the time scale, in the words item 7 accepts; "no" only when
+    # the time scale, in the words item 7 accepts; "no" only when
     # it was answered no (a run on which the question never arose carries
     # nothing, so nothing is remembered as an answer)
     if getattr(decl, "discrete", False):
@@ -591,6 +657,36 @@ def _answers_of(decl) -> Dict[str, str]:
            "time_zero": decl.covariates_time_zero,
            "discrete": disc}
     return {k: v for k, v in raw.items() if v}
+
+
+def _with_file(refusal, path):
+    """The refusal reasons of an external file, each carrying the file's name, so the
+    report can say which file could not be used."""
+    if not refusal:
+        return refusal
+    name = Path(path).name if path else None
+    return [dict(r, file=r.get("file") or name) for r in refusal]
+
+
+def _current_roles(decl, pending=None) -> Optional[Dict[str, Any]]:
+    """The roles a declaration settled, shown to the role reading when a later
+    message may edit them (without them "please also add smoker and prior_mi"
+    replaced the six declared predictors with those two).
+    Before anything is declared, an explicit covariate list the analyst already
+    gave plays the same part (without it, "by egfr_level I meant the column
+    egfr" replaced ten listed predictors with egfr alone)."""
+    if decl is None:
+        covs = _pending_cov_list((pending or {}).get("covariates"))
+        return {"covariates": covs} if covs else None
+    return {"time": decl.time_col, "event": decl.event_col,
+            "event_value": decl.event_value, "stratum": decl.stratum_col,
+            "covariates": list(decl.covariates or [])}
+
+
+def _settled_covs(decl, pending=None) -> Optional[List[str]]:
+    if decl is None:
+        return _pending_cov_list((pending or {}).get("covariates"))
+    return list(decl.covariates or [])
 
 
 def _client(endpoint, api_key):
@@ -628,9 +724,8 @@ def _missing_columns(session: Session) -> List[str]:
 
 # A column the analyst named is not in the file and the run stopped on it; a
 # reply such as "leave it out" removes that column from the covariates the
-# reading settled and nothing else (the session-(b) recording, 2026-10-04: the
-# plain reply re-asked the same question, because only a numbered list could
-# remove the name).
+# reading settled and nothing else (without it the plain reply re-asked the
+# same question, because only a numbered list could remove the name).
 _DROP_WORDS = re.compile(r"\b(leave (it|that|this|them|those)( one| column)?s? out|leave out|drop (it|that|this|them)|"
                          r"remove (it|that|this|them)|without (it|that|them)|skip (it|that|them)|"
                          r"ignore (it|that|them)|not needed|don'?t (need|use) (it|that|them))\b", re.I)
@@ -753,8 +848,8 @@ def _result_reply(session, question: str = "", client=None,
 
 
 def _more_facts(c: Dict[str, Any], question: str) -> List[str]:
-    """Plain-word facts the harness reads off the fitted objects for a follow-up question (V4,
-    2026-10-05): which approach did worst, how the approaches did on the analyst's test file, what the
+    """Plain-word facts the harness reads off the fitted objects for a follow-up question
+    (V4): which approach did worst, how the approaches did on the analyst's test file, what the
     report's tables hold, and, for a variable the question names, where the kept coefficient lies
     relative to the external model's and to your data's. No digit; the model decides what answers
     the question."""
@@ -980,15 +1075,15 @@ def _execute_steps(steps, session, history, msg, replies, client, prof, write_pr
             # trace and repro panels of the run that had just completed
             last = (history, "", session) + tuple(last[3:])
         elif act in ("run", "edit_and_run"):
-            # A run step on a FRESH session takes its roles from the message
+            # 🔴 A run step on a FRESH session takes its roles from the message
             # itself (boundary 1), exactly as a `declare_roles` turn would.
-            # Until 2026-09-12 this branch answered "there is no declaration
-            # yet; tell me which columns..." -- a dead end when the message
-            # named every role: under Qwen3 the case-1 request ("follow-up
-            # time is in followup_days, died is 1 if ...; a registry
-            # published coefficients ...") was typed multi_step and planned
-            # as select_external -> edit_and_run, and the agent stopped
-            # without a fit (job 61023996). The roles the analyst wrote are
+            # Answering "there is no declaration yet; tell me which
+            # columns..." here is a dead end when the message named every
+            # role: under Qwen3 a request such as "follow-up time is in
+            # followup_days, died is 1 if ...; a registry published
+            # coefficients ..." can be typed multi_step and planned as
+            # select_external -> edit_and_run, and the agent would stop
+            # without a fit. The roles the analyst wrote are
             # read; what is missing goes to `complete`, which asks.
             fresh = session.declaration is None and not session.pending
             given = (_answers_of(session.declaration) if session.declaration is not None
@@ -998,9 +1093,10 @@ def _execute_steps(steps, session, history, msg, replies, client, prof, write_pr
             if act == "edit_and_run" or fresh:
                 _step("Finding the columns you named")
                 ext = boundary.extract_roles(client, model, msg, prof,
-                                                 *boundary.examples_for(msg, prof))
+                                                 *boundary.examples_for(msg, prof),
+                                                 current=_current_roles(session.declaration, session.pending))
                 session = _take_calls(session)
-                backed, unbacked, how = _backed_roles(msg, prof, ext)
+                backed, unbacked, how = _backed_roles(msg, prof, ext, _settled_covs(session.declaration, session.pending))
                 for key, val in backed.items():
                     given[key], sources[key] = val, how[key]
                 if unbacked:
@@ -1030,8 +1126,8 @@ def _execute_steps(steps, session, history, msg, replies, client, prof, write_pr
 
 def _unbacked_note(unbacked: Dict[str, Any], prof: Dict[str, Any]) -> Optional[str]:
     """One line telling the analyst which of the file's columns the reading
-    named that they did not write, and that were therefore left out (hard set
-    H046, 2026-09-15: the analyst wrote `hla_mismatch_count`, the model read
+    named that they did not write, and that were therefore left out (e.g.
+    the analyst wrote `hla_mismatch_count`, the model read
     the file's `hla_mismatch`, the check removed it and the fit ran on four of
     the five covariates with nothing said). A name that is not a column of the
     file is not reported: it was never a candidate."""
@@ -1092,7 +1188,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
     try:
         answers = _answers_from_reply(msg) or _drop_missing_reply(msg, session, given)
         if answers:
-            # a numbered reply never reaches the model
+            # 🔴 a numbered reply never reaches the model
             if not given and session.declaration is not None:
                 # after a run (nothing pending): the current declaration is
                 # the base and only the numbered items change -- how an
@@ -1103,11 +1199,11 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
             old_event = given.get("event")
             for k, v in answers.items():
                 given[k], sources[k] = v, "reply"
-            # A reply that changes the event column, and says nothing about
+            # 🔴 A reply that changes the event column, and says nothing about
             # the value, leaves a value that was stated for ANOTHER column:
             # "the event column is died (1 = death)" on a file whose event
-            # column is `alive`, corrected by "2) alive", ran with alive = 1
-            # (rubric task H045, 2026-10-02). A value the 0/1 rule filled is
+            # column is `alive`, corrected by "2) alive", would run with
+            # alive = 1. A value the 0/1 rule filled is
             # filled again for the new column; any other is asked (item 3).
             if ("event" in answers and "event_value" not in answers and old_event
                     and not _same_column(prof, "event", answers["event"], old_event)
@@ -1143,11 +1239,11 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                 msg, raw, result_present=session.result is not None))
             used_model = True
             session = _take_calls(session)
-            # A message that writes the file's own column names declares
-            # roles, whatever M1 typed. Qwen2.5 on the ablation fixtures
-            # (2026-09-13, F07_6, F09_5) typed a request that named the set,
-            # the case indicator and five covariates as `describe_external`
-            # alone, and the turn ended with the external card and no fit. The
+            # 🔴 A message that writes the file's own column names declares
+            # roles, whatever M1 typed. Qwen2.5 has typed a request that named
+            # the set, the case indicator and five covariates as
+            # `describe_external` alone, and the turn ended with the external
+            # card and no fit. The
             # rule adds the intent by a deterministic test (textmatch, the
             # corpus's own rule); what the model reads is still checked by
             # the backing check and by verify, so nothing is guessed here.
@@ -1157,8 +1253,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                 # on time and status") is refused, not analysed: the names are
                 # counted OUTSIDE the refused span. An aside at the end of an
                 # ordinary request ("also, could you draw a Kaplan-Meier
-                # curve": hard set H071/H081, Qwen2.5 typed the aside alone and
-                # the whole message was refused, 2026-09-15) leaves the roles
+                # curve": Qwen2.5 has typed the aside alone and the whole
+                # message was refused) leaves the roles
                 # the message writes elsewhere, so the analysis runs and the
                 # aside is declined in the same reply.
                 rest = msg
@@ -1200,12 +1296,12 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     if session.declaration is not None:
                         # the current declaration is the base; only the roles
                         # the message names change, and what an unfinished
-                        # question already collected stays on top. 2026-10-01:
-                        # this used to hold only for a message typed
-                        # edit_declaration -- "Adjust for age, bmi, egfr,
-                        # cold_ischemia and hla_mismatch only" sent after a
-                        # run was typed declare_roles, started from nothing and
-                        # asked for the event column again (rubric task H070)
+                        # question already collected stays on top. This holds
+                        # for any typing, not only edit_declaration -- "Adjust
+                        # for age, bmi, egfr, cold_ischemia and hla_mismatch
+                        # only" sent after a run can be typed declare_roles,
+                        # and starting from nothing would ask for the event
+                        # column again
                         base = _answers_of(session.declaration)
                         base.update(given)
                         given = base
@@ -1216,15 +1312,16 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     # is a gap for `complete`, never a guess
                     _step("Finding the columns you named")
                     ext = boundary.extract_roles(client, model, msg, prof,
-                                                 *boundary.examples_for(msg, prof))
+                                                 *boundary.examples_for(msg, prof),
+                                                 current=_current_roles(session.declaration, session.pending))
                     session = _take_calls(session)
-                    # the invariant, enforced here and nowhere else: a name
+                    # 🔴 the invariant, enforced here and nowhere else: a name
                     # is `quoted` only if the analyst WROTE it (textmatch, the
                     # corpus's own rule). A name the message does not contain
                     # is dropped -- the role then goes to `complete`, which
                     # fills it by a disclosed rule or asks -- and the drop is
                     # logged, so a guess becomes a question, never a fit.
-                    backed, unbacked, how = _backed_roles(msg, prof, ext)
+                    backed, unbacked, how = _backed_roles(msg, prof, ext, _settled_covs(session.declaration, session.pending))
                     for key, val in backed.items():
                         given[key], sources[key] = val, how[key]
                     if str(how.get("event_value") or "").startswith("ask:"):
@@ -1240,7 +1337,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                         session = _log_action(session, route="unbacked_names",
                                               dropped=unbacked)
                         note = _unbacked_note(unbacked, prof)
-                        if note and given.get("covariates") not in (None, "", "A", "B"):
+                        if (note and not re.match(r"^\s*[AB](\s|$)", str(given.get("covariates") or ""))
+                                and not str(how.get("covariates") or "").startswith("inferred")):
                             replies.append(note)
                 elif act in (actions.Act.SHOW_EXTERNAL,
                              actions.Act.NAME_PUBLISHED_MODEL):
@@ -1248,7 +1346,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                         session, by_kind["describe_external"], client, model, msg))
                     session = _take_calls(session)
                 elif act is actions.Act.ANSWER_METHOD:
-                    # component 8: the matching method notes; 2026-10-06: the model answers in its
+                    # component 8: the matching method notes; the model answers in its
                     # own words with the notes as its source, the notes verbatim when it cannot
                     found = knowledge.retrieve(msg)
                     shown = [n.id for n in found]
@@ -1264,7 +1362,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     oos = by_kind["out_of_scope"]
                     said = None
                     if oos.out_of_scope_reason in (None, "other"):
-                        # 2026-10-06: something that is not an analysis this system declines (a general
+                        # something that is not an analysis this system declines (a general
                         # question) is answered by the model; the named refusals stay as they are
                         said, session = _chat_answer(client, model, msg, session, prof, history)
                     replies.append(said or intent.refusal(oos))
@@ -1273,8 +1371,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     name = getattr(it, "external_name", None)
                     if not name and len(session.externals) == 1:
                         # "use it if it helps" with one file loaded names that file
-                        # (ablation F09_5, 2026-09-13: the turn asked "which of the
-                        # loaded files" with a list of one and never ran)
+                        # (otherwise the turn asks "which of the loaded files"
+                        # with a list of one and never runs)
                         name = next(iter(session.externals))
                     if name and name in session.externals:
                         session = session.select_external(name)
@@ -1282,9 +1380,9 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                                        f"for the next analysis.")
                         if session.declaration is not None:
                             # what this turn or an unfinished question already
-                            # holds stays on top of the declaration (H070: the
-                            # covariate edit of the message before was wiped
-                            # here and the run went back to all ten columns)
+                            # holds stays on top of the declaration (otherwise
+                            # the covariate edit of the message before is wiped
+                            # here and the run goes back to all the columns)
                             base = _answers_of(session.declaration)
                             base.update(given)
                             given = base
@@ -1300,12 +1398,12 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                         # nothing is loaded because the file was refused, and the
                         # same message declares the analysis: it runs on the cohort
                         # alone, and the reply says so and why, in place of the
-                        # borrowing it asked for. Waiting here (the 2026-09-13
-                        # ruling, MIUM P005) made the outcome depend on whether
-                        # the model typed the sentence as a selection: synth200
-                        # F24, a risk-score file, ran on the cohort alone under
-                        # Qwen3-8B and waited under Qwen2.5-7B. The
-                        # refusal is on record from the load and is restated.
+                        # borrowing it asked for. Waiting here would make the
+                        # outcome depend on whether the model typed the sentence
+                        # as a selection: the same risk-score file could run on
+                        # the cohort alone under one model and wait under
+                        # another. The refusal is on record from the load and
+                        # is restated.
                         why = "; ".join(str(r.get("message") or r.get("code"))
                                         for r in session.external_refusal[:3])
                         replies.append(f"**{name or 'The external file'} could not be used** "
@@ -1337,8 +1435,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                         # a plan that only selects a file, for a message that
                         # declares the roles and asks for the analysis: the run
                         # the message itself requests follows the selection
-                        # (Qwen2.5 planned "select_external" alone on MIUM P068,
-                        # 2026-09-13, and the turn ended with nothing fitted)
+                        # (Qwen2.5 has planned "select_external" alone, and the
+                        # turn ended with nothing fitted)
                         steps.append({"act": "run", "external": None,
                                       "evidence": str(decl_it.evidence or "")[:200],
                                       "added_by": "harness: the message declares roles"})
@@ -1347,8 +1445,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                                           accepted=steps,
                                           reasoning=str(raw_steps.get("reasoning") or "")[:600])
                     if not steps:
-                        # no usable plan (the thinking arm spent its budget and returned
-                        # nothing on MIUM S02/S03, 2026-09-13; a cut plan is the other way
+                        # no usable plan (a thinking model can spend its budget and
+                        # return nothing; a cut plan is the other way
                         # here). If the message ALSO names roles or a release, it is
                         # handled as one analysis by the ordinary acts rather than
                         # dead-ending; only a message that offers nothing else asks back.
@@ -1375,7 +1473,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                             "ask about. "
                             if any(i.demoted_from == "ask_about_result" for i in intents)
                             else "I could not tell what you wanted from that. ")
-                    # 2026-10-06: a message that is not an analysis request is answered by the
+                    # a message that is not an analysis request is answered by the
                     # model in its own words; the numbered form follows only while an analysis
                     # is being declared
                     said, session = _chat_answer(client, model, msg, session, prof, history)
@@ -1431,6 +1529,10 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
             if actions.Act.COMPLETE not in acts:
                 if wants_compare:
                     replies.append(_compare_reply(session))
+                if not wants_splits and not wants_km:
+                    still = _still_open(session, prof, "\n\n".join(replies))
+                    if still:
+                        replies.append(still)
                 if wants_splits:
                     # of the analysis already run (no run on this turn); the reply goes
                     # under the message itself unless other replies already did
@@ -1463,9 +1565,9 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
         history.append([msg, f"**I could not use that.**\n\n{exc}"])
         return (history, "", session) + _EMPTY
     except Exception as exc:
-        # The model failed to read the message (a thinking model that spent
-        # its whole allowance and returned no JSON: Qwen3-thinking on three
-        # ghost-column prompts of the MIUM run). The numbered form never needs
+        # 🔴 The model failed to read the message (a thinking model that spent
+        # its whole allowance and returned no JSON, as Qwen3-thinking can on
+        # ghost-column prompts). The numbered form never needs
         # the model, so the turn ends with it rather than with a dead end.
         session = _log_action(session, route="model_failure",
                               error=f"{type(exc).__name__}: {str(exc)[:300]}")
@@ -1566,11 +1668,11 @@ def _settle_and_run(session, history, msg, given, sources, replies, used_model,
             ext.individual_data = d
             session = _log_action(session, route="external_outcome_from_declaration",
                                   time=d.get("time_column"), event=d.get("event_column"))
-        # The declaration decides the design, whichever arrived first. A
+        # 🔴 The declaration decides the design, whichever arrived first. A
         # release read BEFORE the declaration is read without knowing it, and
         # on another matched sample the model can name a covariate as the
-        # follow-up time ('age' on synth200 F21, 8 of 8 with Qwen3-8B,
-        # 2026-09-15) -- the same table read after a matched declaration is
+        # follow-up time (Qwen3-8B has named 'age') -- the same table read
+        # after a matched declaration is
         # read with no time (`canonicalise(matched_design=True)`). So under a
         # matched declaration the model's time column is set aside here by
         # the same rule, the card records it, and what is checked is what
@@ -1608,13 +1710,13 @@ def _settle_and_run(session, history, msg, given, sources, replies, used_model,
         decl.external_data_path = d["path"]
         decl.external_data_expr = _data_expr_for(d["path"])
 
-    # : the analyst's test file, if one was uploaded, is part of the
+    # the analyst's test file, if one was uploaded, is part of the
     # declaration (hashed by content, gated for the same columns, replayed)
     if session.test_data_path:
         decl.test_data_path = session.test_data_path
         decl.test_data_expr = session.test_data_expr
 
-    # : the external baseline hazard, if one was read, reaches the gate
+    # the external baseline hazard, if one was read, reaches the gate
     # only to be checked against a declared horizon; it raises no question
     _step("Checking your data")
     v = verify(prof, decl, session.data_path, session.data_expr,
@@ -1639,8 +1741,8 @@ def _settle_and_run(session, history, msg, given, sources, replies, used_model,
         body += ("\n\n**Nothing was fitted.** Change the declaration above -- "
                  "reply by number -- and I will try again.")
         # which numbered item the first refusal is about, so the analyst (or the
-        # benchmark's simulated one) knows what to correct (ablation F07, 2026-09-13:
-        # Qwen3 quoted the outcome columns as the predictors, the gate refused, and
+        # benchmark's simulated one) knows what to correct (e.g. Qwen3 quoted the
+        # outcome columns as the predictors, the gate refused, and without this
         # the turn named no item)
         item = next((_ITEM_OF_REFUSAL.get(_refusal_family(r.get("code", "")))
                      for r in v.refusals if _ITEM_OF_REFUSAL.get(_refusal_family(r.get("code", "")))), None)
@@ -1678,7 +1780,7 @@ def _candidate_table(res: Dict[str, Any]) -> pd.DataFrame:
         })
         h = c.get("holdout")
         if h:
-            # : reported beside the CV loss, never selected on
+            # reported beside the CV loss, never selected on
             for k, lab in (("cindex", "test C-index"), ("loss", "test loss"),
                            ("ibs", "test IBS"), ("tdauc", "test tdAUC")):
                 v = h.get(k)
@@ -1711,6 +1813,19 @@ def run_analysis(session, write_prose, endpoint, model, api_key, history):
     v = session.verification
     if not v.admissible:
         history.append([None, "The declaration was refused; nothing was run."])
+        return (history, "", session) + _EMPTY
+    # sessions: a reopened analysis whose file is gone. The guard is here rather than
+    # in the chat flow because this is the only door into a fit, and because
+    # the alternative is an R error about a path, which is not something an
+    # analyst can act on. Everything else about the session still works: the
+    # past result is there and can still be asked about.
+    if session.data_path and not Path(session.data_path).exists():
+        history.append([None,
+            "**The data file this analysis used is no longer on this machine**, "
+            f"so nothing further can be fitted from it. It was "
+            f"`{Path(session.data_path).name}`. Drop it into the message box "
+            "again and I will take it from there; what you already told me "
+            "about its columns is still here."])
         return (history, "", session) + _EMPTY
 
     # component 9: the harness audits its own invariants before the core runs
@@ -1745,7 +1860,7 @@ def run_analysis(session, write_prose, endpoint, model, api_key, history):
         except Exception as exc:
             card = {"status": "error", "message": f"{type(exc).__name__}: {exc}"}
         if card.get("status") == "ok":
-            opts = analyst.options_for(session.declaration, ext_kw)
+            opts = analyst.options_for(session.declaration, ext_kw, data_path=session.data_path)
             words = "\n\n".join(a["message"] for a in session.actions
                                  if isinstance(a, dict) and a.get("message"))
 
@@ -1833,6 +1948,8 @@ def run_analysis(session, write_prose, endpoint, model, api_key, history):
             plan=plan_final,
             reuse=(loop.reuse if loop is not None else None),
             plan_steps=(loop.steps if loop is not None else None),
+            # a file supplied and refused is not "no external information"
+            external_refusal=(session.external_refusal if session.external is None else None),
             **ext_kw)
     except pipeline.PipelineRefusal as exc:
         why = "\n".join(f"- {r['message']}" for r in exc.refusals)
@@ -1848,11 +1965,26 @@ def run_analysis(session, write_prose, endpoint, model, api_key, history):
             "```\n</details>"])
         return (history, "", session) + _EMPTY
 
-    outdir = Path(tempfile.mkdtemp(prefix="bregsurv_"))
-    paths = res.save(str(outdir))
+    # 🔴 sessions: THE ARTIFACTS ARE WHAT MAKES A PAST ANALYSIS SURVIVE. Written to a
+    # temp directory they are gone the moment the session is collected, so
+    # "reopen it next week" would show a report that no longer exists. When
+    # sessions are kept they go into runs/<run_id>/ instead, and are NOT
+    # recorded in `temp`, because `temp` is the purge list. A store failure
+    # falls back to the temp directory: a persistence problem must never cost
+    # the analyst their result.
+    saved = STORE.save_run(session.sid, res)
+    if saved:
+        outdir, paths = Path(saved["dir"]), saved["paths"]
+    else:
+        outdir = Path(tempfile.mkdtemp(prefix="bregsurv_"))
+        paths = res.save(str(outdir))
     c = res.candidates
     history.append([None, res.report])
-    session = session.with_result(res, str(outdir))
+    session = session.with_result(res, None if saved else str(outdir))
+    if saved:
+        session = replace(session, temp=list(session.temp) + [str(outdir)])
+        # kept so _report_pdf and the result panels can find the artifacts; the
+        # purge skips anything under the store root (see _purge)
     # component 4: the verified declaration is remembered for this exact file
     # (never the shipped example, never on a shared host, never time zero)
     if session.data_sha256 and session.data_path != str(DEMO_COHORT):
@@ -1904,7 +2036,25 @@ _FORCE_LIGHT_JS = """
 """
 _CSS = """
 footer { display: none !important; }
-.gradio-container { max-width: 860px !important; margin: auto; }
+.gradio-container { max-width: 1150px !important; margin: auto; }
+#main { max-width: 860px; margin: auto; }
+#side { border-right: 1px solid #e3e8ee; padding-right: 10px; }
+#sidelabel { color: #8a96a3; font-size: 11px; letter-spacing: 0.06em;
+             text-transform: uppercase; margin: 14px 0 6px 4px; }
+#sidefoot { color: #9aa6b3; font-size: 11px; line-height: 1.45; margin-top: 14px; padding: 0 4px; }
+#sidefoot code { font-size: 10px; }
+#sidenew { border-radius: 14px; }
+.cardrow { gap: 2px !important; margin-bottom: 2px; }
+.sidecard button, .sidecard { text-align: left !important; font-size: 12px !important;
+                              font-weight: 400 !important; border: none !important;
+                              background: transparent !important; color: #3c4b5c !important;
+                              box-shadow: none !important; padding: 6px 8px !important;
+                              white-space: normal !important; line-height: 1.35 !important; }
+.sidecard:hover, .sidecard button:hover { background: #eef3f8 !important; border-radius: 8px; }
+.sidedel { max-width: 56px; min-width: 26px; font-size: 11px !important;
+           border: none !important; background: transparent !important;
+           color: #b0bac6 !important; box-shadow: none !important; padding: 6px 2px !important; }
+.sidedel:hover { color: #c0392b !important; }
 #topbar { display: flex; justify-content: space-between; align-items: center; }
 #brand { font-weight: 600; color: #2b3a4a; font-size: 15px; }
 #greeting { text-align: center; margin-top: 22vh; margin-bottom: 18px; }
@@ -2259,7 +2409,7 @@ def chat_turn(mm, history, session, ui):
             return history, None, session, ui
     if _TZ_STATED.search(text):
         ui["tz_ok"] = True
-    # 2026-10-06: every message is read first (a greeting or a question is answered as such); the
+    # every message is read first (a greeting or a question is answered as such); the
     # time-zero question is put only when it is the one thing left before a run (below)
 
     answered_yes = bool(history and history[-1][1] is None)
@@ -2267,6 +2417,9 @@ def chat_turn(mm, history, session, ui):
         history.pop()
     n0 = len(history)
     n_act0 = len(before.actions) if before is not None else 0
+    # sessions: before the turn, so a run in this same turn writes its artifacts into
+    # this session's own directory rather than a temp one
+    session = _adopt(session)
     out = submit_answer(text, history, session, ep, mdl, key, True, bool(ui.get("tz_ok")))
     history, session = list(out[0]), out[2]
     asked = next((a.get("asked") for a in reversed(list(session.actions)[n_act0:])
@@ -2308,6 +2461,63 @@ def chat_reset(session=None):
     _purge(session)
     h, s, *_ = start_session()
     return h, None, s, {}
+
+
+# --------------------------------------------------------------------------
+# sessions — past analyses: adopted on the first message, recorded after every turn
+# --------------------------------------------------------------------------
+def _adopt(session):
+    """Give this analysis a place on disk, the first time the analyst says
+    something in it.
+
+    🔴 ON THE FIRST MESSAGE, NOT WHEN THE PAGE OPENS. The page opens on the
+    shipped example, so adopting at load would put an empty "kidney_cohort"
+    row in the list every time anyone visited. A session the person has
+    actually spoken in is the one worth keeping, example or not.
+    """
+    if (not STORE.enabled or session is None or session.profile is None
+            or session.sid is not None):
+        return session
+    _, session = STORE.adopt(session)
+    # BREGSURV_SESSIONS_KEEP, if the person set it. Unset means keep all, so
+    # this is a no-op by default rather than a quiet retention policy.
+    STORE.prune()
+    return session
+
+
+def _persist(session, history) -> None:
+    """Record the turn: the actions it added, the typed snapshot, and the chat
+    as the person now sees it. Never raises -- a persistence failure must not
+    cost anyone their analysis, so this returns nothing and reports nothing."""
+    sid = getattr(session, "sid", None)
+    if not STORE.enabled or session is None or not sid:
+        return
+    try:
+        STORE.sync_events(sid, session.actions)
+        STORE.save(sid, session)
+        # the conversation is REWRITTEN, not appended to: a turn that produced
+        # a result replaces its own technical cards with one plain summary, so
+        # appending would keep lines the person no longer sees
+        STORE.save_messages(sid, history)
+    except Exception:
+        pass
+
+
+def _restore_history(messages) -> List[Any]:
+    """messages.jsonl back into the chat. A file was stored as its path; it
+    returns as an attachment only while the file is still there."""
+    out = []
+    for row in messages or []:
+        pair = []
+        for x in (row[0] if len(row) > 0 else None, row[1] if len(row) > 1 else None):
+            if isinstance(x, dict) and x.get("file"):
+                pair.append((x["file"],) if Path(x["file"]).exists() else None)
+            else:
+                pair.append(x)
+        if pair[0] is None and pair[1] is None:
+            continue
+        out.append([pair[0], pair[1]])
+    return out
 
 
 GREETING = "📊 What external data should your cohort learn from today?"
@@ -2369,6 +2579,9 @@ def chat_turn_ui(mm, history, session, ui):
                gr.update(visible=False), gr.update(visible=False))
         return
     h, b, s2, u = r
+    # sessions: one place, after the turn is final -- the chat, the typed snapshot and
+    # the actions the turn added all go down together or not at all
+    _persist(s2, h)
     yield (gr.update(value=h, visible=True), b, s2, u,
            gr.update(visible=False), gr.update(visible=False))
 
@@ -2383,36 +2596,161 @@ def reset_ui(session=None):
             gr.update(visible=True), gr.update(visible=True))
 
 
+# --------------------------------------------------------------------------
+# sessions — the sidebar: past analyses, newest first, reopened by one click
+# --------------------------------------------------------------------------
+MAX_CARDS = 12          # the list is paged by nothing; twelve fills the column
+
+
+def _card_label(c) -> str:
+    sub = c.line()
+    lab = f"{c.title}  —  {sub}" if sub else c.title
+    return (lab[:64] + "\u2026") if len(lab) > 65 else lab
+
+
+def _sidebar(pending: Optional[str] = None):
+    """Updates for the row buttons and their delete buttons. `pending` is the
+    one analysis whose delete has been clicked once: its button reads
+    "Delete?" until it is clicked again, which is the confirmation."""
+    cards = STORE.list(limit=MAX_CARDS) if STORE.enabled else []
+    rows, dels = [], []
+    for i in range(MAX_CARDS):
+        if i < len(cards):
+            rows.append(gr.update(value=_card_label(cards[i]), visible=True))
+            dels.append(gr.update(value=("Delete?" if cards[i].sid == pending else "\u2715"),
+                                  visible=True))
+        else:
+            rows.append(gr.update(value="", visible=False))
+            dels.append(gr.update(value="\u2715", visible=False))
+    return rows + dels
+
+
+def _sidebar_reset():
+    """A refresh that also DISARMS. 🔴 `_sidebar()` alone repaints the labels
+    back to the cross but leaves `arm_state` holding the armed sid, so after
+    arming a delete and then doing anything else -- sending a message, pressing
+    New analysis -- the row reads as unarmed and the NEXT single click would
+    delete it. The confirmation is the whole point of the control, so the
+    label and the state are reset in one place and never separately."""
+    return tuple(_sidebar()) + (None,)
+
+
+def _sid_at(i: int) -> Optional[str]:
+    cards = STORE.list(limit=MAX_CARDS) if STORE.enabled else []
+    return cards[i].sid if i < len(cards) else None
+
+
+def open_session(i: int):
+    """Reopen a past analysis: the conversation from messages.jsonl, the state
+    from session.json, the runs from their own directories.
+
+    🔴 NO MODEL IS CALLED HERE, AND NOTHING IS REPLAYED OR SUMMARISED. The
+    next act's input is recomputed from the restored state and is identical to
+    what it would have been had the session never closed -- that is what being
+    stateless buys, and it is the whole reason this is twenty lines rather
+    than a context-compression scheme.
+    """
+    sid = _sid_at(i)
+    if sid is None:
+        return (gr.skip(),) * 6 + tuple(_sidebar()) + (None,)
+    L = STORE.load(sid)
+    if L.session is None:
+        note = " ".join(L.problems) or "this analysis could not be reopened"
+        return (gr.update(value=[[None, f"**{note}**"]], visible=True),
+                None, gr.skip(), {}, gr.update(visible=False),
+                gr.update(visible=False)) + tuple(_sidebar()) + (None,)
+    history = _restore_history(L.messages)
+    # what re-verification found, said plainly and before anything else is done
+    for msg in L.problems:
+        history.append([None, msg[0].upper() + msg[1:] + "."])
+    if not history:
+        history = [[None, "This analysis is open again. Nothing was said in it."]]
+    ui = {"tz_ok": bool(getattr(L.session.declaration, "covariates_time_zero", None))}
+    return (gr.update(value=history, visible=True), None, L.session, ui,
+            gr.update(visible=False), gr.update(visible=False)) + tuple(_sidebar()) + (None,)
+
+
+def delete_session(i: int, pending):
+    """Two clicks: the first arms the row, the second removes it. 🔴 Only ever
+    on request -- an analysis is never deleted to save disk (decision 2)."""
+    sid = _sid_at(i)
+    if sid is None:
+        return tuple(_sidebar()) + (None,)
+    if pending != sid:
+        return tuple(_sidebar(pending=sid)) + (sid,)
+    STORE.delete(sid)
+    return tuple(_sidebar()) + (None,)
+
+
 with gr.Blocks(title="BregSurv", theme=_THEME, css=_CSS,
                js="() => { (" + _FORCE_LIGHT_JS + ")(); }") as demo:
-    with gr.Row(elem_id="topbar"):
-        gr.HTML("<div id='brand'>BregSurv</div>")
-        new_btn = gr.Button("New analysis", size="sm", elem_id="newbtn", variant="secondary")
     session_state = gr.State(None, delete_callback=_purge)
     ui_state = gr.State({})
-    greeting = gr.HTML(f"<h1>{GREETING}</h1>", elem_id="greeting")
-    chatbot = gr.Chatbot(height=620, show_label=False, elem_id="chat", type="tuples",
-                         show_copy_button=False, visible=False)
-    msg_in = gr.MultimodalTextbox(
-        placeholder="Ask anything, or attach your data",
-        file_count="multiple", show_label=False, elem_id="msg_in", sources=["upload"])
-    with gr.Row(elem_id="example_row") as example_row:
-        example_btn = gr.Button("Try the example data", size="sm", elem_id="example_btn",
-                                variant="secondary")
-    gr.HTML("<div id='foot'>"
-            + ("Public demo with synthetic data. For real patient data, run it on your own computer."
-               if DEPLOYMENT_MODE == "demo" else "Running on this computer; your data stays here.")
-            + "</div>")
+    # sessions: which row's delete has been armed; the second click confirms
+    arm_state = gr.State(None)
+    card_btns, del_btns = [], []
+    with gr.Row(elem_id="shell"):
+        # ---- the left column: past analyses. ABSENT, not greyed, where none
+        # are kept (a demo host promises nothing is kept, and a disabled
+        # control that implies otherwise is worse than no control).
+        with gr.Column(scale=0, min_width=250, elem_id="side",
+                       visible=STORE.enabled):
+            side_new = gr.Button("+  New analysis", size="sm",
+                                 elem_id="sidenew", variant="secondary")
+            gr.HTML("<div id='sidelabel'>Past analyses</div>")
+            for _i in range(MAX_CARDS):
+                with gr.Row(elem_classes=["cardrow"]):
+                    card_btns.append(gr.Button("", size="sm", visible=False,
+                                               elem_classes=["sidecard"],
+                                               variant="secondary"))
+                    del_btns.append(gr.Button("\u2715", size="sm", visible=False,
+                                              elem_classes=["sidedel"],
+                                              variant="secondary"))
+            gr.HTML("<div id='sidefoot'>Kept on this computer, under "
+                    "<code>~/.bregsurv/sessions</code>. Nothing leaves it.</div>"
+                    if STORE.enabled else "")
+        # ---- the right column: the conversation, unchanged
+        with gr.Column(scale=1, elem_id="main"):
+            with gr.Row(elem_id="topbar"):
+                gr.HTML("<div id='brand'>BregSurv</div>")
+                new_btn = gr.Button("New analysis", size="sm", elem_id="newbtn",
+                                    variant="secondary")
+            greeting = gr.HTML(f"<h1>{GREETING}</h1>", elem_id="greeting")
+            chatbot = gr.Chatbot(height=620, show_label=False, elem_id="chat", type="tuples",
+                                 show_copy_button=False, visible=False)
+            msg_in = gr.MultimodalTextbox(
+                placeholder="Ask anything, or attach your data",
+                file_count="multiple", show_label=False, elem_id="msg_in", sources=["upload"])
+            with gr.Row(elem_id="example_row") as example_row:
+                example_btn = gr.Button("Try the example data", size="sm", elem_id="example_btn",
+                                        variant="secondary")
+            gr.HTML("<div id='foot'>"
+                    + ("Public demo with synthetic data. For real patient data, run it on your own computer."
+                       if DEPLOYMENT_MODE == "demo" else "Running on this computer; your data stays here.")
+                    + "</div>")
 
-    demo.load(lambda: start_session()[1], inputs=None, outputs=[session_state])
     pending_state = gr.State(None)
     _outs = [chatbot, msg_in, session_state, ui_state, greeting, example_row]
     _pend = [chatbot, msg_in, pending_state, greeting, example_row]
+    _side = card_btns + del_btns
+
+    _refresh = _side + [arm_state]
+    demo.load(lambda: start_session()[1], inputs=None, outputs=[session_state]).then(
+        _sidebar_reset, inputs=None, outputs=_refresh)
     msg_in.submit(show_pending, inputs=[msg_in, chatbot], outputs=_pend).then(
-        chat_turn_ui, inputs=[pending_state, chatbot, session_state, ui_state], outputs=_outs)
+        chat_turn_ui, inputs=[pending_state, chatbot, session_state, ui_state],
+        outputs=_outs).then(_sidebar_reset, inputs=None, outputs=_refresh)
     example_btn.click(example_pending, inputs=[chatbot], outputs=_pend).then(
-        chat_turn_ui, inputs=[pending_state, chatbot, session_state, ui_state], outputs=_outs)
-    new_btn.click(reset_ui, inputs=[session_state], outputs=_outs)
+        chat_turn_ui, inputs=[pending_state, chatbot, session_state, ui_state],
+        outputs=_outs).then(_sidebar_reset, inputs=None, outputs=_refresh)
+    for _b in (new_btn, side_new):
+        _b.click(reset_ui, inputs=[session_state], outputs=_outs).then(
+            _sidebar_reset, inputs=None, outputs=_refresh)
+    for _i in range(MAX_CARDS):
+        card_btns[_i].click(lambda i=_i: open_session(i), inputs=None,
+                            outputs=_outs + _side + [arm_state])
+        del_btns[_i].click(lambda pending, i=_i: delete_session(i, pending),
+                           inputs=[arm_state], outputs=_side + [arm_state])
 
 
 def _resolve_auth():

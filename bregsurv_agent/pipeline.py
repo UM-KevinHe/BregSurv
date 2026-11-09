@@ -37,12 +37,12 @@ from .declaration import Declaration, Verification, verify
 
 _HERE = Path(__file__).resolve().parent
 _MCP = _HERE.parent / "mcp"
-# : how long the discrete row may take. DiSKD's nested CV is the slow
-# member (ruling 2 accepts that); the R members finish in seconds.
+# how long the discrete row may take. DiSKD's nested CV is the slow
+# member (accepted by design); the R members finish in seconds.
 DISCRETE_TIMEOUT_S = 4 * 3600
-# the Cox row: ten members, five folds each, on the wider η grids of 2026-09-12 (MIUM, p = 48:
-# ~8 min for the covariance release, of which the penalised Mahalanobis members are most);
-# rbridge's default of 600 s was measured to be exceeded there. A bound, not a target.
+# the Cox row: ten members, five folds each, on the wider η grids (a covariance release with many
+# covariates takes minutes, most of it in the penalised Mahalanobis members);
+# rbridge's default of 600 s can be exceeded there. A bound, not a target.
 COX_TIMEOUT_S = int(os.environ.get("BREGSURV_COX_TIMEOUT_S", "1800"))
 
 
@@ -51,7 +51,7 @@ def _default_run_r():
     return _run_r
 
 
-# THE ONE PLACE THAT DECIDES WHAT A DECLARATION FIELD IS.
+# 🔴 THE ONE PLACE THAT DECIDES WHAT A DECLARATION FIELD IS.
 #
 # Three sites used to enumerate declaration fields by hand -- the approval hash,
 # the trace, and repro.R -- with no reflection over the dataclass and no check
@@ -120,7 +120,7 @@ class RunResult:
     external_beta_inline: Optional[Dict[str, float]] = None
     # M5: the precision matrix by value, rows in external_beta_inline's order
     external_Q_inline: Optional[List[List[float]]] = None
-    # : the external baseline hazard by value ({time, cumhaz}); read by
+    # the external baseline hazard by value ({time, cumhaz}); read by
     # the discrete-time row only, recorded on every run that had one
     external_baseline_inline: Optional[Dict[str, List[float]]] = None
     # V4: the planner's plan (canonical form, reasons included); None when the V3 set was fitted
@@ -134,7 +134,7 @@ class RunResult:
 
     def save(self, outdir: str) -> Dict[str, str]:
         """Write the four artifacts. Returns the paths written."""
-        # render_repro FAILS CLOSED, and it must do so before anything is on
+        # 🔴 render_repro FAILS CLOSED, and it must do so before anything is on
         # disk. Rendering it last meant report.md and trace.json were already
         # written when the guard fired, leaving an artifact set that looks
         # complete, has no repro.R, and returns no path map to say so. The four
@@ -151,7 +151,7 @@ class RunResult:
             "seconds": self.seconds,
             # Everything, provenance included -- the trace is the record of what
             # was declared, so a hand-written subset here is how a field goes
-            # missing from the audit trail. asdict cannot forget one.
+            # missing from the audit trail. asdict() cannot forget one.
             "declaration": asdict(self.declaration),
             "verification": {
                 "admissible": self.verification.admissible,
@@ -172,7 +172,7 @@ class RunResult:
         (d / "repro.R").write_text(repro_text, encoding="utf-8")
         paths["repro"] = str(d / "repro.R")
         if self.has_network_members:
-            # ruling 3: the network members are replayed by a Python
+            # by design: the network members are replayed by a Python
             # script beside repro.R, from the recorded seed, folds and settings
             (d / "repro_diskd.py").write_text(render_repro_diskd(self),
                                               encoding="utf-8")
@@ -187,6 +187,15 @@ class RunResult:
         km = self.draw_km(d)
         if km:
             paths["km_pdf"], paths["km_png"] = km["pdf"], km["png"]
+        # V4: what the recommended model gives a clinician -- hazard ratios, predicted
+        # survival, risk groups, reclassification against the external model, a risk calculator
+        # (clinical.py). Peripheral like the figure: derived from the fitted model, no model call,
+        # outside the hash and the replay, and a failure never fails the artifacts.
+        try:
+            from . import clinical
+            paths.update(clinical.attach(self, d, _default_run_r()))
+        except Exception:
+            pass
         return paths
 
     _KM_START, _KM_END = "<!-- km -->", "<!-- /km -->"
@@ -244,9 +253,9 @@ def _r_version(run_r=None) -> Dict[str, str]:
         with tempfile.TemporaryDirectory() as td:
             f = Path(td) / "ver.R"
             # The third field fingerprints the INSTALLED build (its lazy-load R code and its
-            # compiled library). 2026-09-30: a recompile that keeps the version number is
-            # invisible to the version string, and on 2026-09-21 the run cache served fits of
-            # the pre-fix cox_indi_enet for that reason.
+            # compiled library): a recompile that keeps the version number is
+            # invisible to the version string, and the run cache would otherwise serve fits
+            # from the stale build.
             f.write_text(
                 'p <- find.package("BregSurv"); '
                 'f <- c(file.path(p, "R", "BregSurv.rdb"), '
@@ -298,9 +307,50 @@ def _fingerprint(path: str) -> Dict[str, Any]:
     return {"name": p.name, "bytes": p.stat().st_size, "sha256": h.hexdigest()}
 
 
+UNPENALIZED = ("internal", "kl", "mahalanobis", "euclidean", "indi")
+
+
+def wide_design(data_path: str, declaration: Declaration) -> bool:
+    """At least as many covariates as subjects (matched sets under a matched design): the unpenalized
+    members are not identified there and leave the candidate set. Read off the data file
+    (csv / tsv); for another format the answer is False and run_candidates.R decides alone, so a
+    disagreement is caught by the key-drift check rather than fitted."""
+    p = len(declaration.covariates or [])
+    if not p or not data_path or not str(data_path).lower().endswith((".csv", ".tsv", ".txt")):
+        return False
+    import csv as _csv
+    try:
+        with open(data_path, newline="") as fh:
+            rd = _csv.reader(fh, delimiter="\t" if str(data_path).lower().endswith(".tsv") else ",")
+            head = next(rd)
+            if declaration.design.startswith("nested") and declaration.stratum_col in head:
+                j = head.index(declaration.stratum_col)
+                n = len({row[j] for row in rd if len(row) > j})
+            else:
+                n = sum(1 for _ in rd)
+    except (OSError, StopIteration):
+        return False
+    return p >= n
+
+
 def derive_candidate_keys(design: str, external_form: str,
                           discrete: bool = False,
-                          has_baseline: bool = False) -> List[str]:
+                          has_baseline: bool = False, wide: bool = False) -> List[str]:
+    keys = _derive_keys(design, external_form, discrete, has_baseline)
+    if wide and not discrete:
+        # p >= n: the unpenalized members are not identified, and for individual-level
+        # records the release fitted from them (and every member borrowing it) is not either -- the
+        # records cell keeps the composite-likelihood penalized members and the target-only ones
+        if "individual" in external_form.lower():
+            ncc = "nested" in design.lower() or "case-control" in design.lower()
+            return ["internal_lasso", "indi_lasso"] + (["internal_ridge"] if ncc else ["indi_ridge", "internal_ridge"])
+        keys = [k for k in keys if k not in UNPENALIZED]
+    return keys
+
+
+def _derive_keys(design: str, external_form: str,
+                 discrete: bool = False,
+                 has_baseline: bool = False) -> List[str]:
     """The members the facts admit, by name, without fitting anything.
 
     Pure enumeration, so it can run BEFORE the analyst is asked to confirm -- and
@@ -309,9 +359,9 @@ def derive_candidate_keys(design: str, external_form: str,
     disagreement means the two derivations have drifted apart and the run aborts
     rather than fitting a set nobody approved.
 
-    THE DISCRETE-TIME ROW is a third data fact, declared by the
+    🔴 THE DISCRETE-TIME ROW is a third data fact, declared by the
     analyst (item 7), never read off the release. It is an INDEPENDENT
-    candidate set (ruling 4): the two internal members always, and the
+    candidate set: the two internal members always, and the
     borrowing members -- DiscreteKL, DiSKD and the teacher scored unchanged
     -- only when the external model brings a baseline hazard, which is what
     a Cox model needs to say anything about interval hazards. A published
@@ -328,24 +378,25 @@ def derive_candidate_keys(design: str, external_form: str,
             keys = ["internal_discrete", "discretekl", "internal_nn", "diskd",
                     "external_discrete"]
         return keys
-    # external_form was accepted and never read. It is read now, because with
+    # 🔴 external_form was accepted and never read. It is read now, because with
     # nothing to borrow from, the KL, Mahalanobis and External-only members are
     # not merely pointless -- they are HARMFUL. Internal-only is manufactured as
     # `beta = zeros, eta = 0`, so with no external vector every borrowing member
     # degenerates to exactly the same internal fit: nine rows carrying one
     # number, an argmin breaking the tie arbitrarily, and a "borrowing" label
     # reported as the winner of a comparison that never happened.
-    # The individual-level row of the library is a DIFFERENT set, not the
-    # coefficient set plus one member: there is no cox_indi_ridge and no
-    # ncc_indi_ridge, so the penalty axis has two levels rather than three, and
-    # External-only means a model fitted on the external cohort rather than a
-    # published vector read off a paper.
+    # 🔴 The individual-level row of the library is a DIFFERENT set, not the
+    # coefficient set plus one member: External-only means a model fitted on the
+    # external cohort rather than a published vector read off a paper. Since
+    # BregSurv 1.4.0 the full cohort has cox_indi_ridge (all three penalty levels);
+    # the matched side has no ncc_indi_ridge, only the target-only ridge member.
     if "individual" in external_form.lower():
         keys = ["internal", "indi", "internal_lasso", "indi_lasso"]
+        keys += ["internal_ridge"] if ncc else ["indi_ridge"]
         if not ncc:
             # A full cohort's records also yield a fitted coefficient vector and its covariance,
             # so the whole coefficient-and-covariance set is admissible beside the composite
-            # likelihood (2026-10-05; run_candidates.R fits the records and adds the same keys).
+            # likelihood (run_candidates.R fits the records and adds the same keys).
             keys += ["kl", "mahalanobis", "euclidean", "internal_ridge", "kl_ridge",
                      "mahalanobis_ridge", "euclidean_ridge", "kl_lasso", "mahalanobis_lasso",
                      "euclidean_lasso"]
@@ -355,19 +406,18 @@ def derive_candidate_keys(design: str, external_form: str,
         return keys
 
     none_ext = external_form.strip().lower() in ("none", "", "no external information")
-    # A released covariance ADDS the Mahalanobis metric; the Euclidean members
+    # 🔴 A released covariance ADDS the Mahalanobis metric; the Euclidean members
     # (identity on the covered coordinates) stay in the set beside it. The two
-    # used to be alternatives, so the analyst who released more lost the member
-    # that is best on MIUM (Euclidean lasso 0.643, covariance-weighted 0.620).
+    # used to be alternatives, so the analyst who released more lost a member
+    # that can be the best one (the Euclidean lasso can beat the covariance-weighted one).
     # run_candidates.R derives the same keys; see has_Q there.
     has_cov = (not none_ext) and "covariance" in external_form.lower()
     keys = ["internal"]
     if not none_ext:
         keys += ["kl", "mahalanobis"] + (["euclidean"] if has_cov else [])
-    if not ncc:                       # ridge exists for the Cox family only
-        keys += ["internal_ridge"]
-        if not none_ext:
-            keys += ["kl_ridge", "mahalanobis_ridge"] + (["euclidean_ridge"] if has_cov else [])
+    keys += ["internal_ridge"]        # ridge for both designs since BregSurv 1.4.0
+    if not none_ext:
+        keys += ["kl_ridge", "mahalanobis_ridge"] + (["euclidean_ridge"] if has_cov else [])
     keys += ["internal_lasso"]
     if not none_ext:
         keys += (["kl_lasso", "mahalanobis_lasso"] + (["euclidean_lasso"] if has_cov else [])
@@ -398,7 +448,7 @@ def canonical_config(data_path: str, data_expr: str, decl: Declaration,
         # approval the analyst gives. See _DECL_PROVENANCE_ONLY.
         **_decl_config(decl),
         "external_expr": external_expr,
-        # the covariance matrix changes the penalty geometry and the report's
+        # 🔴 the covariance matrix changes the penalty geometry and the report's
         # "External information" row, and it used to be outside the hash
         # entirely -- so two analyses that differ in whether Q was supplied
         # hashed identically and one approval covered both.
@@ -407,13 +457,13 @@ def canonical_config(data_path: str, data_expr: str, decl: Declaration,
         # reference to wherever they happened to be read from
         "external_beta_inline": (dict(sorted(external_beta_inline.items()))
                                  if external_beta_inline else None),
-        # M5: the precision matrix by value as well. Until now only
+        # M5: the precision matrix by value as well. Previously only
         # `external_Q_expr` was hashed, so two analyses that differed in the
         # matrix itself -- or in whether one was supplied by value at all --
         # hashed identically.
         "external_Q_inline": ([[float(x) for x in r] for r in external_Q_inline]
                               if external_Q_inline else None),
-        # : the baseline hazard by value. It is what the discrete-time
+        # the baseline hazard by value. It is what the discrete-time
         # row borrows from, so two analyses that differ in it must not hash
         # alike; on the Cox row it is recorded and unused, and hashing it
         # there costs nothing but a longer string.
@@ -421,7 +471,7 @@ def canonical_config(data_path: str, data_expr: str, decl: Declaration,
             {"time": [float(x) for x in external_baseline_inline["time"]],
              "cumhaz": [float(x) for x in external_baseline_inline["cumhaz"]]}
             if external_baseline_inline else None),
-        # The external cohort by its CONTENTS, not by its filename. A path
+        # 🔴 The external cohort by its CONTENTS, not by its filename. A path
         # string in the hash means the analyst approves "the file at /x/y",
         # and swapping what lives there afterwards keeps the same hash -- while
         # the internal data has been fingerprinted since C3 existed. Half the
@@ -429,7 +479,7 @@ def canonical_config(data_path: str, data_expr: str, decl: Declaration,
         # approval entirely.
         "external_data": (_fingerprint(decl.external_data_path)
                           if decl.external_data_path else None),
-        # : the analyst's test file by its contents, for the same reason.
+        # the analyst's test file by its contents, for the same reason.
         # It never enters the selection, but the held-out table the report
         # prints is computed on it, so the run must be bound to those rows.
         "test_data": (_fingerprint(decl.test_data_path)
@@ -444,7 +494,7 @@ def canonical_config(data_path: str, data_expr: str, decl: Declaration,
         # are kept out: they explain the plan and change nothing that is fitted.
         "plan": _plan_for_hash(plan),
     }
-    # A Declaration field named like one of the literal keys above would be
+    # 🔴 A Declaration field named like one of the literal keys above would be
     # silently swallowed by the splat -- the field would vanish from the hash
     # while `_decl_config` reported it present, which is precisely the class of
     # silent escape this function was rewritten to end. Cheap to make loud.
@@ -493,7 +543,7 @@ def resolve_config(data_path: str, data_expr: str, declaration: Declaration,
     checked at dispatch are computed by the same code rather than by two
     copies that could drift.
     """
-    # Was `declaration.event_col is None`, on a field parse_reply can never
+    # 🔴 Was `declaration.event_col is None`, on a field parse_reply can never
     # leave empty -- so the condition was always false and `design` was the
     # constant "full cohort", making the entire nested case-control branch of
     # derive_candidate_keys unreachable. The design is now read off the same
@@ -506,9 +556,10 @@ def resolve_config(data_path: str, data_expr: str, declaration: Declaration,
                 else "coefficients alone")
     has_baseline = bool(external_baseline_inline
                         and external_baseline_inline.get("time"))
+    wide = wide_design(data_path, declaration)
     expected_keys = derive_candidate_keys(design, ext_form,
                                           discrete=declaration.discrete,
-                                          has_baseline=has_baseline)
+                                          has_baseline=has_baseline, wide=wide)
     if plan:
         expected_keys = [str(m["key"]) for m in plan.get("members") or []]
     cfg = canonical_config(data_path, data_expr, declaration, external_beta_expr,
@@ -520,7 +571,7 @@ def resolve_config(data_path: str, data_expr: str, declaration: Declaration,
                            plan=plan)
     return {"design": design, "external_form": ext_form,
             "outcome_scale": declaration.outcome_scale,
-            "has_baseline": has_baseline,
+            "has_baseline": has_baseline, "wide": wide,
             "candidate_keys": expected_keys, "config": cfg,
             "sha256": config_hash(cfg)}
 
@@ -536,12 +587,13 @@ def build_payload(data_path: str, data_expr: str, declaration: Declaration,
                   plan: Optional[Dict[str, Any]] = None,
                   reuse: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """The object run_candidates.R (and, in V4, diagnose_transfer.R) reads. Factored out of `run`
-    on 2026-10-02 unchanged, so the fit and the diagnostics read the same declaration the same way.
+    unchanged, so the fit and the diagnostics read the same declaration the same way.
     `baseline_always` sends a released baseline hazard even when the Cox row is declared: the
     diagnostics card reports it, the Cox row ignores it."""
     exprs = declaration.as_exprs(data_expr)
-    # event_value MUST travel with the expressions (2026-08-19; see run)
+    # 🔴 event_value MUST travel with the expressions (see run)
     payload = {"data_path": data_path, **exprs, "seed": seed, "nfolds": nfolds,
+               "wide": wide_design(data_path, declaration),
                "nlambda": nlambda, "event_value": declaration.event_value}
     if external_beta_expr:
         payload["beta_expr"] = external_beta_expr
@@ -554,7 +606,7 @@ def build_payload(data_path: str, data_expr: str, declaration: Declaration,
     # not an R expression, so it does not come through as_exprs
     if declaration.external_data_path:
         payload["external_data_path"] = declaration.external_data_path
-    # : the grid the analyst declared, and the baseline hazard the
+    # the grid the analyst declared, and the baseline hazard the
     # discrete row borrows from (the Cox row ignores both)
     if declaration.discrete:
         payload["discrete"] = declaration.discrete_spec()
@@ -563,7 +615,7 @@ def build_payload(data_path: str, data_expr: str, declaration: Declaration,
         payload["baseline_inline"] = {
             "time": [float(x) for x in external_baseline_inline["time"]],
             "cumhaz": [float(x) for x in external_baseline_inline["cumhaz"]]}
-    # : the analyst's own test file -- scored, never selected on
+    # the analyst's own test file -- scored, never selected on
     if declaration.has_test_data:
         payload["test_data"] = declaration.test_spec()
     # V4: the planner's plan, reasons stripped (run_candidates.R reads only what is fitted)
@@ -593,10 +645,10 @@ def diagnose(data_path: str, data_expr: str, declaration: Declaration,
 
 
 def _admissible_on_row(plan: Dict[str, Any], design: str, ext_form: str,
-                       baseline: Optional[Dict[str, List[float]]]) -> List[str]:
+                       baseline: Optional[Dict[str, List[float]]], wide: bool = False) -> List[str]:
     from . import plan as _P
     return _P.admissible_keys(str(plan.get("row") or "cox"), design, ext_form,
-                              bool(baseline and baseline.get("time")))
+                              bool(baseline and baseline.get("time")), wide=wide)
 
 
 def fit_plan(data_path: str, data_expr: str, declaration: Declaration, plan: Dict[str, Any],
@@ -608,7 +660,7 @@ def fit_plan(data_path: str, data_expr: str, declaration: Declaration, plan: Dic
     run_r = run_r or _default_run_r()
     payload = build_payload(data_path, data_expr, declaration, seed=seed, nfolds=nfolds,
                             nlambda=nlambda, plan=plan, reuse=reuse, **kw)
-    # the planner decides from cross-validation on the cohort alone: an intermediate fit never
+    # 🔴 the planner decides from cross-validation on the cohort alone: an intermediate fit never
     # reads the analyst's test file, so no held-out number exists for the planner to see. The final
     # `run` scores every member on it, reused ones included.
     payload.pop("test_data", None)
@@ -629,6 +681,53 @@ def fit_plan(data_path: str, data_expr: str, declaration: Declaration, plan: Dic
     return res
 
 
+def report_context(res: Dict[str, Any], profile: Optional[Dict[str, Any]],
+                   plan: Optional[Dict[str, Any]],
+                   external_provenance: Optional[Dict[str, Any]],
+                   external_refusal: Optional[List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Facts the report states that the fitted object does not carry.
+
+    The report and its prose writer read the fitted object, and four of its statements were
+    false because that object does not know: whether an external file was supplied and
+    refused (it read as "no external information was supplied"); whether a released matrix
+    was a precision rather than a covariance; whether a release term set aside is absent from
+    the file or merely not among the analyst's predictors (it read as "your data does not
+    contain"); and whether the recommended member zero-padded the terms the release lacks.
+    Categorical, no digit; never enters the hash or the fit."""
+    ctx: Dict[str, Any] = {}
+    if external_refusal:
+        ctx["release_refused"] = {
+            "file": next((r.get("file") for r in external_refusal if r.get("file")), None),
+            "reasons": [str(r.get("message")) for r in external_refusal if r.get("message")]}
+    ep = external_provenance or {}
+    if ep.get("matrix_role"):
+        ctx["matrix_role"] = ep["matrix_role"]
+    if ep.get("per_level"):
+        ctx["per_level"] = ep["per_level"]
+    # parts of the coefficient table that were read and not used --
+    # "coefficients alone" is only true when the report also says they were recorded
+    _ct = next((a for a in ep.get("assignment") or []
+                if a.get("role") == "coefficients"
+                and a.get("table") == ep.get("coefficient_table")), None) \
+        or next((a for a in ep.get("assignment") or [] if a.get("role") == "coefficients"), None)
+    if _ct:
+        extras = []
+        if _ct.get("ci_lower_column") and _ct.get("ci_upper_column"):
+            extras.append("confidence limits")
+        if _ct.get("se_column"):
+            extras.append("standard errors")
+        if extras:
+            ctx["release_extras"] = extras
+    file_cols = {c.get("name") for c in (profile or {}).get("columns", [])}
+    dropped = list((res.get("linkage") or {}).get("dropped") or [])
+    ctx["dropped_in_file"] = [d for d in dropped if d in file_cols]
+    ctx["dropped_absent"] = [d for d in dropped if d not in file_cols]
+    key = (res.get("selected") or {}).get("key")
+    m = next((m for m in (plan or {}).get("members") or [] if m.get("key") == key), None)
+    ctx["selected_pad_absent"] = bool(m and m.get("pad_absent"))
+    return ctx
+
+
 def run(data_path: str, data_expr: str, declaration: Declaration,
         external_beta_expr: Optional[str] = None,
         external_Q_expr: Optional[str] = None,
@@ -645,7 +744,8 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
         external_baseline_inline: Optional[Dict[str, List[float]]] = None,
         plan: Optional[Dict[str, Any]] = None,
         reuse: Optional[Dict[str, Any]] = None,
-        plan_steps: Optional[List[Dict[str, Any]]] = None
+        plan_steps: Optional[List[Dict[str, Any]]] = None,
+        external_refusal: Optional[List[Dict[str, Any]]] = None
         ) -> RunResult:
     """Execute one analysis end to end.
 
@@ -662,8 +762,8 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
     `model_provenance` is what the caller knows about the language model
     (`boundary.describe_model`) plus the boundary-1 call records it collected;
     boundary 2's own record is appended here. It lands in trace.json under
-    `provenance.model`. Until 2026-09-11 the provenance named the R version and
-    the package SHA and said nothing about the model that wrote the prose.
+    `provenance.model`. Without it the provenance would name the R version and
+    the package SHA and say nothing about the model that wrote the prose.
     """
     t0 = time.time()
     run_r = run_r or _default_run_r()
@@ -695,8 +795,8 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
     design, ext_form = rc["design"], rc["external_form"]
     expected_keys, cfg, sha = rc["candidate_keys"], rc["config"], rc["sha256"]
     if approved_config_sha256 is not None and approved_config_sha256 != sha:
-        # Fail closed. What executes must be what was verified and shown. Since
-        # 2026-09-11 no human stands between the card and the run; the caller
+        # Fail closed. What executes must be what was verified and shown. No
+        # human stands between the card and the run; the caller
         # hashes the configuration at verify time and this check proves the
         # session was not mutated in between.
         raise PipelineRefusal(
@@ -707,9 +807,9 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
 
     # ---- derive the candidate set, fit all of it, select --------------------
     exprs = declaration.as_exprs(data_expr)
-    # event_value MUST travel with the expressions. It is declared by the
+    # 🔴 event_value MUST travel with the expressions. It is declared by the
     # analyst, printed on the consequence card, counted by the gate, and hashed
-    # into the approval -- and until 2026-08-19 it was never sent here, while
+    # into the approval -- and an earlier version never sent it here, while
     # run_candidates.R hard-coded 1 as the event. Declaring event_value="0" on a
     # 0/1 column therefore fitted the complement of the declared outcome with no
     # refusal anywhere, which is exactly the complement trap the whole
@@ -723,10 +823,10 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
                             external_baseline_inline=external_baseline_inline,
                             seed=seed, nfolds=nfolds, nlambda=nlambda, plan=plan, reuse=reuse)
 
-    # ---- the result cache ------------------------------------
+    # ---- the result cache -------------------------------------------------
     # The fitted set is a deterministic function of the configuration C3 hashes
     # (data by content, every declared role, the external object by value, seed,
-    # folds, grids inside run_candidates.R) -- proven on MIUM to 5e-12 against a
+    # folds, grids inside run_candidates.R) -- checked against an independent
     # hand-run. So an identical configuration may reuse the fitted result
     # instead of refitting for minutes: `BREGSURV_RUN_CACHE=<dir>` keeps one
     # JSON per hash, keyed additionally by the package version and the
@@ -748,15 +848,14 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
                  ).encode("utf-8")).hexdigest()
             cpath = Path(cache_dir) / f"{cache_key}.json"
             if cpath.exists():
-                # A file that does not parse is a MISS, not a reason to give
-                # up on the key: on 2026-09-13 two arms of the benchmark fitted
-                # the same configuration in the same minute, both wrote this
-                # file with a plain truncate-and-write, the bytes interleaved,
-                # and every later prompt with that configuration refitted for
-                # four minutes because the parse error dropped the key and the
-                # store below never ran (jobs 61039334/61039336 ran out of time
-                # at 89 and 69 prompts). The write is now atomic (below) and a
-                # corrupt file is simply replaced by the next fit.
+                # 🔴 A file that does not parse is a MISS, not a reason to give
+                # up on the key: when two runs fit the same configuration at
+                # the same moment and both write this file with a plain
+                # truncate-and-write, the bytes interleave, and if the parse
+                # error dropped the key the store below would never run and
+                # every later run with that configuration would refit. The
+                # write is atomic (below) and a corrupt file is simply replaced
+                # by the next fit.
                 try:
                     cached = json.loads(cpath.read_text(encoding="utf-8"))
                 except (ValueError, OSError):
@@ -811,6 +910,13 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
               "message": f"approved {sorted(expected_keys)}, "
                          f"fitted {sorted(got_keys)}"}])
 
+    # ---- what the report must know beyond the fitted object ----------------
+    res["report_context"] = report_context(res, profile, plan, external_provenance,
+                                           external_refusal)
+    if plan:
+        res["report_context"]["n_admissible"] = len(_admissible_on_row(
+            plan, design, ext_form, external_baseline_inline, wide_design(data_path, declaration)))
+
     # ---- boundary 2: prose, checked against the closed reference set --------
     from . import report_v3
     prose: Dict[str, str] = {}
@@ -818,8 +924,8 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
     calls: List[Dict[str, Any]] = list(model_prov.pop("calls", []) or [])
     if write_prose is not None:
         refs = report_v3.build_references(res)
-        # Boundary 2 decorates a verified result; it can never undo one. Until
-        # 2026-09-13 an exception here (a truncated draft) surfaced as "The
+        # Boundary 2 decorates a verified result; it can never undo one.
+        # Otherwise an exception here (a truncated draft) would surface as "The
         # analysis did not run" although the fit had completed and was cached.
         try:
             raw = write_prose({"references": refs, "result": res}) or {}
@@ -853,7 +959,7 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
     report = report_v3.render(res, prose=prose, declaration=declaration,
                               external=external_provenance,
                               plan=plan, plan_steps=plan_steps,
-                              n_admissible=(len(_admissible_on_row(plan, design, ext_form, external_baseline_inline))
+                              n_admissible=(len(_admissible_on_row(plan, design, ext_form, external_baseline_inline, wide_design(data_path, declaration)))
                                             if plan else None))
 
     prov = {
@@ -866,7 +972,7 @@ def run(data_path: str, data_expr: str, declaration: Declaration,
         **_r_version(run_r),
     }
     if declaration.test_data_path:
-        # : the analyst's test file by content; its rows fixed the
+        # the analyst's test file by content; its rows fixed the
         # held-out table and nothing else
         prov["test_data"] = _fingerprint(declaration.test_data_path)
     if cache_dir:
@@ -928,14 +1034,14 @@ def render_repro(r: RunResult) -> str:
     ex = d.as_exprs(r.data_expr)
     folds = c["partition"].get("folds") or []
 
-    # FAIL CLOSED ON AN UNREPLAYED FIELD. repro.R re-runs run_candidates.R and
+    # 🔴 FAIL CLOSED ON AN UNREPLAYED FIELD. repro.R re-runs run_candidates.R and
     # nothing else, so not every configuration field has somewhere to go -- but
     # "no obvious home" must not silently become "left out". Anything not
     # emitted below and not excused here stops generation, which turns adding a
     # Declaration field into a decision instead of an omission.
     #
-    # This is not hypothetical: `event_value` was absent from the args block
-    # until 2026-08-19, so once the fitter began honouring it a replay of any
+    # This is not hypothetical: an earlier version left `event_value` out of the
+    # args block, so once the fitter began honouring it a replay of any
     # run that declared the other level would have reproduced a DIFFERENT model
     # and reported that the fold assignment matched.
     _replayed = {"time_col", "event_col", "covariates", "event_value",
@@ -999,13 +1105,12 @@ def render_repro(r: RunResult) -> str:
            if r.external_beta_expr else [] ),
         # the numbers themselves, so the replay needs nothing but this script
         # and the data file -- not whatever file the coefficients came from.
-        # `list(...)`, not `c(...)`: jsonlite drops the names of an atomic
+        # 🔴 `list(...)`, not `c(...)`: jsonlite drops the names of an atomic
         # vector, so a `c("age" = 0.5, ...)` reached run_candidates.R as an
         # UNNAMED vector and was matched by POSITION -- a replay of a
         # name-matched run fitted the coefficients onto the wrong variables,
         # or stopped on a length mismatch. A named list serialises as an
-        # object, which is exactly what the app sends. (while
-        # adding Q_inline; the inline path had never been replayed by a test.)
+        # object, which is exactly what the app sends.
         # In the object's own order, NOT sorted: Q_inline's rows follow it.
         *( ['  beta_inline = list(' + ", ".join(
                f"{json.dumps(k)} = {v!r}"
@@ -1020,7 +1125,7 @@ def render_repro(r: RunResult) -> str:
            if r.external_Q_inline else [] ),
         *( [f'  external_data_path = {json.dumps(d.external_data_path)},']
            if d.external_data_path else [] ),
-        # : the declared grid, and the baseline hazard by value, so the
+        # the declared grid, and the baseline hazard by value, so the
         # discrete row replays from this script and the data file alone
         *( ['  discrete    = list(n_intervals = ' + str(int(d.n_intervals))
             + ', width = ' + ("NULL" if d.time_is_interval_index
@@ -1033,7 +1138,7 @@ def render_repro(r: RunResult) -> str:
             + '), cumhaz = c(' + ", ".join(
                 repr(float(x)) for x in r.external_baseline_inline["cumhaz"]) + ')),']
            if d.discrete and r.external_baseline_inline else [] ),
-        # : the analyst's test file, by the same path and column names,
+        # the analyst's test file, by the same path and column names,
         # so the replay prints the same held-out table (it selects on nothing)
         *( ['  test_data   = list('
             + (f'path = {json.dumps(d.test_data_path)}, ' if d.test_data_path else '')
@@ -1057,8 +1162,8 @@ def render_repro(r: RunResult) -> str:
         "in_f <- tempfile(fileext = '.json'); out_f <- tempfile(fileext = '.json')",
         # digits = NA: jsonlite's default of four significant digits handed
         # run_candidates.R a ROUNDED external vector, so every replay refitted a
-        # different model and the held-out check failed at the 1e-5 level (found
-        # by replaying all 375 scripts, 2026-09-14). The Python side writes the
+        # different model and the held-out check failed at the 1e-5 level.
+        # The Python side writes the
         # payload at full precision; the script must too.
         "writeLines(toJSON(args, auto_unbox = TRUE, null = 'null', digits = NA), in_f)",
         "cmd <- paste(shQuote(file.path(R.home('bin'), 'Rscript')),",
@@ -1072,7 +1177,7 @@ def render_repro(r: RunResult) -> str:
         "}",
         "",
         "# the split that was actually used, recorded at the time",
-        # An empty vector made `identical(integer(0), integer(0))` true and
+        # 🔴 An empty vector made `identical(integer(0), integer(0))` true and
         # the script printed "fold assignment REPRODUCED" having compared
         # nothing -- a check that fails OPEN, which is worse than no check,
         # because the line it prints is the evidence someone would cite.
@@ -1138,8 +1243,8 @@ def render_repro(r: RunResult) -> str:
 
 # ------------------------------------------------------------- repro_diskd.py
 def render_repro_diskd(r: RunResult) -> str:
-    """A Python script that replays the network members of the discrete row
-    (ruling 3, ): Internal-NN and DiSKD refitted from the recorded seed,
+    """A Python script that replays the network members of the discrete row:
+    Internal-NN and DiSKD refitted from the recorded seed,
     fold assignment, teacher and training settings, and compared with the
     numbers that were reported. It needs only the data file, numpy, pandas,
     torch and the agent's `bregsurv_agent/discrete/diskd.py`; R is not

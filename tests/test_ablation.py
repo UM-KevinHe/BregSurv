@@ -1,4 +1,4 @@
-"""The ablation switches (bregsurv_agent/ablation.py, 2026-09-13): each removes one piece of
+"""The ablation switches (bregsurv_agent/ablation.py): each removes one piece of
 the harness for a measurement, is off unless BREGSURV_ABLATE names it, and is recorded.
 
 Run: python mcp/test_ablation.py      (sections C-E need gradio and Rscript, like test_m2)

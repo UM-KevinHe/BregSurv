@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # cv_ncc_MDTL_enet.R - dispatcher for the cv_ncc_MDTL_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for BregSurv::ncc_MDTL_enet.
+# K-fold CV of (eta, lambda) for BregSurv::ncc_MDTL_enet().
 # NCC-family CV criteria whitelist enforced at dispatcher level.
 #
 # DESIGN INVARIANT: MDTL family never accepts RS — only `beta` (+ optional `Q`).
@@ -36,7 +36,7 @@ metric_colname <- function(best_per_eta) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -151,7 +151,7 @@ result <- tryCatch({
   }
   if (length(Q_sources) > 1L) stop("Provide only one of: Q_expr, Q_inline")
   # Shape / symmetry / PSD / name validation is delegated to the package's
-  # align_beta_Q: a NAMED Q may cover a subset of colnames(z) and is
+  # align_beta_Q(): a NAMED Q may cover a subset of colnames(z) and is
   # zero-padded; only an UNNAMED Q must be exactly ncol(z) x ncol(z).
   # Do not re-check it here -- the bridge cannot express that contract.
 
@@ -173,12 +173,12 @@ result <- tryCatch({
   lambda.min.ratio <- if (!is.null(input$lambda_min_ratio)) as.numeric(input$lambda_min_ratio) else NULL
 
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  # A4: the seed is never NULL. on the NCC side the
-  # fold assignment is NOT drawn with sample. `get_fold_cc` contains no RNG
+  # A4: the seed is never NULL. 🔴 On the NCC side the
+  # fold assignment is NOT drawn with sample(). `get_fold_cc` contains no RNG
   # call -- it assigns whole matched sets by a deterministic rule -- so the seed
   # changes nothing here and the split is reproducible without it. The A4
-  # measurement this comment cited (8 flips in 30 unseeded rounds) was made on
-  # the COHORT drivers, where get_fold does draw, and was copied across. The
+  # rationale for a default (an unseeded split can change the recommendation)
+  # holds for the COHORT drivers, where get_fold does draw. The
   # default is kept anyway so every bridge reports the same provenance fields
   # and a caller cannot tell the two families apart by accident.
   DEFAULT_CV_SEED <- 20260818L

@@ -6,7 +6,7 @@ whether release terms were set aside, the selected method's family and penalty, 
 was supplied) this module writes five short sections in the report's own reference language. Because each
 sentence is built from the facts of its combination, every example is correct by construction: no digit,
 only references that exist in that combination, a matched design described with cases and controls, a
-full release never described as partial, and no judging word. The rubric's report findings (members or
+full release never described as partial, and no judging word. The usual report errors (members or
 penalties misnamed, counts misused, stock phrases contradicting the facts) are the errors these examples
 are meant to steer away from.
 
@@ -25,7 +25,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
 DEFAULT_K = 2
-FEATURES = ("design", "form", "coverage", "dropped", "family", "penalty", "test", "zero")
+FEATURES = ("design", "form", "coverage", "dropped", "family", "penalty", "test", "zero", "refused")
 _FORM_WORDS = {"coef": "coefficients alone", "cov": "coefficients and covariance",
                "indi": "individual-level data", "none": "no external information"}
 
@@ -47,12 +47,14 @@ def _valid(c: Dict[str, Any]) -> bool:
         return False
     if fam == "released" and (pen != "none" or d == "ncc"):
         return False
-    if d == "ncc" and (c["test"] or pen == "ridge"):
+    if d == "ncc" and c["test"]:
         return False
-    if fam == "indi" and pen == "ridge":
-        return False
+    if fam == "indi" and pen == "ridge" and d == "ncc":
+        return False      # the library has cox_indi_ridge but no ncc_indi_ridge
     if c["zero"] and fam in ("target", "released"):
         return False      # a zero borrowing weight exists only for a borrowing member
+    if c["refused"] and f != "none":
+        return False      # a refused file leaves the analysis with no external information
     return True
 
 
@@ -84,14 +86,16 @@ def _facts(c: Dict[str, Any]) -> List[str]:
     out = ["Study design: " + ("nested case-control. The rows are cases and their matched controls; there is no "
                                 "follow-up time and no censoring, and [n_events] counts the cases."
                                 if ncc else "full cohort.")]
-    out.append(f"External information: {_FORM_WORDS[c['form']]}.")
+    out.append("External information: an external file was supplied but could not be used, so nothing "
+               "was borrowed and every method uses the cohort alone." if c["refused"] else
+               f"External information: {_FORM_WORDS[c['form']]}.")
     if c["form"] != "none":
         out.append("The external model covers every predictor of the analysis." if c["coverage"] == "full" else
                    "The external model does not cover every predictor; the uncovered ones are estimated from the "
                    "cohort alone ([p_internal_only] of them).")
-        out.append("Some terms of the external model have no column in the cohort and were set aside "
-                   "([p_dropped] of them)." if c["dropped"] else
-                   "Every term of the external model matched a column of the cohort.")
+        out.append("Some terms of the external model are not predictors of this analysis and were set "
+                   "aside ([p_dropped] of them)." if c["dropped"] else
+                   "Every term of the external model matched a predictor of the analysis.")
     fam = {"target": "the cohort alone", "kl": "Kullback-Leibler borrowing",
            "space": "coefficient-space borrowing", "released": "the external model unchanged",
            "indi": "individual-level borrowing"}[c["family"]]
@@ -121,29 +125,33 @@ def _sections(c: Dict[str, Any]) -> Dict[str, str]:
     else:
         data = ("The cohort has [n] subjects, [n_events] of whom had the event ([event_rate]), "
                 "with [p] predictors.")
-    data += (" No external information was supplied." if form == "none" else
+    data += (" The external file supplied could not be used, so nothing was borrowed." if c["refused"] else
+             " No external information was supplied." if form == "none" else
              " The external information arrived as [external_form].")
     if form == "none":
-        link = "With no external information there is nothing to link; every coefficient comes from the cohort alone."
+        link = ("The external file could not be used, so there is nothing to link; every coefficient comes from "
+                "the cohort alone." if c["refused"] else
+                "With no external information there is nothing to link; every coefficient comes from the cohort alone.")
     elif form == "indi":
-        link = ("The external cohort's records carry the predictors of the analysis, [p_covered] of the [p], "
-                "so both cohorts enter one likelihood.")
+        link = ("The external cohort's records carry the predictors of the analysis, [p_covered] of the [p]; "
+                "the borrowing methods fit both cohorts in one likelihood.")
     elif c["coverage"] == "full":
         link = "The external model has a coefficient for every predictor of the analysis, [p_covered] of [p]."
     else:
-        link = ("The external model covers [p_covered] of the [p] predictors; the other [p_internal_only] are "
-                "estimated from the cohort alone.")
+        link = ("The external model covers [p_covered] of the [p] predictors; it has no term for the other "
+                "[p_internal_only].")
     if form != "none" and c["dropped"]:
-        link += " [p_dropped] terms of the external model have no column in the cohort and were set aside."
+        link += " [p_dropped] terms of the external model are not predictors of this analysis and were set aside."
     if form == "none":
-        cand = ("The admissible set has [n_candidates] members, all fitted to the cohort alone, because no "
-                "external information was supplied.")
+        cand = ("[n_candidates] methods were fitted and compared, all to the cohort alone, because "
+                + ("the external file could not be used." if c["refused"] else "no external information was supplied."))
     else:
-        cand = ("The admissible set has [n_candidates] members, fixed by the study design, [design], and the form "
-                "of the external information, [external_form]. It holds the fit to the cohort alone"
+        cand = ("[n_candidates] methods were fitted and compared, from the set admitted by the study design, "
+                "[design], and the form of the external information, [external_form]. They include the fit to "
+                "the cohort alone"
                 + ("" if ncc else " and the external model used unchanged")
                 + " beside the methods that borrow.")
-    comp = ("Every member was scored by [criteria] on one partition into [nfolds] folds. The selected method "
+    comp = ("Every member that could be fitted was scored by [criteria] on one partition into [nfolds] folds. The selected method "
             "reached [loss_best], against [loss_internal] for the fit to the cohort alone"
             + (" and [loss_external] for the external model used unchanged" if (form != "none" and not ncc) else "")
             + ".")
@@ -166,7 +174,7 @@ def _sections(c: Dict[str, Any]) -> Dict[str, str]:
         sel = ("The selected method is [selected_label]. It uses [selected_borrowing] with borrowing weight "
                "[eta_best]"
                + (", and [selected_penalty] at weight [lambda_best], keeping [n_nonzero] non-zero coefficients."
-                  if pen != "none" else "; each coefficient is pulled toward the external information by that weight."))
+                  if pen != "none" else "; the weight sets how strongly the fit is drawn toward the external model."))
     if c["test"]:
         sel += (" On the test file of [test_n] subjects with [test_events] events, its concordance index is "
                 "[test_cindex_selected] and its integrated Brier score [test_ibs_selected].")
@@ -177,7 +185,7 @@ def _sections(c: Dict[str, Any]) -> Dict[str, str]:
 def bank() -> List[Dict[str, Any]]:
     vals = {"design": ("cohort", "ncc"), "form": ("coef", "cov", "indi", "none"), "coverage": ("full", "partial"),
             "dropped": (0, 1), "family": ("target", "kl", "space", "released", "indi"),
-            "penalty": ("none", "ridge", "lasso"), "test": (0, 1), "zero": (0, 1)}
+            "penalty": ("none", "ridge", "lasso"), "test": (0, 1), "zero": (0, 1), "refused": (0, 1)}
     out = []
     for combo in itertools.product(*(vals[f] for f in FEATURES)):
         c = dict(zip(FEATURES, combo))
@@ -206,7 +214,8 @@ def features_of(res: Dict[str, Any], refs: Dict[str, Any]) -> Dict[str, Any]:
             "coverage": "partial" if refs.get("p_internal_only") else "full",
             "dropped": 1 if refs.get("p_dropped") else 0, "family": fam, "penalty": pen,
             "test": 1 if res.get("test_data") else 0,
-            "zero": 1 if _borrows_nothing(res) else 0}
+            "zero": 1 if _borrows_nothing(res) else 0,
+            "refused": 1 if (form == "none" and (res.get("report_context") or {}).get("release_refused")) else 0}
 
 
 def _borrows_nothing(res: Dict[str, Any]) -> bool:
@@ -218,7 +227,8 @@ def _borrows_nothing(res: Dict[str, Any]) -> bool:
 
 
 def nearest(feat: Dict[str, Any], k: int) -> List[Dict[str, Any]]:
-    w = {"design": 3, "form": 3, "family": 3, "penalty": 2, "coverage": 2, "dropped": 1, "test": 1, "zero": 3}
+    w = {"design": 3, "form": 3, "family": 3, "penalty": 2, "coverage": 2, "dropped": 1, "test": 1, "zero": 3,
+         "refused": 3}
     scored = sorted(bank(), key=lambda e: (-sum(w[f] for f in FEATURES if e["features"][f] == feat.get(f)), e["id"]))
     return scored[:k]
 

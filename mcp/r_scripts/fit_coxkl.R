@@ -5,7 +5,7 @@
 #   Rscript fit_coxkl.R <input.json> <output.json>
 #
 # Reads JSON parameters, loads the user's data file, resolves R expressions
-# against the loaded environment, calls BregSurv::coxkl, writes results
+# against the loaded environment, calls BregSurv::coxkl(), writes results
 # as JSON. On any error, writes a structured {status:"error",...} payload.
 
 suppressPackageStartupMessages({
@@ -31,7 +31,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -148,7 +148,7 @@ result <- tryCatch({
   Mstop        <- if (!is.null(input$Mstop))     as.integer(input$Mstop)     else 100L
   backtrack    <- if (!is.null(input$backtrack)) as.logical(input$backtrack) else FALSE
 
-  # --- Call coxkl ---
+  # --- Call coxkl() ---
   .lk  <- link_external(z, beta)
   beta <- .lk$beta
 

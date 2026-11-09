@@ -17,7 +17,7 @@ A rewrite that fails any rule is DISCARDED and the templated original kept.
 The example (`example`) is rebuilt from the accepted spans so the evidence
 fields are verbatim spans of the text the model will actually read.
 
-    python eval/merge_bank.py --glob 'para/bank_para_*.json'
+    python eval/merge_bank.py --glob '<rewrites dir>/bank_para_*.json'
 """
 from __future__ import annotations
 

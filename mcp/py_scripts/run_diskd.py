@@ -21,7 +21,7 @@ input.json:
   seed            the run's seed
   threads         torch threads (pinned by the caller)
   teacher         null, or {beta: {name: value} on the columns, dH0: [K]}
-  settings        null, or overrides -- TESTING ONLY (ruling 2: the product
+  settings        null, or overrides -- TESTING ONLY (the product always
                   runs the released nested CV): architecture, eta_grid,
                   learning_rates, max_epochs, patience, stop_fraction
 
@@ -44,8 +44,8 @@ from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent.parent            # mcp/py_scripts -> repo root
 
-# the released settings of the DiSKD run (README: "TrainingProfile holds
-# the frozen training settings of the MIUM run")
+# the released settings of the DiSKD estimator (the frozen training
+# settings that TrainingProfile() holds)
 DEFAULTS = {
     "architecture": "repo_lh4x128",
     "eta_grid": [0.0, 1.0, 5.0, 10.0, 20.0, 40.0, 80.0],

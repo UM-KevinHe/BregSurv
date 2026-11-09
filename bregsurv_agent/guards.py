@@ -11,24 +11,25 @@ session, and it fails closed: a violation refuses the run and is written into
 the provenance, because a harness that has broken one of its own invariants
 must not be trusted to have kept the others.
 
-The invariants audited are the five of the paper's Appendix E:
+The invariants audited are these five:
 
   1. every role that executes has a recorded source;
   2. a role marked `quoted` names something the analyst wrote (textmatch,
      the same predicate the backing check used), a role marked `described`
      carries a phrase the analyst wrote, and every other source has a
      recognised form (`reply`, `inferred: …`, `remembered: …`, `checkbox…`);
-  3. the state is coherent (`Session.invariants`: no result without an
+  3. the state is coherent (`Session.invariants()`: no result without an
      admissible verification, and so on);
   4. every model call was one constrained call under a named policy, with
      its raw output recorded, and no turn exceeded the call budget;
   5. every planned act was in the action set and legal in its phase.
 
-Invariant 4 of the paper (every quantity is an element of a fitted object)
+A further invariant (every quantity is an element of a fitted object)
 holds by construction in `report_v3.resolve` and is tested there; it is not
 re-derived from a rendered report, where tables legitimately carry digits.
 """
 from __future__ import annotations
+import re
 
 from typing import Any, Dict, List
 
@@ -61,7 +62,7 @@ def audit(session: Any) -> List[str]:
                  "covariates": ", ".join(decl.covariates or []),
                  "stratum": decl.stratum_col,
                  "time_zero": decl.covariates_time_zero,
-                 # : a declared grid must carry a source like any role
+                 # a declared grid must carry a source like any role
                  "discrete": (f"{decl.n_intervals}"
                               if getattr(decl, "discrete", False) else None)}
         for role, val in roles.items():
@@ -76,7 +77,8 @@ def audit(session: Any) -> List[str]:
             if not s.startswith(_SOURCE_PREFIXES):
                 bad.append(f"role {role} has an unrecognised source {s!r}")
             elif s.startswith("described:"):
-                ph = s.split(":", 1)[1].strip().strip('"')
+                _m = re.match(r'described:\s*"([^"]*)"', s)
+                ph = _m.group(1) if _m else s.split(":", 1)[1].strip().strip('"')
                 if not textmatch.phrase_in(text, ph):
                     bad.append(f"role {role} is marked described from a phrase the "
                                f"analyst never wrote: {ph!r}")

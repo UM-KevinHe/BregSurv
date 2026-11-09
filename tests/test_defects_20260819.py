@@ -1,7 +1,7 @@
-"""Regression tests for the three defects found on 2026-08-19.
+"""Regression tests for three defects found in shipped code.
 
 All three were in SHIPPED code, none was caught by the six existing suites, and
-each assertion here fails against the code as it stood that morning. That is the
+each assertion here fails against the code as it stood before the fixes. That is the
 point: a fix without a test that would have caught it is a claim, not a fix.
 
   A  `event_value` was declared, printed on the consequence card, counted by the
@@ -13,7 +13,7 @@ point: a fix without a test that would have caught it is a claim, not a fix.
      tied event times the set was scored by TWO likelihood functionals, because
      only `internal` and `kl` were swapped onto cv.coxkl_ties while the other
      eight kept pl_cal_theta -- so the argmin ranked numbers that were not on
-     one scale (live on MIUM, tie fraction 0.1149). The design error underneath
+     one scale. The design error underneath
      it: the DATA was deciding. Whether a tie correction is applied is the
      analyst's call, the default is none, and the gate now reports the tie
      fraction without instructing anyone.
@@ -62,7 +62,7 @@ NCC_DATA = str(REPO / "data" / "ExampleData_cc_lowdim.rda")
 INDI_DATA = str(REPO / "data" / "ExampleData_indi.rda")
 
 
-# UNEQUAL matched sets, on purpose. The bundled NCC example splits into five
+# 🔴 UNEQUAL matched sets, on purpose. The bundled NCC example splits into five
 # folds of exactly 200, and pooling and averaging-per-fold agree exactly when
 # the folds are the same size -- so a number pinned on THAT fixture cannot tell
 # the two aggregations apart, and a revert would sail past it. Sets of 3, 4 and
@@ -151,7 +151,7 @@ def main() -> int:
         check(a_zero.get("status") == "ok", 'event_value="0" runs',
               str(a_zero.get("message", ""))[:120])
         n_zero = (a_zero.get("facts") or {}).get("n_events")
-        # THE ASSERTION THAT FAILED BEFORE THE FIX. run_candidates.R used to
+        # 🔴 THE ASSERTION THAT FAILED BEFORE THE FIX. run_candidates.R used to
         # compute n_events as sum(delta == 1) with no knowledge of the declared
         # value, so this returned n_default and the two runs were identical.
         check(n_zero == n_total - n_default,
@@ -171,7 +171,7 @@ def main() -> int:
 
         # ---- B. one scale for the whole comparison --------------------------
         hdr("B. ties are never inferred from the data and never used")
-        # THE POLICY, settled with whether a tie correction
+        # 🔴 THE POLICY: whether a tie correction
         # is applied is the ANALYST'S decision, the default is none, and nothing
         # goes looking in the data for a reason to do otherwise.
         #
@@ -179,8 +179,7 @@ def main() -> int:
         # "the tie-handling estimators are required" above a 10% threshold, and
         # the pipeline acted on it -- swapping `internal` and `kl` onto
         # cv.coxkl_ties (Breslow/exact) while the other eight kept pl_cal_theta,
-        # then taking an argmin across the two scales. MIUM measured 0.1149 and
-        # was therefore affected; MIMIC at 0.0180 was not.
+        # then taking an argmin across the two scales.
         full = dict(base)
         full.pop("include")
         b = _run_r("run_candidates.R", dict(full, has_ties=True, event_value="1"),
@@ -233,11 +232,11 @@ def main() -> int:
             "seed": 20260818, "nfolds": 5, "nlambda": 6,
         }, timeout_s=1800)
         msg = str(c.get("message", ""))
-        # HISTORY, kept deliberately. When the scorer guard was introduced on
-        # 2026-08-19 this exact call was REFUSED, with:
-        # "The candidate set was scored by more than one likelihood functional
-        # (cc_loglik/mean_of_fold_ratios and cc_loglik/pooled), so the
-        # smallest number is not the best model. Nothing was selected."
+        # 🔴 HISTORY, kept deliberately. When the scorer guard was introduced
+        # this exact call was REFUSED, with:
+        #   "The candidate set was scored by more than one likelihood functional
+        #    (cc_loglik/mean_of_fold_ratios and cc_loglik/pooled), so the
+        #    smallest number is not the best model. Nothing was selected."
         # That refusal was correct: the unpenalized NCC drivers averaged
         # per-fold means while the enet ones pooled, and get_fold_cc assigns
         # whole matched sets so the folds are not the same size. The three
@@ -255,8 +254,8 @@ def main() -> int:
             check(len({x.get("scorer") for x in ok_c}) == 1,
                   "no NCC member disagrees with the others about its scorer",
                   f"{len(ok_c)} fitted, all {({x.get('scorer') for x in ok_c})}")
-            check(not any(x.get("penalty") == "ridge" for x in c["candidates"]),
-                  "the NCC set contains no ridge member, as the library has none",
+            check(any(x.get("penalty") == "ridge" for x in c["candidates"]),
+                  "the NCC set holds the ridge members (BregSurv 1.4.0)",
                   f"{len(c['candidates'])} candidates derived")
 
         # ---- D. cv.cox_indi_enet shares the partition -----------------------
@@ -287,7 +286,7 @@ def main() -> int:
             skip("the bridges publish their fold vector",
                  "cannot compare partitions without it; compare losses by hand")
         else:
-            # FAILED BEFORE THE FIX: cv.cox_indi_enet called get_fold on the
+            # 🔴 FAILED BEFORE THE FIX: cv.cox_indi_enet called get_fold on the
             # caller's unsorted, unencoded row order, so the two disagreed.
             check(list(f1) == list(f2),
                   "one seed gives ONE partition across the individual-level arm",
@@ -307,7 +306,7 @@ def main() -> int:
 
         cfg = P.canonical_config(rda, "D", decl, "beta_ext", 20260818, 5, 6,
                                  candidate_keys=["internal"])
-        # external_model used to escape all three sites; it is the existing
+        # 🔴 external_model used to escape all three sites; it is the existing
         # proof that hand-enumeration loses fields.
         check("external_model" in cfg,
               "every Declaration field reaches the approval hash",
@@ -315,7 +314,7 @@ def main() -> int:
         cfg_q = P.canonical_config(rda, "D", decl, "beta_ext", 20260818, 5, 6,
                                    candidate_keys=["internal"],
                                    external_Q_expr="Qmat")
-        # FAILED BEFORE THE FIX: Q was outside the hash, so a run with a
+        # 🔴 FAILED BEFORE THE FIX: Q was outside the hash, so a run with a
         # covariance matrix and one without hashed identically.
         check(P.config_hash(cfg) != P.config_hash(cfg_q),
               "supplying a covariance matrix changes the approved configuration",
@@ -325,7 +324,7 @@ def main() -> int:
                     external_beta_expr="beta_ext", profile=prof,
                     nlambda=6, run_r=_run_r)
         repro = P.render_repro(res)
-        # FAILED BEFORE THE FIX: the args block had no event_value, so once
+        # 🔴 FAILED BEFORE THE FIX: the args block had no event_value, so once
         # the fitter began honouring it, replaying a run that declared the other
         # level would have reproduced a different model and said folds matched.
         check("event_value" in repro,
@@ -342,7 +341,7 @@ def main() -> int:
               f"{len(trace_decl)} fields")
 
         # The guard itself: pretend a field was added and check it refuses.
-        # The injected name must be one nothing accounts for. This originally
+        # 🔴 The injected name must be one nothing accounts for. This originally
         # used `stratum_col`, which became a real field hours later when the
         # nested case-control cell was wired up -- at which point it was in
         # _replayed, the guard correctly stayed silent, and the test failed for
@@ -363,7 +362,7 @@ def main() -> int:
         # ---- F. the partition says where it came from -----------------------
         hdr("F. partition provenance is reported, not asserted")
         part = res.candidates["partition"]
-        # FAILED BEFORE THE FIX: rng_kind was the literal "Mersenne-Twister"
+        # 🔴 FAILED BEFORE THE FIX: rng_kind was the literal "Mersenne-Twister"
         # regardless of what the estimator actually used, and there was no
         # record of which row order `folds` indexes.
         check(part.get("drawn_by") not in (None, "NA", ""),
@@ -384,7 +383,7 @@ def main() -> int:
         pos = _json.loads(_json.dumps(res.candidates))
         pos["linkage"]["matched_by"] = "position"
         rep_pos = report_v3.render(pos, prose={}, declaration=decl)
-        # FAILED BEFORE THE FIX: the sentence said "matched **by name**"
+        # 🔴 FAILED BEFORE THE FIX: the sentence said "matched **by name**"
         # unconditionally, with the real value in parentheses beside it.
         check("by position" in rep_pos and "matched **by name**" not in rep_pos,
               "a POSITION-matched linkage is not described as name-matched",
@@ -394,7 +393,7 @@ def main() -> int:
         no_ridge["candidates"] = [c for c in no_ridge["candidates"]
                                   if c.get("penalty") != "ridge"]
         rep_nr = report_v3.render(no_ridge, prose={}, declaration=decl)
-        # FAILED BEFORE THE FIX: the report asserted "unpenalised, ridge and
+        # 🔴 FAILED BEFORE THE FIX: the report asserted "unpenalised, ridge and
         # lasso were all fitted" even on NCC, where the library has no ridge.
         check("ridge" not in rep_nr.split("## 4.")[0].split("## 3.")[1],
               "a set with no ridge member is not described as having fitted one",
@@ -424,7 +423,7 @@ def main() -> int:
             check(len(set(folds)) > 1,
                   "the partition really is unequal, so the test can tell the "
                   "two aggregations apart", f"fold sizes {sorted(folds)}")
-            # with the pooled aggregation in place.
+            # Measured with the pooled aggregation in place.
             # Averaging per-fold means instead moves these numbers, precisely
             # because the folds differ in size -- which is what the label-based
             # checks in section C cannot see and this assertion can.

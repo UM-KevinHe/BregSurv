@@ -4,9 +4,9 @@ Every place the language model acts has exactly one policy: a text file in
 `bregsurv_agent/policies/`, sent verbatim as the system prompt of that one
 constrained call. Nothing the model must know lives anywhere else -- a JSON
 Schema `description` reaches the decoding grammar and is never shown to the
-model (measured 2026-08-20: a required `reasoning` field whose purpose was
-stated only in its description came back as the literal string "null" on 58%
-of calls), so the purpose of every field is stated in the policy.
+model (a required `reasoning` field whose purpose is stated only in its
+description tends to come back as the literal string "null"), so the purpose
+of every field is stated in the policy.
 
 Why files rather than string constants: the text is what the model is
 governed by, so it should be readable and reviewable without reading Python,

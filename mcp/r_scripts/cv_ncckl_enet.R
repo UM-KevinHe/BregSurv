@@ -1,14 +1,14 @@
 #!/usr/bin/env Rscript
 # cv_ncckl_enet.R - dispatcher for the cv_ncckl_enet MCP tool.
 #
-# K-fold CV of (eta, lambda) for BregSurv::ncckl_enet. Same per-eta-best-
+# K-fold CV of (eta, lambda) for BregSurv::ncckl_enet(). Same per-eta-best-
 # lambda 1D return shape as cv_coxkl_enet, plus alpha + n_strata.
 #
 # CV CRITERIA WHITELIST (NCC FAMILY ONLY): "loss" / "AUC" / "CIndex" / "Brier".
 # Cox-family criteria rejected at dispatcher level.
 #
-# IMPORTANT: cv.ncckl_enet accepts BOTH `beta` AND `RS` (mutually exclusive),
-# UNLIKE base cv.ncckl which only accepts `beta`. Mirrors cv.coxkl_enet.
+# IMPORTANT: cv.ncckl_enet() accepts BOTH `beta` AND `RS` (mutually exclusive),
+# UNLIKE base cv.ncckl() which only accepts `beta`. Mirrors cv.coxkl_enet.
 
 suppressPackageStartupMessages({
   library(jsonlite)
@@ -40,7 +40,7 @@ metric_colname <- function(best_per_eta) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -158,12 +158,12 @@ result <- tryCatch({
   lambda.min.ratio <- if (!is.null(input$lambda_min_ratio)) as.numeric(input$lambda_min_ratio) else NULL
 
   nfolds <- if (!is.null(input$nfolds)) as.integer(input$nfolds) else 5L
-  # A4: the seed is never NULL. on the NCC side the
-  # fold assignment is NOT drawn with sample. `get_fold_cc` contains no RNG
+  # A4: the seed is never NULL. 🔴 On the NCC side the
+  # fold assignment is NOT drawn with sample(). `get_fold_cc` contains no RNG
   # call -- it assigns whole matched sets by a deterministic rule -- so the seed
   # changes nothing here and the split is reproducible without it. The A4
-  # measurement this comment cited (8 flips in 30 unseeded rounds) was made on
-  # the COHORT drivers, where get_fold does draw, and was copied across. The
+  # rationale for a default (an unseeded split can change the recommendation)
+  # holds for the COHORT drivers, where get_fold does draw. The
   # default is kept anyway so every bridge reports the same provenance fields
   # and a caller cannot tell the two families apart by accident.
   DEFAULT_CV_SEED <- 20260818L

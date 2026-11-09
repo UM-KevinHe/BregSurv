@@ -4,7 +4,7 @@ The agent never infers which column is what. The analyst declares it, and the
 harness makes declaring cheap by supplying facts and then checking the answer
 against the data.
 
-The reasoning, settled 2026-08-17: an analyst who cannot say which column is
+The reasoning: an analyst who cannot say which column is
 their outcome should not be running this analysis, and if the agent has to guess,
 everything downstream is guesswork. The supporting evidence is that a pre-filled
 suggestion changes what people write AND what they believe (N=1,506), so "the
@@ -27,11 +27,11 @@ What the analyst must declare, never inferred:
     interval width and the horizon K -- or that the time column already is
     the interval index 1..K. Asked only when the data gives a reason (a time
     column on a coarse grid, `profile.possible_discrete`) or when the analyst
-    answers it unasked; never read off the external file (ruling 6). The
+    answers it unasked; never read off the external file. The
     answer chooses the discrete-time row of the library, whose members are
-    never ranked against the Cox row (ruling 4). Binning follow-up into the
+    never ranked against the Cox row. Binning follow-up into the
     declared intervals is part of the model, computed by the harness and
-    disclosed on the card (ruling 1) -- not data processing.
+    disclosed on the card -- not data processing.
 
 Three paths, chosen by how much the analyst supplied:
   1. a data dictionary is present -> it NARROWS the lists; it does not decide.
@@ -42,7 +42,7 @@ Three paths, chosen by how much the analyst supplied:
   3. nothing stated -> :func:`render_question` asks once, with eligibility-
      filtered numbered lists, and :func:`parse_reply` reads the answer.
 
-DECIDE, RUN, DISCLOSE. The analyst is asked only
+🔴 DECIDE, RUN, DISCLOSE. The analyst is asked only
 what neither the request nor the data can settle. :func:`complete` takes what
 was stated, fills each remaining role by a deterministic rule where the data
 leaves exactly one possibility, and lists what is still open; the run starts
@@ -56,13 +56,13 @@ unstated covariate set is every usable numeric column that is not an outcome
 column. The model still never fills a gap; a null from boundary 1 is what
 `complete` fills, and the corpus that measures boundary 1 is unchanged.
 
-Why path 1 is a narrowing and not a shortcut. Measured against the dictionary
-this protocol was designed around (162 variables): `role = primary_outcome`
-covers EIGHT variables, including survival_time_days and survival_time_years (the
+🔴 Why path 1 is a narrowing and not a shortcut. A realistic data dictionary
+marks many columns as outcomes: `role = primary_outcome` can cover
+survival_time_days and survival_time_years (the
 same quantity in different units) and survival_event and survival_censored (exact
-complements), and `role = outcome` carries a second complete time/event pair on a
-different horizon. Thirteen columns are marked outcome-ish and they contain at
-least three valid (time, event) pairs. Reading roles and proceeding would mean
+complements), and `role = outcome` can carry a second complete time/event pair on a
+different horizon. Many columns are then marked outcome-ish and they contain
+several valid (time, event) pairs. Reading roles and proceeding would mean
 choosing among them.
 """
 from __future__ import annotations
@@ -72,8 +72,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 # One message, not five questions. Structured checklist prompts beat turn-by-turn
-# clarification (7.50/8 against 6.67/8, with fewer tokens), and single-turn
-# batched asking beat iterative asking by about 40% while shortening the dialogue.
+# clarification (with fewer tokens), and single-turn
+# batched asking beat iterative asking while shortening the dialogue.
 _MAX_LIST = 25
 
 
@@ -82,10 +82,9 @@ class DeclarationError(ValueError):
 
     `item` is the numbered item the analyst would correct ("3" for the event
     value, "4" for the covariates, ...), or None when the refusal is not about
-    one item. Until 2026-09-13 the refusal said only "Reply by number to
-    correct it"; in the MIUM run the simulated analyst then corrected item 4
-    three times for an event value the model had extracted as the whole phrase
-    "1 if they died, 0 if not" (19 of Qwen2.5's 100 prompts ended there).
+    one item. A refusal that said only "Reply by number to correct it" left
+    a simulated analyst correcting the wrong item, repeatedly, for an event
+    value the model had extracted as the whole phrase "1 if they died, 0 if not".
     """
 
     def __init__(self, message: str, item: Optional[str] = None):
@@ -102,11 +101,11 @@ class Declaration:
     covariates: List[str]
     source: str                      # "dictionary" | "reply" | "model_extraction"
     stratum_col: Optional[str] = None
-    # The external cohort's RAW DATA, when the analyst has it rather than only
+    # 🔴 The external cohort's RAW DATA, when the analyst has it rather than only
     # a published coefficient vector. `external_data_expr` addresses the table
     # (in the same file, or in `external_data_path` if it has its own). Its
     # columns must be the internal ones, by name and in order -- checked in R,
-    # because fit_cox_indi.R compares only ncol and a silent column-order
+    # because fit_cox_indi.R compares only ncol() and a silent column-order
     # mismatch attaches every borrowed coefficient to the wrong variable.
     external_data_expr: Optional[str] = None
     external_data_path: Optional[str] = None
@@ -116,7 +115,7 @@ class Declaration:
     # role -> how it was settled: "quoted", "inferred: <rule>", "checkbox",
     # "reply". Provenance, not configuration (pipeline._DECL_PROVENANCE_ONLY).
     sources: Dict[str, str] = field(default_factory=dict)
-    # THE DISCRETE-TIME DECLARATION. `n_intervals` set means the
+    # 🔴 THE DISCRETE-TIME DECLARATION. `n_intervals` set means the
     # internal outcome is in discrete intervals: interval k covers
     # [(k-1)*width, k*width) of the time column, subjects observed beyond
     # K*width are censored at interval K (the horizon), and with
@@ -125,7 +124,7 @@ class Declaration:
     interval_width: Optional[float] = None
     n_intervals: Optional[int] = None
     time_is_interval_index: bool = False
-    # THE ANALYST'S OWN TEST DATA: a second file
+    # 🔴 THE ANALYST'S OWN TEST DATA: a second file
     # the analyst SUPPLIES and names as their test set -- never a split the
     # agent draws, never default. Same columns as the cohort (time, event,
     # the covariates, the stratum if any). Every member is fitted on the
@@ -169,7 +168,7 @@ class Declaration:
 
     @property
     def design(self) -> str:
-        """THE DESIGN IS READ OFF WHAT WAS DECLARED, not asserted separately.
+        """🔴 THE DESIGN IS READ OFF WHAT WAS DECLARED, not asserted separately.
 
         A matched design has no follow-up duration -- the library's own canonical
         representation sets time to a constant 1 and delta to the case indicator
@@ -188,7 +187,7 @@ class Declaration:
         """R expressions for the dispatcher, given the table's own expression."""
         # `drop = FALSE`: one declared covariate is a legitimate analysis, and
         # without it R hands the gate a bare vector ("incorrect number of
-        # dimensions", hard set H075, 2026-09-15) instead of a one-column table
+        # dimensions") instead of a one-column table
         out = {
             "z_expr": f"{data_expr}[, c({', '.join(_rq(c) for c in self.covariates)}), drop = FALSE]",
         }
@@ -261,9 +260,9 @@ def render_question(profile: Dict[str, Any],
     `only` restricts it to the numbered items still open ("0".."6"), keeping
     the numbers stable so a reply is parsed the same way either way.
     `time_col` is the SETTLED follow-up column when item 7 is asked, so the
-    time-scale question describes that column alone (found on MIUM 2026-09-12:
-    without it the question listed eleven covariates on a 0.1 grid as "the
-    shape a grouped follow-up time has").
+    time-scale question describes that column alone (without it the question
+    can list covariates that happen to sit on a coarse grid as "the shape a
+    grouped follow-up time has").
     """
     cols = _by_name(profile)
     elig = profile.get("eligible", {})
@@ -305,7 +304,7 @@ def render_question(profile: Dict[str, Any],
                        f"directly if it is not listed")
         out.append("")
 
-    # The design question comes FIRST, and only when the data gives a reason
+    # 🔴 The design question comes FIRST, and only when the data gives a reason
     # to ask it. Over-asking costs one line; not asking means a matched study is
     # analysed as a cohort, which is silently wrong and which nothing
     # downstream can detect.
@@ -399,7 +398,7 @@ def render_question(profile: Dict[str, Any],
                    "effect rather than just blur it, so I have to ask. If you "
                    "are unsure, say so and we will stop here.")
 
-    # THE TIME-SCALE QUESTION, asked only when the data gives a
+    # 🔴 THE TIME-SCALE QUESTION, asked only when the data gives a
     # reason: the DECLARED follow-up time column sits on a coarse grid. Like
     # the design question it is a trigger, never an answer -- integer months
     # may be a continuous time rounded to months, and only the analyst knows.
@@ -407,12 +406,12 @@ def render_question(profile: Dict[str, Any],
     # broad (any non-negative number with more than two values), so on an
     # EHR extract some integer column is always on a grid -- a site code, an
     # age in years -- and asking on that basis would put the question on
-    # every file. Since 2026-09-12 the harness never raises it at all --
+    # every file. The harness never raises it at all --
     # continuous time is the default and `complete` discloses that default
     # when the settled column is coarse; the analyst asks for the discrete
     # row by answering "7) <width> <K>" (or "7) index"), before or after a
     # run. The presence of a baseline hazard in the external file never
-    # raises it (ruling 6).
+    # raises it.
     if only is not None and "7" in only and want("7"):
         out.append("")
         out.append("7) TIME SCALE -- is follow-up recorded in DISCRETE INTERVALS "
@@ -487,9 +486,9 @@ def complete(profile: Dict[str, Any], given: Dict[str, Optional[str]],
             src[k] = f"remembered: you declared this for the same file on {when}"
 
     # ---- a follow-up time that is the matched-set column ----------------
-    # The reading can name the set identifier as the follow-up time
-    # ("Matched set = set_id" read as a duration: synth200 F08_1 and F20_8,
-    # 2026-09-15). The name is in the message, so the backing check passes,
+    # 🔴 The reading can name the set identifier as the follow-up time
+    # ("Matched set = set_id" read as a duration). The name is in the
+    # message, so the backing check passes,
     # and the matched study would then be analysed as a cohort with the set
     # number as its follow-up -- silently wrong, and nothing downstream can
     # detect it. The data can: the column is the one the profile flags as
@@ -508,7 +507,7 @@ def complete(profile: Dict[str, Any], given: Dict[str, Optional[str]],
         except DeclarationError:
             named = None
         # regular group sizes, OR one case in every group (the profile's
-        # joint fact; random controls leave late sets short -- 2026-09-30)
+        # joint fact; random controls leave late sets short)
         if (named is not None and named in set(elig.get("stratum", []))
                 and (cols.get(named, {}).get("regular_sets")
                      or cols.get(named, {}).get("one_case_per_set"))):
@@ -572,7 +571,7 @@ def complete(profile: Dict[str, Any], given: Dict[str, Optional[str]],
         if ev_col is None:
             pass
         elif str((sources or {}).get("event_value") or "").startswith("ask:"):
-            # 2026-10-01: the message's own wording of the coding contradicts
+            # the message's own wording of the coding contradicts
             # the value the model read (boundary._event_coding_conflict); the
             # value is asked, never filled by the rules below
             missing.append("3")
@@ -588,10 +587,19 @@ def complete(profile: Dict[str, Any], given: Dict[str, Optional[str]],
 
     # ---- covariates: the second accepted default ------------------------
     if not ans.get("covariates"):
-        if _presets(profile)["B"]:
-            ans["covariates"] = "B"
+        # 🔴 "every other column" used to mean every
+        # NUMERIC column, so a covariate stored as text (sex F/M, arm A/B) was
+        # left out of the fit with nothing said. It now enters the declaration
+        # as written, and the admissibility check refuses it by name with what
+        # to do (covariate_not_numeric) -- the library takes numbers, and
+        # coding a text column is the analyst's step, not the agent's.
+        text = text_columns(profile, _role_columns(profile, ans))
+        if _presets(profile)["B"] or text:
+            ans["covariates"] = "B" + (" plus " + ", ".join(text) if text else "")
             src["covariates"] = ("inferred: every usable numeric column that is "
-                                 "not an outcome column")
+                                 "not an outcome column"
+                                 + (", and the column(s) " + ", ".join(text)
+                                    + ", which the file stores as text" if text else ""))
         else:
             missing.append("4")
 
@@ -600,10 +608,10 @@ def complete(profile: Dict[str, Any], given: Dict[str, Optional[str]],
         missing.append("6")
 
     # ---- time scale: CONTINUOUS TIME IS THE
-    # DEFAULT and item 7 is never asked by the harness. a design decision after the
-    # MIUM smoke (343 subjects, one-year administrative censoring, 34 distinct
-    # days -- "coarse" by the old rule, and the question went out on every
-    # prompt): the Cox row runs unless the analyst ASKS for discrete intervals
+    # DEFAULT and item 7 is never asked by the harness. By design (a
+    # continuous follow-up with few distinct event days is "coarse" by a
+    # grid rule, and asking would put the question on nearly every file):
+    # the Cox row runs unless the analyst ASKS for discrete intervals
     # (a "7) <width> <K>" reply, before or after a run). When the settled time
     # column does sit on a coarse grid the default is DISCLOSED with the fact
     # that raised it, so the analyst can ask; an earlier answer for the same
@@ -622,6 +630,35 @@ def complete(profile: Dict[str, Any], given: Dict[str, Optional[str]],
                                f"'7) index') to analyse it as discrete intervals")
 
     return Completion(answers=ans, sources=src, missing=missing)
+
+
+def text_columns(profile: Dict[str, Any], exclude=()) -> List[str]:
+    """Columns stored as text (character / factor / logical) that could be a
+    covariate: not an identifier, not constant, not mostly missing (the
+    profile's quarantine), not a date, and not one of `exclude` (the outcome
+    and strata columns). Preset B leaves them out because the estimators take
+    numbers; "every other column" must not drop them silently."""
+    ex = {e for e in exclude if e}
+    out = []
+    for c in profile.get("columns", []):
+        if (c.get("name") in ex or c.get("can_be_covariate") or c.get("quarantine")
+                or (c.get("n_distinct") or 0) < 2 or c.get("can_be_time")):
+            continue
+        out.append(c["name"])
+    return out
+
+
+def _role_columns(profile: Dict[str, Any], ans: Dict[str, Any]) -> List[str]:
+    """The time / event / strata columns an answer set names, resolved."""
+    out = []
+    for kind in ("time", "event", "stratum"):
+        v = ans.get(kind)
+        if v:
+            try:
+                out.append(_resolve_one(profile, kind, str(v)))
+            except DeclarationError:
+                out.append(str(v))
+    return out
 
 
 def _presets(profile: Dict[str, Any]) -> Dict[str, List[str]]:
@@ -802,7 +839,7 @@ def parse_reply(profile: Dict[str, Any], answers: Dict[str, str]) -> Declaration
     external_model (optional), discrete (item 7, optional: absent means the
     continuous-time analysis).
     """
-    # THE DESIGN IS DECLARED BY WHAT IS ANSWERED. Leaving the follow-up-time
+    # 🔴 THE DESIGN IS DECLARED BY WHAT IS ANSWERED. Leaving the follow-up-time
     # question blank and naming a matched set is the nested case-control
     # declaration; answering both is a stratified cohort; answering time alone
     # is a plain cohort. There is no separate "which design is this?" field to
@@ -925,11 +962,11 @@ def from_dictionary(profile: Dict[str, Any]) -> Optional[Declaration]:
     if sorted(levels) != ["0", "1"]:
         return None
     covariates = _presets(profile)["A"] or _presets(profile)["B"]
-    # The presets are computed from the profile alone, BEFORE anyone has said
+    # 🔴 The presets are computed from the profile alone, BEFORE anyone has said
     # which column is the outcome, so "every usable numeric column" necessarily
     # contains the follow-up time and the event indicator. `parse_reply` strips
     # them; this path did not, so every declaration it produced was refused by
-    # verify with `outcome_used_as_covariate` -- the dictionary shortcut could
+    # verify() with `outcome_used_as_covariate` -- the dictionary shortcut could
     # not produce a runnable analysis at all. Arithmetic, not inference: a
     # column cannot be both the outcome and a predictor of itself.
     notes = ["the data dictionary left exactly one eligible time column and one "
@@ -995,6 +1032,13 @@ def _own_checks(profile: Dict[str, Any], decl: Declaration) -> List[Dict[str, An
                                f"grouping column and one of the outcome "
                                f"columns.",
                     "detail": None})
+    if not decl.covariates:
+        # an empty set would reach the fitter, which stops with "z must have column
+        # names" after the analyst has been told the run is starting
+        bad.append({"code": "covariate_set_empty",
+                    "message": "No predictor is left in the declaration, so there is "
+                               "nothing to fit. Name the columns to adjust for.",
+                    "detail": None})
     if decl.time_col is not None and decl.time_col == decl.event_col:
         bad.append({"code": "time_is_event",
                     "message": f"'{decl.time_col}' was named as both the "
@@ -1046,7 +1090,7 @@ def _own_checks(profile: Dict[str, Any], decl: Declaration) -> List[Dict[str, An
                                "so the model would be predicting the outcome from "
                                "itself.",
                     "detail": ", ".join(overlap)})
-    # The strata column is not the outcome (2026-09-30: the refusal used to say it
+    # The strata column is not the outcome (the refusal used to say it
     # was). It is constant within each stratum, so once every stratum has its own
     # baseline hazard its effect cannot be estimated.
     if decl.stratum_col is not None and decl.stratum_col in decl.covariates:
@@ -1110,10 +1154,10 @@ def verify(profile: Dict[str, Any], decl: Declaration, data_path: str,
         f"  study design      {decl.design}",
     ]
     if ncc:
-        # The column may be absent, and this is EXACTLY the declaration
+        # 🔴 The column may be absent, and this is EXACTLY the declaration
         # `_own_checks` exists to refuse: no follow-up time (so, matched) and no
         # matched set either. Looking it up unguarded raised KeyError(None) and
-        # took the whole verify call down -- so the refusal that was written
+        # took the whole verify() call down -- so the refusal that was written
         # for this case could never reach the analyst, and what they saw was a
         # stack trace instead of a sentence telling them what to fix.
         if decl.stratum_col:
@@ -1139,7 +1183,7 @@ def verify(profile: Dict[str, Any], decl: Declaration, data_path: str,
             card.append(f"  strata            {decl.stratum_col}   "
                         f"[{_fmt_col(cols[decl.stratum_col])}]{how('stratum')}")
         if decl.discrete:
-            # THE GRID IS PART OF THE MODEL (ruling 1): stated on the card
+            # 🔴 THE GRID IS PART OF THE MODEL: stated on the card
             # like the event value, with the binning rule, so the analyst
             # can falsify it from the counts the gate adds below
             if decl.time_is_interval_index:
@@ -1155,7 +1199,7 @@ def verify(profile: Dict[str, Any], decl: Declaration, data_path: str,
                             f"interval {decl.n_intervals}{how('discrete')}")
         elif ((cols.get(decl.time_col) or {}).get("time_grid") or {}).get("coarse"):
             # the default, disclosed where the data could have suggested
-            # otherwise
+            # otherwise (by design: Cox unless the analyst asks)
             card.append(f"  time scale        continuous (the default){how('discrete')}")
     card += [
         f"  predictors        {len(decl.covariates)}: "
@@ -1175,7 +1219,7 @@ def verify(profile: Dict[str, Any], decl: Declaration, data_path: str,
         except Exception:
             run_r = None
 
-    # A declaration that failed its OWN checks is not taken to the data.
+    # 🔴 A declaration that failed its OWN checks is not taken to the data.
     # `_own_checks` refuses things that are wrong about the declaration itself
     # -- the outcome listed as its own predictor, a matched design with no
     # matched set -- and such a declaration cannot even be turned into R
@@ -1209,14 +1253,14 @@ def verify(profile: Dict[str, Any], decl: Declaration, data_path: str,
             if fu:
                 card.append(f"  follow-up         median {_n(fu['median'])} "
                             f"(range {_n(fu['min'])} to {_n(fu['max'])})")
-            # THE FALSIFICATION NUMBER FOR A MATCHED DESIGN.
+            # 🔴 THE FALSIFICATION NUMBER FOR A MATCHED DESIGN.
             # Under a cohort, the analyst catches a complement mix-up from the
             # event RATE -- 25% against 75%. Under a matched design the rate is
             # the sampling ratio, fixed by the study's own construction, so it
             # cannot falsify anything: naming the wrong column still gives a
             # plausible-looking number. What the wrong column DOES break is the
             # one-case-per-set structure, and that is checkable.
-            # Only under a MATCHED design. The gate populates `matched_sets`
+            # 🔴 Only under a MATCHED design. The gate populates `matched_sets`
             # for a stratified cohort too -- it has strata, so the numbers
             # exist -- but "sets with exactly one case" is a statement about 1:m
             # sampling and means nothing for a cohort that happens to be

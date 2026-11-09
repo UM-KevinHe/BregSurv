@@ -1,6 +1,6 @@
 """BregSurv agent — Cox transfer learning with a language model at two edges.
 
-WHAT THIS PACKAGE IS, after the V2 stack was retired on 2026-08-19.
+🔴 WHAT THIS PACKAGE IS, after the V2 stack was retired.
 
 The model acts in exactly two places and is OPTIONAL in both:
 

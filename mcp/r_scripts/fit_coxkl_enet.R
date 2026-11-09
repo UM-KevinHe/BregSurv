@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # fit_coxkl_enet.R - dispatcher for the fit_coxkl_enet MCP tool.
 #
-# Calls BregSurv::coxkl_enet — Cox PH with elastic-net penalty + KL
+# Calls BregSurv::coxkl_enet() — Cox PH with elastic-net penalty + KL
 # divergence integration of external β. Single-eta convention: returns the
 # beta path along the lambda sequence at one eta. Multi-eta scanning belongs
 # in cv.coxkl_enet.
@@ -32,7 +32,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {

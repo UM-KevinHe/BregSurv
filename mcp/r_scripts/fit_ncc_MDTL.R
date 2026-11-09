@@ -4,7 +4,7 @@
 # Called by mcp/server.py as:
 #   Rscript fit_ncc_MDTL.R <input.json> <output.json>
 #
-# Calls BregSurv::ncc_MDTL with external beta and optional precision
+# Calls BregSurv::ncc_MDTL() with external beta and optional precision
 # matrix Q. Penalty is (eta/2) * (beta - beta_ext)^T Q (beta - beta_ext).
 #
 # DESIGN INVARIANT: MDTL family never accepts RS. Only `beta` (+ optional
@@ -32,7 +32,7 @@ eval_in <- function(expr_str, env) {
 
 # --- External-coefficient linkage (requirement R2) ---------------------------
 # The external coefficient vector is matched to the internal covariates BY NAME.
-# `as.numeric` used to strip those names here, which disabled the package's
+# `as.numeric()` used to strip those names here, which disabled the package's
 # aligner and silently reintroduced POSITIONAL borrowing whenever the two
 # lengths happened to agree. Keep the names.
 as_named_numeric <- function(x) {
@@ -155,7 +155,7 @@ result <- tryCatch({
     stop("Provide only one of: Q_expr, Q_inline")
   }
   # Shape / symmetry / PSD / name validation is delegated to the package's
-  # align_beta_Q: a NAMED Q may cover a subset of colnames(z) and is
+  # align_beta_Q(): a NAMED Q may cover a subset of colnames(z) and is
   # zero-padded; only an UNNAMED Q must be exactly ncol(z) x ncol(z).
   # Do not re-check it here -- the bridge cannot express that contract.
 

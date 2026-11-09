@@ -1,7 +1,7 @@
-"""Evaluation by repeated random train/test splits, on request (V4, decided 2026-10-03).
+"""Evaluation by repeated random train/test splits, on request (V4).
 
 The analyst asks in words -- "evaluate the methods on 500 random 70/30 splits and show box plots
-of the C-index" -- and the agent does all of it. This does NOT reverse the rulings that the agent's
+of the C-index" -- and the agent does all of it. This does NOT reverse the design rules that the agent's
 own analysis draws no outer split and its report carries no figure: those govern the
 default analysis, and this is an evaluation the analyst asked for, delivered as a SEPARATE set of
 files beside the report, never inside it.

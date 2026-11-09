@@ -5,8 +5,7 @@ if and only if the key names it" (`eval/verify_corpus.py`), and the runtime
 check at boundary 1 applies the same rule to what the model returns: a name the
 request does not contain is not `quoted`, whatever the model says. The corpus
 builder and the harness therefore import ONE function, so the standard the
-evaluation scores is the standard the product enforces (master memory
-section, build order 0).
+evaluation scores is the standard the product enforces.
 
 The rule is deliberately narrow. Exactly three spellings of a column name count
 as writing it: the name itself, underscores as spaces, underscores as hyphens.

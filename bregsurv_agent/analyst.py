@@ -51,14 +51,13 @@ MAX_CALLS = MAX_TRIES * (1 + MAX_REFINEMENTS)   # the loop can never make more m
 PLAYBOOK_PATH = Path(__file__).resolve().parent / "knowledge" / "tl_playbook.md"
 
 # the default grids of run_candidates.R (`log_eta`): (from, to, points), log spaced; eta = 0 is
-# always added there. Mirrored here only to describe them to the planner; test_v4_loop checks the
-# two agree.
+# always added there. Mirrored here only to describe them to the planner; keep the two in step.
 DEFAULT_GRIDS: Dict[str, Tuple[float, float, int]] = {
     "kl": (0.01, 200.0, 81), "kl_ridge": (0.01, 200.0, 41), "kl_lasso": (0.01, 200.0, 41),
     "mahalanobis": (0.01, 1e6, 81), "euclidean": (0.01, 1e6, 81),
     "mahalanobis_ridge": (0.01, 1e6, 41), "euclidean_ridge": (0.01, 1e6, 41),
     "mahalanobis_lasso": (0.01, 1e3, 41), "euclidean_lasso": (0.01, 1e3, 41),
-    "indi": (0.01, 200.0, 81), "indi_lasso": (0.01, 200.0, 41),
+    "indi": (0.01, 200.0, 81), "indi_ridge": (0.01, 200.0, 41), "indi_lasso": (0.01, 200.0, 41),
 }
 DISCRETE_GRID = "0, 1, 5, 10, 20, 50, 100 (fixed values)"
 
@@ -110,6 +109,8 @@ class Options:
     budget: int
     intervals_open: bool = False        # 4b: the planner may choose the discrete row and set its grid
     ties_allowed: Tuple[str, ...] = P.TIES   # set from the card: `exact` only where it can be computed
+    penalise_target: bool = False       # set from the card: more covariates than events (plan.protected_core)
+    wide: bool = False                  # p >= n: the unpenalized members are not in the set (pipeline.wide_design)
 
     @property
     def all_keys(self) -> List[str]:
@@ -119,8 +120,10 @@ class Options:
         return out
 
 
-def options_for(declaration: Any, ext_kw: Dict[str, Any], budget: int = P.DEFAULT_BUDGET) -> Options:
-    from .pipeline import resolve_config
+def options_for(declaration: Any, ext_kw: Dict[str, Any], budget: int = P.DEFAULT_BUDGET,
+                data_path: Optional[str] = None) -> Options:
+    from .pipeline import resolve_config, wide_design
+    wide = bool(data_path) and wide_design(data_path, declaration)
     # records are fitted into a coefficient vector with its covariance (run_candidates.R), so the
     # Mahalanobis members there use a precision matrix as their metric
     has_Q = bool(ext_kw.get("external_Q_inline") or ext_kw.get("external_Q_expr")
@@ -136,14 +139,14 @@ def options_for(declaration: Any, ext_kw: Dict[str, Any], budget: int = P.DEFAUL
     open_ = False
     if declaration.discrete:
         # the analyst declared discrete intervals: their statement settles the row
-        rows = {"discrete": P.admissible_keys("discrete", design, form, has_baseline)}
+        rows = {"discrete": P.admissible_keys("discrete", design, form, has_baseline, wide)}
     else:
         rows = {}
         for r in ("cox", "cox_ties"):
-            ks = P.admissible_keys(r, design, form, has_baseline)
+            ks = P.admissible_keys(r, design, form, has_baseline, wide)
             if ks:
                 rows[r] = ks
-        # 4b (ruling 2026-10-02: the time scale is judged from the data): the discrete row is offered
+        # 4b (by design, the time scale is judged from the data): the discrete row is offered
         # unless the analyst settled the time scale (a reply, a quote, a remembered answer -- not the
         # harness's continuous default), the design is matched, or a test file was given (the
         # discrete row has no held-out scorer)
@@ -155,12 +158,13 @@ def options_for(declaration: Any, ext_kw: Dict[str, Any], budget: int = P.DEFAUL
         if (declaration.time_col and not matched and not settled
                 and not getattr(declaration, "has_test_data", False)
                 and (has_baseline or form == "none")):
-            ks = P.admissible_keys("discrete", design, form, has_baseline)
+            ks = P.admissible_keys("discrete", design, form, has_baseline, wide)
             if ks:
                 rows["discrete"] = ks
                 open_ = True
     return Options(design=design, external_form=form, has_baseline=has_baseline, has_Q=has_Q,
-                   covariates=covs, covered=covered, rows=rows, budget=budget, intervals_open=open_)
+                   covariates=covs, covered=covered, rows=rows, budget=budget, intervals_open=open_,
+                   wide=wide)
 
 
 def amend_declaration(declaration: Any, plan: Dict[str, Any]) -> Any:
@@ -191,6 +195,13 @@ def _lost_on_ties(opts: Options) -> str:
 def ties_allowed(card: Dict[str, Any]) -> Tuple[str, ...]:
     """Breslow only (plan.TIES): the exact correction is no longer offered."""
     return P.TIES
+
+
+def penalise_target(card: Dict[str, Any]) -> bool:
+    """More covariates than events: the protected target-only member becomes the penalized one."""
+    f = card.get("facts") or {}
+    p, e = f.get("p"), f.get("n_events")
+    return isinstance(p, (int, float)) and isinstance(e, (int, float)) and p > e
 
 
 def situations(card: Dict[str, Any], opts: Options, rows: Optional[List[Dict[str, Any]]] = None
@@ -297,7 +308,8 @@ def _grid_text(key: str, entry: Optional[Dict[str, Any]] = None) -> str:
 
 
 def _absent_evidence(ext: Dict[str, Any], words: str) -> List[str]:
-    """What bears on padding the uncovered covariates with zero, gathered for the planner to weigh. Padding asserts the release estimated those effects as zero,
+    """What bears on padding the uncovered covariates with zero, gathered for the planner to weigh
+    (by design, no rule decides it). Padding asserts the release estimated those effects as zero,
     which holds when its authors considered the variables and left them out, not when they never had them."""
     from .textmatch import mentions
     import re
@@ -418,7 +430,8 @@ def render_task(declaration: Any, card: Dict[str, Any], opts: Options, words: st
             L.append(f"  {k}: {member_label(k, opts.has_Q)}; cost {P.cost(k)}; grid {_grid_text(k)}")
     L.append(f"budget: {opts.budget} units for the whole analysis, every fit counted, a refit of a "
              f"member counted again. Always in the plan: "
-             + ", ".join(P.protected_core(next(iter(opts.rows)), next(iter(opts.rows.values())))) + ".")
+             + ", ".join(P.protected_core(next(iter(opts.rows)), next(iter(opts.rows.values())),
+                                         opts.penalise_target)) + ".")
     L.append("")
     L.append("THE ANALYST'S WORDS")
     L.append(words.strip()[-3000:] if words and words.strip() else "(the analyst said nothing about the method)")
@@ -490,16 +503,16 @@ def render_results(cur: Dict[str, Any], rows: List[Dict[str, Any]], spent: int, 
 
 
 # ------------------------------------------------------------------------------------- schemas
-# Length caps on the visible text fields. Rubric trial 2026-10-03 (F07_1): with thinking on, Qwen3-8B
-# wrote 15-20k characters into the visible `reasoning` field, every planning call ended at the token limit
-# with invalid JSON, three attempts failed (about 16 minutes) and the plan fell back to the default. The
+# Length caps on the visible text fields. 🔴 With thinking on, Qwen3-8B can write its whole deliberation
+# into the visible `reasoning` field; every planning call then ends at the token limit with invalid JSON,
+# the retries fail the same way and the plan falls back to the default. The
 # thinking is the place to deliberate; the visible fields are a short record of it.
 REASONING_MAX = 2000
 REASON_MAX = 600
 MEMBER_REASON_MAX = 300
 def _member_schema(opts: Options, keys: Optional[List[str]] = None) -> Dict[str, Any]:
     keys = list(keys or opts.all_keys)
-    # maxItems bound both lists: rubric trial 2026-10-03 (F07_1) looped on a covariate list
+    # 🔴 maxItems bound both lists: without the bound, a planning call can loop on a covariate list
     # ("cold_ischemia", "hla_mismatch", ...) until every planning call hit its token limit.
     covs = {"anyOf": [{"type": "array", "maxItems": max(1, len(opts.covariates)),
                        "items": {"type": "string", "enum": opts.covariates}},
@@ -530,9 +543,9 @@ INTERVALS_SCHEMA = {"type": "object", "additionalProperties": False,
 
 
 def _row_branch(opts: Options, row: str) -> Dict[str, Any]:
-    """One row's plan: the row, its own settings, and members drawn from that row alone. The smoke of
-    2026-10-02 (F18): with one key list across rows, Qwen3-8B mixed members of three rows in one plan three
-    times running and fell back to the default plan; the grammar now makes a mixed plan unwritable."""
+    """One row's plan: the row, its own settings, and members drawn from that row alone. 🔴 With one key
+    list across rows, Qwen3-8B can mix members of several rows in one plan and fall back to the default
+    plan; the grammar now makes a mixed plan unwritable."""
     keys = opts.rows[row]
     props: Dict[str, Any] = {"row": {"type": "string", "enum": [row]}}
     props["ties"] = ({"type": "string", "enum": list(opts.ties_allowed)} if row == "cox_ties"
@@ -601,7 +614,8 @@ def _validate(raw_plan: Dict[str, Any], opts: Options, budget: int, words: Optio
     return P.validate(raw_plan, design=opts.design, external_form=opts.external_form,
                       has_baseline=opts.has_baseline, covariates=opts.covariates,
                       covered=opts.covered, budget=budget, intervals_open=opts.intervals_open,
-                      ties_allowed=opts.ties_allowed, mask_evidence_text=words)
+                      ties_allowed=opts.ties_allowed, mask_evidence_text=words,
+                      penalise_target=opts.penalise_target, wide=opts.wide)
 
 
 def run_loop(propose: Callable[[str, str, Dict[str, Any], str, int], Dict[str, Any]],
@@ -617,7 +631,8 @@ def run_loop(propose: Callable[[str, str, Dict[str, Any], str, int], Dict[str, A
     the declaration amended with a planned discrete grid and returns its refusals as problems; a plan
     that chooses discrete intervals is refused without it."""
     from . import policy
-    opts = dataclasses.replace(opts, ties_allowed=ties_allowed(card))
+    opts = dataclasses.replace(opts, ties_allowed=ties_allowed(card),
+                               penalise_target=penalise_target(card))
     steps: List[Dict[str, Any]] = []
     sit = situations(card, opts)
     task = render_task(declaration, card, opts, words)
@@ -661,7 +676,7 @@ def run_loop(propose: Callable[[str, str, Dict[str, Any], str, int], Dict[str, A
         problems = pr
     if plan_ok is None:
         row = next(iter(opts.rows))
-        plan_ok = P.default_plan(row, opts.design, opts.external_form, opts.has_baseline)
+        plan_ok = P.default_plan(row, opts.design, opts.external_form, opts.has_baseline, opts.wide)
         dok, dpr, dc = _validate(plan_ok, opts, 10 ** 6)
         plan_ok = dok or plan_ok
         fallback = (f"the planner's proposal was refused {MAX_TRIES} times; the fixed default plan "
@@ -676,7 +691,7 @@ def run_loop(propose: Callable[[str, str, Dict[str, Any], str, int], Dict[str, A
         if fallback is not None:
             raise
         row = plan_ok.get("row") or next(iter(opts.rows))
-        dflt = P.default_plan(row, opts.design, opts.external_form, opts.has_baseline)
+        dflt = P.default_plan(row, opts.design, opts.external_form, opts.has_baseline, opts.wide)
         fallback = (f"the planned members could not be fitted ({type(exc).__name__}: "
                     f"{str(exc)[:200]}); the fixed default plan of the '{row}' row was fitted")
         plan_ok = _validate(dflt, opts, 10 ** 6)[0] or dflt

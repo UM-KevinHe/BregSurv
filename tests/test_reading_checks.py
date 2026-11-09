@@ -1,13 +1,12 @@
-"""Three deterministic checks on the model's reading of a request, added 2026-10-01 from the
-rubric run's hard requests. No model and no R.
+"""Three deterministic checks on the model's reading of a request, drawn from hard
+requests. No model and no R.
 
   1. the message's own wording of the event coding contradicts the value read -> asked (item 3):
-     "alive ... is 0 when the patient died and 1 when they were alive" read as 1 (H009 and five
-     more); "event_flag is 1 if the event occurred, 0 otherwise" on a column of 1 and 2 (H042,
-     H044, H048);
-  2. a longer name the analyst wrote is kept, so it is refused by name (H046:
-     "hla_mismatch_count" read as the file's `hla_mismatch`);
-  3. an invented, unwritten name no longer blocks the every-other-column rule (H004).
+     "alive ... is 0 when the patient died and 1 when they were alive" read as 1;
+     "event_flag is 1 if the event occurred, 0 otherwise" on a column of 1 and 2;
+  2. a longer name the analyst wrote is kept, so it is refused by name
+     ("hla_mismatch_count" read as the file's `hla_mismatch`);
+  3. an invented, unwritten name no longer blocks the every-other-column rule.
 
 Each check is also tested where it must NOT fire, since a false conflict costs a question.
 
@@ -69,7 +68,7 @@ def main():
     check(C("The event: alive (0 = event).", "alive", ["0", "1"], "1") is not None,
           "terse '(0 = event)' read as 1 is a conflict")
 
-    # complete asks rather than filling the 0/1 rule
+    # complete() asks rather than filling the 0/1 rule
     prof = _prof(["followup_days", "alive", "age", "bmi"], {"alive": ["0", "1"]})
     comp = complete(prof, {"time": "followup_days", "event": "alive", "event_value": None,
                            "covariates": "age, bmi", "time_zero": "yes"},
@@ -81,7 +80,7 @@ def main():
     check(comp2.answers.get("event_value") == "1", "without a conflict the 0/1 rule still applies")
 
     # the backing check end to end on the event value: the message labels ONE code
-    # the column holds as the event, so that code is taken (2026-10-02; it used to ask)
+    # the column holds as the event, so that code is taken (no question asked)
     ext = {"time_column": "followup_days", "event_column": "alive", "event_value": "1",
            "covariate_columns": ["age", "bmi"]}
     backed, unbacked, how = B._backed_roles_checked(h009 + " Adjust for age and bmi.", prof, ext)
@@ -122,7 +121,7 @@ def main():
     check("hla_mismatch_count" in (b46.get("covariates") or "") and "hla_mismatch_count" in u46.get("near_miss", {}),
           "the analyst's own name is kept, so verify refuses it by name", str(b46.get("covariates")))
 
-    # 2b. the same longer name when the reading left it out altogether (H046, second pass)
+    # 2b. the same longer name when the reading left it out altogether
     ext46b = dict(ext46, covariate_columns=["age", "bmi", "egfr", "cold_ischemia"])
     b46b, u46b, _ = B._backed_roles_checked(msg46, prof46, ext46b)
     check("hla_mismatch_count" in (b46b.get("covariates") or "")
@@ -140,7 +139,7 @@ def main():
           "a message that says the other columns are predictors is not given the longer name",
           str(b46d.get("covariates")))
 
-    # 2c. the pending state keeps an open question on a role with no value (H063)
+    # 2c. the pending state keeps an open question on a role with no value
     from bregsurv_agent.state import Session
     s = Session().with_pending({"time": "followup_days", "event": "alive", "event_value": None},
                                {"time": "quoted", "event": "quoted",

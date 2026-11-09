@@ -17,7 +17,7 @@ A plan is a plain dict, the object run_candidates.R reads:
      "reason": "..."}
 `reason` fields are the planner's, recorded and shown in the report; they change nothing that is fitted.
 
-Decisions behind the rules (master memory 3e, 2026-10-02): the protected core is the two do-not-borrow
+Decisions behind the rules: the protected core is the two do-not-borrow
 endpoints; the budget is a hard limit on COST-WEIGHTED fits (wall-clock time is only a safety stop), so a
 plan is the same on a fast machine and a slow one; no new library function, so the tie-corrected row holds
 the target-only and Kullback-Leibler fits only.
@@ -70,7 +70,8 @@ def plan_cost(plan: Dict[str, Any]) -> int:
     return sum(cost(str(m.get("key"))) for m in plan.get("members") or [])
 
 
-def admissible_keys(row: str, design: str, external_form: str, has_baseline: bool) -> List[str]:
+def admissible_keys(row: str, design: str, external_form: str, has_baseline: bool,
+                    wide: bool = False) -> List[str]:
     """The members the facts admit on `row`, in the library's order. For `cox` and `discrete` this is
     pipeline.derive_candidate_keys; the tie-corrected row exists for a full cohort with a coefficient
     release or none, and holds the two tie variants the library has plus the released model, which that
@@ -78,7 +79,7 @@ def admissible_keys(row: str, design: str, external_form: str, has_baseline: boo
     from .pipeline import derive_candidate_keys
     ncc = "nested" in design.lower() or "case-control" in design.lower()
     if row == "cox":
-        return derive_candidate_keys(design, external_form, discrete=False)
+        return derive_candidate_keys(design, external_form, discrete=False, wide=wide)
     if row == "discrete":
         return derive_candidate_keys(design, external_form, discrete=True, has_baseline=has_baseline)
     if row == "cox_ties":
@@ -86,16 +87,24 @@ def admissible_keys(row: str, design: str, external_form: str, has_baseline: boo
         if ncc:
             return []
         return [k if k == "external" else k + "_ties"
-                for k in derive_candidate_keys(design, external_form, discrete=False)]
+                for k in derive_candidate_keys(design, external_form, discrete=False, wide=wide)]
     return []
 
 
-def protected_core(row: str, keys: Iterable[str]) -> List[str]:
+def protected_core(row: str, keys: Iterable[str], penalise_target: bool = False) -> List[str]:
     """The two ways of not borrowing that every plan keeps: the target-only fit of the row, and the
     released model unchanged where the row has one (absent for a matched design's coefficient form,
-    which has no fixed-coefficient loss, and for a row without a release)."""
+    which has no fixed-coefficient loss, and for a row without a release).
+    `penalise_target` (more covariates than events): the protected target-only fit is the lasso
+    member of the row, since the unpenalized fit is not identified there and the lasso is the
+    penalized form the library computes at any p (coordinate descent); the discrete row has no
+    penalized target-only member and keeps its own."""
     keys = list(keys)
     target = {"cox": "internal", "cox_ties": "internal_ties", "discrete": "internal_discrete"}.get(row)
+    if penalise_target:
+        pen = {"cox": "internal_lasso", "cox_ties": "internal_lasso_ties"}.get(row)
+        if pen and pen in keys:
+            target = pen
     released = "external_discrete" if row == "discrete" else "external"
     return [k for k in (target, released) if k and k in keys]
 
@@ -116,7 +125,8 @@ MAX_INTERVALS = 200
 def validate(plan: Dict[str, Any], *, design: str, external_form: str, has_baseline: bool,
              covariates: List[str], covered: List[str], budget: int = DEFAULT_BUDGET,
              intervals_open: bool = False, ties_allowed: Tuple[str, ...] = TIES,
-             mask_evidence_text: Optional[str] = None
+             mask_evidence_text: Optional[str] = None, penalise_target: bool = False,
+             wide: bool = False
              ) -> Tuple[Optional[Dict[str, Any]], List[Dict[str, str]], int]:
     """Check a plan and return (the plan in canonical form, problems, cost). The plan is refused when any
     problem is listed; the canonical form fixes member order (the library's), sorts and dedupes grids,
@@ -131,7 +141,7 @@ def validate(plan: Dict[str, Any], *, design: str, external_form: str, has_basel
     if row not in ROWS:
         bad("row_unknown", f"row {row!r} is not one of {', '.join(ROWS)}")
         return None, problems, 0
-    keys = admissible_keys(row, design, external_form, has_baseline)
+    keys = admissible_keys(row, design, external_form, has_baseline, wide)
     if not keys:
         bad("row_not_admissible", f"the {row} row does not exist for a {design} with {external_form}")
         return None, problems, 0
@@ -249,7 +259,7 @@ def validate(plan: Dict[str, Any], *, design: str, external_form: str, has_basel
                     bad("mask_everything", f"{k!r}: the mask leaves nothing to borrow")
                 if kept:
                     mm["mask"] = kept
-                    # a term is left out of the borrowing (any family) only on evidence
+                    # 🔴 By design: a term is left out of the borrowing (any family) only on evidence
                     # from OUTSIDE the data -- the analyst saying the variable is defined, measured or coded
                     # differently from the release -- never on a statistical disagreement in this cohort.
                     # The evidence is the analyst's own words, copied verbatim, and must name every masked term.
@@ -286,7 +296,7 @@ def validate(plan: Dict[str, Any], *, design: str, external_form: str, has_basel
             mm["reason"] = str(m["reason"])[:1000]
         seen[k] = mm
 
-    for k in protected_core(row, keys):
+    for k in protected_core(row, keys, penalise_target):
         if k not in seen:
             bad("protected_member_missing",
                 f"{k!r} must be in every plan on this row: it is one of the two ways of not borrowing")
@@ -299,8 +309,9 @@ def validate(plan: Dict[str, Any], *, design: str, external_form: str, has_basel
     return (out if not problems else None), problems, c
 
 
-def default_plan(row: str, design: str, external_form: str, has_baseline: bool) -> Dict[str, Any]:
+def default_plan(row: str, design: str, external_form: str, has_baseline: bool,
+                 wide: bool = False) -> Dict[str, Any]:
     """Every admissible member on its default grid: what V3 fits. Used for the ablation "the planner's
     decisions replaced by fixed defaults" and when no planner is configured."""
-    return {"row": row, "members": [{"key": k} for k in admissible_keys(row, design, external_form, has_baseline)],
+    return {"row": row, "members": [{"key": k} for k in admissible_keys(row, design, external_form, has_baseline, wide)],
             "reason": "fixed default: every admissible member on its default grid"}

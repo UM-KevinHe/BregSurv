@@ -1,4 +1,4 @@
-"""The Mahalanobis family takes the release as it stands (found 2026-09-28).
+"""The Mahalanobis family takes the release as it stands.
 
 run_candidates.R used to hand the Mahalanobis estimators `beta_full`: every column
 named, with zeros on the ones the release never mentioned. align_beta_Q masks its
@@ -120,8 +120,8 @@ def main():
     check("coefficients alone: still 10 members, no Euclidean key", len(keys_a) == 10
           and not any(k.startswith("euclidean") for k in keys_a), str(keys_a))
     keys_n = derive_candidate_keys("nested case-control", "coefficients and covariance")
-    check("matched design with covariance: Euclidean without ridge",
-          "euclidean" in keys_n and "euclidean_lasso" in keys_n and "euclidean_ridge" not in keys_n,
+    check("matched design with covariance: Euclidean with ridge and lasso (BregSurv 1.4.0)",
+          {"euclidean", "euclidean_ridge", "euclidean_lasso"} <= set(keys_n),
           str(keys_n))
     names = list(RELEASE)
     Qrows = [[(1.5 + i) if i == j else 0.2 for j in range(len(names))] for i in range(len(names))]
