@@ -1,7 +1,7 @@
 ## The three decisions of the framework, as objects.
 ##
 ## bregsurv() and cv.bregsurv() take a target (the model the center fits), a release (what the external
-## source released) and a member (how the release enters: composite likelihood, Mahalanobis or
+## source released) and a divergence (how the release enters: composite likelihood, Mahalanobis or
 ## Kullback-Leibler). These constructors validate and hold the data; they fit nothing.
 
 # ---------------------------------------------------------------------------------------------------
@@ -15,7 +15,7 @@
 #' weight is balanced against.
 #'
 #' * `target_cox()` is the stratified Cox model, scored by its log-partial likelihood. Tied event times
-#'   are handled by `ties`: `"none"` (the default), `"breslow"`, or `"exact"` (Kullback-Leibler member
+#'   are handled by `ties`: `"none"` (the default), `"breslow"`, or `"exact"` (Kullback-Leibler divergence
 #'   only).
 #' * `target_ncc()` is the nested case-control (matched case-control) design: the conditional
 #'   likelihood of which member of each matched set is the case.
@@ -83,7 +83,7 @@ target_cox <- function(time, event, z, stratum = NULL, ties = c("none", "breslow
   if (!is.null(stratum)) .check_len(stratum, n, "stratum")
   score <- .check_score(score)
   if (inherits(score, "nn_score") && ties == "exact")
-    stop("ties = \"exact\" is available for the linear Kullback-Leibler member only.", call. = FALSE)
+    stop("ties = \"exact\" is available for the linear Kullback-Leibler divergence only.", call. = FALSE)
   structure(list(type = "cox", time = time, event = event, z = z, stratum = stratum, ties = ties,
                  score = score, n = n), class = "bregsurv_target")
 }
@@ -159,8 +159,8 @@ print.bregsurv_target <- function(x, ...) {
 #' target it outputs one risk score, and the partial likelihood of each mini-batch is formed over the
 #' risk sets within the batch.
 #'
-#' Only the Kullback-Leibler member is defined for a neural target, because the other two members
-#' compare coefficients. Fitting requires the `torch` package (`install.packages("torch")`, then
+#' Only the Kullback-Leibler divergence is defined for a neural target, because the other two
+#' divergences compare coefficients. Fitting requires the `torch` package (`install.packages("torch")`, then
 #' `torch::install_torch()` once).
 #'
 #' @param hidden Widths of the hidden layers. A layer whose width equals the previous one gets a
@@ -206,10 +206,10 @@ print.nn_score <- function(x, ...) {
 
 #' External releases
 #'
-#' A release is what the external source made available. Its form decides which members of the
-#' framework can use it:
+#' A release is what the external source made available. Its form decides which divergences
+#' can use it (the `divergence` argument of [cv.bregsurv()]):
 #'
-#' | release | members it supports |
+#' | release | divergences it supports |
 #' |---|---|
 #' | `release_records()`: individual-level records | composite likelihood; on a Cox target also Mahalanobis and Kullback-Leibler, through a Cox model fitted to the records |
 #' | `release_coef()`: coefficients, optionally with their precision matrix `Q` | Mahalanobis (Euclidean when `Q = NULL`) and Kullback-Leibler |
@@ -220,8 +220,8 @@ print.nn_score <- function(x, ...) {
 #' @param time,event,stratum External follow-up, event indicator and strata (cohort records).
 #' @param case,set External case indicator and matched sets (nested case-control records).
 #' @param interval External interval index (records for a discrete-time target).
-#' @param beta Named external coefficient vector. Covariates the release does not cover are set to zero
-#'   and covariates you do not have are dropped (see [align_beta()]).
+#' @param beta Named external coefficient vector. Every name must be one of your covariates; covariates
+#'   the release does not cover are set to zero (see [align_beta()]).
 #' @param Q Optional precision matrix of `beta` (inverse covariance or information matrix), named like
 #'   `beta`.
 #' @param score Numeric vector: the external risk score of each target subject.
@@ -327,8 +327,8 @@ print.bregsurv_release <- function(x, ...) {
   invisible(x)
 }
 
-## which members a release supports on a target, in the framework's order; the first is the default
-.members_for <- function(release, target) {
+## which divergences a release supports on a target, in the framework's order; the first is the default
+.divergences_for <- function(release, target) {
   if (is.null(release)) return("none")
   lin <- identical(target$score, "linear")
   out <- switch(release$form,

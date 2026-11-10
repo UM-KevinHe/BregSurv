@@ -19,7 +19,7 @@ test_that("a small discrete network fits, predicts and is reproducible", {
   rl <- release_model(beta = c(z1 = 0.8, z2 = -0.6, z3 = 0.3), baseline = exp(seq(-2.5, -1.5, length.out = 6)))
   a <- cv.bregsurv(tg, rl, etas = c(0, 5), nfolds = 3, seed = 1)
   b <- cv.bregsurv(tg, rl, etas = c(0, 5), nfolds = 3, seed = 1)
-  expect_true(all(is.finite(a$path$loss)))
+  expect_true(all(is.finite(a$path$value)))
   expect_identical(a$path, b$path)
   H <- predict(a, s$x[1:4, ], type = "hazard")
   expect_true(all(H > 0 & H < 1))

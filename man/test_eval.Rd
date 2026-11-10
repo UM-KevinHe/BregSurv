@@ -61,4 +61,9 @@ For "IBS", the function predicts survival probabilities and converts them to ris
 If \code{riskRegression} fails to provide a pre-computed IBS, the function manually integrates
 the Brier score using the trapezoidal rule.
 }
-\keyword{internal}
+\examples{
+data(ExampleData_lowdim)
+te <- ExampleData_lowdim$test
+test_eval(te$z, te$status, te$time, betahat = ExampleData_lowdim$beta_external_fair,
+          criteria = "CIndex")
+}

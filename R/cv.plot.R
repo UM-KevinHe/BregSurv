@@ -6,8 +6,9 @@
 #' \code{cv.ncckl}, \code{cv.ncc_MDTL}, \code{cv.ncc_indi},
 #' \code{cv.coxkl_ridge}, \code{cv.cox_MDTL_ridge},
 #' \code{cv.coxkl_enet}, \code{cv.cox_MDTL_enet}, \code{cv.cox_indi_enet},
-#' \code{cv.ncckl_enet}, \code{cv.ncc_MDTL_enet}, or \code{cv.ncc_indi_enet}
-#' objects in a Biometrics-style figure. It displays the cross-validated
+#' \code{cv.ncckl_enet}, \code{cv.ncc_MDTL_enet}, \code{cv.ncc_indi_enet}, or the
+#' discrete-time \code{cv.discretekl}, \code{cv.discrete_MDTL}, \code{cv.discrete_indi} and their
+#' \code{_ridge} and \code{_enet} versions, in a Biometrics-style figure. It displays the cross-validated
 #' performance curve (each eta at its best lambda), a baseline reference at
 #' \code{eta = 0}, and marks the optimal \code{eta}.
 #'
@@ -42,7 +43,8 @@ cv.plot <- function(object,
       inherits(object, "cv.ncckl") ||
       inherits(object, "cv.cox_indi") ||
       inherits(object, "cv.ncc_indi") ||
-      inherits(object, "cv.ncc_MDTL")) {
+      inherits(object, "cv.ncc_MDTL") ||
+      inherits(object, c("cv.discretekl", "cv.discrete_MDTL", "cv.discrete_indi"))) {
 
     df <- object$internal_stat
     criteria <- object$criteria
@@ -54,7 +56,9 @@ cv.plot <- function(object,
              inherits(object, "cv.ncckl_enet")  ||
              inherits(object, "cv.ncc_MDTL_enet") ||
              inherits(object, "cv.ncc_indi_enet") ||
-             inherits(object, "cv.cox_indi_enet")) {
+             inherits(object, "cv.cox_indi_enet") ||
+             inherits(object, c("cv.discretekl_ridge", "cv.discretekl_enet", "cv.discrete_MDTL_ridge",
+                                "cv.discrete_MDTL_enet", "cv.discrete_indi_ridge", "cv.discrete_indi_enet"))) {
 
     df <- object$integrated_stat.best_per_eta
     criteria <- object$criteria

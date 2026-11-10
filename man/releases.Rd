@@ -33,8 +33,8 @@ release_model(beta = NULL, baseline = NULL, hazard = NULL, Q = NULL)
 
 \item{interval}{External interval index (records for a discrete-time target).}
 
-\item{beta}{Named external coefficient vector. Covariates the release does not cover are set to zero
-and covariates you do not have are dropped (see \code{\link[=align_beta]{align_beta()}}).}
+\item{beta}{Named external coefficient vector. Every name must be one of your covariates; covariates
+the release does not cover are set to zero (see \code{\link[=align_beta]{align_beta()}}).}
 
 \item{Q}{Optional precision matrix of \code{beta} (inverse covariance or information matrix), named like
 \code{beta}.}
@@ -51,12 +51,12 @@ interval (an alternative to \code{beta} + \code{baseline}).}
 An object of class \code{"bregsurv_release"}.
 }
 \description{
-A release is what the external source made available. Its form decides which members of the
-framework can use it:
+A release is what the external source made available. Its form decides which divergences
+can use it (the \code{divergence} argument of \code{\link[=cv.bregsurv]{cv.bregsurv()}}):
 }
 \details{
 \tabular{ll}{
-   release \tab members it supports \cr
+   release \tab divergences it supports \cr
    \code{release_records()}: individual-level records \tab composite likelihood; on a Cox target also Mahalanobis and Kullback-Leibler, through a Cox model fitted to the records \cr
    \code{release_coef()}: coefficients, optionally with their precision matrix \code{Q} \tab Mahalanobis (Euclidean when \code{Q = NULL}) and Kullback-Leibler \cr
    \code{release_score()}: a risk score evaluated on your subjects \tab Kullback-Leibler \cr

@@ -1,4 +1,5 @@
-## The grouped-time (discrete-time) target, linear risk score.
+## The grouped-time (discrete-time) model with a linear risk score: the machinery shared by the
+## discretekl, discrete_MDTL and discrete_indi families, and by cv.bregsurv() on a discrete target.
 ##
 ## Subject i is at risk in intervals 1..t_i, and y_ik = 1 when the event happens in interval k = t_i.
 ## The interval hazard is h_ik = g^{-1}(gamma_{s(i),k} + z_i' beta), with g the complementary log-log
@@ -12,38 +13,16 @@
 ##                 as cox_MDTL]
 ##   composite     -(l(theta) + eta * l_ext(theta)) / n, the external records with their own baseline
 ##
-## plus lambda * (alpha |beta|_1 + (1 - alpha) / 2 |beta|^2). Fisher scoring with the interval
-## parameters profiled out by their (diagonal) Schur complement; lasso and elastic net by proximal Newton
-## with coordinate descent. Every quantity is held as an n x K matrix of subjects by intervals.
+## plus lambda * (alpha |beta|_1 + (1 - alpha) / 2 |beta|^2). The solver is src/discrete.cpp: Fisher
+## scoring with the interval parameters profiled out by their (diagonal) Schur complement; lasso and
+## elastic net by proximal Newton with coordinate descent. Every quantity is an n x K matrix of
+## subjects by intervals.
 
 .DT_FLOOR <- 1e-8   # lower bound on an interval hazard's baseline: an interval with no events in the
                     # training data would otherwise send its parameter to minus infinity
 
 .dt_gamma_min <- function(link) if (link == "cloglog") log(-log1p(-.DT_FLOOR)) else stats::qlogis(.DT_FLOOR)
-
-## log h and log(1 - h) for the linear predictor u, stably
-.dt_logs <- function(u, link) {
-  if (link == "cloglog") {
-    e <- exp(u)
-    lh <- ifelse(u > 3.6, log1p(-exp(-e)), log(-expm1(-e)))
-    list(lh = lh, l1h = -e)
-  } else {
-    list(lh = -log1p(exp(-u)) , l1h = -log1p(exp(u)))
-  }
-}
-
-## derivative of t log h + (1 - t) log(1 - h) in u, and its Fisher information
-.dt_score_info <- function(u, t, link) {
-  if (link == "cloglog") {
-    e <- exp(u)
-    mu <- -expm1(-e)
-    r <- ifelse(mu > 0, e / mu, 1)
-    list(d = t * r - e, w = e * r * (1 - mu))
-  } else {
-    mu <- stats::plogis(u)
-    list(d = t - mu, w = mu * (1 - mu))
-  }
-}
+.dt_link_code <- function(link) if (link == "cloglog") 0L else 1L
 
 ## one block of person-intervals: Z (n x p), interval (1..K), cell row (index into the gamma matrix),
 ## target matrix Tm (n x K), weight matrix Wt (n x K, zero where not at risk)
@@ -57,107 +36,28 @@
   list(Z = Z, interval = interval, event = event, cell = cell, M = M, Y = Y, Tm = Tm * M, Wt = weight * M)
 }
 
-## objective (to minimize) of the smooth part, all blocks, plus the quadratic terms
-.dt_objective <- function(blocks, G, beta, link, n, pen) {
-  val <- 0
-  for (b in blocks) {
-    U <- G[b$cell, , drop = FALSE] + drop(b$Z %*% beta)
-    lg <- .dt_logs(U, link)
-    val <- val - sum(b$Wt * (b$Tm * lg$lh + (1 - b$Tm) * lg$l1h), na.rm = TRUE)
+## the blocks stacked into the arrays the C++ solver takes (cells 0-based)
+.dt_stack <- function(blocks) {
+  if (length(blocks) == 1L) {
+    b <- blocks[[1]]
+    return(list(Z = b$Z, cell = as.integer(b$cell) - 1L, Tm = b$Tm, Wt = b$Wt))
   }
-  val <- val / n
-  if (!is.null(pen$Qm)) { dv <- beta - pen$bext; val <- val + 0.5 * pen$eta_m * sum(dv * (pen$Qm %*% dv)) }
-  val + pen$lambda * (pen$alpha * sum(abs(beta)) + 0.5 * (1 - pen$alpha) * sum(beta^2))
+  list(Z = do.call(rbind, lapply(blocks, `[[`, "Z")),
+       cell = as.integer(unlist(lapply(blocks, `[[`, "cell"))) - 1L,
+       Tm = do.call(rbind, lapply(blocks, `[[`, "Tm")),
+       Wt = do.call(rbind, lapply(blocks, `[[`, "Wt")))
 }
 
-## gradient and Fisher information of the smooth part (divided by n), in blocks
-.dt_derivs <- function(blocks, G, beta, link, n, pen, n_cell, K) {
-  p <- length(beta)
-  gb <- numeric(p); Hbb <- matrix(0, p, p)
-  gG <- matrix(0, n_cell, K); HGG <- matrix(0, n_cell, K)
-  HGb <- array(0, c(n_cell, K, p))
-  for (b in blocks) {
-    U <- G[b$cell, , drop = FALSE] + drop(b$Z %*% beta)
-    si <- .dt_score_info(U, b$Tm, link)
-    D <- -b$Wt * si$d; D[!is.finite(D)] <- 0
-    W <- b$Wt * si$w;  W[!is.finite(W)] <- 0
-    gb <- gb + drop(crossprod(b$Z, rowSums(D)))
-    Hbb <- Hbb + crossprod(b$Z * rowSums(W), b$Z)
-    for (cc in unique(b$cell)) {
-      idx <- which(b$cell == cc)
-      gG[cc, ] <- gG[cc, ] + colSums(D[idx, , drop = FALSE])
-      HGG[cc, ] <- HGG[cc, ] + colSums(W[idx, , drop = FALSE])
-      HGb[cc, , ] <- HGb[cc, , ] + crossprod(W[idx, , drop = FALSE], b$Z[idx, , drop = FALSE])
-    }
-  }
-  gb <- gb / n; Hbb <- Hbb / n; gG <- gG / n; HGG <- HGG / n; HGb <- HGb / n
-  if (!is.null(pen$Qm)) { gb <- gb + pen$eta_m * drop(pen$Qm %*% (beta - pen$bext)); Hbb <- Hbb + pen$eta_m * pen$Qm }
-  list(gb = gb, Hbb = Hbb, gG = gG, HGG = HGG, HGb = matrix(HGb, n_cell * K, p))
-}
+.dt_Qm <- function(pen) if (is.null(pen$Qm)) matrix(0, 0, 0) else pen$Qm
+.dt_bext <- function(pen) if (is.null(pen$Qm) || is.null(pen$bext)) numeric(0) else as.numeric(pen$bext)
 
 ## Fit at one (eta, lambda). blocks already standardized; returns gamma (cells x K) and beta on the
 ## standardized scale. alpha = 0 is ridge; lambda = 0 is unpenalized.
 .dt_solve <- function(blocks, link, n, K, n_cell, pen, beta0, G0, tol = 1e-9, max_iter = 200) {
-  p <- ncol(blocks[[1]]$Z)
-  beta <- beta0; G <- G0
-  gmin <- .dt_gamma_min(link)
-  live <- matrix(FALSE, n_cell, K)          # cells with anyone at risk
-  for (b in blocks) for (cc in unique(b$cell)) live[cc, ] <- live[cc, ] | colSums(b$M[b$cell == cc, , drop = FALSE]) > 0
-  F_old <- .dt_objective(blocks, G, beta, link, n, pen)
-  l1 <- pen$lambda * pen$alpha; l2 <- pen$lambda * (1 - pen$alpha)
-  converged <- FALSE
-  for (it in seq_len(max_iter)) {
-    dv <- .dt_derivs(blocks, G, beta, link, n, pen, n_cell, K)
-    hg <- as.vector(dv$HGG); keep <- as.vector(live) & hg > 1e-14
-    Dinv <- ifelse(keep, 1 / hg, 0)
-    gGv <- as.vector(dv$gG)
-    ## reduced (Schur) quadratic in the coefficient step
-    Hs <- dv$Hbb - crossprod(dv$HGb * Dinv, dv$HGb)
-    gs <- dv$gb - drop(crossprod(dv$HGb, Dinv * gGv))
-    if (l1 == 0) {
-      A <- Hs + diag(l2, p)
-      step_b <- -tryCatch(solve(A, gs + l2 * beta), error = function(e) MASS::ginv(A) %*% (gs + l2 * beta))
-      step_b <- drop(step_b)
-    } else {
-      ## proximal Newton: coordinate descent on the reduced quadratic plus the penalty
-      x <- beta; v <- numeric(p); hd <- diag(Hs)
-      for (sweep in seq_len(1000)) {
-        maxd <- 0
-        for (j in seq_len(p)) {
-          a <- hd[j] + l2
-          if (a <= 0) next
-          zj <- hd[j] * x[j] - (gs[j] + v[j])
-          xn <- sign(zj) * max(abs(zj) - l1, 0) / a
-          d <- xn - x[j]
-          if (d != 0) { v <- v + d * Hs[, j]; x[j] <- xn; maxd <- max(maxd, abs(d) * sqrt(a)) }
-        }
-        if (maxd < tol) break
-      }
-      step_b <- x - beta
-    }
-    step_G <- -Dinv * (gGv + drop(dv$HGb %*% step_b))
-    ## backtracking on the full objective
-    s <- 1; accepted <- FALSE
-    for (h in 1:30) {
-      bn <- beta + s * step_b
-      Gn <- pmax(G + s * matrix(step_G, n_cell, K), gmin)
-      Fn <- .dt_objective(blocks, Gn, bn, link, n, pen)
-      if (is.finite(Fn) && Fn <= F_old + 1e-12 * abs(F_old)) { accepted <- TRUE; break }
-      s <- s / 2
-    }
-    if (!accepted) break
-    change <- max(abs(c(bn - beta, (Gn - G)[live])))
-    beta <- bn; G <- Gn
-    dF <- F_old - Fn; F_old <- Fn
-    if (change < tol || dF < tol * 1e-3 * max(1, abs(Fn))) { converged <- TRUE; break }
-  }
-  ## a cell no training subject reaches carries the last reached interval of its row forward
-  for (cc in seq_len(n_cell)) {
-    if (!any(live[cc, ])) next
-    last <- NA_real_
-    for (k in seq_len(K)) { if (live[cc, k]) last <- G[cc, k] else if (!is.na(last)) G[cc, k] <- last }
-  }
-  list(beta = beta, G = G, objective = F_old, converged = converged, iterations = it)
+  s <- .dt_stack(blocks)
+  dt_solve_cpp(s$Z, s$cell, s$Tm, s$Wt, .dt_link_code(link), as.numeric(n), as.integer(n_cell),
+               as.numeric(pen$lambda), as.numeric(pen$alpha), .dt_Qm(pen), .dt_bext(pen),
+               as.numeric(pen$eta_m), as.numeric(beta0), G0, .dt_gamma_min(link), tol, as.integer(max_iter))
 }
 
 ## ---------------------------------------------------------------------------------------------------
@@ -173,7 +73,7 @@
   n_int_cell <- max(s_lab)
   out <- list(z = z, zs = zs, center = center, scale = scale, cell = s_lab, n_int_cell = n_int_cell,
               strata_levels = if (is.null(tg$stratum)) NULL else unique(tg$stratum),
-              member = member, K = tg$K, link = tg$link)
+              member = member, K = tg$K, link = tg$link, interval = tg$interval, event = tg$event)
   if (member == "kl") out$teacher <- ext$teacher
   if (member == "mahalanobis") {
     out$bext <- ext$beta * scale
@@ -210,8 +110,10 @@
 .dt_loglik_rows <- function(pr, rows, G, beta) {
   b <- .dt_block(pr$zs[rows, , drop = FALSE], pr$interval[rows], pr$event[rows], pr$cell[rows], pr$K)
   U <- G[b$cell, , drop = FALSE] + drop(b$Z %*% beta)
-  lg <- .dt_logs(U, pr$link)
-  rowSums(b$M * (b$Y * lg$lh + (1 - b$Y) * lg$l1h))
+  lh <- if (pr$link == "cloglog") { e <- exp(U); ifelse(U > 3.6, log1p(-exp(-e)), log(-expm1(-e))) } else
+    -log1p(exp(-U))
+  l1h <- if (pr$link == "cloglog") -exp(U) else -log1p(exp(U))
+  rowSums(b$M * (b$Y * lh + (1 - b$Y) * l1h))
 }
 
 ## start values for the interval parameters: the empirical hazard of each cell
@@ -225,39 +127,231 @@
   if (link == "cloglog") log(-log1p(-h)) else stats::qlogis(h)
 }
 
+## the smallest lambda at which every coefficient is zero (divided by alpha for the elastic net)
 .dt_lambda_max <- function(pr, rows, eta, alpha, link) {
   blocks <- .dt_blocks(pr, rows, eta)
   pen0 <- .dt_pen(pr, eta, 0, 0)
   G0 <- .dt_gamma_start(blocks, pr$n_cell, pr$K, link)
-  ## fit the interval parameters with every coefficient held at zero
-  fit0 <- .dt_solve_gamma_only(blocks, link, length(rows), pr$K, pr$n_cell, pen0, G0)
-  dv <- .dt_derivs(blocks, fit0, numeric(ncol(pr$zs)), link, length(rows), pen0, pr$n_cell, pr$K)
-  max(abs(dv$gb)) / max(alpha, 1e-3)
-}
-
-.dt_solve_gamma_only <- function(blocks, link, n, K, n_cell, pen, G) {
-  beta <- numeric(ncol(blocks[[1]]$Z)); gmin <- .dt_gamma_min(link)
-  for (it in 1:100) {
-    dv <- .dt_derivs(blocks, G, beta, link, n, pen, n_cell, K)
-    hg <- dv$HGG; step <- ifelse(hg > 1e-14, -dv$gG / hg, 0)
-    Gn <- pmax(G + step, gmin)
-    if (max(abs(Gn - G)) < 1e-10) { G <- Gn; break }
-    G <- Gn
-  }
-  G
+  s <- .dt_stack(blocks)
+  r <- dt_null_fit_cpp(s$Z, s$cell, s$Tm, s$Wt, .dt_link_code(link), as.numeric(length(rows)),
+                       as.integer(pr$n_cell), .dt_Qm(pen0), .dt_bext(pen0), as.numeric(eta), G0,
+                       .dt_gamma_min(link))
+  r$max_gradient / max(alpha, 1e-3)
 }
 
 .dt_unscale <- function(pr, beta_s, G_s) {
   beta <- beta_s / pr$scale
   names(beta) <- colnames(pr$z)
   G <- G_s - sum(pr$center * beta)
-  list(beta = beta, gamma = G[seq_len(pr$n_int_cell), , drop = FALSE])
+  gamma <- G[seq_len(pr$n_int_cell), , drop = FALSE]
+  dimnames(gamma) <- list(.dt_cell_names(pr), paste0("interval_", seq_len(pr$K)))
+  list(beta = beta, gamma = gamma)
+}
+
+.dt_cell_names <- function(pr) if (is.null(pr$strata_levels)) "baseline" else as.character(pr$strata_levels)
+
+## ---------------------------------------------------------------------------------------------------
+## Paths and cross-validation
+## ---------------------------------------------------------------------------------------------------
+
+## the penalty path at one eta: given, or log spaced down from lambda_max
+.dt_lambda_seq <- function(pr, rows, eta, penalty, alpha, lambda, nlambda, lambda.min.ratio) {
+  if (penalty == "none") return(0)
+  if (!is.null(lambda)) return(sort(as.numeric(lambda), decreasing = TRUE))
+  n <- length(rows); p <- ncol(pr$z)
+  lmax <- .dt_lambda_max(pr, rows, eta, if (penalty == "ridge") 1 else alpha, pr$link)
+  if (penalty == "ridge") lmax <- lmax * 1e3
+  ratio <- if (is.null(lambda.min.ratio)) (if (n < p) 0.05 else 1e-3) else lambda.min.ratio
+  if (penalty == "ridge") ratio <- ratio * 1e-1
+  exp(seq(log(lmax), log(lmax * ratio), length.out = nlambda))
+}
+
+## fits along a penalty path at one eta on subjects `rows`, with warm starts
+.dt_path <- function(pr, rows, eta, lams, alpha, tol, max_iter, keep_errors = FALSE) {
+  blocks <- .dt_blocks(pr, rows, eta)
+  G <- .dt_gamma_start(blocks, pr$n_cell, pr$K, pr$link); b <- numeric(ncol(pr$z))
+  fits <- vector("list", length(lams))
+  for (l in seq_along(lams)) {
+    f <- if (keep_errors) tryCatch(.dt_solve(blocks, pr$link, length(rows), pr$K, pr$n_cell,
+                                             .dt_pen(pr, eta, lams[l], alpha), b, G, tol, max_iter),
+                                   error = function(e) e)
+         else .dt_solve(blocks, pr$link, length(rows), pr$K, pr$n_cell, .dt_pen(pr, eta, lams[l], alpha),
+                        b, G, tol, max_iter)
+    fits[[l]] <- f
+    if (!inherits(f, "error")) { b <- f$beta; G <- f$G }
+  }
+  fits
+}
+
+## cross-validation over (eta, lambda); the score is the pooled held-out negative log-likelihood per
+## subject of the grouped-time model, the same functional for every member and every penalty
+.dt_cv_core <- function(pr, etas, penalty, alpha, lambda, nlambda, lambda.min.ratio, folds, tol, max_iter,
+                        message = FALSE) {
+  n <- length(pr$interval)
+  fold_ids <- sort(unique(folds))
+  path <- list(); full <- list()
+  if (message) pb <- utils::txtProgressBar(min = 0, max = length(etas), style = 3, width = 30)
+  for (e in seq_along(etas)) {
+    eta <- etas[e]
+    all_rows <- seq_len(n)
+    lams <- .dt_lambda_seq(pr, all_rows, eta, penalty, alpha, lambda, nlambda, lambda.min.ratio)
+    full[[as.character(eta)]] <- list(lambda = lams, fits = .dt_path(pr, all_rows, eta, lams, alpha, tol, max_iter))
+    for (fo in fold_ids) {
+      tr <- which(folds != fo); va <- which(folds == fo)
+      fits <- .dt_path(pr, tr, eta, lams, alpha, tol, max_iter, keep_errors = TRUE)
+      for (l in seq_along(lams)) {
+        f <- fits[[l]]
+        ok <- !inherits(f, "error")
+        ll <- if (ok) sum(.dt_loglik_rows(pr, va, f$G, f$beta)) else NA_real_
+        path[[length(path) + 1]] <- data.frame(eta = eta, lambda = lams[l], fold = fo, n_valid = length(va),
+                                               loglik_valid = ll, ok = ok && is.finite(ll))
+      }
+    }
+    if (message) utils::setTxtProgressBar(pb, e)
+  }
+  if (message) close(pb)
+  path <- do.call(rbind, path)
+  key <- paste(path$eta, path$lambda)
+  pooled <- do.call(rbind, lapply(split(path, factor(key, levels = unique(key))), function(r)
+    data.frame(eta = r$eta[1], lambda = r$lambda[1], complete = all(r$ok),
+               loss = if (all(r$ok)) -sum(r$loglik_valid) / sum(r$n_valid) else NA_real_)))
+  rownames(pooled) <- NULL
+  list(path = path, pooled = pooled, full = full)
 }
 
 ## ---------------------------------------------------------------------------------------------------
-## Cross-validation over (eta, lambda); the scorer is the pooled held-out negative log-likelihood per
-## subject of the grouped-time model (the same functional for every member, linear or neural)
+## The exported families: validation through the target and release constructors, then formatting
 ## ---------------------------------------------------------------------------------------------------
+.dt_setup <- function(member, z, delta, interval, stratum, link, n_intervals, standardize,
+                      hazard = NULL, beta = NULL, baseline = NULL, Q = NULL,
+                      z_ext = NULL, delta_ext = NULL, interval_ext = NULL, stratum_ext = NULL) {
+  if (member == "composite" && is.null(n_intervals)) n_intervals <- max(c(interval, interval_ext))
+  tg <- target_discrete(interval, delta, z, stratum = stratum, link = link, n_intervals = n_intervals)
+  rel <- switch(member,
+    kl = release_model(beta = beta, baseline = baseline, hazard = hazard),
+    mahalanobis = release_coef(beta, Q),
+    composite = release_records(z_ext, event = delta_ext, interval = interval_ext, stratum = stratum_ext))
+  ext <- .ext_for_discrete(tg, rel, member)
+  list(tg = tg, ext = ext, pr = .dt_prepare(tg, member, ext, standardize))
+}
+
+.dt_check_alpha <- function(alpha) {
+  if (length(alpha) != 1 || !is.finite(alpha) || alpha <= 0 || alpha > 1)
+    stop("'alpha' must be in (0, 1]; alpha = 1 is the lasso.", call. = FALSE)
+  alpha
+}
+
+.dt_check_eta1 <- function(eta) {
+  if (is.null(eta)) {
+    warning("eta is not provided. Setting eta = 0 (no external information used).", call. = FALSE)
+    eta <- 0
+  }
+  check_etas(eta, scalar = TRUE, arg = "eta")
+  eta
+}
+
+## coefficients, baselines and log-likelihoods of a list of fits, on the original scale
+.dt_collect <- function(pr, fits, labels) {
+  L <- length(fits); p <- ncol(pr$z)
+  beta <- matrix(NA_real_, p, L, dimnames = list(colnames(pr$z), labels))
+  gamma <- array(NA_real_, c(pr$n_int_cell, pr$K, L),
+                 dimnames = list(.dt_cell_names(pr), paste0("interval_", seq_len(pr$K)), labels))
+  loglik <- stats::setNames(numeric(L), labels); conv <- stats::setNames(logical(L), labels)
+  rows <- seq_len(nrow(pr$z))
+  for (l in seq_len(L)) {
+    raw <- .dt_unscale(pr, fits[[l]]$beta, fits[[l]]$G)
+    beta[, l] <- raw$beta; gamma[, , l] <- raw$gamma
+    loglik[l] <- sum(.dt_loglik_rows(pr, rows, fits[[l]]$G, fits[[l]]$beta))
+    conv[l] <- fits[[l]]$converged
+  }
+  lp <- pr$z %*% beta
+  list(beta = beta, gamma = gamma, likelihood = loglik, linear.predictors = lp, converged = conv,
+       df = colSums(beta != 0))
+}
+
+## a family's fit: unpenalized over etas, or a penalty path at one eta (or one path per eta for the
+## composite likelihood, as cox_indi_ridge / cox_indi_enet do)
+.dt_fit_family <- function(s, penalty, etas, alpha, lambda, nlambda, lambda.min.ratio, tol, Mstop,
+                           per_eta_paths, cls, message = FALSE) {
+  pr <- s$pr; rows <- seq_len(s$tg$n)
+  common <- list(link = pr$link, K = pr$K, strata_levels = pr$strata_levels)
+  if (penalty == "none") {
+    fits <- lapply(etas, function(eta) .dt_path(pr, rows, eta, 0, 0, tol, Mstop)[[1]])
+    out <- c(list(eta = etas), .dt_collect(pr, fits, round(etas, 4)), common)
+    out$df <- NULL
+  } else if (!per_eta_paths) {
+    lams <- .dt_lambda_seq(pr, rows, etas, penalty, alpha, lambda, nlambda, lambda.min.ratio)
+    fits <- .dt_path(pr, rows, etas, lams, alpha, tol, Mstop)
+    out <- c(list(eta = etas, lambda = lams), .dt_collect(pr, fits, signif(lams, 4)), common)
+    if (penalty != "ridge") out$alpha <- alpha
+  } else {
+    per <- lapply(etas, function(eta) {
+      lams <- .dt_lambda_seq(pr, rows, eta, penalty, alpha, lambda, nlambda, lambda.min.ratio)
+      c(list(lambda = lams), .dt_collect(pr, .dt_path(pr, rows, eta, lams, alpha, tol, Mstop), signif(lams, 4)))
+    })
+    pick <- function(k) stats::setNames(lapply(per, `[[`, k), round(etas, 4))
+    out <- c(list(eta = etas, lambda = pick("lambda"), beta = pick("beta"), gamma = pick("gamma"),
+                  likelihood = pick("likelihood"), linear.predictors_int = pick("linear.predictors"),
+                  converged = pick("converged")), common)
+    if (penalty != "ridge") out$alpha <- alpha
+  }
+  if (!is.null(out$linear.predictors) && s$pr$member == "composite") {
+    out$linear.predictors_int <- out$linear.predictors; out$linear.predictors <- NULL
+  }
+  structure(out, class = cls)
+}
+
+## a family's cross-validation, in the shape of the Cox estimators' results
+.dt_cv_family <- function(s, penalty, etas, alpha, lambda, nlambda, lambda.min.ratio, nfolds, seed,
+                          tol, Mstop, cls, message = FALSE) {
+  tg <- s$tg; pr <- s$pr
+  check_etas(etas); etas <- sort(unique(as.numeric(etas)))
+  if (!is.numeric(nfolds) || length(nfolds) != 1 || nfolds < 2) stop("'nfolds' must be at least 2.", call. = FALSE)
+  folds <- .dt_folds(tg$event, tg$stratum, nfolds, seed)
+  rng_kind <- if (is.null(seed)) RNGkind()[1] else "Mersenne-Twister"
+  core <- .dt_cv_core(pr, etas, penalty, alpha, lambda, nlambda, lambda.min.ratio, folds, tol, Mstop, message)
+  pooled <- core$pooled
+  cand <- pooled[pooled$complete, ]
+  if (!nrow(cand)) stop("No (eta, lambda) completed every fold.", call. = FALSE)
+  best <- cand[order(cand$loss, cand$eta, -cand$lambda), ][1, ]
+  fit_at <- function(eta, lam) {
+    ff <- core$full[[as.character(eta)]]
+    .dt_unscale(pr, ff$fits[[which(ff$lambda == lam)]]$beta, ff$fits[[which(ff$lambda == lam)]]$G)
+  }
+  sel <- fit_at(best$eta, best$lambda)
+  best_res <- list(best_eta = best$eta)
+  if (penalty != "none") best_res$best_lambda <- best$lambda
+  best_res <- c(best_res, list(best_beta = sel$beta, best_gamma = sel$gamma, best_value = best$loss,
+                               criteria = "loss"))
+  tail_fields <- list(criteria = "loss", nfolds = nfolds, folds = folds,
+                      seed = if (is.null(seed)) NA_integer_ else as.integer(seed), rng_kind = rng_kind,
+                      link = pr$link, K = pr$K, strata_levels = pr$strata_levels)
+  if (penalty == "none") {
+    beta_full <- vapply(etas, function(eta) fit_at(eta, 0)$beta, numeric(ncol(pr$z)))
+    beta_full <- matrix(beta_full, ncol(pr$z), length(etas), dimnames = list(colnames(pr$z), round(etas, 4)))
+    out <- c(list(internal_stat = data.frame(eta = pooled$eta, Loss = pooled$loss),
+                  beta_full = beta_full, best = best_res), tail_fields)
+  } else {
+    full_results <- data.frame(eta = pooled$eta, lambda = pooled$lambda, Loss = pooled$loss)
+    per <- lapply(etas, function(eta) {
+      r <- cand[cand$eta == eta, , drop = FALSE]
+      if (!nrow(r)) return(NULL)
+      r[order(r$loss, -r$lambda), ][1, ]
+    })
+    per <- do.call(rbind, per)
+    best_per_eta <- data.frame(eta = per$eta, lambda = per$lambda, Loss = per$loss)
+    betahat_best <- vapply(seq_len(nrow(per)), function(i) fit_at(per$eta[i], per$lambda[i])$beta,
+                           numeric(ncol(pr$z)))
+    betahat_best <- matrix(betahat_best, ncol(pr$z), nrow(per), dimnames = list(colnames(pr$z), round(per$eta, 4)))
+    out <- c(list(best = best_res, integrated_stat.full_results = full_results,
+                  integrated_stat.best_per_eta = best_per_eta, integrated_stat.betahat_best = betahat_best),
+             tail_fields)
+    if (penalty != "ridge") out$alpha <- alpha
+  }
+  structure(out, class = cls)
+}
+
+## folds: event-stratified random assignment, or the package's stratified rule when strata are given
 .dt_folds <- function(event, stratum, nfolds, seed) {
   if (!is.null(seed)) {
     old <- if (exists(".Random.seed", envir = globalenv())) get(".Random.seed", envir = globalenv()) else NULL
@@ -275,90 +369,7 @@
   folds
 }
 
-.dt_cv <- function(tg, member, ext, penalty, alpha, etas, lambda, nlambda, lambda.min.ratio, nfolds,
-                   folds, seed, standardize, tol, max_iter) {
-  pen_on <- penalty != "none"
-  if (!pen_on) standardize <- TRUE         # an unpenalized fit does not depend on the scaling
-  pr <- .dt_prepare(tg, member, ext, standardize)
-  pr$interval <- tg$interval; pr$event <- tg$event
-  n <- tg$n; p <- ncol(tg$z)
-  if (is.null(folds)) folds <- .dt_folds(tg$event, tg$stratum, nfolds, seed)
-  fold_ids <- sort(unique(folds))
-  etas <- sort(unique(as.numeric(etas)))
-  if (member != "none" && !any(etas == 0)) etas <- c(0, etas)
-  if (member == "none") etas <- 0
-  alpha_use <- switch(penalty, none = 0, ridge = 0, lasso = 1, enet = alpha)
-  path <- list(); full_fits <- list()
-  for (eta in etas) {
-    all_rows <- seq_len(n)
-    lams <- if (!pen_on) 0 else if (!is.null(lambda)) sort(lambda, decreasing = TRUE) else {
-      lmax <- .dt_lambda_max(pr, all_rows, eta, if (penalty == "ridge") 1 else alpha_use, pr$link)
-      if (penalty == "ridge") lmax <- lmax * 1e3
-      ratio <- if (is.null(lambda.min.ratio)) (if (n < p) 0.05 else 1e-3) else lambda.min.ratio
-      if (penalty == "ridge") ratio <- ratio * 1e-1
-      exp(seq(log(lmax), log(lmax * ratio), length.out = nlambda))
-    }
-    ## full data along the path (warm starts)
-    blocks <- .dt_blocks(pr, all_rows, eta)
-    G <- .dt_gamma_start(blocks, pr$n_cell, pr$K, pr$link); b <- numeric(p)
-    fits <- vector("list", length(lams))
-    for (l in seq_along(lams)) {
-      f <- .dt_solve(blocks, pr$link, n, pr$K, pr$n_cell, .dt_pen(pr, eta, lams[l], alpha_use), b, G, tol, max_iter)
-      fits[[l]] <- f; b <- f$beta; G <- f$G
-    }
-    full_fits[[as.character(eta)]] <- list(lambda = lams, fits = fits)
-    for (fo in fold_ids) {
-      tr <- which(folds != fo); va <- which(folds == fo)
-      blocks <- .dt_blocks(pr, tr, eta)
-      G <- .dt_gamma_start(blocks, pr$n_cell, pr$K, pr$link); b <- numeric(p)
-      for (l in seq_along(lams)) {
-        f <- tryCatch(.dt_solve(blocks, pr$link, length(tr), pr$K, pr$n_cell, .dt_pen(pr, eta, lams[l], alpha_use),
-                                b, G, tol, max_iter), error = function(e) e)
-        ok <- !inherits(f, "error")
-        ll <- if (ok) sum(.dt_loglik_rows(pr, va, f$G, f$beta)) else NA_real_
-        if (ok) { b <- f$beta; G <- f$G }
-        path[[length(path) + 1]] <- data.frame(eta = eta, lambda = lams[l], fold = fo, n_valid = length(va),
-                                               loglik_valid = ll, ok = ok && is.finite(ll))
-      }
-    }
-  }
-  path <- do.call(rbind, path)
-  key <- paste(path$eta, path$lambda)
-  pooled <- do.call(rbind, lapply(split(path, factor(key, levels = unique(key))), function(r)
-    data.frame(eta = r$eta[1], lambda = r$lambda[1], complete = all(r$ok),
-               loss = if (all(r$ok)) -sum(r$loglik_valid) / sum(r$n_valid) else NA_real_)))
-  rownames(pooled) <- NULL
-  cand <- pooled[pooled$complete, ]
-  if (!nrow(cand)) stop("No (eta, lambda) completed every fold.", call. = FALSE)
-  best <- cand[order(cand$loss, cand$eta, -cand$lambda), ][1, ]
-  ff <- full_fits[[as.character(best$eta)]]
-  sel <- ff$fits[[which(ff$lambda == best$lambda)]]
-  raw <- .dt_unscale(pr, sel$beta, sel$G)
-  list(beta = raw$beta, gamma = raw$gamma, eta = best$eta, lambda = if (pen_on) best$lambda else NULL,
-       value = best$loss, criterion = "discrete_nll", pooled = pooled, cv_path = path, folds = folds,
-       seed = seed, converged = sel$converged, link = pr$link, K = pr$K, strata_levels = pr$strata_levels,
-       standardize = standardize)
-}
-
-## single fit at given eta (and lambda)
-.dt_fit <- function(tg, member, ext, eta, lambda, alpha, standardize, tol, max_iter) {
-  pen_on <- !is.null(lambda) && lambda > 0
-  if (!pen_on) standardize <- TRUE
-  pr <- .dt_prepare(tg, member, ext, standardize)
-  pr$interval <- tg$interval; pr$event <- tg$event
-  rows <- seq_len(tg$n)
-  blocks <- .dt_blocks(pr, rows, eta)
-  G <- .dt_gamma_start(blocks, pr$n_cell, pr$K, pr$link)
-  f <- .dt_solve(blocks, pr$link, tg$n, pr$K, pr$n_cell,
-                 .dt_pen(pr, eta, if (pen_on) lambda else 0, if (pen_on) alpha else 0),
-                 numeric(ncol(tg$z)), G, tol, max_iter)
-  raw <- .dt_unscale(pr, f$beta, f$G)
-  list(beta = raw$beta, gamma = raw$gamma, eta = eta, lambda = lambda, converged = f$converged,
-       iterations = f$iterations, link = pr$link, K = pr$K, strata_levels = pr$strata_levels,
-       loglik = sum(.dt_loglik_rows(pr, rows, f$G, f$beta)))
-}
-
-## interval hazards of new subjects under a linear discrete fit
+## interval hazards of new subjects under linear discrete coefficients and baselines
 .dt_predict <- function(fit, z, stratum = NULL) {
   z <- .as_z(z)
   z <- z[, names(fit$beta), drop = FALSE]

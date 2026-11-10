@@ -1,4 +1,4 @@
-## Neural targets (torch). Only the Kullback-Leibler member is defined for a neural risk score, and it
+## Neural targets (torch). Only the Kullback-Leibler divergence is defined for a neural risk score, and it
 ## reduces to a soft target exactly as for the linear model:
 ##
 ##   discrete time   masked binary cross-entropy of the interval logits against
@@ -10,7 +10,7 @@
 ## an event-stratified fit / early-stop split, standardization on the fit part, the learning rate chosen
 ## at eta = 0, then eta, then a refit on all the data for the median best epoch from one shared
 ## initialization. A discrete network is scored by the pooled held-out negative log-likelihood per
-## subject, the same functional as the linear discrete member; a Cox network by the cross-validated
+## subject, the same functional as the linear discrete model; a Cox network by the cross-validated
 ## partial-likelihood loss of Verweij and Van Houwelingen on the same folds cv.coxkl draws.
 
 .need_torch <- function() {
@@ -272,7 +272,7 @@
   final <- .nn_train(kind, spec, init, n_out, allb, eta_sel, lr, seed + 90002, epochs = ep_sel)
 
   out <- list(model = final$model, scaler = sc, eta = eta_sel, value = vals[best],
-              criterion = if (kind == "discrete") "discrete_nll" else "V&VH",
+              criterion = if (kind == "discrete") "loss" else "V&VH",
               pooled = data.frame(eta = etas, loss = vals), learning_rate = lr,
               epochs = ep_sel, folds = folds, seed = seed,
               columns = colnames(tg$z), kind = kind, K = if (kind == "discrete") K else NULL)

@@ -2,12 +2,12 @@
 % Please edit documentation in R/bregsurv.R
 \name{cv.bregsurv}
 \alias{cv.bregsurv}
-\title{Fit a member of the Bregman-divergence framework, choosing the integration weight by cross-validation}
+\title{Fit a time-to-event model that borrows from an external source}
 \usage{
 cv.bregsurv(
   target,
   release = NULL,
-  member = NULL,
+  divergence = NULL,
   penalty = c("none", "ridge", "lasso", "enet"),
   alpha = 0.5,
   etas = NULL,
@@ -22,80 +22,206 @@ cv.bregsurv(
 )
 }
 \arguments{
-\item{target}{A target from \code{\link[=target_cox]{target_cox()}}, \code{\link[=target_ncc]{target_ncc()}} or \code{\link[=target_discrete]{target_discrete()}}.}
+\item{target}{The model you fit to your data. Build it with one of three constructors; each takes
+your data, one row per subject, and checks it:
+\itemize{
+\item \code{\link[=target_cox]{target_cox()}}\verb{(time, event, z, stratum = NULL, ties = "none", score = "linear")}: a Cox
+proportional-hazards model for follow-up recorded as a time and an event indicator.
+\itemize{
+\item \code{stratum}: optional strata, each with its own baseline hazard;
+\item \code{ties}: how tied event times enter the partial likelihood (\code{"none"}, \code{"breslow"} or
+\code{"exact"}).
+}
+\item \code{\link[=target_ncc]{target_ncc()}}\verb{(case, set, z)}: a nested case-control (matched case-control) design.
+\itemize{
+\item \code{case}: 1 for the case and 0 for the controls;
+\item \code{set}: the matched set of each row; every set holds exactly one case;
+\item the likelihood is the conditional likelihood of which member of each set is the case.
+}
+\item \code{\link[=target_discrete]{target_discrete()}}\verb{(interval, event, z, stratum = NULL, link = "cloglog", score = "linear")}:
+a discrete-time (grouped-time) model for follow-up recorded in intervals \eqn{1, \dots, K}.
+\itemize{
+\item \code{interval}: the last interval each subject was at risk in;
+\item \code{event}: 1 when the event happened in that interval;
+\item \code{link}: \code{"cloglog"} (grouped proportional hazards) or \code{"logit"}.
+}
+}
 
-\item{release}{A release, or \code{NULL} for the target model alone.}
+In all three, \code{z} holds the covariates (a numeric matrix or data frame, one column per
+covariate, with names). \code{target_cox()} and \code{target_discrete()} also take
+\verb{score = }\code{\link[=nn_score]{nn_score()}} to replace the linear risk score \eqn{z^\top\beta} by a neural network
+(requires the \code{torch} package).}
 
-\item{member}{\code{"composite"}, \code{"mahalanobis"}, \code{"kl"} or \code{"none"}. \code{NULL} takes the first member the
-release supports: composite for records, Mahalanobis for coefficients with a precision matrix,
-Kullback-Leibler otherwise.}
+\item{release}{What the external source made available, or \code{NULL} to fit your data alone. Build it
+with one of four constructors, by what you received:
+\itemize{
+\item \code{\link[=release_records]{release_records()}}: the external cohort's individual-level records, in the target's design.
+\itemize{
+\item \code{z}: the external covariates, with the target's column names;
+\item \code{time}, \code{event} (and optionally \code{stratum}) for a Cox target;
+\item \code{case}, \code{set} for a nested case-control target;
+\item \code{interval}, \code{event} for a discrete-time target.
+}
+\item \code{\link[=release_coef]{release_coef()}}\verb{(beta, Q = NULL)}: published regression coefficients.
+\itemize{
+\item \code{beta}: a numeric vector named by covariate, every name one of your covariates; covariates
+the external model does not include are set to 0;
+\item \code{Q}: optionally, their precision matrix (the inverse of their covariance matrix).
+}
+\item \code{\link[=release_score]{release_score()}}\code{(score)}: an external risk score evaluated on your subjects, for when only a
+risk calculator or its predictions are available.
+\itemize{
+\item \code{score}: one value per row of your data, in the same order.
+}
+\item \code{\link[=release_model]{release_model()}}: a fitted model including its baseline hazard, i.e. absolute risks. A
+discrete-time target needs this form for the Kullback-Leibler divergence.
+\itemize{
+\item \code{beta} with \code{baseline}: the external Cox coefficients and its baseline cumulative-hazard
+increments over your intervals \eqn{1, \dots, K};
+\item or \code{hazard}: the external interval hazards of your subjects, an \eqn{n \times K} matrix.
+}
+}}
 
-\item{penalty}{\code{"none"}, \code{"ridge"}, \code{"lasso"} or \code{"enet"} (elastic net with mixing \code{alpha}).}
+\item{divergence}{How the release enters the objective, i.e. which Bregman divergence \eqn{B_G}
+is used. \code{NULL} (the default) takes the first one the release supports, in the order listed in
+Details.
+\itemize{
+\item \code{"composite"}: the external records' own log-likelihood is added with weight \eqn{\eta},
+giving a composite likelihood in which the two cohorts share the coefficients and keep their
+own baselines. Needs \code{\link[=release_records]{release_records()}}.
+\item \code{"mahalanobis"}: the Mahalanobis distance
+\eqn{\frac{1}{2}(\beta - \tilde\beta)^\top Q (\beta - \tilde\beta)} to the external
+coefficients \eqn{\tilde\beta}; the Euclidean distance on the covered covariates when the
+release has no \code{Q}. Needs coefficients: \code{\link[=release_coef]{release_coef()}} or \code{\link[=release_model]{release_model()}}, or on a Cox
+target \code{\link[=release_records]{release_records()}}, from which a Cox model is fitted.
+\item \code{"kl"}: the Kullback-Leibler divergence between the distributions the two models predict for
+your subjects (who fails at each event time for a Cox target, which member of a set is the
+case for a matched design, the hazard of each interval for a discrete-time target). It needs
+only the external model's predictions, so it works with \code{\link[=release_coef]{release_coef()}}, \code{\link[=release_score]{release_score()}} and
+\code{\link[=release_model]{release_model()}}; on a discrete-time target only with \code{\link[=release_model]{release_model()}}. It is the only
+divergence defined for a neural target.
+\item \code{"none"}: no borrowing, your data alone (\eqn{\eta = 0}); the only choice when
+\code{release = NULL}.
+}}
 
-\item{alpha}{Elastic-net mixing parameter for \code{penalty = "enet"}.}
+\item{penalty}{Penalty on the coefficients of a linear target:
+\itemize{
+\item \code{"none"} (the default);
+\item \code{"ridge"}: \eqn{\frac{\lambda}{2}\|\beta\|_2^2};
+\item \code{"lasso"}: \eqn{\lambda\|\beta\|_1}, which sets some coefficients to zero;
+\item \code{"enet"}: the elastic net \eqn{\lambda\{\alpha\|\beta\|_1 + \frac{1-\alpha}{2}\|\beta\|_2^2\}}.
+}
 
-\item{etas}{Integration weights to search. \code{NULL} uses a log-spaced grid from 0.01 to the member's
-upper end, with 0 included.}
+A neural target is regularized by early stopping and dropout instead and takes \code{"none"}.}
 
-\item{lambda, nlambda, lambda.min.ratio}{The penalty path; \code{NULL} builds a path for each \code{eta}.}
+\item{alpha}{Elastic-net mixing parameter for \code{penalty = "enet"}, in \eqn{(0, 1]}.}
 
-\item{nfolds}{Number of folds.}
+\item{etas}{Candidate integration weights. \code{NULL} uses a grid that starts at 0 (your data alone)
+and is log spaced from 0.01 to an upper end suited to the divergence.}
 
-\item{seed}{Seed of the fold assignment. The default is fixed, so repeated calls, and different
-members, share one partition.}
+\item{lambda, nlambda, lambda.min.ratio}{The penalty path: given values in \code{lambda}, or \code{nlambda}
+log-spaced values from the smallest penalty that sets every coefficient to zero down to
+\code{lambda.min.ratio} times it, built for each \code{eta}.}
 
-\item{criterion}{Cross-validation criterion of the Cox (\code{"V&VH"}, \code{"LinPred"}, \code{"CIndex_pooled"},
-\code{"CIndex_foldaverage"}) or matched (\code{"loss"}, \code{"AUC"}, \code{"CIndex"}, \code{"Brier"}) estimators. Members
-are comparable only under the same criterion; the discrete and neural targets use their own.}
+\item{nfolds}{Number of cross-validation folds.}
 
-\item{standardize}{Standardize covariates for the penalized fits.}
+\item{seed}{Seed of the fold assignment. The default is fixed, so repeated calls, and calls with
+different releases or divergences on the same target, share one partition and their \code{value}s
+can be compared directly.}
 
-\item{...}{Further arguments passed to the underlying estimator.}
+\item{criterion}{Cross-validation criterion. A Cox target uses \code{"V&VH"} (the partial-likelihood
+loss of Verweij and Van Houwelingen) by default and also accepts \code{"LinPred"}, \code{"CIndex_pooled"}
+and \code{"CIndex_foldaverage"}; a nested case-control target uses \code{"loss"} (the conditional
+log-likelihood) and also accepts \code{"AUC"}, \code{"CIndex"} and \code{"Brier"}; a discrete-time target uses
+the held-out negative log-likelihood per subject. Fits are comparable only under the same
+criterion.}
+
+\item{standardize}{Standardize the covariates before penalizing; coefficients are always returned
+on the original scale.}
+
+\item{...}{Further arguments passed to the estimator that fits the model (named in the result's
+\code{engine}).}
 }
 \value{
-An object of class \code{"cv.bregsurv"} with the selected \code{eta} and \code{lambda}, the cross-validated
-\code{value} and its \code{criterion}, the \code{coefficients} of a linear target, the \code{folds}, the \code{engine} used
-and its full result in \code{fit}.
+An object of class \code{"cv.bregsurv"}, a list with
+\describe{
+\item{\code{eta}, \code{lambda}}{The selected integration weight and penalty level.}
+\item{\code{value}, \code{criterion}}{The cross-validated value of the selected fit and its criterion.}
+\item{\code{coefficients}}{The coefficients of the selected fit (linear targets).}
+\item{\code{coefficients_target_only}}{The coefficients at \eqn{\eta = 0}, when 0 is in \code{etas}.}
+\item{\code{coefficients_external}}{The external coefficients aligned to your covariates, when the
+release has coefficients.}
+\item{\code{gamma}}{For a discrete-time target, the baseline parameters of the selected fit (one row
+per stratum, one column per interval, on the link scale).}
+\item{\code{path}}{The cross-validated value at each \code{eta} (at its best \code{lambda} under a penalty).}
+\item{\code{folds}, \code{seed}}{The cross-validation partition.}
+\item{\code{engine}, \code{fit}}{The estimator that was called and its complete result.}
+\item{\code{divergence}, \code{penalty}, \code{target}, \code{release}}{The choices that were made.}
+}
+Use \link[=plot.cv.bregsurv]{plot()} for the cross-validation curve and the coefficients, \code{\link[=coef]{coef()}} and
+\link[=predict.cv.bregsurv]{predict()} for the fitted model.
 }
 \description{
-\code{cv.bregsurv()} is the package's main interface. It takes the three decisions the framework separates:
-the \strong{target} model your data call for (\code{\link[=target_cox]{target_cox()}}, \code{\link[=target_ncc]{target_ncc()}}, \code{\link[=target_discrete]{target_discrete()}}, linear or
-neural), the \strong{release} the external source made (\code{\link[=release_records]{release_records()}}, \code{\link[=release_coef]{release_coef()}},
-\code{\link[=release_score]{release_score()}}, \code{\link[=release_model]{release_model()}}), and the \strong{member} through which the release enters, which
-fixes the Bregman generator:
+\code{cv.bregsurv()} is the main function of the package. It fits a model to your data while borrowing
+from what an external source made available, by minimizing
+\deqn{Q_\eta(\theta) = -\ell(\theta) + \eta\, B_G(\theta), \qquad \eta \ge 0,}
+the negative log-likelihood \eqn{\ell} of your data plus an integration weight \eqn{\eta} times a
+Bregman divergence \eqn{B_G} between your model and the external one. \eqn{\eta = 0} ignores the
+external source and larger values borrow more; \code{cv.bregsurv()} chooses \eqn{\eta} (and, under a
+penalty, the penalty level) by cross-validation on your data.
+
+A call is made of four choices, one per argument:
+\enumerate{
+\item \code{target}: the model you fit to your own data, which fixes \eqn{\ell};
+\item \code{release}: what the external source made available;
+\item \code{divergence}: how the release enters the objective, which fixes \eqn{B_G};
+\item \code{penalty}: an optional ridge, lasso or elastic-net penalty on the coefficients.
+}
 }
 \details{
-\itemize{
-\item \code{"composite"}: the negative external log-likelihood, giving the composite likelihood (records);
-\item \code{"mahalanobis"}: a quadratic form, giving the Mahalanobis distance to the external coefficients
-(Euclidean when the release has no precision matrix);
-\item \code{"kl"}: the negative entropy on the model's conditional distributions (risk sets, or interval
-hazards for the discrete target), giving the Kullback-Leibler divergence;
-\item \code{"none"}: no release, the target model alone (the \code{eta = 0} endpoint).
+\strong{Which divergences a release supports.} The first divergence in each cell is the default.\tabular{lllll}{
+   release \tab Cox \tab nested case-control \tab discrete time \tab neural target \cr
+   \code{NULL} \tab none \tab none \tab none \tab none \cr
+   \code{\link[=release_records]{release_records()}} \tab composite, mahalanobis, kl \tab composite \tab composite \tab -- \cr
+   \code{\link[=release_coef]{release_coef()}} without \code{Q} \tab kl, mahalanobis \tab kl, mahalanobis \tab mahalanobis \tab kl (Cox only) \cr
+   \code{\link[=release_coef]{release_coef()}} with \code{Q} \tab mahalanobis, kl \tab mahalanobis, kl \tab mahalanobis \tab kl (Cox only) \cr
+   \code{\link[=release_score]{release_score()}} \tab kl \tab kl \tab -- \tab kl (Cox only) \cr
+   \code{\link[=release_model]{release_model()}} \tab as \code{\link[=release_coef]{release_coef()}} \tab as \code{\link[=release_coef]{release_coef()}} \tab kl, mahalanobis \tab kl \cr
 }
 
-The integration weight \code{eta} (and, under a penalty, \code{lambda}) is chosen by \code{nfolds}-fold
-cross-validation on the target data. Every member fitted with the same \code{seed} on the same target is
-scored on the same partition by the same criterion, so their \code{value}s can be compared directly:
-the cross-validated partial-likelihood loss of Verweij and Van Houwelingen for a Cox target, the
-conditional-likelihood loss for a matched design, and the held-out negative log-likelihood per
-subject for a discrete target.
 
-Linear Cox and matched targets are fitted by the package's existing estimators (\code{cv.coxkl},
-\code{cv.cox_MDTL_enet}, \code{cv.ncc_indi}, ...), named in the result's \code{engine} field; the result is
-identical to calling that estimator directly. The discrete-time target is fitted by Fisher scoring
-(proximal Newton under a lasso or elastic net), and neural targets by \code{torch}.
+\strong{Which estimator fits the model.} A linear target is fitted by one of the package's estimators,
+named in the result's \code{engine}; the result is identical to calling that estimator directly.\tabular{llll}{
+   divergence \tab Cox \tab nested case-control \tab discrete time \cr
+   \code{"kl"}, \code{"none"} \tab \code{\link[=cv.coxkl]{cv.coxkl()}} \tab \code{\link[=cv.ncckl]{cv.ncckl()}} \tab \code{\link[=cv.discretekl]{cv.discretekl()}} \cr
+   \code{"mahalanobis"} \tab \code{\link[=cv.cox_MDTL]{cv.cox_MDTL()}} \tab \code{\link[=cv.ncc_MDTL]{cv.ncc_MDTL()}} \tab \code{\link[=cv.discrete_MDTL]{cv.discrete_MDTL()}} \cr
+   \code{"composite"} \tab \code{\link[=cv.cox_indi]{cv.cox_indi()}} \tab \code{\link[=cv.ncc_indi]{cv.ncc_indi()}} \tab \code{\link[=cv.discrete_indi]{cv.discrete_indi()}} \cr
+}
+
+
+with the suffix \verb{_ridge} for \code{penalty = "ridge"} and \verb{_enet} for \code{"lasso"} and \code{"enet"}
+(for example \code{\link[=cv.coxkl_enet]{cv.coxkl_enet()}}), and \code{\link[=cv.coxkl_ties]{cv.coxkl_ties()}} for \code{ties = "exact"}. \code{"none"} is the
+Kullback-Leibler estimator at \eqn{\eta = 0}. A neural target is trained with \code{torch}.
 }
 \examples{
 data(ExampleData_lowdim)
 tr <- ExampleData_lowdim$train
-tg <- target_cox(tr$time, tr$status, tr$z)
-rl <- release_coef(ExampleData_lowdim$beta_external_fair)
-kl  <- cv.bregsurv(tg, rl, member = "kl")
-euc <- cv.bregsurv(tg, rl, member = "mahalanobis")
-own <- cv.bregsurv(tg)                       # the target alone
-c(kl = kl$value, euclidean = euc$value, target_only = own$value)
+target <- target_cox(time = tr$time, event = tr$status, z = tr$z)
+
+# a published model, available only as a risk score for each of your subjects
+score <- as.matrix(tr$z) \%*\% ExampleData_lowdim$beta_external_fair
+kl <- cv.bregsurv(target, release_score(score), divergence = "kl")
+kl
+
+# the same model's coefficients, through the Euclidean distance
+euc <- cv.bregsurv(target, release_coef(ExampleData_lowdim$beta_external_fair),
+                   divergence = "mahalanobis")
+
+# your data alone; all three share one partition, so the values compare directly
+own <- cv.bregsurv(target)
+c(target_only = own$value, kl = kl$value, euclidean = euc$value)
 }
 \seealso{
-\code{\link[=bregsurv]{bregsurv()}} for a fit at a given weight; \link{targets}, \link{releases}.
+\code{\link[=bregsurv]{bregsurv()}} to fit at a given \code{eta}; \link{targets}, \link{releases}, \code{\link[=plot.cv.bregsurv]{plot.cv.bregsurv()}},
+\code{\link[=predict.cv.bregsurv]{predict.cv.bregsurv()}}.
 }

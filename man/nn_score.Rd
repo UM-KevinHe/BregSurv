@@ -48,8 +48,8 @@ target it outputs one risk score, and the partial likelihood of each mini-batch 
 risk sets within the batch.
 }
 \details{
-Only the Kullback-Leibler member is defined for a neural target, because the other two members
-compare coefficients. Fitting requires the \code{torch} package (\code{install.packages("torch")}, then
+Only the Kullback-Leibler divergence is defined for a neural target, because the other two
+divergences compare coefficients. Fitting requires the \code{torch} package (\code{install.packages("torch")}, then
 \code{torch::install_torch()} once).
 }
 \examples{

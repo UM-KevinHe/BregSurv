@@ -3,7 +3,7 @@
 \name{predict.cv.bregsurv}
 \alias{predict.cv.bregsurv}
 \alias{predict.bregsurv}
-\title{Predictions from a fitted member}
+\title{Predictions from a fitted model}
 \usage{
 \method{predict}{cv.bregsurv}(
   object,
@@ -26,21 +26,34 @@
 \arguments{
 \item{object}{A \code{cv.bregsurv} or \code{bregsurv} fit.}
 
-\item{newz}{Covariates of new subjects (columns named like the target's).}
+\item{newz}{Covariates of new subjects, with the target's column names.}
 
 \item{stratum}{Strata of the new subjects, when the target was stratified.}
 
-\item{type}{\code{"lp"}: the risk score (linear predictor, or network output) of a Cox or matched target;
-\code{"hazard"}: interval hazards of a discrete target; \code{"survival"}: survival at the end of each
-interval (discrete) or at \code{times} (Cox, Breslow baseline from the training data).}
+\item{type}{What to predict:
+\itemize{
+\item \code{"lp"}: the risk score (the linear predictor \eqn{z^\top\beta}, or the network output) of a
+Cox or nested case-control target;
+\item \code{"hazard"}: the interval hazards of a discrete-time target, one column per interval;
+\item \code{"survival"}: survival probabilities: at the end of each interval for a discrete-time target,
+or at \code{times} for a Cox target (with the Breslow baseline hazard of the training data).
+}}
 
 \item{times}{Times at which to evaluate survival for a Cox target.}
 
 \item{...}{Unused.}
 }
 \value{
-A vector or a matrix with one row per new subject.
+A vector (\code{"lp"}) or a matrix with one row per new subject.
 }
 \description{
-Predictions from a fitted member
+Predictions from a fitted model
+}
+\examples{
+data(ExampleData_lowdim)
+tr <- ExampleData_lowdim$train; te <- ExampleData_lowdim$test
+fit <- cv.bregsurv(target_cox(tr$time, tr$status, tr$z),
+                   release_coef(ExampleData_lowdim$beta_external_fair), divergence = "kl")
+head(predict(fit, te$z))
+predict(fit, te$z[1:3, ], type = "survival", times = c(1, 2, 3))
 }

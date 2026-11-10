@@ -366,6 +366,55 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// dt_solve_cpp
+Rcpp::List dt_solve_cpp(const arma::mat& Z, const Rcpp::IntegerVector& cell, const arma::mat& Tm, const arma::mat& Wt, int link, double n, int n_cell, double lambda, double alpha, const arma::mat& Qm, const arma::vec& bext, double eta_m, arma::vec beta, arma::mat G, double gmin, double tol, int max_iter);
+RcppExport SEXP _BregSurv_dt_solve_cpp(SEXP ZSEXP, SEXP cellSEXP, SEXP TmSEXP, SEXP WtSEXP, SEXP linkSEXP, SEXP nSEXP, SEXP n_cellSEXP, SEXP lambdaSEXP, SEXP alphaSEXP, SEXP QmSEXP, SEXP bextSEXP, SEXP eta_mSEXP, SEXP betaSEXP, SEXP GSEXP, SEXP gminSEXP, SEXP tolSEXP, SEXP max_iterSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cell(cellSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Tm(TmSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Wt(WtSEXP);
+    Rcpp::traits::input_parameter< int >::type link(linkSEXP);
+    Rcpp::traits::input_parameter< double >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type n_cell(n_cellSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Qm(QmSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type bext(bextSEXP);
+    Rcpp::traits::input_parameter< double >::type eta_m(eta_mSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< double >::type gmin(gminSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    rcpp_result_gen = Rcpp::wrap(dt_solve_cpp(Z, cell, Tm, Wt, link, n, n_cell, lambda, alpha, Qm, bext, eta_m, beta, G, gmin, tol, max_iter));
+    return rcpp_result_gen;
+END_RCPP
+}
+// dt_null_fit_cpp
+Rcpp::List dt_null_fit_cpp(const arma::mat& Z, const Rcpp::IntegerVector& cell, const arma::mat& Tm, const arma::mat& Wt, int link, double n, int n_cell, const arma::mat& Qm, const arma::vec& bext, double eta_m, arma::mat G, double gmin);
+RcppExport SEXP _BregSurv_dt_null_fit_cpp(SEXP ZSEXP, SEXP cellSEXP, SEXP TmSEXP, SEXP WtSEXP, SEXP linkSEXP, SEXP nSEXP, SEXP n_cellSEXP, SEXP QmSEXP, SEXP bextSEXP, SEXP eta_mSEXP, SEXP GSEXP, SEXP gminSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type Z(ZSEXP);
+    Rcpp::traits::input_parameter< const Rcpp::IntegerVector& >::type cell(cellSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Tm(TmSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Wt(WtSEXP);
+    Rcpp::traits::input_parameter< int >::type link(linkSEXP);
+    Rcpp::traits::input_parameter< double >::type n(nSEXP);
+    Rcpp::traits::input_parameter< int >::type n_cell(n_cellSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type Qm(QmSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type bext(bextSEXP);
+    Rcpp::traits::input_parameter< double >::type eta_m(eta_mSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type G(GSEXP);
+    Rcpp::traits::input_parameter< double >::type gmin(gminSEXP);
+    rcpp_result_gen = Rcpp::wrap(dt_null_fit_cpp(Z, cell, Tm, Wt, link, n, n_cell, Qm, bext, eta_m, G, gmin));
+    return rcpp_result_gen;
+END_RCPP
+}
 // rev_cumsum
 arma::vec rev_cumsum(const arma::vec& X);
 RcppExport SEXP _BregSurv_rev_cumsum(SEXP XSEXP) {
@@ -538,6 +587,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BregSurv_Cox_indi", (DL_FUNC) &_BregSurv_Cox_indi, 8},
     {"_BregSurv_mean_crossprod_weight", (DL_FUNC) &_BregSurv_mean_crossprod_weight, 4},
     {"_BregSurv_StratCox_lasso", (DL_FUNC) &_BregSurv_StratCox_lasso, 24},
+    {"_BregSurv_dt_solve_cpp", (DL_FUNC) &_BregSurv_dt_solve_cpp, 17},
+    {"_BregSurv_dt_null_fit_cpp", (DL_FUNC) &_BregSurv_dt_null_fit_cpp, 12},
     {"_BregSurv_rev_cumsum", (DL_FUNC) &_BregSurv_rev_cumsum, 1},
     {"_BregSurv_combn_index", (DL_FUNC) &_BregSurv_combn_index, 2},
     {"_BregSurv_pl_cal_theta", (DL_FUNC) &_BregSurv_pl_cal_theta, 3},

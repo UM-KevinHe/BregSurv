@@ -30,8 +30,9 @@ Plots cross-validation performance across eta values for
 \code{cv.ncckl}, \code{cv.ncc_MDTL}, \code{cv.ncc_indi},
 \code{cv.coxkl_ridge}, \code{cv.cox_MDTL_ridge},
 \code{cv.coxkl_enet}, \code{cv.cox_MDTL_enet}, \code{cv.cox_indi_enet},
-\code{cv.ncckl_enet}, \code{cv.ncc_MDTL_enet}, or \code{cv.ncc_indi_enet}
-objects in a Biometrics-style figure. It displays the cross-validated
+\code{cv.ncckl_enet}, \code{cv.ncc_MDTL_enet}, \code{cv.ncc_indi_enet}, or the
+discrete-time \code{cv.discretekl}, \code{cv.discrete_MDTL}, \code{cv.discrete_indi} and their
+\code{_ridge} and \code{_enet} versions, in a Biometrics-style figure. It displays the cross-validated
 performance curve (each eta at its best lambda), a baseline reference at
 \code{eta = 0}, and marks the optimal \code{eta}.
 

@@ -63,7 +63,7 @@ weight is balanced against.
 \details{
 \itemize{
 \item \code{target_cox()} is the stratified Cox model, scored by its log-partial likelihood. Tied event times
-are handled by \code{ties}: \code{"none"} (the default), \code{"breslow"}, or \code{"exact"} (Kullback-Leibler member
+are handled by \code{ties}: \code{"none"} (the default), \code{"breslow"}, or \code{"exact"} (Kullback-Leibler divergence
 only).
 \item \code{target_ncc()} is the nested case-control (matched case-control) design: the conditional
 likelihood of which member of each matched set is the case.

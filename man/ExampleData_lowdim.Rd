@@ -23,6 +23,10 @@ A list containing the following elements:
 coefficients for variables not used are \code{0}.}
 \item{beta_external_poor}{Numeric vector (length 6; names \code{Z1}–\code{Z6}) of Cox coefficients estimated on a
 "Poor" external dataset using \code{Z1} and \code{Z5} only; remaining entries are \code{0}.}
+\item{score_external}{A list with elements \code{train} and \code{test}: the score a published risk
+calculator gives each subject of \code{train} and of \code{test}. The calculator is the linear predictor
+of \code{beta_external_poor}; only its scores are used, as for a calculator whose coefficients are not
+published. Built by \code{tools/make_ExampleData_extras.R} in the package sources.}
 }
 }
 \usage{

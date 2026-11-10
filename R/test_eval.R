@@ -41,7 +41,11 @@
 #' @importFrom stats approxfun plnorm plogis pnorm qnorm rbinom relevel rexp rlnorm rnorm rpois runif rweibull
 #' @importFrom utils head tail
 #'
-#' @keywords internal
+#' @examples
+#' data(ExampleData_lowdim)
+#' te <- ExampleData_lowdim$test
+#' test_eval(te$z, te$status, te$time, betahat = ExampleData_lowdim$beta_external_fair,
+#'           criteria = "CIndex")
 #' @export
 test_eval <- function(test_z, test_delta, test_time,
                       betahat, test_stratum = NULL,

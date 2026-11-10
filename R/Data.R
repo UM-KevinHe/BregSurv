@@ -128,6 +128,10 @@
 #'     coefficients for variables not used are \code{0}.}
 #'   \item{beta_external_poor}{Numeric vector (length 6; names \code{Z1}–\code{Z6}) of Cox coefficients estimated on a
 #'     "Poor" external dataset using \code{Z1} and \code{Z5} only; remaining entries are \code{0}.}
+#'   \item{score_external}{A list with elements \code{train} and \code{test}: the score a published risk
+#'     calculator gives each subject of \code{train} and of \code{test}. The calculator is the linear predictor
+#'     of \code{beta_external_poor}; only its scores are used, as for a calculator whose coefficients are not
+#'     published. Built by \code{tools/make_ExampleData_extras.R} in the package sources.}
 #' }
 #'
 #' @details Data-generating mechanism:
@@ -344,3 +348,62 @@
 
 
 
+
+#' Example discrete-time survival data with an external registry
+#'
+#' A simulated cohort whose follow-up is recorded in six intervals (for instance, years after
+#' transplant), a large external registry cohort from a related population, and the registry's
+#' published model. It illustrates the discrete-time families ([discretekl()], [discrete_MDTL()],
+#' [discrete_indi()]) and [cv.bregsurv()] with [target_discrete()].
+#'
+#' @name ExampleData_discrete
+#' @docType data
+#' @usage data(ExampleData_discrete)
+#'
+#' @format A list with six components:
+#' \describe{
+#'   \item{train}{The internal cohort, 150 subjects: `z`, a data frame of covariates `Z1`--`Z6`;
+#'     `interval`, the last interval each subject was at risk in (1--6); `status`, 1 when the event
+#'     happened in that interval and 0 when the subject was censored at its end.}
+#'   \item{test}{An independent cohort of 2,000 subjects from the same population, in the same form.}
+#'   \item{external}{The registry's records, 1,000 subjects, in the same form.}
+#'   \item{beta_external}{The registry's published coefficients, named `Z1`--`Z5` (the registry did
+#'     not record `Z6`).}
+#'   \item{Q_external}{Their precision matrix (the inverse of their covariance matrix), 5 x 5.}
+#'   \item{baseline_external}{The registry model's baseline cumulative-hazard increments over the six
+#'     intervals.}
+#' }
+#'
+#' @details
+#' The interval hazard follows a grouped proportional-hazards model,
+#' \eqn{h_k(z) = 1 - \exp\{-\exp(\alpha_k + z^\top\beta)\}}, with
+#' \eqn{\beta = (0.7, -0.6, 0.5, -0.4, 0.3, 0)} and \eqn{\alpha_k} rising from \eqn{-2.6} to
+#' \eqn{-1.8}. `Z4` is binary and the other covariates standard normal. The registry's population has
+#' effects \eqn{(0.8, -0.5, 0.6, -0.3, 0.35, 0)} and a baseline 0.15 higher on the log scale; its
+#' published model is a grouped proportional-hazards fit to its records on `Z1`--`Z5`. Subjects are
+#' censored at the end of a uniformly drawn interval. The data are built by
+#' `tools/make_ExampleData_discrete.R` in the package sources.
+#'
+#' @keywords datasets
+"ExampleData_discrete"
+
+#' Example survival data with tied event times
+#'
+#' The cohorts of [ExampleData_lowdim] with follow-up recorded on a grid: every observed time is
+#' rounded up to the next multiple of 0.05, as when outcomes are ascertained at scheduled visits, so
+#' many event times are tied. It illustrates the `ties` argument of [target_cox()].
+#'
+#' @name ExampleData_ties
+#' @docType data
+#' @usage data(ExampleData_ties)
+#'
+#' @format A list with three components:
+#' \describe{
+#'   \item{train}{100 subjects: `z`, a data frame of covariates `Z1`--`Z6`; `time`, the observed time
+#'     on the grid; `status`, 1 for an event and 0 for censoring.}
+#'   \item{test}{2,000 subjects in the same form.}
+#'   \item{beta_external}{External Cox coefficients (`beta_external_fair` of [ExampleData_lowdim]).}
+#' }
+#' @details Built by `tools/make_ExampleData_extras.R` in the package sources.
+#' @keywords datasets
+"ExampleData_ties"

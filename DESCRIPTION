@@ -1,7 +1,7 @@
 Package: BregSurv
 Type: Package
 Title: Transfer Learning for Time-to-Event Models via a Unified Bregman-Divergence Objective
-Version: 2.0.0
+Version: 2.1.0
 URL: https://um-kevinhe.github.io/BregSurv/
 Authors@R: c(
     person("Yubo","Shao",role=c("aut","cre"),email="ybshao@umich.edu")

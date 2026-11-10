@@ -69,6 +69,14 @@ StratCox_lasso <- function(delta_obs, Z, weight, n_each_prov, beta, K0, K1, lamb
     .Call(`_BregSurv_StratCox_lasso`, delta_obs, Z, weight, n_each_prov, beta, K0, K1, lambda_seq, lambda_early_stop, stop_loss_ratio, group_multiplier, max_total_iter, max_each_iter, tol, initial_active_group, nvar_max, group_max, trace_lambda, actSet, actIter, activeGroupNum, actSetRemove, tie_first, tie_last)
 }
 
+dt_solve_cpp <- function(Z, cell, Tm, Wt, link, n, n_cell, lambda, alpha, Qm, bext, eta_m, beta, G, gmin, tol, max_iter) {
+    .Call(`_BregSurv_dt_solve_cpp`, Z, cell, Tm, Wt, link, n, n_cell, lambda, alpha, Qm, bext, eta_m, beta, G, gmin, tol, max_iter)
+}
+
+dt_null_fit_cpp <- function(Z, cell, Tm, Wt, link, n, n_cell, Qm, bext, eta_m, G, gmin) {
+    .Call(`_BregSurv_dt_null_fit_cpp`, Z, cell, Tm, Wt, link, n, n_cell, Qm, bext, eta_m, G, gmin)
+}
+
 rev_cumsum <- function(X) {
     .Call(`_BregSurv_rev_cumsum`, X)
 }
