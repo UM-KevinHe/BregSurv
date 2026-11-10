@@ -125,9 +125,6 @@ as_is <- vvh_loss_fixed(as.matrix(tr$z), tr$status, tr$time,
 c(sapply(fits, `[[`, "value"), external_as_is = as_is$VVH_Loss)
 ```
 
-This is how the agent in this repository works: it fits every divergence the facts admit, on one
-partition, and selects by that number.
-
 ## Where each call goes
 
 On a linear target `cv.bregsurv()` calls one of the package's estimators and returns its result

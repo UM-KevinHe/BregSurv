@@ -18,6 +18,11 @@
 
 ---
 
+> **Two parts, one repository.** **BregSurv Agent** is a chat application: you describe the analysis in
+> your own words, and it plans, fits and reports it. **BregSurv** is the R package the agent runs on,
+> its statistical core, and it can be used on its own: you specify the target model, the external
+> release and the divergence, and it fits. Every number the agent reports is computed by the package.
+
 ## 📖 Overview
 
 You have a small local **cohort**, and someone else has **more data**: a published risk model from a national registry, or another centre's patient records. Borrowing from that external information can make your survival analysis far more precise. Borrowing blindly can also make it worse, because the external population is never quite yours.
@@ -66,7 +71,8 @@ Open **http://localhost:7860**. The first start takes a few minutes while the mo
 
 ### Option 3 — Use the R package directly
 
-The estimator library behind the agent is a standalone R package with one interface for every analysis:
+The agent's statistical core is a standalone R package. Without the agent, you state the analysis
+yourself: the target model, the external release and the divergence.
 
 ```r
 # install.packages("remotes")
@@ -77,7 +83,7 @@ fit <- cv.bregsurv(target     = target_cox(time, event, z),
                    divergence = "kl")                          # how it enters the objective
 ```
 
-See [the R package](#-the-r-package-one-bregman-divergence-objective) below and the
+See [the R package](#-the-r-package-the-agents-statistical-core-on-its-own) below and the
 [package website](https://um-kevinhe.github.io/BregSurv/).
 
 ---
@@ -108,25 +114,32 @@ See [the R package](#-the-r-package-one-bregman-divergence-objective) below and 
 
 ---
 
-## 📦 The R package: one Bregman-divergence objective
+## 📦 The R package: the agent's statistical core, on its own
 
-### One objective, four choices
+Every number the agent reports is computed by **BregSurv**, an R package that also works on its own,
+without the agent or any language model. Where the agent reads your request and plans the analysis,
+with the package you specify it yourself, in one call:
 
-Every estimator in the package minimizes
+```r
+cv.bregsurv(target, release, divergence, ...)
+```
+
+| argument | what you specify |
+|---|---|
+| `target` | the **target model**: the model you fit to your local data |
+| `release` | the **external release**: what the external source made available |
+| `divergence` | the **divergence**: how the release enters the objective |
+| `penalty` | optionally, a penalty on the coefficients |
+
+`cv.bregsurv()` then chooses how strongly to borrow, by cross-validation on your data. Behind the call
+is one objective,
 
 $$
 Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 $$
 
-where $\ell$ is your cohort's log-likelihood and $\mathcal{B}_G$ is a Bregman divergence between your
-model and the external one. A call to `cv.bregsurv()` makes four choices, one per argument:
-
-| argument | what it is |
-|---|---|
-| `target` | the model you fit to your local data | 
-| `release` | what the external source made available |
-| `divergence` | how the release enters the objective | 
-| `penalty` | an optional penalty on the coefficients | 
+where $\ell$ is your cohort's log-likelihood, $\mathcal{B}_G$ is a Bregman divergence between your
+model and the external one, and $\eta$ is how strongly to borrow ($\eta = 0$ is your data alone).
 
 ### A first fit
 
@@ -186,7 +199,7 @@ BregSurv/
 ├── bregsurv_agent/      # the agent: reading, planning, checks, reports
 ├── mcp/r_scripts/       # the R side of the agent (profiling, fitting, diagnostics)
 ├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time models
-├── R/ src/ man/ data/   # the BregSurv R package (estimator library)
+├── R/ src/ man/ data/   # the BregSurv R package: the agent's statistical core
 ├── vignettes/ docs/     # the package website and its articles
 ├── demo/                # synthetic example data
 ├── eval/                # synthetic example banks and the fixtures the tests read

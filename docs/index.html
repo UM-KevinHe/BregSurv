@@ -71,241 +71,81 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9"><div class="section level1" align="center">
-<div class="page-header"><h1 id="-bregsurv-agent">🧬 BregSurv Agent<a class="anchor" aria-label="anchor" href="#-bregsurv-agent"></a>
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="bregsurv">BregSurv<a class="anchor" aria-label="anchor" href="#bregsurv"></a>
 </h1></div>
-<p><strong>A local AI agent for survival analysis that learns from external data — published models or other cohorts — and only when it helps.</strong></p>
-<p><a href="https://huggingface.co/spaces/anon-bregsurv/BregSurv" class="external-link"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Try%20it-Hugging%20Face%20Space-yellow" alt="Try it on Hugging Face"></a> <a href="https://www.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R-%E2%89%A5%204.5-276DC3?logo=r" alt="R ≥ 4.5"></a> <a href="https://www.python.org/" class="external-link"><img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&amp;logoColor=white" alt="Python 3.11"></a> <a href="https://huggingface.co/Qwen/Qwen3-8B-AWQ" class="external-link"><img src="https://img.shields.io/badge/LLM-Qwen3--8B%20(local)-6f42c1" alt="Model: Qwen3-8B"></a> <a href="LICENSE.html"><img src="https://img.shields.io/badge/License-GPL--3-green" alt="License: GPL-3"></a></p>
-<p><img src="assets/demo.gif" width="820" alt="BregSurv Agent demo"></p>
-<p><sub>▶️ Full demo video: <a href="assets/demo.mp4">assets/demo.mp4</a></sub></p>
-</div>
-<hr>
+<p><strong>Transfer learning for time-to-event models, through one Bregman-divergence objective.</strong></p>
+<p>You fit a survival model to your own cohort, and an external source has more data: another cohort’s records, a published model, a risk score, a registry’s survival probabilities. Borrowing from it can make your estimates far more precise; borrowing blindly can make them worse, because the external population is never quite yours. <code>BregSurv</code> borrows as far as it helps your data, and no further.</p>
 <div class="section level2">
-<h2 id="-overview">📖 Overview<a class="anchor" aria-label="anchor" href="#-overview"></a>
+<h2 id="one-call">One call<a class="anchor" aria-label="anchor" href="#one-call"></a>
 </h2>
-<p>You have a small local <strong>cohort</strong>, and someone else has <strong>more data</strong>: a published risk model from a national registry, or another centre’s patient records. Borrowing from that external information can make your survival analysis far more precise. Borrowing blindly can also make it worse, because the external population is never quite yours.</p>
-<p><strong>BregSurv Agent</strong> does this analysis for you from a single sentence:</p>
-<blockquote>
-<p><em>“Follow-up is in <code>followup_days</code>, <code>died</code> is 1 when the patient died. Adjust for age, BMI, eGFR, haemoglobin, albumin, dialysis years, donor age and cold ischaemia time. We also have coefficients from a registry model — borrow from them if that helps.”</em></p>
-</blockquote>
-<p>It reads your request and your files, checks how well the external information fits your data, plans which analyses are worth running, fits them, and lets cross-validation decide — including the two honest baselines, <strong>your data alone</strong> and <strong>the external model as it is</strong>. You get a plain-language answer in the chat and a full PDF report.</p>
-<p>🔒 <strong>Everything runs on your own machine.</strong> The language model (Qwen3-8B) is served locally; no patient row ever leaves your computer, and no external API is called.</p>
-<hr>
+<p>Every analysis is one call with three ingredients: the <strong>target</strong> model you fit, the <strong>release</strong> the external source published, and the <strong>divergence</strong> through which the release enters. <code><a href="reference/cv.bregsurv.html">cv.bregsurv()</a></code> then chooses how strongly to borrow, by cross-validation on your data.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, <span class="va">divergence</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/bregsurv-flowchart.svg" alt=""><p class="caption">The objective, and the three steps that set its terms: the target model, the release and the divergence.</p>
 </div>
-<div class="section level2">
-<h2 id="-why-bregsurv-agent">✨ Why BregSurv Agent?<a class="anchor" aria-label="anchor" href="#-why-bregsurv-agent"></a>
-</h2>
-<table class="table">
-<colgroup>
-<col width="50%">
-<col width="50%">
-</colgroup>
-<tbody>
-<tr class="odd">
-<td>🎯 <strong>Borrows only when it helps</strong>
-</td>
-<td>Your data alone and the external model unchanged are always in the comparison, so the agent can — and does — tell you when borrowing does <em>not</em> pay.</td>
-</tr>
-<tr class="even">
-<td>🧠 <strong>The LLM plans, the statistics decide</strong>
-</td>
-<td>The model reads diagnostics of how your data and the external information agree and plans the analysis; a verified R estimator library fits it; cross-validation picks the winner.</td>
-</tr>
-<tr class="odd">
-<td>🔢 <strong>No number is written by the model</strong>
-</td>
-<td>Every estimate in the chat and the report is inserted from the fitted objects. The model writes words, never digits.</td>
-</tr>
-<tr class="even">
-<td>♻️ <strong>Fully reproducible</strong>
-</td>
-<td>Each run ships a script that reproduces the analysis from the R library alone, with no language model involved.</td>
-</tr>
-<tr class="odd">
-<td>💬 <strong>Made for clinicians</strong>
-</td>
-<td>Drop files into the chat and describe the analysis in your own words. The agent asks only what the data cannot tell it.</td>
-</tr>
-<tr class="even">
-<td>🖥️ <strong>Small and local</strong>
-</td>
-<td>An 8B model on a single GPU (≥ 16 GB). No cloud account, no API key, no data transfer.</td>
-</tr>
-</tbody>
-</table>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="-quick-start">🚀 Quick Start<a class="anchor" aria-label="anchor" href="#-quick-start"></a>
-</h2>
-<div class="section level3">
-<h3 id="option-1--try-it-online-no-installation">Option 1 — Try it online (no installation)<a class="anchor" aria-label="anchor" href="#option-1--try-it-online-no-installation"></a>
-</h3>
-<p>Open the <strong><a href="https://huggingface.co/spaces/anon-bregsurv/BregSurv" class="external-link">Hugging Face Space</a></strong> and click <strong>Try the example data</strong>. The demo uses synthetic data only; for real patient data, run it locally.</p>
-</div>
-<div class="section level3">
-<h3 id="option-2--run-it-on-your-own-gpu-recommended-for-real-data">Option 2 — Run it on your own GPU (recommended for real data)<a class="anchor" aria-label="anchor" href="#option-2--run-it-on-your-own-gpu-recommended-for-real-data"></a>
-</h3>
-<p>You need <a href="https://docs.docker.com/get-docker/" class="external-link">Docker</a> with the <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/" class="external-link">NVIDIA Container Toolkit</a> and a GPU with at least 16 GB of memory.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/UM-KevinHe/BregSurv.git</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> BregSurv</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> bregsurv-agent .</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--gpus</span> all <span class="at">-p</span> 7860:7860 bregsurv-agent</span></code></pre></div>
-<p>Open <strong><a href="http://localhost:7860" class="external-link uri">http://localhost:7860</a></strong>. The first start takes a few minutes while the model loads. The same chat interface as the online demo runs entirely on your machine — your data stays there. Settings, and running without Docker or without any language model, are in <a href="deploy/DEPLOY.html"><code>deploy/DEPLOY.md</code></a>.</p>
-</div>
-<div class="section level3">
-<h3 id="option-3--use-the-r-package-directly">Option 3 — Use the R package directly<a class="anchor" aria-label="anchor" href="#option-3--use-the-r-package-directly"></a>
-</h3>
-<p>The estimator library behind the agent is a standalone R package with one interface for every analysis:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"UM-KevinHe/BregSurv"</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span>target     <span class="op">=</span> <span class="fu"><a href="reference/target_cox.html">target_cox</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span>, <span class="va">z</span><span class="op">)</span>,</span>
-<span>                   release    <span class="op">=</span> <span class="fu"><a href="reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">beta_registry</span><span class="op">)</span>,   <span class="co"># what the external source published</span></span>
-<span>                   divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span>                          <span class="co"># how it enters the objective</span></span></code></pre></div>
-<p>See <a href="#-the-r-package-one-bregman-divergence-objective">the R package</a> below and the <a href="https://um-kevinhe.github.io/BregSurv/">package website</a>.</p>
-<hr>
-</div>
-</div>
-<div class="section level2">
-<h2 id="-how-a-conversation-goes">💬 How a conversation goes<a class="anchor" aria-label="anchor" href="#-how-a-conversation-goes"></a>
-</h2>
 <ol style="list-style-type: decimal">
-<li><p><strong>Drop your files</strong> into the message box: your cohort (<code>.csv</code>, <code>.xlsx</code>, <code>.rds</code>, …) and, optionally, the external information — a coefficient table, a JSON with coefficients and covariance, a baseline-hazard table, or another cohort’s records. A second file with the same columns can be your <strong>test set</strong>.</p></li>
-<li><p><strong>Say what you want</strong> in plain words. Name the follow-up time, the event, and what to adjust for.</p></li>
 <li>
-<p><strong>Watch it work.</strong> The chat shows each step as it happens:</p>
-<pre><code>✓ Reading your request
-✓ Finding the columns you named
-✓ Checking your data
-✓ Checking how well the external data fits your cohort
-✓ Planning which models to fit
-✓ Fitting the planned models
-✓ Comparing the models and choosing the best
-✓ Writing the report</code></pre>
-</li>
-<li><p><strong>Read the answer.</strong> A short summary in the chat — what was compared, whether borrowing helped, and the coefficients of the recommended model — with the <strong>full PDF report</strong> attached.</p></li>
-<li><p><strong>Ask follow-up questions</strong> — <em>“Why was that model chosen instead of just using my own data?”</em> — and get plain-language answers grounded in the fitted results.</p></li>
+<strong>The target</strong> is the model you fit to your own data; it sets the likelihood <span class="math inline">\(\ell(\theta)\)</span>. Build it with <code><a href="reference/target_cox.html">target_cox()</a></code> (a follow-up time and an event indicator, with strata and tied times), <code><a href="reference/target_ncc.html">target_ncc()</a></code> (a nested case–control design) or <code><a href="reference/target_discrete.html">target_discrete()</a></code> (follow-up recorded in intervals).</li>
+<li>
+<strong>The release</strong> is what the external source made available: individual records (<code><a href="reference/release_records.html">release_records()</a></code>), a fitted model with or without its uncertainty (<code><a href="reference/release_coef.html">release_coef()</a></code>), a risk score without survival probabilities (<code><a href="reference/release_score.html">release_score()</a></code>), or survival probabilities (<code><a href="reference/release_model.html">release_model()</a></code>).</li>
+<li>
+<strong>The divergence</strong> is how the release enters the objective, <span class="math inline">\(B_G\)</span>: <code>"kl"</code> (Kullback–Leibler), <code>"mahalanobis"</code> or <code>"composite"</code> (composite likelihood).</li>
 </ol>
-<div align="center">
-<p><img src="assets/screenshot_home.png" width="45%" alt="The agent's home screen">   <img src="assets/screenshot_result.png" width="45%" alt="An analysis result in the agent"></p>
-</div>
-<hr>
 </div>
 <div class="section level2">
-<h2 id="-the-r-package-one-bregman-divergence-objective">📦 The R package: one Bregman-divergence objective<a class="anchor" aria-label="anchor" href="#-the-r-package-one-bregman-divergence-objective"></a>
+<h2 id="a-first-fit">A first fit<a class="anchor" aria-label="anchor" href="#a-first-fit"></a>
 </h2>
-<div class="section level3">
-<h3 id="one-objective-four-choices">One objective, four choices<a class="anchor" aria-label="anchor" href="#one-objective-four-choices"></a>
-</h3>
-<p>Every estimator in the package minimizes</p>
-<p><span class="math display">\[
-Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
-\]</span></p>
-<p>where <span class="math inline">\(\ell\)</span> is your cohort’s log-likelihood and <span class="math inline">\(\mathcal{B}_G\)</span> is a Bregman divergence between your model and the external one. A call to <code><a href="reference/cv.bregsurv.html">cv.bregsurv()</a></code> makes four choices, one per argument:</p>
-<table class="table">
-<thead><tr class="header">
-<th>argument</th>
-<th>what it is</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>target</code></td>
-<td>the model you fit to your local data</td>
-</tr>
-<tr class="even">
-<td><code>release</code></td>
-<td>what the external source made available</td>
-</tr>
-<tr class="odd">
-<td><code>divergence</code></td>
-<td>how the release enters the objective</td>
-</tr>
-<tr class="even">
-<td><code>penalty</code></td>
-<td>an optional penalty on the coefficients</td>
-</tr>
-</tbody>
-</table>
-</div>
-<div class="section level3">
-<h3 id="a-first-fit">A first fit<a class="anchor" aria-label="anchor" href="#a-first-fit"></a>
-</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p>A cohort of 100 patients, and a published model fitted on two of their six covariates:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span>
 <span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span>
 <span></span>
 <span><span class="va">target</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/target_cox.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_poor</span><span class="op">)</span>   <span class="co"># a published model on 2 of 6 covariates</span></span>
+<span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_poor</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">kl</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
-<span><span class="va">euc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
-<span><span class="va">own</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span><span class="op">)</span>                                        <span class="co"># your data alone</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">own</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span><span class="op">)</span>                       <span class="co"># your data alone</span></span>
 <span></span>
-<span><span class="co"># the cross-validated losses compare directly (lower is better)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">kl</span><span class="op">$</span><span class="va">value</span>, euclidean <span class="op">=</span> <span class="va">euc</span><span class="op">$</span><span class="va">value</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      target_only kullback_leibler        euclidean</span></span>
-<span><span class="co">#&gt;            2.625            2.513            2.520</span></span></code></pre></div>
-<p>The same call fits the other targets:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/target_ncc.html">target_ncc</a></span><span class="op">(</span><span class="va">case</span>, <span class="va">set</span>, <span class="va">z</span><span class="op">)</span>, <span class="fu"><a href="reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">beta</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/target_discrete.html">target_discrete</a></span><span class="op">(</span><span class="va">interval</span>, <span class="va">event</span>, <span class="va">z</span><span class="op">)</span>, <span class="fu"><a href="reference/release_model.html">release_model</a></span><span class="op">(</span><span class="va">beta</span>, baseline <span class="op">=</span> <span class="va">dH0</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/target_discrete.html">target_discrete</a></span><span class="op">(</span><span class="va">interval</span>, <span class="va">event</span>, <span class="va">z</span>, score <span class="op">=</span> <span class="fu"><a href="reference/nn_score.html">nn_score</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="reference/release_model.html">release_model</a></span><span class="op">(</span><span class="va">beta</span>, baseline <span class="op">=</span> <span class="va">dH0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>   <span class="co"># cross-validated loss</span></span>
+<span><span class="co">#&gt;  your_data_alone kullback_leibler </span></span>
+<span><span class="co">#&gt;            2.625            2.513</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="reference/figures/home-cv-curve.png" alt=""><p class="caption">The cross-validated loss along the integration weight: the curve falls below the line of your data alone and reaches its minimum near eta = 1.</p>
 </div>
-<div class="section level3">
-<h3 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
-</h3>
+<p>The cross-validated loss falls below that of your data alone: borrowing from the published model predicts your patients better than your data on their own. The same call fits a nested case–control design or a discrete-time model, with a ridge, lasso or elastic-net penalty, or with a neural-network risk score.</p>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
 <p>Not yet on CRAN. Install from GitHub:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"UM-KevinHe/BregSurv"</span><span class="op">)</span></span></code></pre></div>
-<p>Requires R ≥ 4.0 and a C++17 compiler; neural targets also need <code>install.packages("torch")</code>.</p>
+<p><code>BregSurv</code> requires R ≥ 4.0 and a C++17 compiler; neural-network targets also need the <code>torch</code> package.</p>
 </div>
-<div class="section level3">
-<h3 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
-</h3>
+<div class="section level2">
+<h2 id="learn-more">Learn more<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+</h2>
 <ul>
 <li>
-<strong>Get started</strong>: <a href="https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html" class="uri">https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html</a>
-</li>
+<a href="articles/BregSurv.html">Get started</a>: the target, the release and the divergence, step by step, with examples.</li>
 <li>
-<strong>The framework</strong>, the objective and where every function sits in it: <a href="https://um-kevinhe.github.io/BregSurv/articles/framework.html" class="uri">https://um-kevinhe.github.io/BregSurv/articles/framework.html</a>
-</li>
+<a href="articles/framework.html">The framework</a>: the objective, and why each release supports the divergences it does.</li>
 <li>
-<strong>Function reference</strong>: <a href="https://um-kevinhe.github.io/BregSurv/reference/" class="uri">https://um-kevinhe.github.io/BregSurv/reference/</a>
-</li>
+<a href="articles/discrete_neural.html">Discrete-time and neural targets</a>.</li>
 <li>
-<strong>For AI coding assistants</strong>, a compact map of the package following the <a href="https://llmstxt.org/" class="external-link">llms.txt</a> convention: <a href="https://um-kevinhe.github.io/BregSurv/llms.txt" class="uri">https://um-kevinhe.github.io/BregSurv/llms.txt</a>
-</li>
+<a href="articles/engines.html">The estimators behind each divergence</a>, with all their options.</li>
+<li>
+<a href="reference/index.html">Function reference</a>.</li>
+<li>
+<a href="llms.txt"><code>llms.txt</code></a>: a compact map of the package for AI coding assistants.</li>
 </ul>
-<hr>
 </div>
 </div>
-<div class="section level2">
-<h2 id="-repository-layout">📁 Repository layout<a class="anchor" aria-label="anchor" href="#-repository-layout"></a>
-</h2>
-<pre><code>BregSurv/
-├── app.py               # the chat interface (Gradio)
-├── bregsurv_agent/      # the agent: reading, planning, checks, reports
-├── mcp/r_scripts/       # the R side of the agent (profiling, fitting, diagnostics)
-├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time models
-├── R/ src/ man/ data/   # the BregSurv R package (estimator library)
-├── vignettes/ docs/     # the package website and its articles
-├── demo/                # synthetic example data
-├── eval/                # synthetic example banks and the fixtures the tests read
-├── tests/               # the agent's test suites (*.py) and the package's tests (testthat/)
-├── deploy/              # deployment guide and the Hugging Face Space files
-└── Dockerfile           # one-command local deployment</code></pre>
-<hr>
-</div>
-<div class="section level2">
-<h2 id="️-contact">✉️ Contact<a class="anchor" aria-label="anchor" href="#%EF%B8%8F-contact"></a>
-</h2>
-<p>Questions and issues: please open a <a href="https://github.com/UM-KevinHe/BregSurv/issues" class="external-link">GitHub issue</a>.</p>
-</div>
-
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">

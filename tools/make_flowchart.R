@@ -1,4 +1,5 @@
-## Builds vignettes/figures/bregsurv-flowchart.svg, the overview figure of Get started.
+## Builds vignettes/figures/bregsurv-flowchart.svg, the overview figure of Get started, and its copy in
+## man/figures/ for the website's home page.
 ##
 ##   Rscript tools/make_flowchart.R [png-preview-path]      # from the package root
 ##
@@ -87,6 +88,10 @@ svg(out, width = 10, height = 4.83, bg = "white")
 draw_flowchart()
 invisible(dev.off())
 cat("wrote", out, "\n")
+## the same figure for the website's home page (pkgdown/index.md), which takes images from man/figures
+home <- file.path("man", "figures", "bregsurv-flowchart.svg")
+invisible(file.copy(out, home, overwrite = TRUE))
+cat("wrote", home, "\n")
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args)) {
   png(args[1], width = 10, height = 4.83, units = "in", res = 110, type = "cairo", bg = "white")

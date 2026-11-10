@@ -338,9 +338,6 @@ on the same folds).</p>
 <span><span class="va">as_is</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/vvh_loss_fixed.html">vvh_loss_fixed</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, <span class="va">tr</span><span class="op">$</span><span class="va">time</span>,</span>
 <span>                        beta <span class="op">=</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span>, folds <span class="op">=</span> <span class="va">fits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">folds</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="va">`[[`</span>, <span class="st">"value"</span><span class="op">)</span>, external_as_is <span class="op">=</span> <span class="va">as_is</span><span class="op">$</span><span class="va">VVH_Loss</span><span class="op">)</span></span></code></pre></div>
-<p>This is how the agent in this repository works: it fits every
-divergence the facts admit, on one partition, and selects by that
-number.</p>
 </div>
 <div class="section level2">
 <h2 id="where-each-call-goes">Where each call goes<a class="anchor" aria-label="anchor" href="#where-each-call-goes"></a>
