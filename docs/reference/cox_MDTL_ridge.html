@@ -27,7 +27,7 @@ The function computes the solution path over a sequence of lambda values for a f
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,9 +45,9 @@ The function computes the solution path over a sequence of lambda values for a f
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -178,13 +178,14 @@ A value close to 1 (default 0.999) results in <code>alpha</code> close to 0, enf
 
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (the default since 1.2.0), <code>z</code> is scaled to
-unit standard deviation before the ridge penalty is applied, and <code>beta</code> and <code>Q</code>
-are transformed with it. A <code>Q</code> you supply carries its own units and the Mahalanobis
-part of the penalty is left exactly unchanged; with <code>Q = NULL</code> the implicit identity
-metric is taken on the standardized scale, one standard deviation per covariate, so that
-the member does not depend on the units the covariates happen to be recorded in. Coefficients are
-returned on the original scale. Set <code>FALSE</code> to reproduce version 1.1.0 and earlier.</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (the default since 1.2.0), <code>z</code> is
+scaled to unit standard deviation before the ridge penalty is applied and the
+coefficients are returned on the original scale. A <code>Q</code> you supply carries its
+own units, so it is transformed with <code>beta</code> and the Mahalanobis penalty is left
+exactly as specified; with <code>Q = NULL</code> the implicit identity metric is taken on
+the standardized scale, one standard deviation per covariate, so the member does not
+depend on the units the covariates happen to be recorded in. Set <code>FALSE</code> to
+reproduce results from version 1.1.0 and earlier.</p></dd>
 
 
 <dt id="arg-beta-initial">beta_initial<a class="anchor" aria-label="anchor" href="#arg-beta-initial"></a></dt>

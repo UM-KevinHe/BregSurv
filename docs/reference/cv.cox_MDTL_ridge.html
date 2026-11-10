@@ -23,7 +23,7 @@ focusing purely on Ridge regression to handle multicollinearity and overfitting.
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,9 +41,9 @@ focusing purely on Ridge regression to handle multicollinearity and overfitting.
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -182,17 +182,18 @@ therefore only reachable when <code>stratum = NULL</code>: if <code>stratum</cod
 
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
-<dd><p>Logical, forwarded to the underlying fit. <code>TRUE</code> (the default since
-1.2.0) scales the design matrix before the ridge penalty is applied; the coefficients come
-back on the original scale.</p></dd>
-
-
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to the underlying fitting function.</p></dd>
+<dd><p>Logical, forwarded to <code><a href="cox_MDTL_ridge.html">cox_MDTL_ridge</a></code>. <code>TRUE</code>
+(the default since 1.2.0) scales the design matrix before the ridge penalty is
+applied and transforms <code>beta</code> / <code>Q</code> with it, so the Mahalanobis part of
+the penalty is unchanged; the coefficients come back on the original scale.</p></dd>
 
 
 <dt id="arg-ties">ties<a class="anchor" aria-label="anchor" href="#arg-ties"></a></dt>
 <dd><p>Tie handling in the partial likelihood. <code>"none"</code> (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; <code>"breslow"</code> uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Additional arguments passed to the underlying fitting function.</p></dd>
 
 </dl></div>
     <div class="section level2">

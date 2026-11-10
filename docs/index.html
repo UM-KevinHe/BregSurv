@@ -32,7 +32,7 @@
 
     <a class="navbar-brand me-2" href="index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -52,9 +52,9 @@
     <li><a class="dropdown-item" href="articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -161,9 +161,9 @@
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"UM-KevinHe/BregSurv"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span>target  <span class="op">=</span> <span class="fu"><a href="reference/targets.html">target_cox</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span>, <span class="va">z</span><span class="op">)</span>,</span>
-<span>                   release <span class="op">=</span> <span class="fu"><a href="reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">beta_registry</span><span class="op">)</span>,   <span class="co"># what the external source published</span></span>
-<span>                   member  <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span>                          <span class="co"># how it enters the objective</span></span></code></pre></div>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span>target     <span class="op">=</span> <span class="fu"><a href="reference/targets.html">target_cox</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span>, <span class="va">z</span><span class="op">)</span>,</span>
+<span>                   release    <span class="op">=</span> <span class="fu"><a href="reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">beta_registry</span><span class="op">)</span>,   <span class="co"># what the external source published</span></span>
+<span>                   divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span>                          <span class="co"># how it enters the objective</span></span></code></pre></div>
 <p>See <a href="#-the-r-package-one-bregman-divergence-objective">the R package</a> below and the <a href="https://um-kevinhe.github.io/BregSurv/">package website</a>.</p>
 <hr>
 </div>
@@ -189,7 +189,7 @@
 <li><p><strong>Ask follow-up questions</strong> — <em>“Why was that model chosen instead of just using my own data?”</em> — and get plain-language answers grounded in the fitted results.</p></li>
 </ol>
 <div align="center">
-<p><img src="assets/screenshot_home.png" width="45%">   <img src="assets/screenshot_result.png" width="45%"></p>
+<p><img src="assets/screenshot_home.png" width="45%" alt="The agent's home screen">   <img src="assets/screenshot_result.png" width="45%" alt="An analysis result in the agent"></p>
 </div>
 <hr>
 </div>
@@ -219,13 +219,13 @@
 <h2 id="-the-r-package-one-bregman-divergence-objective">📦 The R package: one Bregman-divergence objective<a class="anchor" aria-label="anchor" href="#-the-r-package-one-bregman-divergence-objective"></a>
 </h2>
 <div class="section level3">
-<h3 id="one-objective-three-decisions">One objective, three decisions<a class="anchor" aria-label="anchor" href="#one-objective-three-decisions"></a>
+<h3 id="one-objective-four-choices">One objective, four choices<a class="anchor" aria-label="anchor" href="#one-objective-four-choices"></a>
 </h3>
 <p>Every estimator in the package minimizes</p>
 <p><span class="math display">\[
 Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 \]</span></p>
-<p>where <span class="math inline">\(\ell\)</span> is your cohort’s log-likelihood and <span class="math inline">\(\mathcal{B}_G\)</span> is a Bregman divergence between your model and the external one. The objective separates three decisions, and the package has one object for each:</p>
+<p>where <span class="math inline">\(\ell\)</span> is your cohort’s log-likelihood and <span class="math inline">\(\mathcal{B}_G\)</span> is a Bregman divergence between your model and the external one. A call to <code><a href="reference/cv.bregsurv.html">cv.bregsurv()</a></code> makes four choices, one per argument:</p>
 <table class="table">
 <colgroup>
 <col width="33%">
@@ -233,30 +233,35 @@ Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 <col width="33%">
 </colgroup>
 <thead><tr class="header">
-<th>decision</th>
-<th>made by</th>
+<th>argument</th>
+<th>what it is</th>
 <th>in the package</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>the <strong>target</strong> model</td>
-<td>you, from your data</td>
+<td><code>target</code></td>
+<td>the model you fit to your data</td>
 <td>
 <code><a href="reference/targets.html">target_cox()</a></code> (strata, tied times), <code><a href="reference/targets.html">target_ncc()</a></code>, <code><a href="reference/targets.html">target_discrete()</a></code>, with a linear or <code><a href="reference/nn_score.html">nn_score()</a></code> neural risk score</td>
 </tr>
 <tr class="even">
-<td>the <strong>release</strong>
-</td>
-<td>the external source</td>
+<td><code>release</code></td>
+<td>what the external source made available</td>
 <td>
 <code><a href="reference/releases.html">release_records()</a></code>, <code><a href="reference/releases.html">release_coef()</a></code>, <code><a href="reference/releases.html">release_score()</a></code>, <code><a href="reference/releases.html">release_model()</a></code>
 </td>
 </tr>
 <tr class="odd">
-<td>the <strong>member</strong>: what is borrowed, and how strongly</td>
-<td>your data, by cross-validation</td>
+<td><code>divergence</code></td>
+<td>how the release enters the objective</td>
 <td>
-<code>member = "composite"</code>, <code>"mahalanobis"</code> or <code>"kl"</code>, and the integration weight <span class="math inline">\(\eta\)</span>
+<code>"composite"</code>, <code>"mahalanobis"</code> or <code>"kl"</code>; the weight <span class="math inline">\(\eta\)</span> is chosen by cross-validation</td>
+</tr>
+<tr class="even">
+<td><code>penalty</code></td>
+<td>an optional penalty on the coefficients</td>
+<td>
+<code>"none"</code>, <code>"ridge"</code>, <code>"lasso"</code>, <code>"enet"</code>
 </td>
 </tr>
 </tbody>
@@ -271,7 +276,7 @@ Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 <thead><tr class="header">
 <th>what the external source released</th>
 <th>divergence</th>
-<th><code>member</code></th>
+<th><code>divergence =</code></th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -291,7 +296,7 @@ Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 </tr>
 </tbody>
 </table>
-<p>A release can also enter at every level below its own (records yield coefficients, coefficients yield a risk score), so your data can compare several members. Every linear target takes a ridge, lasso or elastic-net penalty, with the penalty path built for each <span class="math inline">\(\eta\)</span>.</p>
+<p>A release can also enter at every level below its own (records yield coefficients, coefficients yield a risk score), so your data can compare several divergences. Every linear target takes a ridge, lasso or elastic-net penalty, with the penalty path built for each <span class="math inline">\(\eta\)</span>.</p>
 </div>
 <div class="section level3">
 <h3 id="a-first-fit">A first fit<a class="anchor" aria-label="anchor" href="#a-first-fit"></a>
@@ -304,21 +309,52 @@ Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 <span><span class="va">target</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
 <span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_poor</span><span class="op">)</span>   <span class="co"># a published model on 2 of 6 covariates</span></span>
 <span></span>
-<span><span class="va">kl</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
-<span><span class="va">euc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">kl</span>  <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">euc</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
 <span><span class="va">own</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span><span class="op">)</span>                                        <span class="co"># your data alone</span></span>
 <span></span>
 <span><span class="co"># one partition, one criterion: the cross-validated losses compare directly (lower is better)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">kl</span><span class="op">$</span><span class="va">value</span>, euclidean <span class="op">=</span> <span class="va">euc</span><span class="op">$</span><span class="va">value</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      target_only kullback_leibler        euclidean</span></span>
 <span><span class="co">#&gt;            2.625            2.513            2.520</span></span></code></pre></div>
-<p>The published model alone predicts held-out subjects worse than your own data does (C-index 0.613 against 0.619), yet borrowing from it gives 0.640. <a href="https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html">Get started</a> walks through this example, a high-dimensional one and a discrete-time one.</p>
+<p>The published model alone predicts held-out subjects worse than your own data does (C-index 0.613 against 0.619), yet borrowing from it gives 0.640. <a href="https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html">Get started</a> walks through the three steps, target, release and divergence, with examples on Cox, nested case–control and discrete-time targets.</p>
 <p>The same call fits the other targets:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/targets.html">target_ncc</a></span><span class="op">(</span><span class="va">case</span>, <span class="va">set</span>, <span class="va">z</span><span class="op">)</span>, <span class="fu"><a href="reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">beta</span><span class="op">)</span>, member <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/targets.html">target_ncc</a></span><span class="op">(</span><span class="va">case</span>, <span class="va">set</span>, <span class="va">z</span><span class="op">)</span>, <span class="fu"><a href="reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">beta</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/targets.html">target_discrete</a></span><span class="op">(</span><span class="va">interval</span>, <span class="va">event</span>, <span class="va">z</span><span class="op">)</span>, <span class="fu"><a href="reference/releases.html">release_model</a></span><span class="op">(</span><span class="va">beta</span>, baseline <span class="op">=</span> <span class="va">dH0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="fu"><a href="reference/targets.html">target_discrete</a></span><span class="op">(</span><span class="va">interval</span>, <span class="va">event</span>, <span class="va">z</span>, score <span class="op">=</span> <span class="fu"><a href="reference/nn_score.html">nn_score</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="reference/releases.html">release_model</a></span><span class="op">(</span><span class="va">beta</span>, baseline <span class="op">=</span> <span class="va">dH0</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>On Cox and nested case–control targets, <code><a href="reference/cv.bregsurv.html">cv.bregsurv()</a></code> calls the package’s estimators (<code>cv.coxkl</code>, <code>cv.cox_MDTL_enet</code>, <code>cv.ncc_indi</code>, …) and returns exactly their result, so those functions remain available with all their options. Neural targets need the <code>torch</code> package.</p>
+<p>On a linear target <code><a href="reference/cv.bregsurv.html">cv.bregsurv()</a></code> calls one of the package’s estimators and returns exactly its result. There is one family per divergence and design, so those functions are available with all their options:</p>
+<table class="table">
+<thead><tr class="header">
+<th>divergence</th>
+<th>Cox</th>
+<th>nested case–control</th>
+<th>discrete time</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>Kullback–Leibler</td>
+<td>
+<code>coxkl</code>, <code>coxkl_ties</code>
+</td>
+<td><code>ncckl</code></td>
+<td><code>discretekl</code></td>
+</tr>
+<tr class="even">
+<td>Mahalanobis</td>
+<td><code>cox_MDTL</code></td>
+<td><code>ncc_MDTL</code></td>
+<td><code>discrete_MDTL</code></td>
+</tr>
+<tr class="odd">
+<td>composite likelihood</td>
+<td><code>cox_indi</code></td>
+<td><code>ncc_indi</code></td>
+<td><code>discrete_indi</code></td>
+</tr>
+</tbody>
+</table>
+<p>each with <code>_ridge</code> and <code>_enet</code> versions and a <code>cv.</code> counterpart that chooses <span class="math inline">\(\eta\)</span> by cross-validation. Neural targets need the <code>torch</code> package.</p>
 </div>
 <div class="section level3">
 <h3 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -356,7 +392,7 @@ Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 ├── app.py               # the chat interface (Gradio)
 ├── bregsurv_agent/      # the agent: reading, planning, checks, reports
 ├── mcp/r_scripts/       # the R side of the agent (profiling, fitting, diagnostics)
-├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time members
+├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time models
 ├── R/ src/ man/ data/   # the BregSurv R package (estimator library)
 ├── vignettes/ docs/     # the package website and its articles
 ├── demo/                # synthetic example data

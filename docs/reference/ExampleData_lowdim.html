@@ -19,7 +19,7 @@ and three external-quality coefficient vectors."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,9 +37,9 @@ and three external-quality coefficient vectors."></head><body>
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -104,6 +104,12 @@ coefficients for variables not used are <code>0</code>.</p></dd>
 <dt>beta_external_poor</dt>
 <dd><p>Numeric vector (length 6; names <code>Z1</code>–<code>Z6</code>) of Cox coefficients estimated on a
 "Poor" external dataset using <code>Z1</code> and <code>Z5</code> only; remaining entries are <code>0</code>.</p></dd>
+
+<dt>score_external</dt>
+<dd><p>A list with elements <code>train</code> and <code>test</code>: the score a published risk
+calculator gives each subject of <code>train</code> and of <code>test</code>. The calculator is the linear predictor
+of <code>beta_external_poor</code>; only its scores are used, as for a calculator whose coefficients are not
+published. Built by <code>tools/make_ExampleData_extras.R</code> in the package sources.</p></dd>
 
 
 </dl></div>

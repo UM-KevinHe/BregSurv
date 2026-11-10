@@ -1,7 +1,6 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://um-kevinhe.github.io/BregSurv/404.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/LICENSE.html</loc></url>
-<url><loc>https://um-kevinhe.github.io/BregSurv/THIRD_PARTY.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/articles/CV_Criteria.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/articles/coxkl.html</loc></url>
@@ -17,9 +16,11 @@
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_cc_highdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_cc_indi.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_cc_lowdim.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_discrete.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_highdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_indi.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_lowdim.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/ExampleData_ties.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/align_beta.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/align_beta_Q.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/bopt.coxkl.html</loc></url>
@@ -51,6 +52,15 @@
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl_enet.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl_ridge.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.coxkl_ties.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discrete_MDTL.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discrete_MDTL_enet.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discrete_MDTL_ridge.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discrete_indi.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discrete_indi_enet.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discrete_indi_ridge.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discretekl.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discretekl_enet.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.discretekl_ridge.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.ncc_MDTL.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.ncc_MDTL_enet.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.ncc_MDTL_ridge.html</loc></url>
@@ -60,6 +70,15 @@
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.ncckl_enet.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.ncckl_ridge.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/cv.plot.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discrete_MDTL.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discrete_MDTL_enet.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discrete_MDTL_ridge.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discrete_indi.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discrete_indi_enet.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discrete_indi_ridge.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discretekl.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discretekl_enet.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/discretekl_ridge.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/generate_eta.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/get_baseline_hazard.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/index.html</loc></url>
@@ -81,6 +100,7 @@
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/plot.coxkl_enet.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/plot.coxkl_enet.multi.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/plot.coxkl_ridge.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/plot.cv.bregsurv.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/plot.variable_importance.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/predict.cv.bregsurv.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/predict_surv_prob.html</loc></url>

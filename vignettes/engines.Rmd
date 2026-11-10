@@ -1,8 +1,8 @@
 ---
-title: "The estimators behind each member"
+title: "The estimators behind each divergence"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The estimators behind each member}
+  %\VignetteIndexEntry{The estimators behind each divergence}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 bibliography: references.bib
@@ -25,21 +25,23 @@ library(dplyr)
 
 
 
-[`cv.bregsurv()`](../reference/cv.bregsurv.html) fits every member of the framework through one call. On
-a Cox or nested case--control target it hands the work to the estimators this article walks through, and
-returns exactly their result: `cv.bregsurv(target_cox(time, event, z), release_coef(beta), member = "kl")`
-is `cv.coxkl(z, event, time, beta = beta, ...)`. Calling an estimator directly gives access to every
-option it has, and to its plots. The sections follow the members of the framework; within each, the
-full-cohort estimator comes first and its matched-design counterpart is named alongside.
+[`cv.bregsurv()`](../reference/cv.bregsurv.html) fits every combination of target, release and
+divergence through one call. On a linear target it hands the work to the estimators this article walks
+through, and returns exactly their result: `cv.bregsurv(target_cox(time, event, z), release_coef(beta),
+divergence = "kl")` is `cv.coxkl(z, event, time, beta = beta, ...)`. Calling an estimator directly gives
+access to every option it has, and to its plots. The sections follow the three divergences; within
+each, the full-cohort estimator comes first, and its nested case--control and discrete-time
+counterparts follow.
 
-| member | full cohort | nested case--control |
-|---|---|---|
-| composite likelihood (records) | `cox_indi`, `cox_indi_ridge`, `cox_indi_enet` | `ncc_indi`, `ncc_indi_enet` |
-| Kullback--Leibler (model or risk score) | `coxkl`, `coxkl_ties`, `coxkl_ridge`, `coxkl_enet` | `ncckl`, `ncckl_ridge`, `ncckl_enet` |
-| Mahalanobis (coefficients with uncertainty) | `cox_MDTL`, `cox_MDTL_ridge`, `cox_MDTL_enet` | `ncc_MDTL`, `ncc_MDTL_ridge`, `ncc_MDTL_enet` |
+| divergence | full cohort | nested case--control | discrete time |
+|---|---|---|---|
+| composite likelihood (records) | `cox_indi`, `cox_indi_ridge`, `cox_indi_enet` | `ncc_indi`, `ncc_indi_enet` | `discrete_indi`, `discrete_indi_ridge`, `discrete_indi_enet` |
+| Kullback--Leibler (model or risk score) | `coxkl`, `coxkl_ties`, `coxkl_ridge`, `coxkl_enet` | `ncckl`, `ncckl_ridge`, `ncckl_enet` | `discretekl`, `discretekl_ridge`, `discretekl_enet` |
+| Mahalanobis (coefficients with uncertainty) | `cox_MDTL`, `cox_MDTL_ridge`, `cox_MDTL_enet` | `ncc_MDTL`, `ncc_MDTL_ridge`, `ncc_MDTL_enet` | `discrete_MDTL`, `discrete_MDTL_ridge`, `discrete_MDTL_enet` |
 
 Each has a `cv.` counterpart that chooses the integration weight (and the penalty) by cross-validation.
-The discrete-time and neural targets have no separate estimator functions; they are fitted through
+The discrete-time estimators take the same arguments as the full-cohort ones, with `interval` (the last
+interval each subject was at risk in) in place of `time`. The neural-network targets are fitted through
 `cv.bregsurv()` (see [Discrete-time and neural targets](discrete_neural.html)).
 
 Throughout, the **stratified model** is the default: the `stratum` argument gives each stratum its own
@@ -108,10 +110,31 @@ cvfit.cox_indi <- cv.cox_indi(
 )
 ```
 
+### The discrete-time model {#sec_indi_dt}
+
+`discrete_indi()` and `cv.discrete_indi()`, with `_ridge` and `_enet` versions, are the discrete-time
+counterparts. Both cohorts are recorded on the same intervals: `interval_int` and `interval_ext` take
+the place of the times, and each cohort keeps its own baseline hazard over the intervals. The built-in
+`ExampleData_discrete` holds an internal cohort and a registry's records.
+
+```{r}
+data(ExampleData_discrete)
+tr <- ExampleData_discrete$train
+ex <- ExampleData_discrete$external
+
+cvfit.discrete_indi <- cv.discrete_indi(
+  z_int = tr$z, delta_int = tr$status, interval_int = tr$interval,
+  z_ext = ex$z, delta_ext = ex$status, interval_ext = ex$interval,
+  etas = generate_eta(method = "exponential", n = 30, max_eta = 5),
+  seed = 1
+)
+cv.plot(cvfit.discrete_indi)
+```
+
 
 ## 2. Kullback--Leibler: a fitted model or a risk score {#sec_coxkl}
 
-External individual-level data are often inaccessible due to data governance, privacy regulations, or institutional agreements; only summary-level information may be available from the external source, typically in the form of estimated regression coefficients $\widetilde{\boldsymbol{\beta}}$ or an external risk score $r(Z,\widetilde{\boldsymbol{\beta}})$. In such cases, data integration can be carried out through a Kullback--Leibler divergence formulation. The minimal input required for this approach is $\widetilde{\boldsymbol{\beta}}$, corresponding to the coefficient estimates obtained from the external model, or the external risk score. For methodology details, see [The Kullback--Leibler member](coxkl.html).
+External individual-level data are often inaccessible due to data governance, privacy regulations, or institutional agreements; only summary-level information may be available from the external source, typically in the form of estimated regression coefficients $\widetilde{\boldsymbol{\beta}}$ or an external risk score $r(Z,\widetilde{\boldsymbol{\beta}})$. In such cases, data integration can be carried out through a Kullback--Leibler divergence formulation. The minimal input required for this approach is $\widetilde{\boldsymbol{\beta}}$, corresponding to the coefficient estimates obtained from the external model, or the external risk score. For methodology details, see [The Kullback--Leibler divergence](coxkl.html).
 
 We present the usage of the functions for [low-dimensional](#sec_coxkl_low) and [high-dimensional](#sec_coxkl_high) settings separately. Across all implementations, the `stratum` argument controls between-stratum heterogeneity; when no stratum information is provided, all subjects are automatically assigned to a single stratum.
 
@@ -538,6 +561,38 @@ cv.plot(cv.ncckl_enet_fit)
 
 The plot displays a purple curve tracing the cross-validated performance across the $\eta$ grid, a green dotted horizontal line representing the internal baseline at `eta = 0` (with a green point marking its value), and a vertical dashed orange line indicating the optimal $\eta$ at which the cross-validated loss is minimized.
 
+### The discrete-time model {#sec_dtkl}
+
+`discretekl()` and `cv.discretekl()`, with `_ridge` and `_enet` versions, compare the two models through
+their interval hazards, so the external model must give absolute risks: either its interval hazards for
+your subjects (`hazard`, an $n \times K$ matrix), or a Cox model's coefficients `beta` together with its
+baseline cumulative-hazard increments over your intervals (`baseline`). For methodology details, see
+[Discrete-time and neural targets](discrete_neural.html).
+
+```{r}
+data(ExampleData_discrete)
+tr <- ExampleData_discrete$train
+
+cvfit.discretekl <- cv.discretekl(
+  z = tr$z, delta = tr$status, interval = tr$interval,
+  beta = ExampleData_discrete$beta_external,
+  baseline = ExampleData_discrete$baseline_external,
+  etas = c(0, 1, 2, 5, 10, 20, 50, 100),
+  seed = 1
+)
+cvfit.discretekl$best$best_eta
+cv.plot(cvfit.discretekl)
+
+# lasso: eta and lambda chosen together
+cvfit.discretekl_lasso <- cv.discretekl_enet(
+  z = tr$z, delta = tr$status, interval = tr$interval,
+  beta = ExampleData_discrete$beta_external,
+  baseline = ExampleData_discrete$baseline_external,
+  etas = c(0, 1, 5, 20, 100), alpha = 1, nlambda = 30,
+  seed = 1
+)
+```
+
 
 ## 3. Mahalanobis: coefficients with their uncertainty {#sec_coxmaha}
 
@@ -711,7 +766,26 @@ The helper function `cv.plot()` can be used to visualize performance versus $\et
 
 For variable importance and stability selection, the functions `variable_importance()` and `cox_MDTL_enet.StabSelect()` can be applied to the Mahalanobis distance--integrated elastic-net models fitted by `cv.cox_MDTL_enet()`, using the same interface and workflow as described in the sections on [variable importance and stability selection](#sec_var_importance) and [Bagging](#sec_bagging) in the KL divergence section.
 
+### The discrete-time model {#sec_dtMD}
 
+`discrete_MDTL()` and `cv.discrete_MDTL()`, with `_ridge` and `_enet` versions, shrink the coefficients
+of the grouped-time model toward published coefficients. Under the default complementary log-log link
+(the grouped proportional-hazards model) the coefficients are on the scale of a Cox model's, so a
+registry's Cox coefficients and their precision matrix enter directly:
+
+```{r}
+data(ExampleData_discrete)
+tr <- ExampleData_discrete$train
+
+cvfit.discrete_MDTL <- cv.discrete_MDTL(
+  z = tr$z, delta = tr$status, interval = tr$interval,
+  beta = ExampleData_discrete$beta_external,
+  Q = ExampleData_discrete$Q_external,
+  etas = generate_eta(method = "exponential", n = 30, max_eta = 100),
+  seed = 1
+)
+cv.plot(cvfit.discrete_MDTL)
+```
 
 
 ## 4. Tools for the penalized fits

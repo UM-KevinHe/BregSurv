@@ -30,7 +30,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,9 +50,9 @@
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -88,171 +88,513 @@
 borrowing from an external source. Every analysis is one call with three
 ingredients: the <strong>target</strong> model you fit, the
 <strong>release</strong> the external source published, and the
-<strong>member</strong> of the framework through which the release
-enters. <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> then chooses how strongly to borrow,
-by cross-validation on your data. The <a href="framework.html">framework
-page</a> explains the objective behind it; this page shows three
-analyses.</p>
+<strong>divergence</strong> through which the release enters.
+<code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> then chooses how strongly to borrow, by
+cross-validation on your data.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/therneau/survival" class="external-link">survival</a></span><span class="op">)</span>    <span class="co"># for the C-index on held-out data</span></span>
-<span><span class="va">cindex</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">risk</span>, <span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/pkg/survival/man/concordance.html" class="external-link">concordance</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/survival/man/Surv.html" class="external-link">Surv</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span><span class="op">)</span> <span class="op">~</span> <span class="va">risk</span>, reverse <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">$</span><span class="va">concordance</span></span></code></pre></div>
-<div class="section level2">
-<h2 id="a-weak-published-model-still-helps">A weak published model still helps<a class="anchor" aria-label="anchor" href="#a-weak-published-model-still-helps"></a>
-</h2>
-<p><code>ExampleData_lowdim</code> holds a target cohort of 100 subjects
-with 29 events, a test cohort of 2,000, and three published coefficient
-vectors. The “poor” one was estimated on two of the six covariates.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, <span class="va">divergence</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<div class="figure">
+<img src="figures/bregsurv-flowchart.svg" style="width:100.0%" alt=""><p class="caption">The objective, and the three steps that set its
+terms: the target model, the release and the divergence, which together
+make one call to cv.bregsurv().</p>
+</div>
+<p>Every fit minimizes the objective at the top: the negative
+log-likelihood <span class="math inline">\(\ell(\theta)\)</span> of your
+data plus an integration weight <span class="math inline">\(\eta\)</span> times a Bregman divergence <span class="math inline">\(B_G\)</span> between your model and the external
+one. At <span class="math inline">\(\eta = 0\)</span> the external
+source is ignored; the larger <span class="math inline">\(\eta\)</span>,
+the more you borrow. The three steps below set the terms of the
+objective in turn: the target sets <span class="math inline">\(\ell(\theta)\)</span>, the release decides which
+divergences are possible, and the divergence sets <span class="math inline">\(B_G\)</span>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="step-1-the-target">Step 1: the target<a class="anchor" aria-label="anchor" href="#step-1-the-target"></a>
+</h2>
+<p>The <strong>target</strong> is the model you fit to your own data; it
+sets the likelihood <span class="math inline">\(\ell(\theta)\)</span>.
+You build it with a constructor that takes your data, one row per
+subject, checks it (event indicators coded 0/1, positive times, one case
+per matched set, no missing values), and stores it with the model’s
+settings. A constructor fits nothing. Which one to use depends on how
+your outcome was recorded.</p>
+<div class="section level3">
+<h3 id="follow-up-time-and-an-event-indicator-a-cox-model">Follow-up time and an event indicator: a Cox model<a class="anchor" aria-label="anchor" href="#follow-up-time-and-an-event-indicator-a-cox-model"></a>
+</h3>
+<p><code><a href="../reference/targets.html">target_cox()</a></code> takes the observed times, the event
+indicator and the covariates, a numeric matrix or data frame with one
+named column per covariate. <code>ExampleData_lowdim</code> is a
+simulated cohort of 100 patients with six covariates, and an independent
+test cohort of 2,000:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span>
 <span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">te</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">test</span></span>
-<span><span class="va">published</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_poor</span></span>
-<span><span class="va">published</span></span>
-<span><span class="co">#&gt;        Z1        Z2        Z3        Z4        Z5        Z6 </span></span>
-<span><span class="co">#&gt; 0.1357390 0.0000000 0.0000000 0.0000000 0.2605659 0.0000000</span></span>
+<span><span class="va">target_low</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target_low</span></span>
+<span><span class="co">#&gt; Target: Cox model, linear risk score</span></span>
+<span><span class="co">#&gt;   100 subjects, 6 covariates, 29 events</span></span></code></pre></div>
+<p><code>ties =</code> sets how tied event times enter the likelihood
+(<a href="#tied-event-times">below</a>), and <code>stratum =</code>
+gives each stratum its own baseline hazard.
+<code>ExampleData_indi</code> holds a second cohort, of 500 patients in
+ten strata (think of ten centres) with ten covariates; with the centre
+as the stratum, each centre has its own baseline hazard and the
+covariate effects are shared:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_indi</span><span class="op">)</span></span>
+<span><span class="va">int</span> <span class="op">&lt;-</span> <span class="va">ExampleData_indi</span><span class="op">$</span><span class="va">internal</span></span>
+<span><span class="va">target_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">z</span>, stratum <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
+<span><span class="va">target_int</span></span>
+<span><span class="co">#&gt; Target: Cox model, linear risk score</span></span>
+<span><span class="co">#&gt;   500 subjects, 10 covariates, 355 events</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="matched-sets-a-nested-casecontrol-design">Matched sets: a nested case–control design<a class="anchor" aria-label="anchor" href="#matched-sets-a-nested-casecontrol-design"></a>
+</h3>
+<p><code><a href="../reference/targets.html">target_ncc()</a></code> takes the case indicator, the matched set
+of each row and the covariates. Every matched set must hold exactly one
+case:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc_lowdim</span><span class="op">)</span></span>
+<span><span class="va">cc</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">train</span></span>
+<span><span class="va">target_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_ncc</a></span><span class="op">(</span>case <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">y</span>, set <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">stratum</span>, z <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target_matched</span></span>
+<span><span class="co">#&gt; Target: nested case-control design, linear risk score</span></span>
+<span><span class="co">#&gt;   1000 subjects, 6 covariates, 200 matched sets</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="follow-up-recorded-in-intervals-a-discrete-time-model">Follow-up recorded in intervals: a discrete-time model<a class="anchor" aria-label="anchor" href="#follow-up-recorded-in-intervals-a-discrete-time-model"></a>
+</h3>
+<p><code><a href="../reference/targets.html">target_discrete()</a></code> takes the last interval each subject
+was at risk in, the event indicator (1 when the event happened in that
+interval) and the covariates. <code>ExampleData_discrete</code> follows
+150 patients over six intervals, for instance years after
+transplant:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">)</span></span>
+<span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">train</span></span>
+<span><span class="va">target_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target_interval</span></span>
+<span><span class="co">#&gt; Target: discrete-time model (6 intervals, cloglog link), linear risk score</span></span>
+<span><span class="co">#&gt;   150 subjects, 6 covariates, 32 events</span></span></code></pre></div>
+<p>The default link is the complementary log-log, under which the
+coefficients mean what a Cox model’s do; <code>link = "logit"</code> is
+also available.</p>
+</div>
+<div class="section level3">
+<h3 id="a-neural-network-risk-score">A neural-network risk score<a class="anchor" aria-label="anchor" href="#a-neural-network-risk-score"></a>
+</h3>
+<p>A Cox or discrete-time target can replace the linear risk score <span class="math inline">\(z^\top\beta\)</span> by a neural network, with
+<code>score = nn_score()</code>. Neural targets need the
+<code>torch</code> package and are described in <a href="discrete_neural.html">Discrete-time and neural targets</a>:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span>, score <span class="op">=</span> <span class="fu"><a href="../reference/nn_score.html">nn_score</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="step-2-the-release">Step 2: the release<a class="anchor" aria-label="anchor" href="#step-2-the-release"></a>
+</h2>
+<p>The <strong>release</strong> is what the external source made
+available to you: individual records, a fitted model with or without its
+uncertainty, a risk score without survival probabilities, or survival
+probabilities. You do not choose it, but its form decides which
+divergences can use it in Step 3. A release constructor stores it and
+checks it; covariates are matched to the target’s by their names.</p>
+<div class="section level3">
+<h3 id="individual-records">Individual records<a class="anchor" aria-label="anchor" href="#individual-records"></a>
+</h3>
+<p>Another cohort’s data, subject by subject, with the target’s
+covariate names and outcomes in the target’s design: <code>time</code>
+and <code>event</code> for a Cox target, <code>case</code> and
+<code>set</code> for a matched design, <code>interval</code> and
+<code>event</code> for a discrete-time target.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ext</span> <span class="op">&lt;-</span> <span class="va">ExampleData_indi</span><span class="op">$</span><span class="va">external</span></span>
+<span><span class="va">records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_records</a></span><span class="op">(</span><span class="va">ext</span><span class="op">$</span><span class="va">z</span>, time <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">status</span>, stratum <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
+<span><span class="va">records</span></span>
+<span><span class="co">#&gt; Release: individual-level records (cohort), 2000 subjects</span></span>
 <span></span>
-<span><span class="va">target</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">published</span><span class="op">)</span></span></code></pre></div>
-<p>A coefficient vector can enter through the Kullback–Leibler member,
-which compares the two models through the risk-set distributions they
-induce, or through the Euclidean distance to the published coefficients.
-We fit both, and the target model alone:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">kl</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
-<span><span class="va">euc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
-<span><span class="va">own</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span><span class="op">)</span></span>
-<span><span class="va">kl</span></span>
-<span><span class="co">#&gt; Target:   Cox (linear)</span></span>
-<span><span class="co">#&gt; Member:   Kullback-Leibler</span></span>
-<span><span class="co">#&gt; Selected: eta = 1.104</span></span>
+<span><span class="va">reg</span> <span class="op">&lt;-</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">external</span></span>
+<span><span class="va">registry_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_records</a></span><span class="op">(</span><span class="va">reg</span><span class="op">$</span><span class="va">z</span>, interval <span class="op">=</span> <span class="va">reg</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">reg</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="a-fitted-model-with-or-without-its-uncertainty">A fitted model, with or without its uncertainty<a class="anchor" aria-label="anchor" href="#a-fitted-model-with-or-without-its-uncertainty"></a>
+</h3>
+<p>A published model’s coefficients, named by covariate; covariates the
+external model does not include are set to 0. Its uncertainty, the
+precision matrix <code>Q</code> of the coefficients (the inverse of
+their covariance matrix), is added when it was published. Below, the
+first model comes without its uncertainty and the registry’s with
+it:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span></span>
+<span><span class="co">#&gt;         Z1         Z2         Z3         Z4         Z5         Z6 </span></span>
+<span><span class="co">#&gt;  0.1580961  0.0000000  0.3489722  0.0000000  0.2469009 -0.3157974</span></span>
+<span><span class="va">published</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">registry_coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>, Q <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">Q_external</span><span class="op">)</span></span>
+<span><span class="va">registry_coef</span></span>
+<span><span class="co">#&gt; Release: 5 coefficients with their precision matrix</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="a-risk-score-without-survival-probabilities">A risk score without survival probabilities<a class="anchor" aria-label="anchor" href="#a-risk-score-without-survival-probabilities"></a>
+</h3>
+<p>When the external model is available only as a risk calculator, which
+ranks patients by risk but gives no survival probabilities, its score
+for each of your patients is the release, in the order of your data.
+<code>ExampleData_lowdim$score_external$train</code> holds the scores a
+published calculator gives the 100 patients:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">calculator</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_score</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">score_external</span><span class="op">$</span><span class="va">train</span><span class="op">)</span></span>
+<span><span class="va">calculator</span></span>
+<span><span class="co">#&gt; Release: a risk score for 100 subjects</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="survival-probabilities">Survival probabilities<a class="anchor" aria-label="anchor" href="#survival-probabilities"></a>
+</h3>
+<p>An external model that gives survival probabilities, not only a
+ranking: its coefficients together with its baseline cumulative hazard,
+whose increments over your intervals <code>baseline</code> holds (or,
+with <code>hazard =</code>, its interval hazards for each of your
+patients directly). A discrete-time target needs this form for the
+Kullback–Leibler divergence.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">registry_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_model</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>,</span>
+<span>                                baseline <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">baseline_external</span><span class="op">)</span></span>
+<span><span class="va">registry_model</span></span>
+<span><span class="co">#&gt; Release: a fitted model (5 coefficients, baseline over 6 intervals)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="step-3-the-divergence">Step 3: the divergence<a class="anchor" aria-label="anchor" href="#step-3-the-divergence"></a>
+</h2>
+<p>The <strong>divergence</strong> is how the release enters the
+objective: the Bregman divergence <span class="math inline">\(B_G\)</span>. There are three, and each needs a
+different form of release:</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th><code>divergence</code></th>
+<th>what it compares</th>
+<th>the release it needs</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>
+<code>"kl"</code>: Kullback–Leibler</td>
+<td>the distributions the two models predict for your subjects</td>
+<td>the external model’s predictions: a risk score, a fitted model or
+survival probabilities (on a discrete-time target, survival
+probabilities only)</td>
+</tr>
+<tr class="even">
+<td>
+<code>"mahalanobis"</code>: Mahalanobis</td>
+<td>your coefficients with the external ones, weighted by their
+uncertainty (the Euclidean distance without it)</td>
+<td>a fitted model, with or without its uncertainty</td>
+</tr>
+<tr class="odd">
+<td>
+<code>"composite"</code>: composite likelihood</td>
+<td>adds the external records’ own log-likelihood, weighted by <span class="math inline">\(\eta\)</span>
+</td>
+<td>individual records</td>
+</tr>
+</tbody>
+</table>
+<p>So the target and the release together decide which divergences are
+possible:</p>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+</colgroup>
+<thead><tr class="header">
+<th>release</th>
+<th>Cox</th>
+<th>nested case–control</th>
+<th>discrete time</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>individual records</td>
+<td>composite, mahalanobis, kl</td>
+<td>composite</td>
+<td>composite</td>
+</tr>
+<tr class="even">
+<td>a fitted model, with or without its uncertainty</td>
+<td>kl, mahalanobis</td>
+<td>kl, mahalanobis</td>
+<td>mahalanobis</td>
+</tr>
+<tr class="odd">
+<td>a risk score without survival probabilities</td>
+<td>kl</td>
+<td>kl</td>
+<td>–</td>
+</tr>
+<tr class="even">
+<td>survival probabilities</td>
+<td>kl, mahalanobis</td>
+<td>kl, mahalanobis</td>
+<td>kl, mahalanobis</td>
+</tr>
+</tbody>
+</table>
+<p>Individual records also support the Mahalanobis and Kullback–Leibler
+divergences on a Cox target because <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> can
+reduce them to a fitted model with its uncertainty, by fitting a Cox
+model to them. A combination outside the table is refused with an
+explanation. With the three ingredients chosen,
+<code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> fits the model along a grid of <span class="math inline">\(\eta\)</span>, scores each <span class="math inline">\(\eta\)</span> by cross-validation on your data,
+and keeps the best.</p>
+<div class="section level3">
+<h3 id="cox-model-and-a-risk-score-without-survival-probabilities-kullbackleibler">Cox model and a risk score without survival probabilities:
+Kullback–Leibler<a class="anchor" aria-label="anchor" href="#cox-model-and-a-risk-score-without-survival-probabilities-kullbackleibler"></a>
+</h3>
+<p>The Kullback–Leibler divergence compares the two models through the
+probabilities they give each patient of failing first at every event
+time, so the external model enters through its score alone, and may be a
+model of any form.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_score</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">calculator</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_score</span></span>
+<span><span class="co">#&gt; Target:     Cox (linear)</span></span>
+<span><span class="co">#&gt; Divergence: Kullback-Leibler</span></span>
+<span><span class="co">#&gt; Selected:   eta = 1.104</span></span>
 <span><span class="co">#&gt; CV V&amp;VH: 2.51343  (5 folds, seed 20260818)</span></span>
-<span><span class="co">#&gt; Engine:   cv.coxkl</span></span>
+<span><span class="co">#&gt; Engine:     cv.coxkl</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Coefficients:</span></span>
 <span><span class="co">#&gt;      Z1      Z2      Z3      Z4      Z5      Z6 </span></span>
 <span><span class="co">#&gt;  0.1950 -0.1987  0.0077 -0.3929  0.2768 -0.3619</span></span></code></pre></div>
-<p>All three fits use one partition of the data, so their
-cross-validated losses compare directly, and so does the published model
-used unchanged, scored on the same folds:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">as_is</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/vvh_loss_fixed.html">vvh_loss_fixed</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, beta <span class="op">=</span> <span class="va">published</span>, folds <span class="op">=</span> <span class="va">kl</span><span class="op">$</span><span class="va">folds</span><span class="op">)</span></span>
-<span><span class="va">cv_loss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, published_as_is <span class="op">=</span> <span class="va">as_is</span><span class="op">$</span><span class="va">VVH_Loss</span>,</span>
-<span>             kullback_leibler <span class="op">=</span> <span class="va">kl</span><span class="op">$</span><span class="va">value</span>, euclidean <span class="op">=</span> <span class="va">euc</span><span class="op">$</span><span class="va">value</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">cv_loss</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      target_only  published_as_is kullback_leibler        euclidean </span></span>
-<span><span class="co">#&gt;            2.625            2.583            2.513            2.520</span></span></code></pre></div>
-<p>The published model alone is a poor predictor, but borrowing from it
-beats both it and the target model alone, and the held-out cohort
-agrees:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">test_c</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only      <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">own</span>, <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">te</span><span class="op">$</span><span class="va">time</span>, <span class="va">te</span><span class="op">$</span><span class="va">status</span><span class="op">)</span>,</span>
-<span>            published_as_is  <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">published</span>, <span class="va">te</span><span class="op">$</span><span class="va">time</span>, <span class="va">te</span><span class="op">$</span><span class="va">status</span><span class="op">)</span>,</span>
-<span>            kullback_leibler <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">kl</span>, <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">te</span><span class="op">$</span><span class="va">time</span>, <span class="va">te</span><span class="op">$</span><span class="va">status</span><span class="op">)</span>,</span>
-<span>            euclidean        <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">euc</span>, <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">te</span><span class="op">$</span><span class="va">time</span>, <span class="va">te</span><span class="op">$</span><span class="va">status</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">test_c</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;      target_only  published_as_is kullback_leibler        euclidean </span></span>
-<span><span class="co">#&gt;            0.619            0.613            0.640            0.635</span></span></code></pre></div>
+<p>The printout gives the selected <span class="math inline">\(\eta\)</span>, the cross-validated loss at that
+<span class="math inline">\(\eta\)</span> (lower is better), the
+estimator that did the fit (here <code>cv.coxkl</code>), and the
+coefficients. <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> draws the cross-validated loss along
+<span class="math inline">\(\eta\)</span>:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_score</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-12-1.png" alt="Cross-validated loss against the integration weight for the risk-calculator example: the curve falls below the line of your data alone and reaches its minimum near eta = 1." width="100%"></p>
+<p>The dotted line is your data alone, <span class="math inline">\(\eta
+= 0\)</span>. The curve dips below it: borrowing from the calculator
+predicts your patients better than your data alone, and the red point
+marks the selected <span class="math inline">\(\eta\)</span>.</p>
+<p>The fit is used like any survival model, for instance to predict
+survival for new patients:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">te</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">test</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_score</span>, newz <span class="op">=</span> <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"survival"</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          t=0.1     t=0.2     t=0.3</span></span>
+<span><span class="co">#&gt; [1,] 0.9676900 0.8875535 0.7055564</span></span>
+<span><span class="co">#&gt; [2,] 0.9829626 0.9394953 0.8332007</span></span>
+<span><span class="co">#&gt; [3,] 0.9194451 0.7371009 0.4098990</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_score</span>, type <span class="op">=</span> <span class="st">"survival"</span>, newz <span class="op">=</span> <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-13-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="cox-model-and-a-fitted-model-without-its-uncertainty-kullbackleibler-or-mahalanobis">Cox model and a fitted model without its uncertainty:
+Kullback–Leibler or Mahalanobis<a class="anchor" aria-label="anchor" href="#cox-model-and-a-fitted-model-without-its-uncertainty-kullbackleibler-or-mahalanobis"></a>
+</h3>
+<p>A fitted model supports two divergences; without its uncertainty, the
+Mahalanobis distance is the Euclidean distance between the coefficients.
+Every call uses the same cross-validation partition (the
+<code>seed</code> is fixed by default), so their losses, and the loss of
+your data alone, compare directly:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_kl</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">published</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">published</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">own</span>      <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">fit_kl</span><span class="op">$</span><span class="va">value</span>, mahalanobis <span class="op">=</span> <span class="va">fit_maha</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  your_data_alone kullback_leibler      mahalanobis </span></span>
+<span><span class="co">#&gt;            2.625            2.506            2.511</span></span></code></pre></div>
+<p>The coefficient plot shows what borrowing did to each coefficient:
+from your data alone (open circle) toward the published value
+(triangle), to the selected fit (filled circle).</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_maha</span>, type <span class="op">=</span> <span class="st">"coefficients"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-15-1.png" alt="For each covariate, the coefficient from your data alone, the published coefficient, and the selected fit, with arrows showing how borrowing moved each coefficient toward the published one." width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="cox-model-and-another-cohorts-individual-records-composite-likelihood">Cox model and another cohort’s individual records: composite
+likelihood<a class="anchor" aria-label="anchor" href="#cox-model-and-another-cohorts-individual-records-composite-likelihood"></a>
+</h3>
+<p>The individual records enter with their own likelihood, weighted by
+<span class="math inline">\(\eta\)</span>: the two cohorts share the
+coefficients and keep their own baseline hazards.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_int</span>, <span class="va">records</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span>
+<span><span class="va">fit_comp</span><span class="op">$</span><span class="va">eta</span></span>
+<span><span class="co">#&gt; [1] 200</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_comp</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-16-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<p>Here the external cohort comes from the same population as yours, so
+the loss keeps falling as <span class="math inline">\(\eta\)</span>
+grows and the largest weight is selected. The same records can also
+enter as a fitted model with its uncertainty:</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_records_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_int</span>, <span class="va">records</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">own_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_int</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own_int</span><span class="op">$</span><span class="va">value</span>, composite <span class="op">=</span> <span class="va">fit_comp</span><span class="op">$</span><span class="va">value</span>,</span>
+<span>        mahalanobis <span class="op">=</span> <span class="va">fit_records_maha</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt; your_data_alone       composite     mahalanobis </span></span>
+<span><span class="co">#&gt;           5.328           5.296           5.296</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="nested-casecontrol-design-and-a-fitted-model-kullbackleibler">Nested case–control design and a fitted model: Kullback–Leibler<a class="anchor" aria-label="anchor" href="#nested-casecontrol-design-and-a-fitted-model-kullbackleibler"></a>
+</h3>
+<p>On a matched design the Kullback–Leibler divergence compares the two
+models’ probabilities of which member of each set is the case, and the
+cross-validated loss is the conditional log-likelihood:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_matched</span>, <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>,</span>
+<span>                           divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_matched</span></span>
+<span><span class="co">#&gt; Target:     nested case-control (linear)</span></span>
+<span><span class="co">#&gt; Divergence: Kullback-Leibler</span></span>
+<span><span class="co">#&gt; Selected:   eta = 0.9755</span></span>
+<span><span class="co">#&gt; CV loss: 0.159928  (5 folds, seed 20260818)</span></span>
+<span><span class="co">#&gt; Engine:     cv.ncckl</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Coefficients:</span></span>
+<span><span class="co">#&gt;      Z1      Z2      Z3      Z4      Z5      Z6 </span></span>
+<span><span class="co">#&gt;  0.7965 -1.0175  1.0714 -0.7200  0.8137 -1.0163</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_matched</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-18-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="discrete-time-and-survival-probabilities-kullbackleibler">Discrete time and survival probabilities: Kullback–Leibler<a class="anchor" aria-label="anchor" href="#discrete-time-and-survival-probabilities-kullbackleibler"></a>
+</h3>
+<p>On a discrete-time target the Kullback–Leibler divergence compares
+the two models’ hazards in every interval, so it needs the registry’s
+survival probabilities:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">registry_model</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_interval</span></span>
+<span><span class="co">#&gt; Target:     discrete-time (linear)</span></span>
+<span><span class="co">#&gt; Divergence: Kullback-Leibler</span></span>
+<span><span class="co">#&gt; Selected:   eta = 1</span></span>
+<span><span class="co">#&gt; CV loss: 0.689057  (5 folds, seed 20260818)</span></span>
+<span><span class="co">#&gt; Engine:     cv.discretekl</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Coefficients:</span></span>
+<span><span class="co">#&gt;      Z1      Z2      Z3      Z4      Z5      Z6 </span></span>
+<span><span class="co">#&gt;  0.6440 -0.5637  0.6848 -0.6388  0.2928 -0.0532</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_interval</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-19-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_interval</span>, type <span class="op">=</span> <span class="st">"survival"</span>, newz <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">test</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-19-2.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<p>The registry’s fitted model, with its uncertainty, and its individual
+records support the other two divergences on the same target, and every
+discrete-time fit is scored by the same held-out log-likelihood:</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_interval_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">registry_coef</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">fit_interval_comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">registry_records</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span>
+<span><span class="va">own_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own_interval</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">fit_interval</span><span class="op">$</span><span class="va">value</span>,</span>
+<span>        mahalanobis <span class="op">=</span> <span class="va">fit_interval_maha</span><span class="op">$</span><span class="va">value</span>, composite <span class="op">=</span> <span class="va">fit_interval_comp</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  your_data_alone kullback_leibler      mahalanobis        composite </span></span>
+<span><span class="co">#&gt;            0.844            0.689            0.815            0.813</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
-<h2 id="many-covariates">Many covariates<a class="anchor" aria-label="anchor" href="#many-covariates"></a>
+<h2 id="further-topics">Further topics<a class="anchor" aria-label="anchor" href="#further-topics"></a>
 </h2>
-<p>With 50 covariates and 56 events, the target model needs a penalty.
-<code>penalty = "lasso"</code> builds a penalty path for every
-integration weight and chooses the two together.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="section level3">
+<h3 id="many-covariates-a-penalty">Many covariates: a penalty<a class="anchor" aria-label="anchor" href="#many-covariates-a-penalty"></a>
+</h3>
+<p><code>penalty = "lasso"</code> (or <code>"ridge"</code>, or
+<code>"enet"</code> with <code>alpha</code>) penalizes the coefficients.
+A penalty path is built for every <span class="math inline">\(\eta\)</span> and the two are chosen together; the
+curve shows each <span class="math inline">\(\eta\)</span> at its best
+penalty. <code>ExampleData_highdim</code> has 50 covariates for 200
+patients, of which six matter:</p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_highdim</span><span class="op">)</span></span>
-<span><span class="va">H</span>  <span class="op">&lt;-</span> <span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">HT</span> <span class="op">&lt;-</span> <span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">test</span></span>
-<span><span class="va">target_hd</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span><span class="va">H</span><span class="op">$</span><span class="va">time</span>, <span class="va">H</span><span class="op">$</span><span class="va">status</span>, <span class="va">H</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="va">release_hd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">lasso_kl</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_hd</span>, <span class="va">release_hd</span>, member <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
-<span><span class="va">lasso_own</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_hd</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only <span class="op">=</span> <span class="va">lasso_own</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">lasso_kl</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>        <span class="co"># CV loss</span></span>
-<span><span class="co">#&gt;      target_only kullback_leibler </span></span>
-<span><span class="co">#&gt;            2.822            2.743</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only      <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">lasso_own</span>, <span class="va">HT</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">HT</span><span class="op">$</span><span class="va">time</span>, <span class="va">HT</span><span class="op">$</span><span class="va">status</span><span class="op">)</span>,</span>
-<span>        kullback_leibler <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">lasso_kl</span>, <span class="va">HT</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">HT</span><span class="op">$</span><span class="va">time</span>, <span class="va">HT</span><span class="op">$</span><span class="va">status</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span>  <span class="co"># test C-index</span></span>
-<span><span class="co">#&gt;      target_only kullback_leibler </span></span>
-<span><span class="co">#&gt;            0.592            0.655</span></span></code></pre></div>
+<span><span class="va">hd</span> <span class="op">&lt;-</span> <span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">train</span></span>
+<span><span class="va">target_hd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">fit_lasso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_hd</span>, <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>,</span>
+<span>                         divergence <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>eta <span class="op">=</span> <span class="va">fit_lasso</span><span class="op">$</span><span class="va">eta</span>, lambda <span class="op">=</span> <span class="va">fit_lasso</span><span class="op">$</span><span class="va">lambda</span>, nonzero <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_lasso</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt;          eta       lambda      nonzero </span></span>
+<span><span class="co">#&gt;  3.807307877  0.006098762 21.000000000</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_lasso</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-21-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_lasso</span>, type <span class="op">=</span> <span class="st">"coefficients"</span>, covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Z"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-22-1.png" alt="Coefficients of the first twelve covariates under the lasso: your data alone, the external coefficients, and the selected fit." width="100%"></p>
+</div>
+<div class="section level3">
+<h3 id="tied-event-times">Tied event times<a class="anchor" aria-label="anchor" href="#tied-event-times"></a>
+</h3>
+<p>When follow-up is recorded on a coarse grid, as at scheduled visits,
+many events share a time. <code>ExampleData_ties</code> holds such a
+cohort. <code>ties = "breslow"</code> uses Breslow’s approximation for
+the tied times, with every divergence and penalty;
+<code>ties = "exact"</code> uses Cox’s exact likelihood, with the
+Kullback–Leibler divergence and no penalty.</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_ties</span><span class="op">)</span></span>
+<span><span class="va">ti</span> <span class="op">&lt;-</span> <span class="va">ExampleData_ties</span><span class="op">$</span><span class="va">train</span></span>
+<span><span class="va">target_ties</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">z</span>, ties <span class="op">=</span> <span class="st">"breslow"</span><span class="op">)</span></span>
+<span><span class="va">target_ties</span></span>
+<span><span class="co">#&gt; Target: Cox model, linear risk score</span></span>
+<span><span class="co">#&gt;   100 subjects, 6 covariates, 29 events</span></span>
+<span><span class="co">#&gt;   tied event times: breslow</span></span>
+<span><span class="va">fit_ties</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_ties</span>, <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_ties</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_ties</span><span class="op">$</span><span class="va">eta</span></span>
+<span><span class="co">#&gt; [1] 2.320419</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="a-fit-at-a-given-weight">A fit at a given weight<a class="anchor" aria-label="anchor" href="#a-fit-at-a-given-weight"></a>
+</h3>
+<p><code><a href="../reference/bregsurv.html">bregsurv()</a></code> takes the same ingredients and fits at an
+<span class="math inline">\(\eta\)</span> you choose, without
+cross-validation:</p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_eta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bregsurv.html">bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">published</span>, divergence <span class="op">=</span> <span class="st">"kl"</span>, eta <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_eta1</span><span class="op">)</span></span>
+<span><span class="co">#&gt;         Z1         Z2         Z3         Z4         Z5         Z6 </span></span>
+<span><span class="co">#&gt;  0.2001197 -0.2166873  0.1834799 -0.3909163  0.2657139 -0.5266408</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="the-estimators-behind-the-call">The estimators behind the call<a class="anchor" aria-label="anchor" href="#the-estimators-behind-the-call"></a>
+</h3>
+<p>On a linear target, <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> hands the fit to one
+of the package’s estimators, named in its <code>engine</code> (for
+example <code>cv.coxkl</code>, <code>cv.discrete_MDTL</code>,
+<code>cv.ncckl</code>), and returns exactly its result in
+<code>fit</code>. The estimators can be called directly for options the
+interface does not expose, such as stability selection and bagging; see
+<a href="engines.html">The estimators behind each divergence</a>.</p>
+</div>
 </div>
 <div class="section level2">
-<h2 id="follow-up-recorded-in-intervals">Follow-up recorded in intervals<a class="anchor" aria-label="anchor" href="#follow-up-recorded-in-intervals"></a>
+<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
 </h2>
-<p>When follow-up is recorded in intervals (here six), the target is the
-grouped-time model, and a registry’s Cox model enters through its
-absolute risk: its coefficients together with its baseline hazard over
-the same intervals. We simulate a small cohort of 120 subjects and a
-registry model that uses five of the eight covariates, with effects and
-baseline that are close to the truth but not equal to it.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">simulate</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">n</span>, <span class="va">beta</span>, <span class="va">alpha</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">beta</span><span class="op">)</span><span class="op">)</span>, <span class="va">n</span>, dimnames <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="cn">NULL</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">beta</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">h</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">-</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/outer.html" class="external-link">outer</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/drop.html" class="external-link">drop</a></span><span class="op">(</span><span class="va">x</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">beta</span><span class="op">)</span>, <span class="va">alpha</span>, <span class="st">"+"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">hit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">h</span><span class="op">)</span><span class="op">)</span>, <span class="va">n</span><span class="op">)</span> <span class="op">&lt;</span> <span class="va">h</span></span>
-<span>  <span class="va">first</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">hit</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">r</span><span class="op">)</span> <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/any.html" class="external-link">any</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">r</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span> <span class="kw">else</span> <span class="cn">NA</span><span class="op">)</span></span>
-<span>  <span class="va">interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">first</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">)</span>, <span class="va">first</span><span class="op">)</span>; <span class="va">event</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">first</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="va">censor</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">)</span>, <span class="va">n</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span>  <span class="va">cens</span> <span class="op">&lt;-</span> <span class="va">censor</span> <span class="op">&lt;</span> <span class="va">interval</span>; <span class="va">interval</span><span class="op">[</span><span class="va">cens</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">censor</span><span class="op">[</span><span class="va">cens</span><span class="op">]</span>; <span class="va">event</span><span class="op">[</span><span class="va">cens</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0L</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">x</span>, interval <span class="op">=</span> <span class="va">interval</span>, event <span class="op">=</span> <span class="va">event</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">11</span><span class="op">)</span></span>
-<span><span class="va">beta_true</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.7</span>, <span class="op">-</span><span class="fl">0.6</span>, <span class="fl">0.5</span>, <span class="op">-</span><span class="fl">0.4</span>, <span class="fl">0.3</span>, <span class="fl">0</span>, <span class="fl">0</span>, <span class="fl">0</span><span class="op">)</span></span>
-<span><span class="va">alpha</span>     <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2.6</span>, <span class="op">-</span><span class="fl">1.8</span>, length.out <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
-<span><span class="va">cohort</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fl">120</span>, <span class="va">beta_true</span>, <span class="va">alpha</span><span class="op">)</span></span>
-<span><span class="va">test</span>   <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/simulate.html" class="external-link">simulate</a></span><span class="op">(</span><span class="fl">3000</span>, <span class="va">beta_true</span>, <span class="va">alpha</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">registry</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_model</a></span><span class="op">(</span>beta     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>x1 <span class="op">=</span> <span class="fl">0.8</span>, x2 <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span>, x3 <span class="op">=</span> <span class="fl">0.6</span>, x4 <span class="op">=</span> <span class="op">-</span><span class="fl">0.3</span>, x5 <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span>,</span>
-<span>                          baseline <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="va">alpha</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1.25</span><span class="op">)</span></span>
-<span><span class="va">target_dt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_discrete</a></span><span class="op">(</span><span class="va">cohort</span><span class="op">$</span><span class="va">interval</span>, <span class="va">cohort</span><span class="op">$</span><span class="va">event</span>, <span class="va">cohort</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">dt_own</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_dt</span><span class="op">)</span></span>
-<span><span class="va">dt_kl</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_dt</span>, <span class="va">registry</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>truth <span class="op">=</span> <span class="va">beta_true</span>, target_only <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">dt_own</span><span class="op">)</span>, kullback_leibler <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">dt_kl</span><span class="op">)</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                    x1    x2   x3    x4   x5    x6   x7    x8</span></span>
-<span><span class="co">#&gt; truth            0.70 -0.60 0.50 -0.40 0.30  0.00 0.00  0.00</span></span>
-<span><span class="co">#&gt; target_only      1.23 -1.00 0.21 -0.52 0.28 -0.33 0.35 -0.01</span></span>
-<span><span class="co">#&gt; kullback_leibler 0.96 -0.67 0.42 -0.39 0.30 -0.13 0.14 -0.01</span></span></code></pre></div>
-<p>Borrowing pulls the noisy estimates toward the truth, and the
-held-out likelihood and C-index improve:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">held_out</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">h</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">test</span><span class="op">$</span><span class="va">x</span>, type <span class="op">=</span> <span class="st">"hazard"</span><span class="op">)</span></span>
-<span>  <span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">h</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">h</span><span class="op">)</span><span class="op">)</span>; <span class="va">ev</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">event</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span>; <span class="va">y</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">ev</span>, <span class="va">test</span><span class="op">$</span><span class="va">interval</span><span class="op">[</span><span class="va">ev</span><span class="op">]</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
-<span>  <span class="va">at_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/outer.html" class="external-link">outer</a></span><span class="op">(</span><span class="va">test</span><span class="op">$</span><span class="va">interval</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">h</span><span class="op">)</span><span class="op">)</span>, <span class="st">"&gt;="</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>nll <span class="op">=</span> <span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="va">at_risk</span> <span class="op">*</span> <span class="op">(</span><span class="va">y</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">h</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">-</span> <span class="va">y</span><span class="op">)</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="op">-</span><span class="va">h</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    c_index <span class="op">=</span> <span class="fu">cindex</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowSums</a></span><span class="op">(</span><span class="op">-</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log1p</a></span><span class="op">(</span><span class="op">-</span><span class="va">h</span><span class="op">)</span><span class="op">)</span>, <span class="va">test</span><span class="op">$</span><span class="va">interval</span>, <span class="va">test</span><span class="op">$</span><span class="va">event</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>target_only <span class="op">=</span> <span class="fu">held_out</span><span class="op">(</span><span class="va">dt_own</span><span class="op">)</span>, kullback_leibler <span class="op">=</span> <span class="fu">held_out</span><span class="op">(</span><span class="va">dt_kl</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
-<span><span class="co">#&gt;                    nll c_index</span></span>
-<span><span class="co">#&gt; target_only      1.024   0.761</span></span>
-<span><span class="co">#&gt; kullback_leibler 0.893   0.782</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="beyond-these-examples">Beyond these examples<a class="anchor" aria-label="anchor" href="#beyond-these-examples"></a>
-</h2>
-<p>The same call covers every combination; only the target and the
-release change.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span><span class="va">time</span>, <span class="va">event</span>, <span class="va">z</span>, stratum <span class="op">=</span> <span class="va">site</span>, ties <span class="op">=</span> <span class="st">"breslow"</span><span class="op">)</span>        <span class="co"># strata, tied event times</span></span>
-<span><span class="fu"><a href="../reference/targets.html">target_ncc</a></span><span class="op">(</span><span class="va">case</span>, <span class="va">set</span>, <span class="va">z</span><span class="op">)</span>                                            <span class="co"># nested case-control design</span></span>
-<span><span class="fu"><a href="../reference/targets.html">target_discrete</a></span><span class="op">(</span><span class="va">interval</span>, <span class="va">event</span>, <span class="va">z</span>, score <span class="op">=</span> <span class="fu"><a href="../reference/nn_score.html">nn_score</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>             <span class="co"># a neural network (needs torch)</span></span>
-<span><span class="fu"><a href="../reference/releases.html">release_records</a></span><span class="op">(</span><span class="va">z_ext</span>, time <span class="op">=</span> <span class="va">time_ext</span>, event <span class="op">=</span> <span class="va">event_ext</span><span class="op">)</span>          <span class="co"># individual-level records</span></span>
-<span><span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">beta</span>, Q <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/solve.html" class="external-link">solve</a></span><span class="op">(</span><span class="va">V</span><span class="op">)</span><span class="op">)</span>                                    <span class="co"># coefficients with their precision</span></span>
-<span><span class="fu"><a href="../reference/releases.html">release_score</a></span><span class="op">(</span><span class="va">score</span><span class="op">)</span>                                                <span class="co"># a risk score of any model</span></span></code></pre></div>
 <ul>
 <li>
-<a href="framework.html">The framework</a>: the objective, and which
-release supports which member.</li>
+<a href="framework.html">The framework</a>: the objective, and why
+each release supports the divergences it does.</li>
+<li>
+<a href="../reference/cv.bregsurv.html">The help page of
+<code>cv.bregsurv()</code></a>: every argument, and the estimator each
+combination calls.</li>
 <li>
 <a href="discrete_neural.html">Discrete-time and neural
 targets</a>.</li>
 <li>
-<a href="engines.html">The estimators behind each member</a>: the
-functions <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> calls, with all their options,
-plots, stability selection and bagging.</li>
+<a href="engines.html">The estimators behind each
+divergence</a>.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

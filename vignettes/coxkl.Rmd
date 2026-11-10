@@ -1,8 +1,8 @@
 ---
-title: "The Kullback-Leibler member"
+title: "The Kullback-Leibler divergence"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The Kullback-Leibler member}
+  %\VignetteIndexEntry{The Kullback-Leibler divergence}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 

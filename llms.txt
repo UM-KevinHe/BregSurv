@@ -11,10 +11,10 @@
 
 ## Start here: the interface (one call per analysis)
 
-Every analysis makes three decisions, and the package has one object for each. Prefer this interface; the per-family functions below are the estimators it calls.
+Every analysis makes four choices, one per argument: the target, the release, the divergence and the penalty. Prefer this interface; the per-family functions below are the estimators it calls.
 
 ```r
-fit <- cv.bregsurv(target, release, member = NULL, penalty = "none", etas = NULL, seed = 20260818)
+fit <- cv.bregsurv(target, release, divergence = NULL, penalty = "none", etas = NULL, seed = 20260818)
 ```
 
 **1. The target** — the model the user fits to their own data:
@@ -28,36 +28,37 @@ fit <- cv.bregsurv(target, release, member = NULL, penalty = "none", etas = NULL
 
 **2. The release** — what the external source published:
 
-| user's external information | constructor | members it supports |
+| user's external information | constructor | divergences it supports |
 |---|---|---|
 | individual-level records (covariates with the target's column names + outcomes) | `release_records(z, time, event, stratum)`; matched: `release_records(z, case =, set =)`; discrete: `release_records(z, interval =, event =)` | `"composite"`; on a Cox target also `"mahalanobis"` and `"kl"` (through a Cox fit on the records) |
 | coefficients, optionally with their precision matrix `Q` (inverse covariance / information) | `release_coef(beta, Q = NULL)` | `"mahalanobis"` and `"kl"` (KL not on a discrete target) |
 | a risk score evaluated on the target subjects | `release_score(score)` | `"kl"` (Cox and matched targets) |
 | coefficients + baseline cumulative-hazard increments over the target's K intervals, or an n x K matrix of interval hazards (absolute risk) | `release_model(beta, baseline)` / `release_model(hazard = H)` | `"kl"` on a discrete target; on Cox targets like `release_coef` |
 
-**3. The member** — fixes the Bregman generator: `"composite"` (records → composite likelihood), `"mahalanobis"` (coefficients → Mahalanobis distance; Euclidean on the covered coordinates when `Q = NULL`), `"kl"` (model or risk score → Kullback–Leibler divergence), or omit the release for the target alone (`member = "none"`, `eta = 0`). `member = NULL` picks the first member the release supports. A neural target supports `"kl"` only.
+**3. The divergence** — the Bregman divergence through which the release enters: `"composite"` (records → composite likelihood), `"mahalanobis"` (coefficients → Mahalanobis distance; Euclidean on the covered coordinates when `Q = NULL`), `"kl"` (model or risk score → Kullback–Leibler divergence), or omit the release for the target alone (`divergence = "none"`, `eta = 0`). `divergence = NULL` picks the first one the release supports. A neural target supports `"kl"` only.
 
-**Penalty**: `penalty = "ridge" | "lasso" | "enet"` (with `alpha`) for linear targets; `eta` and `lambda` are chosen together, with a lambda path per eta. Not available on the matched composite member with ridge (no estimator), nor on neural targets.
+**Penalty**: `penalty = "ridge" | "lasso" | "enet"` (with `alpha`) for linear targets; `eta` and `lambda` are chosen together, with a lambda path per eta. Not available for the matched composite likelihood with ridge (no estimator), nor on neural targets.
 
-**Comparing members.** With the same `seed` (fixed by default), every member fitted to the same target is scored on the same partition by the same criterion, so `fit$value` compares directly (lower is better): V&VH partial-likelihood loss for Cox (linear and neural), conditional-likelihood loss for matched designs, pooled held-out negative log-likelihood per subject for discrete targets. The external model used unchanged on a Cox target: `vvh_loss_fixed(z, delta, time, beta = beta_ext, folds = fit$folds)`.
+**Comparing divergences.** With the same `seed` (fixed by default), every fit to the same target is scored on the same partition by the same criterion, so `fit$value` compares directly (lower is better): V&VH partial-likelihood loss for Cox (linear and neural), conditional-likelihood loss for matched designs, pooled held-out negative log-likelihood per subject for discrete targets. The external model used unchanged on a Cox target: `vvh_loss_fixed(z, delta, time, beta = beta_ext, folds = fit$folds)`.
 
 ```r
 library(BregSurv)
 data(ExampleData_lowdim); tr <- ExampleData_lowdim$train
 tg <- target_cox(tr$time, tr$status, tr$z)
 rl <- release_coef(ExampleData_lowdim$beta_external_fair)
-fits <- list(kl = cv.bregsurv(tg, rl, member = "kl"),
-             euclidean = cv.bregsurv(tg, rl, member = "mahalanobis"),
-             kl_lasso = cv.bregsurv(tg, rl, member = "kl", penalty = "lasso"),
+fits <- list(kl = cv.bregsurv(tg, rl, divergence = "kl"),
+             euclidean = cv.bregsurv(tg, rl, divergence = "mahalanobis"),
+             kl_lasso = cv.bregsurv(tg, rl, divergence = "kl", penalty = "lasso"),
              target_only = cv.bregsurv(tg))
 sapply(fits, `[[`, "value")        # one partition, one criterion
 coef(fits$kl); fits$kl$eta; fits$kl$engine
 predict(fits$kl, newz = ExampleData_lowdim$test$z, type = "survival", times = c(1, 2))
+plot(fits$kl); plot(fits$kl, type = "coefficients")   # CV curve; what borrowing did to each coefficient
 ```
 
-Result fields: `eta`, `lambda`, `value`, `criterion`, `coefficients` (linear targets), `folds`, `seed`, `path` (the CV table), `engine` (the estimator used), `fit` (its full result). `bregsurv(target, release, member, eta = , lambda = )` fits at a fixed weight without CV (not for neural targets).
+Result fields: `eta`, `lambda`, `value`, `criterion`, `coefficients` (linear targets), `coefficients_target_only` (eta = 0), `coefficients_external`, `gamma` (discrete baselines), `folds`, `seed`, `path` (the CV table), `engine` (the estimator used), `fit` (its full result). `bregsurv(target, release, divergence, eta = , lambda = )` fits at a fixed weight without CV (not for neural targets).
 
-On Cox and matched targets `cv.bregsurv()` calls the estimators below and returns exactly their result. Discrete-time targets use a built-in Fisher-scoring / proximal-Newton solver; neural targets use `torch`.
+On a linear target `cv.bregsurv()` calls one of the estimators below (Cox, nested case–control or discrete time) and returns exactly its result; neural targets use `torch`.
 
 ---
 
@@ -79,6 +80,16 @@ On Cox and matched targets `cv.bregsurv()` calls the estimators below and return
 | Individual-level | `ncc_indi` | — | `ncc_indi_enet` | `cv.ncc_indi`, `cv.ncc_indi_enet` |
 | KL divergence | `ncckl` | — | `ncckl_enet` | `cv.ncckl`, `cv.ncckl_enet` |
 | Mahalanobis | `ncc_MDTL` | — | `ncc_MDTL_enet` | `cv.ncc_MDTL`, `cv.ncc_MDTL_enet` |
+
+### Discrete time (follow-up recorded in intervals 1..K)
+
+| External mode | Low-dim fit | Ridge | Elastic net / LASSO | CV tuning |
+|---|---|---|---|---|
+| Individual-level | `discrete_indi` | `discrete_indi_ridge` | `discrete_indi_enet` | `cv.discrete_indi`, `cv.discrete_indi_ridge`, `cv.discrete_indi_enet` |
+| KL divergence | `discretekl` | `discretekl_ridge` | `discretekl_enet` | `cv.discretekl`, `cv.discretekl_ridge`, `cv.discretekl_enet` |
+| Mahalanobis | `discrete_MDTL` | `discrete_MDTL_ridge` | `discrete_MDTL_enet` | `cv.discrete_MDTL`, `cv.discrete_MDTL_ridge`, `cv.discrete_MDTL_enet` |
+
+Arguments as the Cox families with `interval` (the last interval at risk, 1..K) in place of `time`; `link = "cloglog"` (grouped proportional hazards, default) or `"logit"`. The KL family needs absolute risk: `hazard` (n x K external interval hazards) or `beta` + `baseline` (external baseline cumulative-hazard increments over the K intervals). CV criterion: pooled held-out negative log-likelihood per subject (`criteria = "loss"`). Example data: `ExampleData_discrete`.
 
 NCC does **not** need tied-event-time handling (`coxkl_ties`-style) because in a standard NCC each matched set has exactly one event by construction. `ncckl` takes a `method = c("breslow", "exact")` argument for 1:m vs n:m matching semantics, but this is a likelihood form, not tie handling.
 
@@ -332,9 +343,9 @@ Bagging objects return `$best_beta` (the aggregated coefficient vector, usable d
 9. **`generate_eta` does not auto-pick a sensible `max_eta`.** The user must choose based on the problem. If the CV optimum sits at the boundary, extend the grid and re-run.
 10. **Stratified analysis is the default.** If `stratum` is omitted, the package silently assigns everyone to one stratum and fits a non-stratified model. This is fine for many problems but should be made explicit in output to users.
 
-11. **Prefer `cv.bregsurv()` for new code.** It validates the release against the target, picks the estimator, passes `cv.criteria = "V&VH"` (Cox) or `"loss"` (matched) explicitly, and fixes the seed so members share a partition. `cv.coxkl_ties` alone defaults to `"CIndex_pooled"`.
-12. **A discrete-time target cannot borrow from a coefficient vector through the KL member**: it needs interval hazards, i.e. `release_model(beta, baseline = dH0)` with the external Cox model's baseline cumulative-hazard increments over the same K intervals. A coefficient vector alone can enter a discrete target only through `"mahalanobis"`, and only with `link = "cloglog"`.
-13. **Neural targets**: `penalty` must be `"none"`, the member must be `"kl"`, and `torch` must be installed (`install.packages("torch"); torch::install_torch()`). Fit them with `cv.bregsurv()`, not `bregsurv()`.
+11. **Prefer `cv.bregsurv()` for new code.** It validates the release against the target, picks the estimator, passes `cv.criteria = "V&VH"` (Cox) or `"loss"` (matched) explicitly, and fixes the seed so fits share a partition. `cv.coxkl_ties` alone defaults to `"CIndex_pooled"`.
+12. **A discrete-time target cannot borrow from a coefficient vector through the KL divergence**: it needs interval hazards, i.e. `release_model(beta, baseline = dH0)` with the external Cox model's baseline cumulative-hazard increments over the same K intervals. A coefficient vector alone can enter a discrete target only through `"mahalanobis"`, and only with `link = "cloglog"`.
+13. **Neural targets**: `penalty` must be `"none"`, the divergence must be `"kl"`, and `torch` must be installed (`install.packages("torch"); torch::install_torch()`). Fit them with `cv.bregsurv()`, not `bregsurv()`.
 
 ---
 

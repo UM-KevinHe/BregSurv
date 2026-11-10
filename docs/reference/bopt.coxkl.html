@@ -19,7 +19,7 @@ framework to efficiently search the parameter space."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,9 +37,9 @@ framework to efficiently search the parameter space."></head><body>
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -165,7 +165,8 @@ values favour exploration. Default <code>2.576</code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Additional arguments passed to <code><a href="cv.coxkl.html">cv.coxkl</a></code> and <code><a href="coxkl.html">coxkl</a></code>. Pass <code>ties = "breslow"</code> here to fit every model with Breslow's tie correction (see <code><a href="coxkl.html">coxkl</a></code>).</p></dd>
+<dd><p>Additional arguments passed to <code><a href="cv.coxkl.html">cv.coxkl</a></code> and <code><a href="coxkl.html">coxkl</a></code>.</p>
+<p>Pass <code>ties = "breslow"</code> here to fit every model with Breslow's tie correction (see <code><a href="coxkl.html">coxkl</a></code>).</p></dd>
 
 </dl></div>
     <div class="section level2">

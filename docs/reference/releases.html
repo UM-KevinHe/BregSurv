@@ -5,9 +5,9 @@
       fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
     }
   };
-</script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet"><link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet"><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="External releases — releases"><meta name="description" content="A release is what the external source made available. Its form decides which members of the
-framework can use it:"><meta property="og:description" content="A release is what the external source made available. Its form decides which members of the
-framework can use it:"></head><body>
+</script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"><link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet"><script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Roboto-0.4.10/font.css" rel="stylesheet"><link href="../deps/JetBrains_Mono-0.4.10/font.css" rel="stylesheet"><link href="../deps/Roboto_Slab-0.4.10/font.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet"><link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet"><script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet"><meta property="og:title" content="External releases — releases"><meta name="description" content="A release is what the external source made available. Its form decides which divergences
+can use it (the divergence argument of cv.bregsurv()):"><meta property="og:description" content="A release is what the external source made available. Its form decides which divergences
+can use it (the divergence argument of cv.bregsurv()):"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +15,7 @@ framework can use it:"></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,9 +33,9 @@ framework can use it:"></head><body>
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -56,8 +56,8 @@ framework can use it:"></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>A release is what the external source made available. Its form decides which members of the
-framework can use it:</p>
+    <p>A release is what the external source made available. Its form decides which divergences
+can use it (the <code>divergence</code> argument of <code><a href="cv.bregsurv.html">cv.bregsurv()</a></code>):</p>
     </div>
 
     <div class="section level2">
@@ -100,8 +100,8 @@ framework can use it:</p>
 
 
 <dt id="arg-beta">beta<a class="anchor" aria-label="anchor" href="#arg-beta"></a></dt>
-<dd><p>Named external coefficient vector. Covariates the release does not cover are set to zero
-and covariates you do not have are dropped (see <code><a href="align_beta.html">align_beta()</a></code>).</p></dd>
+<dd><p>Named external coefficient vector. Every name must be one of your covariates; covariates
+the release does not cover are set to zero (see <code><a href="align_beta.html">align_beta()</a></code>).</p></dd>
 
 
 <dt id="arg-q">Q<a class="anchor" aria-label="anchor" href="#arg-q"></a></dt>
@@ -130,7 +130,7 @@ interval (an alternative to <code>beta</code> + <code>baseline</code>).</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
 
-<table class="table table"><tr><td>release</td><td>members it supports</td></tr><tr><td><code>release_records()</code>: individual-level records</td><td>composite likelihood; on a Cox target also Mahalanobis and Kullback-Leibler, through a Cox model fitted to the records</td></tr><tr><td><code>release_coef()</code>: coefficients, optionally with their precision matrix <code>Q</code></td><td>Mahalanobis (Euclidean when <code>Q = NULL</code>) and Kullback-Leibler</td></tr><tr><td><code>release_score()</code>: a risk score evaluated on your subjects</td><td>Kullback-Leibler</td></tr><tr><td><code>release_model()</code>: coefficients with the baseline hazard, or interval hazards</td><td>Kullback-Leibler on the discrete-time target (absolute risk), and everything <code>release_coef()</code> supports</td></tr></table></div>
+<table class="table table"><tr><td>release</td><td>divergences it supports</td></tr><tr><td><code>release_records()</code>: individual-level records</td><td>composite likelihood; on a Cox target also Mahalanobis and Kullback-Leibler, through a Cox model fitted to the records</td></tr><tr><td><code>release_coef()</code>: coefficients, optionally with their precision matrix <code>Q</code></td><td>Mahalanobis (Euclidean when <code>Q = NULL</code>) and Kullback-Leibler</td></tr><tr><td><code>release_score()</code>: a risk score evaluated on your subjects</td><td>Kullback-Leibler</td></tr><tr><td><code>release_model()</code>: coefficients with the baseline hazard, or interval hazards</td><td>Kullback-Leibler on the discrete-time target (absolute risk), and everything <code>release_coef()</code> supports</td></tr></table></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

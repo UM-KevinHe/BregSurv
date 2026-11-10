@@ -30,7 +30,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -50,9 +50,9 @@
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -151,10 +151,10 @@ parties, and the package has an object for each:</p>
 </td>
 </tr>
 <tr class="odd">
-<td>what is borrowed, and how strongly</td>
-<td>the target data, by cross-validation</td>
+<td>how the release enters, and how strongly</td>
+<td>the analyst and the target data, by cross-validation</td>
 <td>
-<code>member = ...</code>, and the chosen <code>eta</code>
+<code>divergence = ...</code>, and the chosen <code>eta</code>
 </td>
 </tr>
 </tbody>
@@ -175,7 +175,7 @@ parties, and the package has an object for each:</p>
 <th>generator <span class="math inline">\(G\)</span>
 </th>
 <th>divergence</th>
-<th><code>member</code></th>
+<th><code>divergence =</code></th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -232,7 +232,7 @@ the interval hazards.</p>
 <p>The three forms are levels of access, not rival methods. Records
 yield coefficients and a precision matrix, and coefficients yield a risk
 score, so a release enters at its own level and every level below it,
-and cross-validation on the target data decides which member borrows
+and cross-validation on the target data decides which divergence borrows
 best.</p>
 </div>
 <div class="section level2">
@@ -249,7 +249,7 @@ best.</p>
 <th>target</th>
 <th>constructor</th>
 <th>likelihood</th>
-<th>members</th>
+<th>divergences</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
@@ -291,9 +291,9 @@ with its own weight.</p>
 </h2>
 <p><code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> uses a fixed <code>seed</code> by default,
 and the fold assignment depends only on the seed, the events and the
-strata. Members fitted to the same target are therefore scored on the
-same partition by the same criterion, and their <code>value</code>s
-compare directly:</p>
+strata. Fits to the same target are therefore scored on the same
+partition by the same criterion, and their <code>value</code>s compare
+directly:</p>
 <table class="table">
 <colgroup>
 <col width="50%">
@@ -331,22 +331,24 @@ on the same folds).</p>
 <span><span class="va">target</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">time</span>, <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
 <span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>kullback_leibler <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span>,</span>
-<span>             euclidean        <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span>,</span>
-<span>             kl_lasso         <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, member <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span>,</span>
+<span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>kullback_leibler <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span>,</span>
+<span>             euclidean        <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span>,</span>
+<span>             kl_lasso         <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span>,</span>
 <span>             target_only      <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">as_is</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/vvh_loss_fixed.html">vvh_loss_fixed</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span>, <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, <span class="va">tr</span><span class="op">$</span><span class="va">time</span>,</span>
 <span>                        beta <span class="op">=</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span>, folds <span class="op">=</span> <span class="va">fits</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">$</span><span class="va">folds</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">fits</span>, <span class="va">`[[`</span>, <span class="st">"value"</span><span class="op">)</span>, external_as_is <span class="op">=</span> <span class="va">as_is</span><span class="op">$</span><span class="va">VVH_Loss</span><span class="op">)</span></span></code></pre></div>
-<p>This is how the agent in this repository works: it fits the members
-the facts admit, on one partition, and selects by that number.</p>
+<p>This is how the agent in this repository works: it fits every
+divergence the facts admit, on one partition, and selects by that
+number.</p>
 </div>
 <div class="section level2">
 <h2 id="where-each-call-goes">Where each call goes<a class="anchor" aria-label="anchor" href="#where-each-call-goes"></a>
 </h2>
-<p>On Cox and matched targets <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> calls the
-package’s estimators and returns their result unchanged; the
-<code>engine</code> field of the result names the one used.</p>
+<p>On a linear target <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> calls one of the
+package’s estimators and returns its result unchanged; the
+<code>engine</code> field of the result names the one used. The three
+designs have parallel families of estimators, one per divergence.</p>
 <table class="table">
 <colgroup>
 <col width="20%">
@@ -357,8 +359,8 @@ package’s estimators and returns their result unchanged; the
 </colgroup>
 <thead><tr class="header">
 <th>target</th>
-<th>member</th>
-<th>none</th>
+<th>divergence</th>
+<th>no penalty</th>
 <th>ridge</th>
 <th>lasso / elastic net</th>
 </tr></thead>
@@ -409,10 +411,24 @@ ties)</td>
 </tr>
 <tr class="odd">
 <td>discrete time</td>
-<td>all three</td>
-<td>Fisher scoring</td>
-<td>Fisher scoring</td>
-<td>proximal Newton</td>
+<td>composite</td>
+<td><code>cv.discrete_indi</code></td>
+<td><code>cv.discrete_indi_ridge</code></td>
+<td><code>cv.discrete_indi_enet</code></td>
+</tr>
+<tr class="even">
+<td>discrete time</td>
+<td>Mahalanobis</td>
+<td><code>cv.discrete_MDTL</code></td>
+<td><code>cv.discrete_MDTL_ridge</code></td>
+<td><code>cv.discrete_MDTL_enet</code></td>
+</tr>
+<tr class="odd">
+<td>discrete time</td>
+<td>Kullback–Leibler</td>
+<td><code>cv.discretekl</code></td>
+<td><code>cv.discretekl_ridge</code></td>
+<td><code>cv.discretekl_enet</code></td>
 </tr>
 <tr class="even">
 <td>neural network</td>
@@ -423,8 +439,11 @@ ties)</td>
 </tr>
 </tbody>
 </table>
-<p><a href="engines.html">The estimators behind each member</a> walks
-through the Cox and matched estimators with all their options.</p>
+<p>Each <code>cv.</code> function has a counterpart without the prefix
+that fits at given weights (<code><a href="../reference/coxkl.html">coxkl()</a></code>,
+<code><a href="../reference/discrete_MDTL.html">discrete_MDTL()</a></code>, …). <a href="engines.html">The estimators
+behind each divergence</a> walks through them with all their
+options.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

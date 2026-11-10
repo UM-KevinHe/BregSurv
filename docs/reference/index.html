@@ -13,7 +13,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.0.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,9 +31,9 @@
     <li><a class="dropdown-item" href="../articles/coxkl_ties.html">Extension: tied event times</a></li>
     <li><a class="dropdown-item" href="../articles/ncc.html">Extension: the nested case-control design</a></li>
     <li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Members</h6></li>
-    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler member</a></li>
-    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each member</a></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Divergences</h6></li>
+    <li><a class="dropdown-item" href="../articles/coxkl.html">The Kullback-Leibler divergence</a></li>
+    <li><a class="dropdown-item" href="../articles/engines.html">The estimators behind each divergence</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Tuning</h6></li>
     <li><a class="dropdown-item" href="../articles/CV_Criteria.html">Cross-validation criteria</a></li>
@@ -54,7 +54,7 @@
     <div class="section level2">
       <h2 id="the-interface">The interface<a class="anchor" aria-label="anchor" href="#the-interface"></a></h2>
 
-      <div class="section-desc"><p>One call per analysis: a target model, an external release, and the member of the framework through which the release enters. <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> chooses the integration weight (and the penalty) by cross-validation; <code><a href="../reference/bregsurv.html">bregsurv()</a></code> fits at a given weight.</p></div>
+      <div class="section-desc"><p>One call per analysis. <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> takes a target model built from your data, the release an external source made, and the divergence through which the release enters, and chooses the integration weight (and the penalty) by cross-validation; <code><a href="../reference/bregsurv.html">bregsurv()</a></code> fits at a given weight.</p></div>
 
 
     </div><div class="section level2">
@@ -67,13 +67,13 @@
           <code><a href="cv.bregsurv.html">cv.bregsurv()</a></code>
 
         </dt>
-        <dd>Fit a member of the Bregman-divergence framework, choosing the integration weight by cross-validation</dd>
+        <dd>Fit a time-to-event model that borrows from an external source</dd>
       </dl><dl><dt>
 
           <code><a href="bregsurv.html">bregsurv()</a></code>
 
         </dt>
-        <dd>Fit a member of the framework at a given integration weight</dd>
+        <dd>Fit a time-to-event model that borrows from an external source, at a given weight</dd>
       </dl><dl><dt>
 
           <code><a href="targets.html">target_cox()</a></code> <code><a href="targets.html">target_ncc()</a></code> <code><a href="targets.html">target_discrete()</a></code>
@@ -94,14 +94,26 @@
         <dd>A neural-network risk score</dd>
       </dl><dl><dt>
 
+          <code><a href="plot.cv.bregsurv.html">plot(<i>&lt;cv.bregsurv&gt;</i>)</a></code>
+
+        </dt>
+        <dd>Plot a fitted model: the cross-validation curve, the coefficients, or predicted survival</dd>
+      </dl><dl><dt>
+
           <code><a href="predict.cv.bregsurv.html">predict(<i>&lt;cv.bregsurv&gt;</i>)</a></code> <code><a href="predict.cv.bregsurv.html">predict(<i>&lt;bregsurv&gt;</i>)</a></code>
 
         </dt>
-        <dd>Predictions from a fitted member</dd>
+        <dd>Predictions from a fitted model</dd>
       </dl></div><div class="section level2">
-      <h2 id="engines-the-composite-likelihood-member-records-">Engines: the composite-likelihood member (records)<a class="anchor" aria-label="anchor" href="#engines-the-composite-likelihood-member-records-"></a></h2>
+      <h2 id="estimators-the-composite-likelihood-individual-level-records-">Estimators: the composite likelihood (individual-level records)<a class="anchor" aria-label="anchor" href="#estimators-the-composite-likelihood-individual-level-records-"></a></h2>
 
-      <div class="section-desc"><p>The external cohort’s records are available. The generator is the negative external log-partial likelihood, so the objective is a composite likelihood in which external events carry weight <code>eta</code>. Full cohort (<code>cox_*</code>) and nested case-control (<code>ncc_*</code>); each fit has a <code>cv.</code> counterpart that chooses <code>eta</code> (and <code>lambda</code>) by cross-validation.</p></div>
+      <div class="section-desc"><p>The external cohort’s records are available. The generator is the negative external log-likelihood, so the objective is a composite likelihood in which the external records carry weight <code>eta</code> and each cohort keeps its own baseline. One family per design, each fit with a <code>cv.</code> counterpart that chooses <code>eta</code> (and <code>lambda</code>) by cross-validation.</p></div>
+
+
+    </div><div class="section level2">
+
+      <h3 id="full-cohort-cox-model-">Full cohort (Cox model)<a class="anchor" aria-label="anchor" href="#full-cohort-cox-model-"></a></h3>
+
 
 
     </div><div class="section level2">
@@ -145,7 +157,18 @@
 
         </dt>
         <dd>Cross-Validation for Cox Model Integrated with External Individual-level Data and Elastic Net Penalty</dd>
-      </dl><dl><dt>
+      </dl></div><div class="section level2">
+
+      <h3 id="nested-case-control-design">Nested case-control design<a class="anchor" aria-label="anchor" href="#nested-case-control-design"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="ncc_indi.html">ncc_indi()</a></code>
 
@@ -170,9 +193,62 @@
         </dt>
         <dd>Cross-Validated CLR with Individual-Level External Data and Elastic Net Penalty</dd>
       </dl></div><div class="section level2">
-      <h2 id="engines-the-mahalanobis-member-coefficients-with-uncertainty-">Engines: the Mahalanobis member (coefficients with uncertainty)<a class="anchor" aria-label="anchor" href="#engines-the-mahalanobis-member-coefficients-with-uncertainty-"></a></h2>
 
-      <div class="section-desc"><p>The external source released coefficients and a measure of their precision. The generator is a quadratic form, so the penalty is the Mahalanobis distance to the external coefficients, weighted by the precision matrix <code>Q</code>. With <code>Q = NULL</code> it is the Euclidean distance on the covariates the external model covers.</p></div>
+      <h3 id="discrete-time">Discrete time<a class="anchor" aria-label="anchor" href="#discrete-time"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="discrete_indi.html">discrete_indi()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Model with Individual-Level External Data (Composite Likelihood)</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discrete_indi.html">cv.discrete_indi()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time Composite Likelihood</dd>
+      </dl><dl><dt>
+
+          <code><a href="discrete_indi_ridge.html">discrete_indi_ridge()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Composite Likelihood with a Ridge Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discrete_indi_ridge.html">cv.discrete_indi_ridge()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time Composite Likelihood with a Ridge Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="discrete_indi_enet.html">discrete_indi_enet()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Composite Likelihood with an Elastic-Net Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discrete_indi_enet.html">cv.discrete_indi_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time Composite Likelihood with an Elastic-Net Penalty</dd>
+      </dl></div><div class="section level2">
+      <h2 id="estimators-the-mahalanobis-distance-coefficients-with-their-uncertainty-">Estimators: the Mahalanobis distance (coefficients with their uncertainty)<a class="anchor" aria-label="anchor" href="#estimators-the-mahalanobis-distance-coefficients-with-their-uncertainty-"></a></h2>
+
+      <div class="section-desc"><p>The external source released coefficients, and possibly their precision. The generator is a quadratic form, so the penalty is the Mahalanobis distance to the external coefficients, weighted by the precision matrix <code>Q</code>; with <code>Q = NULL</code> it is the Euclidean distance on the covariates the external model covers.</p></div>
+
+
+    </div><div class="section level2">
+
+      <h3 id="full-cohort-cox-model--1">Full cohort (Cox model)<a class="anchor" aria-label="anchor" href="#full-cohort-cox-model--1"></a></h3>
+
 
 
     </div><div class="section level2">
@@ -216,7 +292,18 @@
 
         </dt>
         <dd>Cross-Validation for Cox MDTL with Elastic Net Regularization</dd>
-      </dl><dl><dt>
+      </dl></div><div class="section level2">
+
+      <h3 id="nested-case-control-design-1">Nested case-control design<a class="anchor" aria-label="anchor" href="#nested-case-control-design-1"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="ncc_MDTL.html">ncc_MDTL()</a></code>
 
@@ -253,9 +340,62 @@
         </dt>
         <dd>Cross-Validated CLR with Mahalanobis Distance Transfer Learning and Elastic Net Penalty</dd>
       </dl></div><div class="section level2">
-      <h2 id="engines-the-kullback-leibler-member-a-model-or-risk-score-">Engines: the Kullback-Leibler member (a model or risk score)<a class="anchor" aria-label="anchor" href="#engines-the-kullback-leibler-member-a-model-or-risk-score-"></a></h2>
 
-      <div class="section-desc"><p>Only the external model’s risk score is needed (<code>RS</code>, or coefficients <code>beta</code>). The generator is the negative entropy on the risk-set distributions, so the penalty is a Kullback-Leibler divergence. <code>coxkl_ties</code> also offers Cox’s exact method for tied event times; every full-cohort estimator accepts <code>ties = "breslow"</code>.</p></div>
+      <h3 id="discrete-time-1">Discrete time<a class="anchor" aria-label="anchor" href="#discrete-time-1"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="discrete_MDTL.html">discrete_MDTL()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Model with Mahalanobis-Distance Transfer Learning</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discrete_MDTL.html">cv.discrete_MDTL()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time Mahalanobis-Distance Transfer Learning</dd>
+      </dl><dl><dt>
+
+          <code><a href="discrete_MDTL_ridge.html">discrete_MDTL_ridge()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Mahalanobis-Distance Transfer Learning with a Ridge Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discrete_MDTL_ridge.html">cv.discrete_MDTL_ridge()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time Mahalanobis-Distance Transfer Learning with a Ridge Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="discrete_MDTL_enet.html">discrete_MDTL_enet()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Mahalanobis-Distance Transfer Learning with an Elastic-Net Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discrete_MDTL_enet.html">cv.discrete_MDTL_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time Mahalanobis-Distance Transfer Learning with an Elastic-Net Penalty</dd>
+      </dl></div><div class="section level2">
+      <h2 id="estimators-the-kullback-leibler-divergence-a-fitted-model-or-a-risk-score-">Estimators: the Kullback-Leibler divergence (a fitted model or a risk score)<a class="anchor" aria-label="anchor" href="#estimators-the-kullback-leibler-divergence-a-fitted-model-or-a-risk-score-"></a></h2>
+
+      <div class="section-desc"><p>Only the external model’s predictions are needed: a risk score (<code>RS</code>) or coefficients (<code>beta</code>) for a Cox or matched target, absolute risks (<code>hazard</code>, or <code>beta</code> with <code>baseline</code>) for a discrete-time target. The generator is the negative entropy on the distributions the model predicts, so the penalty is a Kullback-Leibler divergence. <code>coxkl_ties</code> also offers Cox’s exact method for tied event times; every full-cohort estimator accepts <code>ties = "breslow"</code>.</p></div>
+
+
+    </div><div class="section level2">
+
+      <h3 id="full-cohort-cox-model--2">Full cohort (Cox model)<a class="anchor" aria-label="anchor" href="#full-cohort-cox-model--2"></a></h3>
+
 
 
     </div><div class="section level2">
@@ -311,7 +451,18 @@
 
         </dt>
         <dd>Cross-Validation for CoxKL Model with Elastic Net &amp; Lasso Penalty</dd>
-      </dl><dl><dt>
+      </dl></div><div class="section level2">
+
+      <h3 id="nested-case-control-design-2">Nested case-control design<a class="anchor" aria-label="anchor" href="#nested-case-control-design-2"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="ncckl.html">ncckl()</a></code>
 
@@ -347,6 +498,53 @@
 
         </dt>
         <dd>Cross-Validated CLR-KL with Elastic Net Penalty</dd>
+      </dl></div><div class="section level2">
+
+      <h3 id="discrete-time-2">Discrete time<a class="anchor" aria-label="anchor" href="#discrete-time-2"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="discretekl.html">discretekl()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Model with KL Divergence for Data Integration</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discretekl.html">cv.discretekl()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time KL Model to Tune the Integration Parameter (eta)</dd>
+      </dl><dl><dt>
+
+          <code><a href="discretekl_ridge.html">discretekl_ridge()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Model with KL Divergence and a Ridge Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discretekl_ridge.html">cv.discretekl_ridge()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time KL Model with a Ridge Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="discretekl_enet.html">discretekl_enet()</a></code>
+
+        </dt>
+        <dd>Discrete-Time Model with KL Divergence and an Elastic-Net Penalty</dd>
+      </dl><dl><dt>
+
+          <code><a href="cv.discretekl_enet.html">cv.discretekl_enet()</a></code>
+
+        </dt>
+        <dd>Cross-Validated Discrete-Time KL Model with an Elastic-Net Penalty</dd>
       </dl></div><div class="section level2">
       <h2 id="several-external-sources">Several external sources<a class="anchor" aria-label="anchor" href="#several-external-sources"></a></h2>
 
@@ -417,9 +615,9 @@
         </dt>
         <dd>Plot Cross-Validation Results vs Eta</dd>
       </dl></div><div class="section level2">
-      <h2 id="scoring-a-fixed-model">Scoring a fixed model<a class="anchor" aria-label="anchor" href="#scoring-a-fixed-model"></a></h2>
+      <h2 id="evaluating-a-fit">Evaluating a fit<a class="anchor" aria-label="anchor" href="#evaluating-a-fit"></a></h2>
 
-      <div class="section-desc"><p>Score fixed coefficients, such as the external model used unchanged, on the same cross-validation folds as the fitted members.</p></div>
+      <div class="section-desc"><p>Score fixed coefficients, such as the external model used unchanged, on the same cross-validation folds as the fitted models, or on held-out data.</p></div>
 
 
     </div><div class="section level2">
@@ -433,6 +631,12 @@
 
         </dt>
         <dd>Cross-validated Verweij and van Houwelingen loss at a fixed coefficient vector</dd>
+      </dl><dl><dt>
+
+          <code><a href="test_eval.html">test_eval()</a></code>
+
+        </dt>
+        <dd>Evaluate Survival Model Performance</dd>
       </dl></div><div class="section level2">
       <h2 id="variable-selection-stability-and-bagging">Variable selection, stability and bagging<a class="anchor" aria-label="anchor" href="#variable-selection-stability-and-bagging"></a></h2>
 
@@ -475,7 +679,7 @@
         </dt>
         <dd>Bagging for MDTL-Integrated Cox Elastic-Net Models</dd>
       </dl></div><div class="section level2">
-      <h2 id="plotting">Plotting<a class="anchor" aria-label="anchor" href="#plotting"></a></h2>
+      <h2 id="plotting-the-estimators">Plotting the estimators<a class="anchor" aria-label="anchor" href="#plotting-the-estimators"></a></h2>
 
 
 
@@ -586,6 +790,18 @@
 
         </dt>
         <dd>Example internal/external matched case-control individual-level data</dd>
+      </dl><dl><dt>
+
+          <code><a href="ExampleData_discrete.html">ExampleData_discrete</a></code>
+
+        </dt>
+        <dd>Example discrete-time survival data with an external registry</dd>
+      </dl><dl><dt>
+
+          <code><a href="ExampleData_ties.html">ExampleData_ties</a></code>
+
+        </dt>
+        <dd>Example survival data with tied event times</dd>
       </dl></div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

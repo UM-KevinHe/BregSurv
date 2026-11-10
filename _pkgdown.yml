@@ -31,10 +31,10 @@ navbar:
         - text: "Extension: the nested case-control design"
           href: articles/ncc.html
         - text: "---"
-        - text: "Members"
-        - text: "The Kullback-Leibler member"
+        - text: "Divergences"
+        - text: "The Kullback-Leibler divergence"
           href: articles/coxkl.html
-        - text: "The estimators behind each member"
+        - text: "The estimators behind each divergence"
           href: articles/engines.html
         - text: "---"
         - text: "Tuning"
@@ -56,7 +56,7 @@ articles:
       - discrete_neural
       - coxkl_ties
       - ncc
-  - title: "Members"
+  - title: "Divergences"
     contents:
       - coxkl
       - engines
@@ -66,23 +66,24 @@ articles:
 reference:
   - title: "The interface"
     desc: >
-      One call per analysis: a target model, an external release, and the member of the
-      framework through which the release enters. `cv.bregsurv()` chooses the integration
-      weight (and the penalty) by cross-validation; `bregsurv()` fits at a given weight.
+      One call per analysis. `cv.bregsurv()` takes a target model built from your data, the release
+      an external source made, and the divergence through which the release enters, and chooses the
+      integration weight (and the penalty) by cross-validation; `bregsurv()` fits at a given weight.
     contents:
       - cv.bregsurv
       - bregsurv
       - targets
       - releases
       - nn_score
+      - plot.cv.bregsurv
       - predict.cv.bregsurv
-  - title: "Engines: the composite-likelihood member (records)"
+  - title: "Estimators: the composite likelihood (individual-level records)"
     desc: >
-      The external cohort's records are available. The generator is the negative
-      external log-partial likelihood, so the objective is a composite likelihood
-      in which external events carry weight `eta`. Full cohort (`cox_*`) and nested
-      case-control (`ncc_*`); each fit has a `cv.` counterpart that chooses `eta`
-      (and `lambda`) by cross-validation.
+      The external cohort's records are available. The generator is the negative external
+      log-likelihood, so the objective is a composite likelihood in which the external records carry
+      weight `eta` and each cohort keeps its own baseline. One family per design, each fit with a
+      `cv.` counterpart that chooses `eta` (and `lambda`) by cross-validation.
+  - subtitle: "Full cohort (Cox model)"
     contents:
       - cox_indi
       - cv.cox_indi
@@ -90,17 +91,27 @@ reference:
       - cv.cox_indi_ridge
       - cox_indi_enet
       - cv.cox_indi_enet
+  - subtitle: "Nested case-control design"
+    contents:
       - ncc_indi
       - cv.ncc_indi
       - ncc_indi_enet
       - cv.ncc_indi_enet
-  - title: "Engines: the Mahalanobis member (coefficients with uncertainty)"
+  - subtitle: "Discrete time"
+    contents:
+      - discrete_indi
+      - cv.discrete_indi
+      - discrete_indi_ridge
+      - cv.discrete_indi_ridge
+      - discrete_indi_enet
+      - cv.discrete_indi_enet
+  - title: "Estimators: the Mahalanobis distance (coefficients with their uncertainty)"
     desc: >
-      The external source released coefficients and a measure of their precision.
-      The generator is a quadratic form, so the penalty is the Mahalanobis distance
-      to the external coefficients, weighted by the precision matrix `Q`. With
-      `Q = NULL` it is the Euclidean distance on the covariates the external model
-      covers.
+      The external source released coefficients, and possibly their precision. The generator is a
+      quadratic form, so the penalty is the Mahalanobis distance to the external coefficients,
+      weighted by the precision matrix `Q`; with `Q = NULL` it is the Euclidean distance on the
+      covariates the external model covers.
+  - subtitle: "Full cohort (Cox model)"
     contents:
       - cox_MDTL
       - cv.cox_MDTL
@@ -108,19 +119,30 @@ reference:
       - cv.cox_MDTL_ridge
       - cox_MDTL_enet
       - cv.cox_MDTL_enet
+  - subtitle: "Nested case-control design"
+    contents:
       - ncc_MDTL
       - cv.ncc_MDTL
       - ncc_MDTL_ridge
       - cv.ncc_MDTL_ridge
       - ncc_MDTL_enet
       - cv.ncc_MDTL_enet
-  - title: "Engines: the Kullback-Leibler member (a model or risk score)"
+  - subtitle: "Discrete time"
+    contents:
+      - discrete_MDTL
+      - cv.discrete_MDTL
+      - discrete_MDTL_ridge
+      - cv.discrete_MDTL_ridge
+      - discrete_MDTL_enet
+      - cv.discrete_MDTL_enet
+  - title: "Estimators: the Kullback-Leibler divergence (a fitted model or a risk score)"
     desc: >
-      Only the external model's risk score is needed (`RS`, or coefficients `beta`).
-      The generator is the negative entropy on the risk-set distributions, so the
-      penalty is a Kullback-Leibler divergence. `coxkl_ties` also offers Cox's exact
-      method for tied event times; every full-cohort estimator accepts
-      `ties = "breslow"`.
+      Only the external model's predictions are needed: a risk score (`RS`) or coefficients (`beta`)
+      for a Cox or matched target, absolute risks (`hazard`, or `beta` with `baseline`) for a
+      discrete-time target. The generator is the negative entropy on the distributions the model
+      predicts, so the penalty is a Kullback-Leibler divergence. `coxkl_ties` also offers Cox's exact
+      method for tied event times; every full-cohort estimator accepts `ties = "breslow"`.
+  - subtitle: "Full cohort (Cox model)"
     contents:
       - coxkl
       - cv.coxkl
@@ -130,12 +152,22 @@ reference:
       - cv.coxkl_ridge
       - coxkl_enet
       - cv.coxkl_enet
+  - subtitle: "Nested case-control design"
+    contents:
       - ncckl
       - cv.ncckl
       - ncckl_ridge
       - cv.ncckl_ridge
       - ncckl_enet
       - cv.ncckl_enet
+  - subtitle: "Discrete time"
+    contents:
+      - discretekl
+      - cv.discretekl
+      - discretekl_ridge
+      - cv.discretekl_ridge
+      - discretekl_enet
+      - cv.discretekl_enet
   - title: "Several external sources"
     desc: >
       One integration weight per source, in one fit.
@@ -143,9 +175,9 @@ reference:
       - coxkl_enet.multi
   - title: "Preparing the external information"
     desc: >
-      Match a named external coefficient vector (and its precision matrix) to your
-      covariates by name; absent covariates are set to zero. The fitting functions
-      call these for you when `beta` is named.
+      Match a named external coefficient vector (and its precision matrix) to your covariates by
+      name; absent covariates are set to zero. The fitting functions call these for you when `beta`
+      is named.
     contents:
       - align_beta
       - align_beta_Q
@@ -154,12 +186,13 @@ reference:
       - generate_eta
       - bopt.coxkl
       - cv.plot
-  - title: "Scoring a fixed model"
+  - title: "Evaluating a fit"
     desc: >
-      Score fixed coefficients, such as the external model used unchanged, on the
-      same cross-validation folds as the fitted members.
+      Score fixed coefficients, such as the external model used unchanged, on the same
+      cross-validation folds as the fitted models, or on held-out data.
     contents:
       - vvh_loss_fixed
+      - test_eval
   - title: "Variable selection, stability and bagging"
     contents:
       - variable_importance
@@ -167,7 +200,7 @@ reference:
       - cox_MDTL_enet.StabSelect
       - coxkl_enet_bagging
       - cox_MDTL_enet_bagging
-  - title: "Plotting"
+  - title: "Plotting the estimators"
     contents:
       - plot.coxkl
       - plot.coxkl_ridge
@@ -186,3 +219,5 @@ reference:
       - ExampleData_cc_lowdim
       - ExampleData_cc_highdim
       - ExampleData_cc_indi
+      - ExampleData_discrete
+      - ExampleData_ties

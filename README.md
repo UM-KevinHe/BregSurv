@@ -72,9 +72,9 @@ The estimator library behind the agent is a standalone R package with one interf
 # install.packages("remotes")
 remotes::install_github("UM-KevinHe/BregSurv")
 library(BregSurv)
-fit <- cv.bregsurv(target  = target_cox(time, event, z),
-                   release = release_coef(beta_registry),   # what the external source published
-                   member  = "kl")                          # how it enters the objective
+fit <- cv.bregsurv(target     = target_cox(time, event, z),
+                   release    = release_coef(beta_registry),   # what the external source published
+                   divergence = "kl")                          # how it enters the objective
 ```
 
 See [the R package](#-the-r-package-one-bregman-divergence-objective) below and the
@@ -103,7 +103,7 @@ See [the R package](#-the-r-package-one-bregman-divergence-objective) below and 
 5. **Ask follow-up questions** — *"Why was that model chosen instead of just using my own data?"* — and get plain-language answers grounded in the fitted results.
 
 <div align="center">
-<img src="assets/screenshot_home.png" width="45%"/> &nbsp; <img src="assets/screenshot_result.png" width="45%"/>
+<img src="assets/screenshot_home.png" width="45%" alt="The agent's home screen"/> &nbsp; <img src="assets/screenshot_result.png" width="45%" alt="An analysis result in the agent"/>
 </div>
 
 ---
@@ -130,7 +130,7 @@ flowchart LR
 
 ## 📦 The R package: one Bregman-divergence objective
 
-### One objective, three decisions
+### One objective, four choices
 
 Every estimator in the package minimizes
 
@@ -139,26 +139,26 @@ Q_\eta(\theta) = -\ell(\theta) + \eta\,\mathcal{B}_G(\theta), \qquad \eta \ge 0,
 $$
 
 where $\ell$ is your cohort's log-likelihood and $\mathcal{B}_G$ is a Bregman divergence between your
-model and the external one. The objective separates three decisions, and the package has one object for
-each:
+model and the external one. A call to `cv.bregsurv()` makes four choices, one per argument:
 
-| decision | made by | in the package |
+| argument | what it is | in the package |
 |---|---|---|
-| the **target** model | you, from your data | `target_cox()` (strata, tied times), `target_ncc()`, `target_discrete()`, with a linear or `nn_score()` neural risk score |
-| the **release** | the external source | `release_records()`, `release_coef()`, `release_score()`, `release_model()` |
-| the **member**: what is borrowed, and how strongly | your data, by cross-validation | `member = "composite"`, `"mahalanobis"` or `"kl"`, and the integration weight $\eta$ |
+| `target` | the model you fit to your data | `target_cox()` (strata, tied times), `target_ncc()`, `target_discrete()`, with a linear or `nn_score()` neural risk score |
+| `release` | what the external source made available | `release_records()`, `release_coef()`, `release_score()`, `release_model()` |
+| `divergence` | how the release enters the objective | `"composite"`, `"mahalanobis"` or `"kl"`; the weight $\eta$ is chosen by cross-validation |
+| `penalty` | an optional penalty on the coefficients | `"none"`, `"ridge"`, `"lasso"`, `"enet"` |
 
 The release fixes the generator $G$, and with it the divergence:
 
-| what the external source released | divergence | `member` |
+| what the external source released | divergence | `divergence =` |
 |---|---|---|
 | individual-level records | composite likelihood | `"composite"` |
 | coefficients with their uncertainty | Mahalanobis (Euclidean when no uncertainty is given) | `"mahalanobis"` |
 | a fitted model or risk score alone | Kullback–Leibler on the model's conditional distributions | `"kl"` |
 
 A release can also enter at every level below its own (records yield coefficients, coefficients yield a
-risk score), so your data can compare several members. Every linear target takes a ridge, lasso or
-elastic-net penalty, with the penalty path built for each $\eta$.
+risk score), so your data can compare several divergences. Every linear target takes a ridge, lasso
+or elastic-net penalty, with the penalty path built for each $\eta$.
 
 ### A first fit
 
@@ -170,8 +170,8 @@ tr <- ExampleData_lowdim$train
 target  <- target_cox(time = tr$time, event = tr$status, z = tr$z)
 release <- release_coef(ExampleData_lowdim$beta_external_poor)   # a published model on 2 of 6 covariates
 
-kl  <- cv.bregsurv(target, release, member = "kl")
-euc <- cv.bregsurv(target, release, member = "mahalanobis")
+kl  <- cv.bregsurv(target, release, divergence = "kl")
+euc <- cv.bregsurv(target, release, divergence = "mahalanobis")
 own <- cv.bregsurv(target)                                        # your data alone
 
 # one partition, one criterion: the cross-validated losses compare directly (lower is better)
@@ -182,19 +182,29 @@ c(target_only = own$value, kullback_leibler = kl$value, euclidean = euc$value)
 
 The published model alone predicts held-out subjects worse than your own data does (C-index 0.613
 against 0.619), yet borrowing from it gives 0.640. [Get started](https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html)
-walks through this example, a high-dimensional one and a discrete-time one.
+walks through the three steps, target, release and divergence, with examples on Cox, nested
+case–control and discrete-time targets.
 
 The same call fits the other targets:
 
 ```r
-cv.bregsurv(target_ncc(case, set, z), release_coef(beta), member = "kl", penalty = "lasso")
+cv.bregsurv(target_ncc(case, set, z), release_coef(beta), divergence = "kl", penalty = "lasso")
 cv.bregsurv(target_discrete(interval, event, z), release_model(beta, baseline = dH0))
 cv.bregsurv(target_discrete(interval, event, z, score = nn_score()), release_model(beta, baseline = dH0))
 ```
 
-On Cox and nested case–control targets, `cv.bregsurv()` calls the package's estimators (`cv.coxkl`,
-`cv.cox_MDTL_enet`, `cv.ncc_indi`, ...) and returns exactly their result, so those functions remain
-available with all their options. Neural targets need the `torch` package.
+On a linear target `cv.bregsurv()` calls one of the package's estimators and returns exactly its
+result. There is one family per divergence and design, so those functions are available with all their
+options:
+
+| divergence | Cox | nested case–control | discrete time |
+|---|---|---|---|
+| Kullback–Leibler | `coxkl`, `coxkl_ties` | `ncckl` | `discretekl` |
+| Mahalanobis | `cox_MDTL` | `ncc_MDTL` | `discrete_MDTL` |
+| composite likelihood | `cox_indi` | `ncc_indi` | `discrete_indi` |
+
+each with `_ridge` and `_enet` versions and a `cv.` counterpart that chooses $\eta$ by
+cross-validation. Neural targets need the `torch` package.
 
 ### Installation
 
@@ -225,7 +235,7 @@ BregSurv/
 ├── app.py               # the chat interface (Gradio)
 ├── bregsurv_agent/      # the agent: reading, planning, checks, reports
 ├── mcp/r_scripts/       # the R side of the agent (profiling, fitting, diagnostics)
-├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time members
+├── mcp/r_pkgs/          # DiscreteKL, used by the agent's discrete-time models
 ├── R/ src/ man/ data/   # the BregSurv R package (estimator library)
 ├── vignettes/ docs/     # the package website and its articles
 ├── demo/                # synthetic example data

@@ -46,11 +46,11 @@ object for each:
 |---|---|---|
 | the target model | the analyst, from the data and the question | `target = target_cox(...)`, `target_ncc(...)`, `target_discrete(...)`, linear or `nn_score()` |
 | the form of the release | the external source | `release = release_records(...)`, `release_coef(...)`, `release_score(...)`, `release_model(...)` |
-| what is borrowed, and how strongly | the target data, by cross-validation | `member = ...`, and the chosen `eta` |
+| how the release enters, and how strongly | the analyst and the target data, by cross-validation | `divergence = ...`, and the chosen `eta` |
 
 ## The release decides the divergence
 
-| what the external source released | generator $G$ | divergence | `member` |
+| what the external source released | generator $G$ | divergence | `divergence =` |
 |---|---|---|---|
 | **individual-level records** | $-\ell_{\text{ext}}$, the external log-likelihood | composite likelihood | `"composite"` |
 | **coefficients with their uncertainty** | $\tfrac12 \mathbf u^\top A \mathbf u$ | Mahalanobis distance to $\tilde{\boldsymbol\beta}$ | `"mahalanobis"` |
@@ -79,11 +79,11 @@ hazards.
 
 The three forms are levels of access, not rival methods. Records yield coefficients and a precision
 matrix, and coefficients yield a risk score, so a release enters at its own level and every level
-below it, and cross-validation on the target data decides which member borrows best.
+below it, and cross-validation on the target data decides which divergence borrows best.
 
 ## What the target can be
 
-| target | constructor | likelihood | members |
+| target | constructor | likelihood | divergences |
 |---|---|---|---|
 | Cox model | `target_cox()` | stratified partial likelihood; `ties = "breslow"` or `"exact"` for tied times | all three |
 | Nested case--control design | `target_ncc()` | conditional likelihood of the case within its matched set | all three |
@@ -96,8 +96,8 @@ $\eta$ separately. `coxkl_enet.multi()` combines several external sources, each 
 ## Choosing what to borrow and how strongly
 
 `cv.bregsurv()` uses a fixed `seed` by default, and the fold assignment depends only on the seed, the
-events and the strata. Members fitted to the same target are therefore scored on the same partition by
-the same criterion, and their `value`s compare directly:
+events and the strata. Fits to the same target are therefore scored on the same partition by the same
+criterion, and their `value`s compare directly:
 
 | target | criterion |
 |---|---|
@@ -116,24 +116,25 @@ tr <- ExampleData_lowdim$train
 target  <- target_cox(tr$time, tr$status, tr$z)
 release <- release_coef(ExampleData_lowdim$beta_external_fair)
 
-fits <- list(kullback_leibler = cv.bregsurv(target, release, member = "kl"),
-             euclidean        = cv.bregsurv(target, release, member = "mahalanobis"),
-             kl_lasso         = cv.bregsurv(target, release, member = "kl", penalty = "lasso"),
+fits <- list(kullback_leibler = cv.bregsurv(target, release, divergence = "kl"),
+             euclidean        = cv.bregsurv(target, release, divergence = "mahalanobis"),
+             kl_lasso         = cv.bregsurv(target, release, divergence = "kl", penalty = "lasso"),
              target_only      = cv.bregsurv(target))
 as_is <- vvh_loss_fixed(as.matrix(tr$z), tr$status, tr$time,
                         beta = ExampleData_lowdim$beta_external_fair, folds = fits[[1]]$folds)
 c(sapply(fits, `[[`, "value"), external_as_is = as_is$VVH_Loss)
 ```
 
-This is how the agent in this repository works: it fits the members the facts admit, on one partition,
-and selects by that number.
+This is how the agent in this repository works: it fits every divergence the facts admit, on one
+partition, and selects by that number.
 
 ## Where each call goes
 
-On Cox and matched targets `cv.bregsurv()` calls the package's estimators and returns their result
-unchanged; the `engine` field of the result names the one used.
+On a linear target `cv.bregsurv()` calls one of the package's estimators and returns its result
+unchanged; the `engine` field of the result names the one used. The three designs have parallel
+families of estimators, one per divergence.
 
-| target | member | none | ridge | lasso / elastic net |
+| target | divergence | no penalty | ridge | lasso / elastic net |
 |---|---|---|---|---|
 | Cox | composite | `cv.cox_indi` | `cv.cox_indi_ridge` | `cv.cox_indi_enet` |
 | Cox | Mahalanobis | `cv.cox_MDTL` | `cv.cox_MDTL_ridge` | `cv.cox_MDTL_enet` |
@@ -141,8 +142,11 @@ unchanged; the `engine` field of the result names the one used.
 | nested case--control | composite | `cv.ncc_indi` | -- | `cv.ncc_indi_enet` |
 | nested case--control | Mahalanobis | `cv.ncc_MDTL` | `cv.ncc_MDTL_ridge` | `cv.ncc_MDTL_enet` |
 | nested case--control | Kullback--Leibler | `cv.ncckl` | `cv.ncckl_ridge` | `cv.ncckl_enet` |
-| discrete time | all three | Fisher scoring | Fisher scoring | proximal Newton |
+| discrete time | composite | `cv.discrete_indi` | `cv.discrete_indi_ridge` | `cv.discrete_indi_enet` |
+| discrete time | Mahalanobis | `cv.discrete_MDTL` | `cv.discrete_MDTL_ridge` | `cv.discrete_MDTL_enet` |
+| discrete time | Kullback--Leibler | `cv.discretekl` | `cv.discretekl_ridge` | `cv.discretekl_enet` |
 | neural network | Kullback--Leibler | `torch` | | |
 
-[The estimators behind each member](engines.html) walks through the Cox and matched estimators with all
-their options.
+Each `cv.` function has a counterpart without the prefix that fits at given weights (`coxkl()`,
+`discrete_MDTL()`, ...). [The estimators behind each divergence](engines.html) walks through them with
+all their options.
