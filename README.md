@@ -20,7 +20,7 @@
 
 ## 📖 Overview
 
-You have a **cohort** — a few hundred patients from your hospital — and someone else has **more data**: a published risk model from a national registry, or another centre's patient records. Borrowing from that external information can make your survival analysis far more precise. Borrowing blindly can also make it worse, because the external population is never quite yours.
+You have a small local **cohort**, and someone else has **more data**: a published risk model from a national registry, or another centre's patient records. Borrowing from that external information can make your survival analysis far more precise. Borrowing blindly can also make it worse, because the external population is never quite yours.
 
 **BregSurv Agent** does this analysis for you from a single sentence:
 
@@ -84,7 +84,7 @@ See [the R package](#-the-r-package-one-bregman-divergence-objective) below and 
 
 ## 💬 How a conversation goes
 
-1. **Drop your files** into the message box (📎): your cohort (`.csv`, `.xlsx`, `.rds`, …) and, optionally, the external information — a coefficient table, a JSON with coefficients and covariance, a baseline-hazard table, or another cohort's records. A second file with the same columns can be your **test set**.
+1. **Drop your files** into the message box: your cohort (`.csv`, `.xlsx`, `.rds`, …) and, optionally, the external information — a coefficient table, a JSON with coefficients and covariance, a baseline-hazard table, or another cohort's records. A second file with the same columns can be your **test set**.
 2. **Say what you want** in plain words. Name the follow-up time, the event, and what to adjust for.
 3. **Watch it work.** The chat shows each step as it happens:
 
@@ -108,26 +108,6 @@ See [the R package](#-the-r-package-one-bregman-divergence-objective) below and 
 
 ---
 
-## 🧭 How it works
-
-```mermaid
-flowchart LR
-    A[📎 Your files<br/>+ request] --> B[Read the request<br/>and the external file]
-    B --> C[Check the data<br/>admissibility gate]
-    C --> D[Transfer diagnostics<br/>how well does the<br/>external info fit?]
-    D --> E[🧠 LLM plans<br/>which models,<br/>which settings]
-    E --> F[R library fits<br/>on one shared<br/>CV partition]
-    F --> G{Cross-validation<br/>picks the best}
-    G --> H[💬 Summary<br/>📄 PDF report<br/>♻️ replay script]
-    E -. refine .-> F
-```
-
-* **The harness gathers, the model decides.** Deterministic code profiles your data, verifies every reading against your own words and your file, and computes the diagnostics. The language model uses them to plan *what* to fit; it never sets a number.
-* **Every plan is checked.** Only analyses the data admit can be fitted, the two do-not-borrow baselines are always included, and a fixed computing budget bounds the plan.
-* **Cross-validation decides**, on one partition shared by every candidate, so the comparison is fair.
-
----
-
 ## 📦 The R package: one Bregman-divergence objective
 
 ### One objective, four choices
@@ -141,24 +121,12 @@ $$
 where $\ell$ is your cohort's log-likelihood and $\mathcal{B}_G$ is a Bregman divergence between your
 model and the external one. A call to `cv.bregsurv()` makes four choices, one per argument:
 
-| argument | what it is | in the package |
-|---|---|---|
-| `target` | the model you fit to your data | `target_cox()` (strata, tied times), `target_ncc()`, `target_discrete()`, with a linear or `nn_score()` neural risk score |
-| `release` | what the external source made available | `release_records()`, `release_coef()`, `release_score()`, `release_model()` |
-| `divergence` | how the release enters the objective | `"composite"`, `"mahalanobis"` or `"kl"`; the weight $\eta$ is chosen by cross-validation |
-| `penalty` | an optional penalty on the coefficients | `"none"`, `"ridge"`, `"lasso"`, `"enet"` |
-
-The release fixes the generator $G$, and with it the divergence:
-
-| what the external source released | divergence | `divergence =` |
-|---|---|---|
-| individual-level records | composite likelihood | `"composite"` |
-| coefficients with their uncertainty | Mahalanobis (Euclidean when no uncertainty is given) | `"mahalanobis"` |
-| a fitted model or risk score alone | Kullback–Leibler on the model's conditional distributions | `"kl"` |
-
-A release can also enter at every level below its own (records yield coefficients, coefficients yield a
-risk score), so your data can compare several divergences. Every linear target takes a ridge, lasso
-or elastic-net penalty, with the penalty path built for each $\eta$.
+| argument | what it is |
+|---|---|
+| `target` | the model you fit to your local data | 
+| `release` | what the external source made available |
+| `divergence` | how the release enters the objective | 
+| `penalty` | an optional penalty on the coefficients | 
 
 ### A first fit
 
@@ -174,16 +142,11 @@ kl  <- cv.bregsurv(target, release, divergence = "kl")
 euc <- cv.bregsurv(target, release, divergence = "mahalanobis")
 own <- cv.bregsurv(target)                                        # your data alone
 
-# one partition, one criterion: the cross-validated losses compare directly (lower is better)
+# the cross-validated losses compare directly (lower is better)
 c(target_only = own$value, kullback_leibler = kl$value, euclidean = euc$value)
 #>      target_only kullback_leibler        euclidean
 #>            2.625            2.513            2.520
 ```
-
-The published model alone predicts held-out subjects worse than your own data does (C-index 0.613
-against 0.619), yet borrowing from it gives 0.640. [Get started](https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html)
-walks through the three steps, target, release and divergence, with examples on Cox, nested
-case–control and discrete-time targets.
 
 The same call fits the other targets:
 
@@ -192,19 +155,6 @@ cv.bregsurv(target_ncc(case, set, z), release_coef(beta), divergence = "kl", pen
 cv.bregsurv(target_discrete(interval, event, z), release_model(beta, baseline = dH0))
 cv.bregsurv(target_discrete(interval, event, z, score = nn_score()), release_model(beta, baseline = dH0))
 ```
-
-On a linear target `cv.bregsurv()` calls one of the package's estimators and returns exactly its
-result. There is one family per divergence and design, so those functions are available with all their
-options:
-
-| divergence | Cox | nested case–control | discrete time |
-|---|---|---|---|
-| Kullback–Leibler | `coxkl`, `coxkl_ties` | `ncckl` | `discretekl` |
-| Mahalanobis | `cox_MDTL` | `ncc_MDTL` | `discrete_MDTL` |
-| composite likelihood | `cox_indi` | `ncc_indi` | `discrete_indi` |
-
-each with `_ridge` and `_enet` versions and a `cv.` counterpart that chooses $\eta$ by
-cross-validation. Neural targets need the `torch` package.
 
 ### Installation
 
@@ -246,15 +196,6 @@ BregSurv/
 ```
 
 ---
-
-## 📚 Citation
-
-If you use BregSurv or BregSurv Agent, please cite the accompanying paper (citation to be added).
-
-## 📄 License
-
-GPL-3. See [LICENSE.md](LICENSE.md). Third-party code, the `DiscreteKL` package (Di Wang, GPL ≥ 2) and the DiSKD network (Deng et al., ICML 2026), is listed in [THIRD_PARTY.md](THIRD_PARTY.md).
-
 ## ✉️ Contact
 
 Questions and issues: please open a [GitHub issue](https://github.com/UM-KevinHe/BregSurv/issues).
