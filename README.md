@@ -53,15 +53,8 @@ It reads your request and your files, checks how well the external information f
 ## 🧭 How it works
 
 <div align="center">
-<img src="assets/agent-flowchart.svg" width="100%" alt="How the agent works: you chat with a language model on your machine, which reads your request and plans the analysis; the BregSurv R package fits the planned models and cross-validation picks the best; checks in code guard both; external information comes in, and your data and results never leave your machine. The answer takes its words from the model and every number from the fits."/>
+<img src="assets/agent-flowchart.svg" width="100%" alt="How the agent works: on your machine, you chat with a local language model, which reads your request and plans the analysis; the BregSurv R package fits the models and picks the best; checks in code guard both; your data and the external information go into the R package."/>
 </div>
-
-You describe the analysis and review the result. The language model, served on your machine, reads
-your request and plans which analyses to run; the BregSurv R package fits them, and cross-validation
-picks the best. Checks in code verify every reading the model makes against your words and your file,
-admit only the analyses your data support, and bound the plan. The answer takes its words from the
-model and every number from the fits, and a replay script reruns the analysis in R without the model.
-Your data never leave your machine.
 
 ---
 
