@@ -191,12 +191,12 @@ coefficients are left unpenalized. See <code><a href="align_beta_Q.html">align_b
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
 <dd><p>Logical. Should the predictors be standardized before fitting?
-Default is TRUE. A <code>Q</code> you supply carries its own units and the Mahalanobis part
-of the penalty is left exactly unchanged; with <code>Q = NULL</code> the implicit identity
-metric is taken on the standardized scale, one standard deviation per covariate, so
-that the member does not depend on the units the covariates happen to be recorded in
-and agrees with <code><a href="cox_MDTL_ridge.html">cox_MDTL_ridge</a></code>. Changed in 1.2.0; before that both
-cases used a metric of \(\mathrm{diag}(\mathrm{sd}^4)\) on the original coefficients.</p></dd>
+Default is TRUE. A <code>Q</code> you supply carries its own units and the Mahalanobis part of
+the penalty is left exactly unchanged; with <code>Q = NULL</code> the implicit identity metric is
+taken on the standardized scale, one standard deviation per covariate, so that the member
+does not depend on the units the covariates happen to be recorded in and agrees with
+<code><a href="cox_MDTL_ridge.html">cox_MDTL_ridge</a></code>. Changed in 1.2.0; before that both cases used a metric of
+\(\mathrm{diag}(\mathrm{sd}^4)\) on the original coefficients.</p></dd>
 
 
 <dt id="arg-nvar-max">nvar.max<a class="anchor" aria-label="anchor" href="#arg-nvar-max"></a></dt>

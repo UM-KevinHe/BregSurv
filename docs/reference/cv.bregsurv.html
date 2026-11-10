@@ -119,43 +119,45 @@ penalty, the penalty level) by cross-validation on your data.</p>
 
 <dl><dt id="arg-target">target<a class="anchor" aria-label="anchor" href="#arg-target"></a></dt>
 <dd><p>The model you fit to your data. Build it with one of three constructors; each takes
-your data, one row per subject, and checks it:</p><ul><li><p><code><a href="targets.html">target_cox()</a></code><code>(time, event, z, stratum = NULL, ties = "none", score = "linear")</code>: a Cox
+your data, one row per subject, and checks it:</p><ul><li><p><code><a href="target_cox.html">target_cox()</a></code><code>(time, event, z, stratum = NULL, ties = "none", score = "linear")</code>: a Cox
 proportional-hazards model for follow-up recorded as a time and an event indicator.</p><ul><li><p><code>stratum</code>: optional strata, each with its own baseline hazard;</p></li>
 <li><p><code>ties</code>: how tied event times enter the partial likelihood (<code>"none"</code>, <code>"breslow"</code> or
 <code>"exact"</code>).</p></li>
 </ul></li>
-<li><p><code><a href="targets.html">target_ncc()</a></code><code>(case, set, z)</code>: a nested case-control (matched case-control) design.</p><ul><li><p><code>case</code>: 1 for the case and 0 for the controls;</p></li>
+<li><p><code><a href="target_ncc.html">target_ncc()</a></code><code>(case, set, z)</code>: a nested case-control (matched case-control) design.</p><ul><li><p><code>case</code>: 1 for the case and 0 for the controls;</p></li>
 <li><p><code>set</code>: the matched set of each row; every set holds exactly one case;</p></li>
 <li><p>the likelihood is the conditional likelihood of which member of each set is the case.</p></li>
 </ul></li>
-<li><p><code><a href="targets.html">target_discrete()</a></code><code>(interval, event, z, stratum = NULL, link = "cloglog", score = "linear")</code>:
+<li><p><code><a href="target_discrete.html">target_discrete()</a></code><code>(interval, event, z, stratum = NULL, link = "cloglog", score = "linear")</code>:
 a discrete-time (grouped-time) model for follow-up recorded in intervals \(1, \dots, K\).</p><ul><li><p><code>interval</code>: the last interval each subject was at risk in;</p></li>
 <li><p><code>event</code>: 1 when the event happened in that interval;</p></li>
 <li><p><code>link</code>: <code>"cloglog"</code> (grouped proportional hazards) or <code>"logit"</code>.</p></li>
 </ul></li>
 </ul><p>In all three, <code>z</code> holds the covariates (a numeric matrix or data frame, one column per
-covariate, with names). <code><a href="targets.html">target_cox()</a></code> and <code><a href="targets.html">target_discrete()</a></code> also take
+covariate, with names). <code><a href="target_cox.html">target_cox()</a></code> and <code><a href="target_discrete.html">target_discrete()</a></code> also take
 <code>score = </code><code><a href="nn_score.html">nn_score()</a></code> to replace the linear risk score \(z^\top\beta\) by a neural network
 (requires the <code>torch</code> package).</p></dd>
 
 
 <dt id="arg-release">release<a class="anchor" aria-label="anchor" href="#arg-release"></a></dt>
 <dd><p>What the external source made available, or <code>NULL</code> to fit your data alone. Build it
-with one of four constructors, by what you received:</p><ul><li><p><code><a href="releases.html">release_records()</a></code>: the external cohort's individual-level records, in the target's design.</p><ul><li><p><code>z</code>: the external covariates, with the target's column names;</p></li>
+with one of four constructors, by what you received:</p><ul><li><p><code><a href="release_records.html">release_records()</a></code>: <strong>individual records</strong>, another cohort's data subject by subject, in the
+target's design and with your covariate names.</p><ul><li><p><code>z</code>: the external covariates;</p></li>
 <li><p><code>time</code>, <code>event</code> (and optionally <code>stratum</code>) for a Cox target;</p></li>
 <li><p><code>case</code>, <code>set</code> for a nested case-control target;</p></li>
 <li><p><code>interval</code>, <code>event</code> for a discrete-time target.</p></li>
 </ul></li>
-<li><p><code><a href="releases.html">release_coef()</a></code><code>(beta, Q = NULL)</code>: published regression coefficients.</p><ul><li><p><code>beta</code>: a numeric vector named by covariate, every name one of your covariates; covariates
-the external model does not include are set to 0;</p></li>
-<li><p><code>Q</code>: optionally, their precision matrix (the inverse of their covariance matrix).</p></li>
+<li><p><code><a href="release_coef.html">release_coef()</a></code><code>(beta, Q = NULL)</code>: <strong>a fitted model, with or without its uncertainty</strong>.</p><ul><li><p><code>beta</code>: its coefficients, named by covariate, every name one of your covariates; covariates the
+model does not include are set to 0;</p></li>
+<li><p><code>Q</code>: its uncertainty, the precision matrix of the coefficients (the inverse of their covariance
+matrix), when it was published.</p></li>
 </ul></li>
-<li><p><code><a href="releases.html">release_score()</a></code><code>(score)</code>: an external risk score evaluated on your subjects, for when only a
-risk calculator or its predictions are available.</p><ul><li><p><code>score</code>: one value per row of your data, in the same order.</p></li>
+<li><p><code><a href="release_score.html">release_score()</a></code><code>(score)</code>: <strong>a risk score without survival probabilities</strong>, when the external
+model is available only through its score for each of your subjects.</p><ul><li><p><code>score</code>: one value per row of your data, in the same order, on the scale of a linear predictor.</p></li>
 </ul></li>
-<li><p><code><a href="releases.html">release_model()</a></code>: a fitted model including its baseline hazard, i.e. absolute risks. A
-discrete-time target needs this form for the Kullback-Leibler divergence.</p><ul><li><p><code>beta</code> with <code>baseline</code>: the external Cox coefficients and its baseline cumulative-hazard
-increments over your intervals \(1, \dots, K\);</p></li>
+<li><p><code><a href="release_model.html">release_model()</a></code>: <strong>survival probabilities</strong>, an external model's absolute risks. A
+discrete-time target needs this form for the Kullback-Leibler divergence.</p><ul><li><p><code>beta</code> with <code>baseline</code>: the external Cox coefficients and the increments of its baseline
+cumulative hazard over your intervals \(1, \dots, K\);</p></li>
 <li><p>or <code>hazard</code>: the external interval hazards of your subjects, an \(n \times K\) matrix.</p></li>
 </ul></li>
 </ul></dd>
@@ -166,17 +168,17 @@ increments over your intervals \(1, \dots, K\);</p></li>
 is used. <code>NULL</code> (the default) takes the first one the release supports, in the order listed in
 Details.</p><ul><li><p><code>"composite"</code>: the external records' own log-likelihood is added with weight \(\eta\),
 giving a composite likelihood in which the two cohorts share the coefficients and keep their
-own baselines. Needs <code><a href="releases.html">release_records()</a></code>.</p></li>
+own baselines. Needs <code><a href="release_records.html">release_records()</a></code>.</p></li>
 <li><p><code>"mahalanobis"</code>: the Mahalanobis distance
 \(\frac{1}{2}(\beta - \tilde\beta)^\top Q (\beta - \tilde\beta)\) to the external
 coefficients \(\tilde\beta\); the Euclidean distance on the covered covariates when the
-release has no <code>Q</code>. Needs coefficients: <code><a href="releases.html">release_coef()</a></code> or <code><a href="releases.html">release_model()</a></code>, or on a Cox
-target <code><a href="releases.html">release_records()</a></code>, from which a Cox model is fitted.</p></li>
+release has no <code>Q</code>. Needs coefficients: <code><a href="release_coef.html">release_coef()</a></code> or <code><a href="release_model.html">release_model()</a></code>, or on a Cox
+target <code><a href="release_records.html">release_records()</a></code>, from which a Cox model is fitted.</p></li>
 <li><p><code>"kl"</code>: the Kullback-Leibler divergence between the distributions the two models predict for
 your subjects (who fails at each event time for a Cox target, which member of a set is the
 case for a matched design, the hazard of each interval for a discrete-time target). It needs
-only the external model's predictions, so it works with <code><a href="releases.html">release_coef()</a></code>, <code><a href="releases.html">release_score()</a></code> and
-<code><a href="releases.html">release_model()</a></code>; on a discrete-time target only with <code><a href="releases.html">release_model()</a></code>. It is the only
+only the external model's predictions, so it works with <code><a href="release_coef.html">release_coef()</a></code>, <code><a href="release_score.html">release_score()</a></code> and
+<code><a href="release_model.html">release_model()</a></code>; on a discrete-time target only with <code><a href="release_model.html">release_model()</a></code>. It is the only
 divergence defined for a neural target.</p></li>
 <li><p><code>"none"</code>: no borrowing, your data alone (\(\eta = 0\)); the only choice when
 <code>release = NULL</code>.</p></li>
@@ -275,14 +277,16 @@ per stratum, one column per interval, on the link scale).</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Which divergences a release supports.</strong> The first divergence in each cell is the default.</p><table class="table table"><tr><td>release</td><td>Cox</td><td>nested case-control</td><td>discrete time</td><td>neural target</td></tr><tr><td><code>NULL</code></td><td>none</td><td>none</td><td>none</td><td>none</td></tr><tr><td><code><a href="releases.html">release_records()</a></code></td><td>composite, mahalanobis, kl</td><td>composite</td><td>composite</td><td>–</td></tr><tr><td><code><a href="releases.html">release_coef()</a></code> without <code>Q</code></td><td>kl, mahalanobis</td><td>kl, mahalanobis</td><td>mahalanobis</td><td>kl (Cox only)</td></tr><tr><td><code><a href="releases.html">release_coef()</a></code> with <code>Q</code></td><td>mahalanobis, kl</td><td>mahalanobis, kl</td><td>mahalanobis</td><td>kl (Cox only)</td></tr><tr><td><code><a href="releases.html">release_score()</a></code></td><td>kl</td><td>kl</td><td>–</td><td>kl (Cox only)</td></tr><tr><td><code><a href="releases.html">release_model()</a></code></td><td>as <code><a href="releases.html">release_coef()</a></code></td><td>as <code><a href="releases.html">release_coef()</a></code></td><td>kl, mahalanobis</td><td>kl</td></tr></table><p><strong>Which estimator fits the model.</strong> A linear target is fitted by one of the package's estimators,
+    <p><strong>Which divergences a release supports.</strong> The first divergence in each cell is the default.</p><table class="table table"><tr><td>release</td><td>Cox</td><td>nested case-control</td><td>discrete time</td><td>neural target</td></tr><tr><td><code>NULL</code></td><td>none</td><td>none</td><td>none</td><td>none</td></tr><tr><td><code><a href="release_records.html">release_records()</a></code>: individual records</td><td>composite, mahalanobis, kl</td><td>composite</td><td>composite</td><td>–</td></tr><tr><td><code><a href="release_coef.html">release_coef()</a></code>: a fitted model without its uncertainty</td><td>kl, mahalanobis</td><td>kl, mahalanobis</td><td>mahalanobis</td><td>kl (Cox only)</td></tr><tr><td><code><a href="release_coef.html">release_coef()</a></code>: a fitted model with its uncertainty</td><td>mahalanobis, kl</td><td>mahalanobis, kl</td><td>mahalanobis</td><td>kl (Cox only)</td></tr><tr><td><code><a href="release_score.html">release_score()</a></code>: a risk score without survival probabilities</td><td>kl</td><td>kl</td><td>–</td><td>kl (Cox only)</td></tr><tr><td><code><a href="release_model.html">release_model()</a></code>: survival probabilities</td><td>as <code><a href="release_coef.html">release_coef()</a></code></td><td>as <code><a href="release_coef.html">release_coef()</a></code></td><td>kl, mahalanobis</td><td>kl</td></tr></table><p><strong>Which estimator fits the model.</strong> A linear target is fitted by one of the package's estimators,
 named in the result's <code>engine</code>; the result is identical to calling that estimator directly.</p><table class="table table"><tr><td>divergence</td><td>Cox</td><td>nested case-control</td><td>discrete time</td></tr><tr><td><code>"kl"</code>, <code>"none"</code></td><td><code><a href="cv.coxkl.html">cv.coxkl()</a></code></td><td><code><a href="cv.ncckl.html">cv.ncckl()</a></code></td><td><code><a href="cv.discretekl.html">cv.discretekl()</a></code></td></tr><tr><td><code>"mahalanobis"</code></td><td><code><a href="cv.cox_MDTL.html">cv.cox_MDTL()</a></code></td><td><code><a href="cv.ncc_MDTL.html">cv.ncc_MDTL()</a></code></td><td><code><a href="cv.discrete_MDTL.html">cv.discrete_MDTL()</a></code></td></tr><tr><td><code>"composite"</code></td><td><code><a href="cv.cox_indi.html">cv.cox_indi()</a></code></td><td><code><a href="cv.ncc_indi.html">cv.ncc_indi()</a></code></td><td><code><a href="cv.discrete_indi.html">cv.discrete_indi()</a></code></td></tr></table><p>with the suffix <code>_ridge</code> for <code>penalty = "ridge"</code> and <code>_enet</code> for <code>"lasso"</code> and <code>"enet"</code>
 (for example <code><a href="cv.coxkl_enet.html">cv.coxkl_enet()</a></code>), and <code><a href="cv.coxkl_ties.html">cv.coxkl_ties()</a></code> for <code>ties = "exact"</code>. <code>"none"</code> is the
 Kullback-Leibler estimator at \(\eta = 0\). A neural target is trained with <code>torch</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="bregsurv.html">bregsurv()</a></code> to fit at a given <code>eta</code>; <a href="targets.html">targets</a>, <a href="releases.html">releases</a>, <code><a href="plot.cv.bregsurv.html">plot.cv.bregsurv()</a></code>,
+    <div class="dont-index"><p><code><a href="bregsurv.html">bregsurv()</a></code> to fit at a given <code>eta</code>; the targets <code><a href="target_cox.html">target_cox()</a></code>, <code><a href="target_ncc.html">target_ncc()</a></code>,
+<code><a href="target_discrete.html">target_discrete()</a></code>; the releases <code><a href="release_records.html">release_records()</a></code>, <code><a href="release_coef.html">release_coef()</a></code>, <code><a href="release_score.html">release_score()</a></code>,
+<code><a href="release_model.html">release_model()</a></code>; <code><a href="plot.cv.bregsurv.html">plot.cv.bregsurv()</a></code>,
 <code><a href="predict.cv.bregsurv.html">predict.cv.bregsurv()</a></code>.</p></div>
     </div>
 
@@ -290,31 +294,30 @@ Kullback-Leibler estimator at \(\eta = 0\). A neural target is trained with <cod
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span></span>
-<span class="r-in"><span><span class="va">target</span> <span class="op">&lt;-</span> <span class="fu"><a href="targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">target</span> <span class="op">&lt;-</span> <span class="fu"><a href="target_cox.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># a published model, available only as a risk score for each of your subjects</span></span></span>
-<span class="r-in"><span><span class="va">score</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span></span></span>
-<span class="r-in"><span><span class="va">kl</span> <span class="op">&lt;-</span> <span class="fu">cv.bregsurv</span><span class="op">(</span><span class="va">target</span>, <span class="fu"><a href="releases.html">release_score</a></span><span class="op">(</span><span class="va">score</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># an external risk score without survival probabilities, for each of your subjects</span></span></span>
+<span class="r-in"><span><span class="va">kl</span> <span class="op">&lt;-</span> <span class="fu">cv.bregsurv</span><span class="op">(</span><span class="va">target</span>, <span class="fu"><a href="release_score.html">release_score</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">score_external</span><span class="op">$</span><span class="va">train</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">kl</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Target:     Cox (linear)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Target:     Cox model</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Divergence: Kullback-Leibler</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Selected:   eta = 2.05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> CV V&amp;VH: 2.50588  (5 folds, seed 20260818)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Selected:   eta = 1.104</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> CV V&amp;VH: 2.51343  (5 folds, seed 20260818)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Engine:     cv.coxkl</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Coefficients:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>      Z1      Z2      Z3      Z4      Z5      Z6 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  0.1845 -0.1366  0.2446 -0.2521  0.2639 -0.4504 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  0.1950 -0.1987  0.0077 -0.3929  0.2768 -0.3619 </span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># the same model's coefficients, through the Euclidean distance</span></span></span>
-<span class="r-in"><span><span class="va">euc</span> <span class="op">&lt;-</span> <span class="fu">cv.bregsurv</span><span class="op">(</span><span class="va">target</span>, <span class="fu"><a href="releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span><span class="co"># a fitted model without its uncertainty, through the Euclidean distance</span></span></span>
+<span class="r-in"><span><span class="va">euc</span> <span class="op">&lt;-</span> <span class="fu">cv.bregsurv</span><span class="op">(</span><span class="va">target</span>, <span class="fu"><a href="release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                   divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># your data alone; all three share one partition, so the values compare directly</span></span></span>
 <span class="r-in"><span><span class="va">own</span> <span class="op">&lt;-</span> <span class="fu">cv.bregsurv</span><span class="op">(</span><span class="va">target</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>target_only <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, kl <span class="op">=</span> <span class="va">kl</span><span class="op">$</span><span class="va">value</span>, euclidean <span class="op">=</span> <span class="va">euc</span><span class="op">$</span><span class="va">value</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> target_only          kl   euclidean </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    2.624735    2.505875    2.511217 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    2.624735    2.513432    2.511217 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

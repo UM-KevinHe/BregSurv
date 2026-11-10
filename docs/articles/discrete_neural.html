@@ -124,9 +124,9 @@ its records, and the model it published from them.</p>
 <span><span class="co">#&gt;             5 20  3</span></span>
 <span><span class="co">#&gt;             6 10  1</span></span>
 <span></span>
-<span><span class="va">target</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_discrete.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
 <span><span class="va">target</span></span>
-<span><span class="co">#&gt; Target: discrete-time model (6 intervals, cloglog link), linear risk score</span></span>
+<span><span class="co">#&gt; Target: discrete-time model, 6 intervals, cloglog link</span></span>
 <span><span class="co">#&gt;   150 subjects, 6 covariates, 32 events</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -140,30 +140,30 @@ h_{ik})/(1+\eta)\)</span>, exactly as the Cox estimator replaces each
 event indicator; this is the method of <span class="citation">Wang et
 al. (2025)</span>. It needs the external model’s interval hazards <span class="math inline">\(\tilde h_{ik}\)</span>, which a Cox model gives
 together with its baseline hazard, so the release is
-<code><a href="../reference/releases.html">release_model()</a></code>: the coefficients with the baseline
+<code><a href="../reference/release_model.html">release_model()</a></code>: the coefficients with the baseline
 cumulative-hazard increments over your intervals, or the interval
 hazards themselves (<code>hazard =</code>, one row per subject).</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">registry_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_model</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>,</span>
+<code class="sourceCode R"><span><span class="va">registry_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_model.html">release_model</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>,</span>
 <span>                                baseline <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">baseline_external</span><span class="op">)</span></span>
 <span><span class="va">fit_kl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">registry_model</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_kl</span><span class="op">)</span></span></code></pre></div>
 <p><img src="discrete_neural_files/figure-html/unnamed-chunk-2-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit of the discrete-time model." width="100%"></p>
 <p>A coefficient vector alone says nothing about interval hazards, so
-<code><a href="../reference/releases.html">release_coef()</a></code> cannot inform this divergence on a discrete
+<code><a href="../reference/release_coef.html">release_coef()</a></code> cannot inform this divergence on a discrete
 target.</p>
 <p><strong>Mahalanobis.</strong> Under the complementary log-log link
 the coefficients compare directly with a Cox model’s, so the published
 coefficients and their precision matrix enter as for a Cox target:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">registry_coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>, Q <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">Q_external</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">registry_coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>, Q <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">Q_external</span><span class="op">)</span></span>
 <span><span class="va">fit_m</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">registry_coef</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span></code></pre></div>
 <p><strong>Composite likelihood.</strong> The registry’s records, on the
 same intervals, enter with weight <span class="math inline">\(\eta\)</span> and their own baseline
 parameters:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ex</span> <span class="op">&lt;-</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">external</span></span>
-<span><span class="va">registry_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_records</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">z</span>, interval <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span>
+<span><span class="va">registry_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_records.html">release_records</a></span><span class="op">(</span><span class="va">ex</span><span class="op">$</span><span class="va">z</span>, interval <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">ex</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span>
 <span><span class="va">fit_c</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">registry_records</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span></code></pre></div>
 <p>Every discrete-time fit is scored by the same criterion: the held-out
 negative log-likelihood per subject of the grouped-time model, pooled
@@ -292,7 +292,7 @@ same folds, so a network and a linear model can be compared.</li>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"torch"</span><span class="op">)</span>; <span class="fu">torch</span><span class="fu">::</span><span class="fu"><a href="https://torch.mlverse.org/docs/reference/install_torch.html" class="external-link">install_torch</a></span><span class="op">(</span><span class="op">)</span>   <span class="co"># once</span></span>
 <span></span>
 <span><span class="va">spec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/nn_score.html">nn_score</a></span><span class="op">(</span>hidden <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">128</span>, <span class="fl">128</span>, <span class="fl">128</span>, <span class="fl">128</span><span class="op">)</span>, dropout <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span></span>
-<span><span class="va">target_nn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span>, score <span class="op">=</span> <span class="va">spec</span><span class="op">)</span></span>
+<span><span class="va">target_nn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_discrete.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span>, score <span class="op">=</span> <span class="va">spec</span><span class="op">)</span></span>
 <span><span class="va">net</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_nn</span>, <span class="va">registry_model</span><span class="op">)</span></span>
 <span><span class="va">net</span><span class="op">$</span><span class="va">eta</span>; <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">net</span><span class="op">)</span></span></code></pre></div>
 <p>The training protocol: within each fold, an event-stratified 20% of

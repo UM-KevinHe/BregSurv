@@ -178,14 +178,13 @@ A value close to 1 (default 0.999) results in <code>alpha</code> close to 0, enf
 
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (the default since 1.2.0), <code>z</code> is
-scaled to unit standard deviation before the ridge penalty is applied and the
-coefficients are returned on the original scale. A <code>Q</code> you supply carries its
-own units, so it is transformed with <code>beta</code> and the Mahalanobis penalty is left
-exactly as specified; with <code>Q = NULL</code> the implicit identity metric is taken on
-the standardized scale, one standard deviation per covariate, so the member does not
-depend on the units the covariates happen to be recorded in. Set <code>FALSE</code> to
-reproduce results from version 1.1.0 and earlier.</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (the default since 1.2.0), <code>z</code> is scaled to
+unit standard deviation before the ridge penalty is applied, and <code>beta</code> and <code>Q</code>
+are transformed with it. A <code>Q</code> you supply carries its own units and the Mahalanobis
+part of the penalty is left exactly unchanged; with <code>Q = NULL</code> the implicit identity
+metric is taken on the standardized scale, one standard deviation per covariate, so that
+the member does not depend on the units the covariates happen to be recorded in. Coefficients are
+returned on the original scale. Set <code>FALSE</code> to reproduce version 1.1.0 and earlier.</p></dd>
 
 
 <dt id="arg-beta-initial">beta_initial<a class="anchor" aria-label="anchor" href="#arg-beta-initial"></a></dt>

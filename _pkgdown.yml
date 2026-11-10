@@ -66,15 +66,32 @@ articles:
 reference:
   - title: "The interface"
     desc: >
-      One call per analysis. `cv.bregsurv()` takes a target model built from your data, the release
-      an external source made, and the divergence through which the release enters, and chooses the
-      integration weight (and the penalty) by cross-validation; `bregsurv()` fits at a given weight.
+      One call per analysis, `cv.bregsurv(target, release, divergence, ...)`: the target model built
+      from your data, the release the external source made, and the divergence through which the
+      release enters. `cv.bregsurv()` chooses the integration weight (and the penalty) by
+      cross-validation; `bregsurv()` fits at a given weight.
+  - subtitle: "Fitting"
     contents:
       - cv.bregsurv
       - bregsurv
-      - targets
-      - releases
+  - subtitle: "Step 1: the target"
+    desc: >
+      The model you fit to your own data. It sets the likelihood of the objective.
+    contents:
+      - target_cox
+      - target_ncc
+      - target_discrete
       - nn_score
+  - subtitle: "Step 2: the release"
+    desc: >
+      What the external source made available. Its form decides which divergences can use it.
+    contents:
+      - release_records
+      - release_coef
+      - release_score
+      - release_model
+  - subtitle: "Using a fit"
+    contents:
       - plot.cv.bregsurv
       - predict.cv.bregsurv
   - title: "Estimators: the composite likelihood (individual-level records)"

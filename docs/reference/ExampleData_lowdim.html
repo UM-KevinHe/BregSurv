@@ -106,10 +106,11 @@ coefficients for variables not used are <code>0</code>.</p></dd>
 "Poor" external dataset using <code>Z1</code> and <code>Z5</code> only; remaining entries are <code>0</code>.</p></dd>
 
 <dt>score_external</dt>
-<dd><p>A list with elements <code>train</code> and <code>test</code>: the score a published risk
-calculator gives each subject of <code>train</code> and of <code>test</code>. The calculator is the linear predictor
-of <code>beta_external_poor</code>; only its scores are used, as for a calculator whose coefficients are not
-published. Built by <code>tools/make_ExampleData_extras.R</code> in the package sources.</p></dd>
+<dd><p>A list with elements <code>train</code> and <code>test</code>: an external risk score for
+each subject of <code>train</code> and of <code>test</code>, without survival probabilities. The score is the
+linear predictor of <code>beta_external_poor</code>; only the scores are used, as when an external model
+is available only through its risk score. Built by <code>tools/make_ExampleData_extras.R</code> in the
+package sources.</p></dd>
 
 
 </dl></div>

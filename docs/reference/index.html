@@ -54,7 +54,13 @@
     <div class="section level2">
       <h2 id="the-interface">The interface<a class="anchor" aria-label="anchor" href="#the-interface"></a></h2>
 
-      <div class="section-desc"><p>One call per analysis. <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> takes a target model built from your data, the release an external source made, and the divergence through which the release enters, and chooses the integration weight (and the penalty) by cross-validation; <code><a href="../reference/bregsurv.html">bregsurv()</a></code> fits at a given weight.</p></div>
+      <div class="section-desc"><p>One call per analysis, <code>cv.bregsurv(target, release, divergence, ...)</code>: the target model built from your data, the release the external source made, and the divergence through which the release enters. <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> chooses the integration weight (and the penalty) by cross-validation; <code><a href="../reference/bregsurv.html">bregsurv()</a></code> fits at a given weight.</p></div>
+
+
+    </div><div class="section level2">
+
+      <h3 id="fitting">Fitting<a class="anchor" aria-label="anchor" href="#fitting"></a></h3>
+
 
 
     </div><div class="section level2">
@@ -74,25 +80,88 @@
 
         </dt>
         <dd>Fit a time-to-event model that borrows from an external source, at a given weight</dd>
-      </dl><dl><dt>
+      </dl></div><div class="section level2">
 
-          <code><a href="targets.html">target_cox()</a></code> <code><a href="targets.html">target_ncc()</a></code> <code><a href="targets.html">target_discrete()</a></code>
+      <h3 id="step-the-target">Step 1: the target<a class="anchor" aria-label="anchor" href="#step-the-target"></a></h3>
+      <div class="section-desc"><p>The model you fit to your own data. It sets the likelihood of the objective.</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="target_cox.html">target_cox()</a></code>
 
         </dt>
-        <dd>Target models</dd>
+        <dd>Target: a Cox model</dd>
       </dl><dl><dt>
 
-          <code><a href="releases.html">release_records()</a></code> <code><a href="releases.html">release_coef()</a></code> <code><a href="releases.html">release_score()</a></code> <code><a href="releases.html">release_model()</a></code>
+          <code><a href="target_ncc.html">target_ncc()</a></code>
 
         </dt>
-        <dd>External releases</dd>
+        <dd>Target: a nested case-control design</dd>
+      </dl><dl><dt>
+
+          <code><a href="target_discrete.html">target_discrete()</a></code>
+
+        </dt>
+        <dd>Target: a discrete-time model</dd>
       </dl><dl><dt>
 
           <code><a href="nn_score.html">nn_score()</a></code>
 
         </dt>
         <dd>A neural-network risk score</dd>
+      </dl></div><div class="section level2">
+
+      <h3 id="step-the-release">Step 2: the release<a class="anchor" aria-label="anchor" href="#step-the-release"></a></h3>
+      <div class="section-desc"><p>What the external source made available. Its form decides which divergences can use it.</p></div>
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
+
+          <code><a href="release_records.html">release_records()</a></code>
+
+        </dt>
+        <dd>Release: individual records</dd>
       </dl><dl><dt>
+
+          <code><a href="release_coef.html">release_coef()</a></code>
+
+        </dt>
+        <dd>Release: a fitted model, with or without its uncertainty</dd>
+      </dl><dl><dt>
+
+          <code><a href="release_score.html">release_score()</a></code>
+
+        </dt>
+        <dd>Release: a risk score without survival probabilities</dd>
+      </dl><dl><dt>
+
+          <code><a href="release_model.html">release_model()</a></code>
+
+        </dt>
+        <dd>Release: survival probabilities</dd>
+      </dl></div><div class="section level2">
+
+      <h3 id="using-a-fit">Using a fit<a class="anchor" aria-label="anchor" href="#using-a-fit"></a></h3>
+
+
+
+    </div><div class="section level2">
+
+
+
+
+      <dl><dt>
 
           <code><a href="plot.cv.bregsurv.html">plot(<i>&lt;cv.bregsurv&gt;</i>)</a></code>
 

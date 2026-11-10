@@ -8,48 +8,6 @@
 # Targets
 # ---------------------------------------------------------------------------------------------------
 
-#' Target models
-#'
-#' The target is the model your center fits to its own data. Every target can borrow from an external
-#' release through [cv.bregsurv()]; what changes between targets is the likelihood the integration
-#' weight is balanced against.
-#'
-#' * `target_cox()` is the stratified Cox model, scored by its log-partial likelihood. Tied event times
-#'   are handled by `ties`: `"none"` (the default), `"breslow"`, or `"exact"` (Kullback-Leibler divergence
-#'   only).
-#' * `target_ncc()` is the nested case-control (matched case-control) design: the conditional
-#'   likelihood of which member of each matched set is the case.
-#' * `target_discrete()` is the grouped-time model of a discrete outcome: subject `i` is at risk in
-#'   intervals `1, ..., interval[i]` and the event, if any, happens in `interval[i]`. The interval hazard
-#'   is \eqn{h_{k}(z) = g^{-1}(\gamma_{sk} + z^\top\beta)} with a complementary log-log (grouped
-#'   proportional hazards, the default) or logit link and one baseline parameter per stratum and interval.
-#'
-#' With `score = nn_score(...)`, the risk score of the Cox target, or the interval hazards of the
-#' discrete target, are given by a neural network instead of a linear predictor (requires the `torch`
-#' package).
-#'
-#' @param time Observed times.
-#' @param event Event indicator (1 = event, 0 = censored).
-#' @param z Covariate matrix or data frame, one row per subject, with column names.
-#' @param stratum Optional stratum labels; each stratum has its own baseline.
-#' @param ties Tie handling for `target_cox()`: `"none"`, `"breslow"` or `"exact"`.
-#' @param score `"linear"` or an [nn_score()] specification.
-#' @param case Case indicator for `target_ncc()` (1 = case, 0 = control).
-#' @param set Matched-set identifier for `target_ncc()`.
-#' @param interval Integer interval index `1, ..., K` of each subject's last interval at risk.
-#' @param link Link of the linear discrete-time model: `"cloglog"` (grouped proportional hazards) or
-#'   `"logit"`. The neural discrete-time model always uses the logit (logistic-hazard) link.
-#' @param n_intervals Number of intervals `K`; defaults to `max(interval)`.
-#'
-#' @return An object of class `"bregsurv_target"`.
-#' @seealso [release_coef()], [cv.bregsurv()]
-#' @examples
-#' data(ExampleData_lowdim)
-#' tr <- ExampleData_lowdim$train
-#' tg <- target_cox(time = tr$time, event = tr$status, z = tr$z)
-#' tg
-#' @name targets
-NULL
 
 .as_z <- function(z, arg = "z") {
   if (is.null(z)) stop("'", arg, "' is required.", call. = FALSE)
@@ -70,7 +28,68 @@ NULL
   invisible(x)
 }
 
-#' @rdname targets
+#' Target: a Cox model
+#'
+#' @description
+#' Builds the target of an analysis whose outcome is a follow-up time with an event indicator: the
+#' (stratified) Cox proportional-hazards model
+#' \deqn{h(t \mid z) = h_{0s}(t)\, \exp(z^\top\beta),}
+#' with a baseline hazard \eqn{h_{0s}} for each stratum \eqn{s} and coefficients \eqn{\beta} shared by
+#' all strata. The target sets the likelihood \eqn{\ell(\theta)} in the objective of [cv.bregsurv()]:
+#' the log partial likelihood of your data.
+#'
+#' `target_cox()` checks your data and stores it; it fits nothing. Pass the result to [cv.bregsurv()]
+#' (or [bregsurv()]) as `target`.
+#'
+#' @param time Observed follow-up time of each subject: the event time when `event = 1`, the censoring
+#'   time when `event = 0`. Positive numbers, with no missing values.
+#' @param event Event indicator of each subject: 1 if the event was observed, 0 if the subject was
+#'   censored. Numeric, logical, or the characters `"0"` and `"1"`. A factor, a missing value or any
+#'   other code (such as a competing event coded 2) is refused.
+#' @param z Covariates: a numeric matrix, or a data frame of numeric columns, with one row per subject
+#'   and one named column per covariate. The column names are how an external model's coefficients and
+#'   an external cohort's records are matched to your covariates (unnamed columns are called `Z1`,
+#'   `Z2`, ...). Code categorical covariates as numbers, for instance as indicator columns, first.
+#'   Missing values are refused.
+#' @param stratum Optional stratum of each subject, any labels (for instance the centre). Each stratum
+#'   has its own baseline hazard and the coefficients are shared. `NULL` puts every subject in one
+#'   stratum.
+#' @param ties How tied event times enter the partial likelihood:
+#'   * `"none"` (the default): subjects who fail at the same time are taken in the order of your data;
+#'   * `"breslow"`: Breslow's approximation, in which everyone still at risk at a tied event time is in
+#'     its risk set; available with every divergence and penalty;
+#'   * `"exact"`: Cox's exact partial likelihood; available with the Kullback-Leibler divergence and no
+#'     penalty.
+#'
+#'   The three coincide when no two events share a time.
+#' @param score The form of the risk score: `"linear"` (the default), the linear predictor
+#'   \eqn{z^\top\beta}, or a neural network specified by [nn_score()] (requires the `torch` package; the
+#'   Kullback-Leibler divergence only).
+#'
+#' @return An object of class `"bregsurv_target"`, a list with
+#' \describe{
+#'   \item{`type`}{`"cox"`.}
+#'   \item{`time`, `event`, `stratum`}{The checked follow-up times, event indicators and strata.}
+#'   \item{`z`}{The covariates as a numeric matrix with column names.}
+#'   \item{`ties`, `score`}{The settings.}
+#'   \item{`n`}{The number of subjects.}
+#' }
+#' @seealso [cv.bregsurv()]; the other targets, [target_ncc()] and [target_discrete()]; the releases,
+#'   [release_records()], [release_coef()], [release_score()] and [release_model()].
+#' @examples
+#' data(ExampleData_lowdim)
+#' tr <- ExampleData_lowdim$train
+#' target_cox(time = tr$time, event = tr$status, z = tr$z)
+#'
+#' # with strata: each centre has its own baseline hazard
+#' data(ExampleData_indi)
+#' int <- ExampleData_indi$internal
+#' target_cox(time = int$time, event = int$status, z = int$z, stratum = int$stratum)
+#'
+#' # follow-up recorded at visits, so many event times are tied
+#' data(ExampleData_ties)
+#' ti <- ExampleData_ties$train
+#' target_cox(time = ti$time, event = ti$status, z = ti$z, ties = "breslow")
 #' @export
 target_cox <- function(time, event, z, stratum = NULL, ties = c("none", "breslow", "exact"),
                        score = "linear") {
@@ -88,7 +107,42 @@ target_cox <- function(time, event, z, stratum = NULL, ties = c("none", "breslow
                  score = score, n = n), class = "bregsurv_target")
 }
 
-#' @rdname targets
+#' Target: a nested case-control design
+#'
+#' @description
+#' Builds the target of a nested case-control (matched case-control) study, in which each matched set
+#' holds one case and the controls sampled for it. The target sets the likelihood \eqn{\ell(\theta)} in
+#' the objective of [cv.bregsurv()]: the conditional log-likelihood of which member of each set is the
+#' case,
+#' \deqn{\ell(\beta) = \sum_{m} \log \frac{\exp(z_{c(m)}^\top\beta)}{\sum_{j \in m} \exp(z_j^\top\beta)},}
+#' where \eqn{c(m)} is the case of set \eqn{m}: the likelihood of a Cox model stratified by matched set.
+#'
+#' `target_ncc()` checks your data and stores it; it fits nothing. Pass the result to [cv.bregsurv()]
+#' (or [bregsurv()]) as `target`.
+#'
+#' @param case Case indicator of each row: 1 for the case, 0 for a control. Coded as the `event` of
+#'   [target_cox()].
+#' @param set The matched set of each row, any labels. Every set must contain exactly one case.
+#' @param z Covariates, one row per member of a set and one named column per covariate, as for
+#'   [target_cox()].
+#'
+#' @details A matched design has no follow-up time, so it takes no `ties` or `stratum` (the matched sets
+#'   play the role of strata), and its risk score is always linear.
+#'
+#' @return An object of class `"bregsurv_target"`, a list with
+#' \describe{
+#'   \item{`type`}{`"ncc"`.}
+#'   \item{`case`, `set`}{The checked case indicators and matched sets.}
+#'   \item{`z`}{The covariates as a numeric matrix with column names.}
+#'   \item{`score`}{`"linear"`.}
+#'   \item{`n`}{The number of rows (members of all sets).}
+#' }
+#' @seealso [cv.bregsurv()]; the other targets, [target_cox()] and [target_discrete()]; the releases,
+#'   [release_records()], [release_coef()], [release_score()] and [release_model()].
+#' @examples
+#' data(ExampleData_cc_lowdim)
+#' cc <- ExampleData_cc_lowdim$train
+#' target_ncc(case = cc$y, set = cc$stratum, z = cc$z)
 #' @export
 target_ncc <- function(case, set, z) {
   z <- .as_z(z)
@@ -102,7 +156,57 @@ target_ncc <- function(case, set, z) {
             class = "bregsurv_target")
 }
 
-#' @rdname targets
+#' Target: a discrete-time model
+#'
+#' @description
+#' Builds the target of an analysis whose follow-up is recorded in intervals \eqn{1, \dots, K} (years,
+#' visits, treatment cycles): subject \eqn{i} is at risk in intervals \eqn{1, \dots, t_i} and, when its
+#' event indicator is 1, has the event in interval \eqn{t_i}. The model is the grouped-time
+#' (discrete-time) model of the interval hazards,
+#' \deqn{h_k(z) = P(T = k \mid T \ge k, z) = g^{-1}(\gamma_{sk} + z^\top\beta),}
+#' with one baseline parameter \eqn{\gamma_{sk}} for each stratum \eqn{s} and interval \eqn{k}, and the
+#' link \eqn{g} set by `link`. The target sets the likelihood \eqn{\ell(\theta)} in the objective of
+#' [cv.bregsurv()]: the Bernoulli log-likelihood of every subject's intervals at risk.
+#'
+#' `target_discrete()` checks your data and stores it; it fits nothing. Pass the result to
+#' [cv.bregsurv()] (or [bregsurv()]) as `target`.
+#'
+#' @param interval The last interval each subject was at risk in, a whole number from 1 to \eqn{K}: the
+#'   interval of the event for a subject with the event, and the last interval completed without it for
+#'   a censored subject.
+#' @param event Event indicator of each subject: 1 if the event happened in interval `interval`, 0 if the
+#'   subject was censored after it. Coded as the `event` of [target_cox()].
+#' @param z Covariates, one row per subject and one named column per covariate, as for [target_cox()].
+#' @param stratum Optional stratum of each subject, any labels. Each stratum has its own baseline
+#'   parameters \eqn{\gamma_{sk}}; the coefficients are shared.
+#' @param link The link \eqn{g}:
+#'   * `"cloglog"` (the default), the complementary log-log,
+#'     \eqn{h_k(z) = 1 - \exp\{-\exp(\gamma_{sk} + z^\top\beta)\}}: the grouped proportional-hazards
+#'     model, whose coefficients are log hazard ratios, as a Cox model's are, so they compare directly
+#'     with a Cox model's coefficients;
+#'   * `"logit"`, \eqn{\log\{h_k / (1 - h_k)\} = \gamma_{sk} + z^\top\beta}: proportional odds of the
+#'     interval hazard.
+#' @param n_intervals The number of intervals \eqn{K}; defaults to `max(interval)`. Set it when the
+#'   external model covers later intervals that none of your subjects reached.
+#' @param score The form of the risk score: `"linear"` (the default), or a neural network specified by
+#'   [nn_score()] that outputs one logit per interval (requires the `torch` package; the
+#'   Kullback-Leibler divergence only, the logit link, and no strata).
+#'
+#' @return An object of class `"bregsurv_target"`, a list with
+#' \describe{
+#'   \item{`type`}{`"discrete"`.}
+#'   \item{`interval`, `event`, `stratum`}{The checked intervals, event indicators and strata.}
+#'   \item{`z`}{The covariates as a numeric matrix with column names.}
+#'   \item{`link`, `K`, `score`}{The link, the number of intervals and the form of the risk score.}
+#'   \item{`n`}{The number of subjects.}
+#' }
+#' @seealso [cv.bregsurv()]; the other targets, [target_cox()] and [target_ncc()]; the releases,
+#'   [release_records()], [release_coef()], [release_score()] and [release_model()].
+#' @examples
+#' data(ExampleData_discrete)
+#' dt <- ExampleData_discrete$train
+#' table(last_interval = dt$interval, event = dt$status)
+#' target_discrete(interval = dt$interval, event = dt$status, z = dt$z)
 #' @export
 target_discrete <- function(interval, event, z, stratum = NULL, link = c("cloglog", "logit"),
                             n_intervals = NULL, score = "linear") {
@@ -136,12 +240,13 @@ target_discrete <- function(interval, event, z, stratum = NULL, link = c("cloglo
 #' @export
 print.bregsurv_target <- function(x, ...) {
   what <- switch(x$type, cox = "Cox model", ncc = "nested case-control design",
-                 discrete = paste0("discrete-time model (", x$K, " intervals, ", x$link, " link)"))
-  sc <- if (inherits(x$score, "nn_score")) "neural-network" else "linear"
-  ev <- if (x$type == "ncc") sum(x$case) else sum(x$event)
-  cat("Target: ", what, ", ", sc, " risk score\n", sep = "")
-  cat("  ", x$n, " subjects, ", ncol(x$z), " covariates, ", ev,
-      if (x$type == "ncc") " matched sets" else " events", "\n", sep = "")
+                 discrete = paste0("discrete-time model, ", x$K, " intervals, ", x$link, " link"))
+  nn <- if (inherits(x$score, "nn_score")) ", neural-network risk score" else ""
+  cat("Target: ", what, nn, "\n", sep = "")
+  st <- if (!is.null(x$stratum)) paste0(", ", length(unique(x$stratum)), " strata") else ""
+  if (x$type == "ncc") cat("  ", x$n, " subjects in ", length(unique(x$set)), " matched sets, ", ncol(x$z),
+                           " covariates\n", sep = "")
+  else cat("  ", x$n, " subjects, ", ncol(x$z), " covariates, ", sum(x$event), " events", st, "\n", sep = "")
   if (x$type == "cox" && x$ties != "none") cat("  tied event times: ", x$ties, "\n", sep = "")
   invisible(x)
 }
@@ -204,40 +309,59 @@ print.nn_score <- function(x, ...) {
 # Releases
 # ---------------------------------------------------------------------------------------------------
 
-#' External releases
-#'
-#' A release is what the external source made available. Its form decides which divergences
-#' can use it (the `divergence` argument of [cv.bregsurv()]):
-#'
-#' | release | divergences it supports |
-#' |---|---|
-#' | `release_records()`: individual-level records | composite likelihood; on a Cox target also Mahalanobis and Kullback-Leibler, through a Cox model fitted to the records |
-#' | `release_coef()`: coefficients, optionally with their precision matrix `Q` | Mahalanobis (Euclidean when `Q = NULL`) and Kullback-Leibler |
-#' | `release_score()`: a risk score evaluated on your subjects | Kullback-Leibler |
-#' | `release_model()`: coefficients with the baseline hazard, or interval hazards | Kullback-Leibler on the discrete-time target (absolute risk), and everything `release_coef()` supports |
-#'
-#' @param z Covariates of the external records, with the target's column names.
-#' @param time,event,stratum External follow-up, event indicator and strata (cohort records).
-#' @param case,set External case indicator and matched sets (nested case-control records).
-#' @param interval External interval index (records for a discrete-time target).
-#' @param beta Named external coefficient vector. Every name must be one of your covariates; covariates
-#'   the release does not cover are set to zero (see [align_beta()]).
-#' @param Q Optional precision matrix of `beta` (inverse covariance or information matrix), named like
-#'   `beta`.
-#' @param score Numeric vector: the external risk score of each target subject.
-#' @param baseline Baseline cumulative-hazard increments of the external Cox model over the target's
-#'   intervals `1, ..., K`.
-#' @param hazard Matrix of external interval hazards, one row per target subject and one column per
-#'   interval (an alternative to `beta` + `baseline`).
-#'
-#' @return An object of class `"bregsurv_release"`.
-#' @examples
-#' data(ExampleData_lowdim)
-#' release_coef(ExampleData_lowdim$beta_external_fair)
-#' @name releases
-NULL
 
-#' @rdname releases
+#' Release: individual records
+#'
+#' @description
+#' The external source shared its individual records: another cohort's covariates and outcomes,
+#' subject by subject. The records must follow the design of your target and use your covariate names:
+#' * for a Cox target ([target_cox()]): `z`, `time` and `event`, and optionally `stratum`;
+#' * for a nested case-control target ([target_ncc()]): `z`, `case` and `set`;
+#' * for a discrete-time target ([target_discrete()]): `z`, `interval` and `event`, on the target's
+#'   intervals, and optionally `stratum`.
+#'
+#' The design is read off the arguments you give: `case` makes nested case-control records, `interval`
+#' discrete-time records, and `time` Cox records.
+#'
+#' Individual records support the composite-likelihood divergence (`divergence = "composite"` in
+#' [cv.bregsurv()]): their log-likelihood is added to yours with weight \eqn{\eta}, the two cohorts share
+#' the coefficients, and each keeps its own baseline hazard. On a Cox target they also support the
+#' Mahalanobis and Kullback-Leibler divergences, for which [cv.bregsurv()] fits a Cox model to the
+#' records and borrows from its coefficients and their precision.
+#'
+#' @param z The external covariates: a numeric matrix or data frame with one row per external subject and
+#'   columns named like your covariates. Columns you do not have are ignored; a covariate of yours that
+#'   the records lack is an error.
+#' @param time,event Cox records: each external subject's follow-up time (positive) and event indicator
+#'   (1 = event, 0 = censored). For discrete-time records, `event` is the event indicator that goes with
+#'   `interval`.
+#' @param stratum Optional strata of the external subjects (Cox or discrete-time records). The external
+#'   baselines are kept apart from yours either way.
+#' @param case,set Nested case-control records: the case indicator (1 = case, 0 = control) and the matched
+#'   set of each row; every set holds exactly one case. Give these instead of `time`.
+#' @param interval Discrete-time records: the last interval each external subject was at risk in, a whole
+#'   number on the target's intervals. Give it with `event`, instead of `time`.
+#'
+#' @return An object of class `"bregsurv_release"`, a list with `form = "records"`, `kind` (`"cohort"`,
+#'   `"ncc"` or `"discrete"`), and the checked `z`, `time`, `event`, `stratum`, `case`, `set` and
+#'   `interval` (those not given are `NULL`).
+#' @seealso [cv.bregsurv()]; the other releases, [release_coef()], [release_score()], [release_model()]; the targets, [target_cox()],
+#'   [target_ncc()] and [target_discrete()].
+#' @examples
+#' # Cox records, with strata
+#' data(ExampleData_indi)
+#' ext <- ExampleData_indi$external
+#' release_records(ext$z, time = ext$time, event = ext$status, stratum = ext$stratum)
+#'
+#' # nested case-control records
+#' data(ExampleData_cc_indi)
+#' ecc <- ExampleData_cc_indi$external
+#' release_records(ecc$z, case = ecc$y, set = ecc$stratum)
+#'
+#' # discrete-time records
+#' data(ExampleData_discrete)
+#' reg <- ExampleData_discrete$external
+#' release_records(reg$z, interval = reg$interval, event = reg$status)
 #' @export
 release_records <- function(z, time = NULL, event = NULL, stratum = NULL, case = NULL, set = NULL,
                             interval = NULL) {
@@ -261,7 +385,41 @@ release_records <- function(z, time = NULL, event = NULL, stratum = NULL, case =
             class = "bregsurv_release")
 }
 
-#' @rdname releases
+#' Release: a fitted model, with or without its uncertainty
+#'
+#' @description
+#' The external source published a fitted regression model: its coefficients \eqn{\tilde\beta}, and
+#' possibly their uncertainty.
+#' * Without its uncertainty (`Q = NULL`), the Mahalanobis divergence is the Euclidean distance
+#'   between your coefficients and the published ones, on the covariates the published model includes.
+#' * With its uncertainty, the precision matrix `Q` weights the distance, so precisely estimated
+#'   coefficients pull harder: \eqn{\frac12(\beta - \tilde\beta)^\top Q (\beta - \tilde\beta)}.
+#'
+#' A fitted model supports the Kullback-Leibler and Mahalanobis divergences on Cox and nested
+#' case-control targets; for the Kullback-Leibler divergence the coefficients define the external risk
+#' score \eqn{z^\top\tilde\beta} of each of your subjects. On a discrete-time target it supports the
+#' Mahalanobis divergence with the complementary log-log link; the Kullback-Leibler divergence there
+#' needs survival probabilities ([release_model()]).
+#'
+#' @param beta The published coefficients: a numeric vector named by covariate, or a one-column matrix
+#'   with row names. Every name must be one of your covariates; covariates the published model does not
+#'   include are set to 0 (see [align_beta()]). An unnamed vector must have one value per covariate, in
+#'   the order of your columns.
+#' @param Q Optional precision matrix of `beta`: square and symmetric, named like `beta`. From a
+#'   published covariance matrix `V`, `Q = solve(V)`; from published standard errors alone,
+#'   `Q = diag(1 / se^2)`.
+#'
+#' @return An object of class `"bregsurv_release"`, a list with `form = "coefficients"`, `beta` and `Q`.
+#' @seealso [cv.bregsurv()]; the other releases, [release_records()], [release_score()], [release_model()]; the targets, [target_cox()],
+#'   [target_ncc()] and [target_discrete()].
+#' @examples
+#' # without its uncertainty
+#' data(ExampleData_lowdim)
+#' release_coef(ExampleData_lowdim$beta_external_fair)
+#'
+#' # with its uncertainty
+#' data(ExampleData_discrete)
+#' release_coef(ExampleData_discrete$beta_external, Q = ExampleData_discrete$Q_external)
 #' @export
 release_coef <- function(beta, Q = NULL) {
   beta <- .as_beta(beta)
@@ -269,7 +427,29 @@ release_coef <- function(beta, Q = NULL) {
   structure(list(form = "coefficients", beta = beta, Q = Q), class = "bregsurv_release")
 }
 
-#' @rdname releases
+#' Release: a risk score without survival probabilities
+#'
+#' @description
+#' The external model is available only through its risk score: one number for each of your subjects
+#' that ranks them by risk, without survival probabilities (the model's coefficients and baseline
+#' hazard are not available). The model may be of any form and may use covariates you do not have; only
+#' its scores for your subjects are needed.
+#'
+#' A risk score supports the Kullback-Leibler divergence on Cox and nested case-control targets, which
+#' compares the two models through the probabilities they give each subject of failing first among those
+#' at risk (or of being the case of its matched set), and these depend on the score alone. A
+#' discrete-time target needs survival probabilities instead ([release_model()]).
+#'
+#' @param score The external risk score of each subject of your data, in the order of your rows: a
+#'   numeric vector on the scale of a linear predictor (a log relative hazard), so that two subjects'
+#'   scores differ by the log of their hazard ratio. Missing or infinite values are refused.
+#'
+#' @return An object of class `"bregsurv_release"`, a list with `form = "score"` and `score`.
+#' @seealso [cv.bregsurv()]; the other releases, [release_records()], [release_coef()], [release_model()]; the targets, [target_cox()],
+#'   [target_ncc()] and [target_discrete()].
+#' @examples
+#' data(ExampleData_lowdim)
+#' release_score(ExampleData_lowdim$score_external$train)
 #' @export
 release_score <- function(score) {
   score <- as.numeric(score)
@@ -277,7 +457,37 @@ release_score <- function(score) {
   structure(list(form = "score", score = score), class = "bregsurv_release")
 }
 
-#' @rdname releases
+#' Release: survival probabilities
+#'
+#' @description
+#' The external model gives survival probabilities, not only a ranking of subjects: either a Cox model's
+#' coefficients together with its baseline cumulative hazard, or the model's interval hazards for each
+#' of your subjects directly. Give either
+#' * `beta` and `baseline`: the external hazard of a subject with covariates \eqn{z} in interval
+#'   \eqn{k} is \eqn{\tilde h_k(z) = 1 - \exp\{-\exp(z^\top\tilde\beta)\, \Delta\Lambda_0(k)\}}; or
+#' * `hazard`: the external interval hazards \eqn{\tilde h_{ik}} themselves.
+#'
+#' Survival probabilities are what a discrete-time target needs for the Kullback-Leibler divergence,
+#' which compares the two models' hazards in every interval. With `beta`, the release also supports
+#' everything [release_coef()] supports.
+#'
+#' @param beta Named external coefficients, as in [release_coef()].
+#' @param baseline The external baseline cumulative-hazard increments over your intervals
+#'   \eqn{1, \dots, K}: \eqn{\Delta\Lambda_0(k) = \Lambda_0(t_k) - \Lambda_0(t_{k-1})}, with \eqn{t_k}
+#'   the end of interval \eqn{k}. Non-negative, one value per interval of the target.
+#' @param hazard Instead of `beta` and `baseline`: an \eqn{n \times K} matrix whose row \eqn{i}, column
+#'   \eqn{k} is the external probability that subject \eqn{i} of your data has the event in interval
+#'   \eqn{k} given that it reached the interval. Rows in the order of your data.
+#' @param Q Optional precision matrix of `beta`, as in [release_coef()], for the Mahalanobis divergence.
+#'
+#' @return An object of class `"bregsurv_release"`, a list with `form = "model"`, `beta`, `baseline`,
+#'   `hazard` and `Q` (those not given are `NULL`).
+#' @seealso [cv.bregsurv()]; the other releases, [release_records()], [release_coef()], [release_score()]; the targets, [target_cox()],
+#'   [target_ncc()] and [target_discrete()].
+#' @examples
+#' data(ExampleData_discrete)
+#' release_model(beta = ExampleData_discrete$beta_external,
+#'               baseline = ExampleData_discrete$baseline_external)
 #' @export
 release_model <- function(beta = NULL, baseline = NULL, hazard = NULL, Q = NULL) {
   if (is.null(hazard) && (is.null(beta) || is.null(baseline)))
@@ -315,15 +525,20 @@ release_model <- function(beta = NULL, baseline = NULL, hazard = NULL, Q = NULL)
 
 #' @export
 print.bregsurv_release <- function(x, ...) {
+  design <- c(cohort = "Cox design", ncc = "nested case-control design", discrete = "discrete-time design")
   switch(x$form,
-         records = cat("Release: individual-level records (", x$kind, "), ", nrow(x$z), " subjects\n", sep = ""),
-         coefficients = cat("Release: ", length(x$beta), " coefficients",
-                            if (is.null(x$Q)) "" else " with their precision matrix", "\n", sep = ""),
-         score = cat("Release: a risk score for ", length(x$score), " subjects\n", sep = ""),
-         model = cat("Release: a fitted model",
-                     if (!is.null(x$hazard)) paste0(" (interval hazards, ", ncol(x$hazard), " intervals)")
-                     else paste0(" (", length(x$beta), " coefficients, baseline over ",
-                                 length(x$baseline), " intervals)"), "\n", sep = ""))
+         records = cat("Release: individual records (", design[[x$kind]], "), ", nrow(x$z), " subjects",
+                       if (!is.null(x$stratum)) paste0(", ", length(unique(x$stratum)), " strata"), "\n", sep = ""),
+         coefficients = cat("Release: a fitted model, ", length(x$beta), " coefficients, ",
+                            if (is.null(x$Q)) "without its uncertainty" else "with its uncertainty (precision matrix)",
+                            "\n", sep = ""),
+         score = cat("Release: a risk score for ", length(x$score), " subjects, without survival probabilities\n",
+                     sep = ""),
+         model = cat("Release: survival probabilities, ",
+                     if (!is.null(x$hazard)) paste0("interval hazards for ", nrow(x$hazard), " subjects over ",
+                                                    ncol(x$hazard), " intervals")
+                     else paste0(length(x$beta), " coefficients with a baseline hazard over ", length(x$baseline),
+                                 " intervals"), "\n", sep = ""))
   invisible(x)
 }
 

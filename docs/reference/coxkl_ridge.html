@@ -172,12 +172,11 @@ Default is <code>0.999</code>.</p></dd>
 
 
 <dt id="arg-standardize">standardize<a class="anchor" aria-label="anchor" href="#arg-standardize"></a></dt>
-<dd><p>Logical. If <code>TRUE</code> (the default since 1.2.0), <code>z</code> is
-scaled to unit standard deviation before the ridge penalty is applied and the
-coefficients are returned on the original scale. The ridge penalty is not scale
-free, so on covariates of very different magnitudes <code>standardize = FALSE</code>
-penalises large-scale variables almost not at all. Set <code>FALSE</code> to reproduce
-results from version 1.1.0 and earlier.</p></dd>
+<dd><p>Logical. If <code>TRUE</code> (the default since 1.2.0), <code>z</code> is scaled to
+unit standard deviation before the ridge penalty is applied and the coefficients are
+returned on the original scale. The ridge penalty \(\lambda\|\beta\|^2\) is not scale
+free, so with <code>standardize = FALSE</code> a covariate measured on a large scale is
+penalised almost not at all. Set <code>FALSE</code> to reproduce version 1.1.0 and earlier.</p></dd>
 
 
 <dt id="arg-beta-initial">beta_initial<a class="anchor" aria-label="anchor" href="#arg-beta-initial"></a></dt>

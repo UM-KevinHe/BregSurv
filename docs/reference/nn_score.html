@@ -64,7 +64,7 @@ risk sets within the batch."></head><body>
     </div>
 
     <div class="ref-description section level2">
-    <p>Pass <code>nn_score()</code> as the <code>score</code> of <code><a href="targets.html">target_cox()</a></code> or <code><a href="targets.html">target_discrete()</a></code> to replace the linear
+    <p>Pass <code>nn_score()</code> as the <code>score</code> of <code><a href="target_cox.html">target_cox()</a></code> or <code><a href="target_discrete.html">target_discrete()</a></code> to replace the linear
 predictor by a feed-forward network. The default network is four residual blocks of width 128
 (linear layer, layer normalization, ReLU, dropout), trained with Adam and early stopping. For the
 discrete target the network outputs one logit per interval (a logistic-hazard model); for the Cox

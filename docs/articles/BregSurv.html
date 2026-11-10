@@ -95,21 +95,20 @@ cross-validation on your data.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, <span class="va">divergence</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="figures/bregsurv-flowchart.svg" style="width:100.0%" alt=""><p class="caption">The objective, and the three steps that set its
-terms: the target model, the release and the divergence, which together
-make one call to cv.bregsurv().</p>
+terms: the target model, the release and the divergence.</p>
 </div>
 <p>Every fit minimizes the objective at the top: the negative
 log-likelihood <span class="math inline">\(\ell(\theta)\)</span> of your
 data plus an integration weight <span class="math inline">\(\eta\)</span> times a Bregman divergence <span class="math inline">\(B_G\)</span> between your model and the external
 one. At <span class="math inline">\(\eta = 0\)</span> the external
 source is ignored; the larger <span class="math inline">\(\eta\)</span>,
-the more you borrow. The three steps below set the terms of the
-objective in turn: the target sets <span class="math inline">\(\ell(\theta)\)</span>, the release decides which
+the more you borrow. The three steps set the terms of the objective in
+turn, and Sections 1 to 3 below follow them: the target sets <span class="math inline">\(\ell(\theta)\)</span>, the release decides which
 divergences are possible, and the divergence sets <span class="math inline">\(B_G\)</span>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
-<h2 id="step-1-the-target">Step 1: the target<a class="anchor" aria-label="anchor" href="#step-1-the-target"></a>
+<h2 id="the-target">1 The target<a class="anchor" aria-label="anchor" href="#the-target"></a>
 </h2>
 <p>The <strong>target</strong> is the model you fit to your own data; it
 sets the likelihood <span class="math inline">\(\ell(\theta)\)</span>.
@@ -117,55 +116,68 @@ You build it with a constructor that takes your data, one row per
 subject, checks it (event indicators coded 0/1, positive times, one case
 per matched set, no missing values), and stores it with the model’s
 settings. A constructor fits nothing. Which one to use depends on how
-your outcome was recorded.</p>
+your outcome was recorded; each has its own help page with every
+argument (<a href="../reference/target_cox.html"><code>?target_cox</code></a>, <a href="../reference/target_ncc.html"><code>?target_ncc</code></a>, <a href="../reference/target_discrete.html"><code>?target_discrete</code></a>).</p>
 <div class="section level3">
-<h3 id="follow-up-time-and-an-event-indicator-a-cox-model">Follow-up time and an event indicator: a Cox model<a class="anchor" aria-label="anchor" href="#follow-up-time-and-an-event-indicator-a-cox-model"></a>
+<h3 id="follow-up-time-and-an-event-indicator-a-cox-model">1.1 Follow-up time and an event indicator: a Cox model<a class="anchor" aria-label="anchor" href="#follow-up-time-and-an-event-indicator-a-cox-model"></a>
 </h3>
-<p><code><a href="../reference/targets.html">target_cox()</a></code> takes the observed times, the event
+<p><code><a href="../reference/target_cox.html">target_cox()</a></code> takes the observed times, the event
 indicator and the covariates, a numeric matrix or data frame with one
-named column per covariate. <code>ExampleData_lowdim</code> is a
-simulated cohort of 100 patients with six covariates, and an independent
-test cohort of 2,000:</p>
+named column per covariate. The column names are how the external
+information is matched to your covariates.</p>
+<div class="section level4">
+<h4 id="without-strata">1.1.1 Without strata<a class="anchor" aria-label="anchor" href="#without-strata"></a>
+</h4>
+<p><code>ExampleData_lowdim</code> is a simulated cohort of 100 patients
+with six covariates, and an independent test cohort of 2,000:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span>
 <span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">target_low</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="va">target_low</span></span>
-<span><span class="co">#&gt; Target: Cox model, linear risk score</span></span>
+<span><span class="va">target_lowdim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_cox.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target_lowdim</span></span>
+<span><span class="co">#&gt; Target: Cox model</span></span>
 <span><span class="co">#&gt;   100 subjects, 6 covariates, 29 events</span></span></code></pre></div>
-<p><code>ties =</code> sets how tied event times enter the likelihood
-(<a href="#tied-event-times">below</a>), and <code>stratum =</code>
-gives each stratum its own baseline hazard.
-<code>ExampleData_indi</code> holds a second cohort, of 500 patients in
-ten strata (think of ten centres) with ten covariates; with the centre
-as the stratum, each centre has its own baseline hazard and the
-covariate effects are shared:</p>
+</div>
+<div class="section level4">
+<h4 id="with-strata">1.1.2 With strata<a class="anchor" aria-label="anchor" href="#with-strata"></a>
+</h4>
+<p><code>stratum =</code> gives each stratum its own baseline hazard,
+while the covariate effects are shared. The internal cohort of
+<code>ExampleData_indi</code> has 500 patients in ten strata (think of
+ten centres) and ten covariates:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_indi</span><span class="op">)</span></span>
 <span><span class="va">int</span> <span class="op">&lt;-</span> <span class="va">ExampleData_indi</span><span class="op">$</span><span class="va">internal</span></span>
-<span><span class="va">target_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">z</span>, stratum <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
-<span><span class="va">target_int</span></span>
-<span><span class="co">#&gt; Target: Cox model, linear risk score</span></span>
-<span><span class="co">#&gt;   500 subjects, 10 covariates, 355 events</span></span></code></pre></div>
+<span><span class="va">target_strata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_cox.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">z</span>, stratum <span class="op">=</span> <span class="va">int</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
+<span><span class="va">target_strata</span></span>
+<span><span class="co">#&gt; Target: Cox model</span></span>
+<span><span class="co">#&gt;   500 subjects, 10 covariates, 355 events, 10 strata</span></span></code></pre></div>
+<p><code>target_strata</code> is the same kind of object as
+<code>target_lowdim</code>, a Cox target, built from other data and with
+strata. <code>ExampleData_indi</code> also holds an external cohort’s
+individual records, which <a href="#for-a-cox-target">Section 2.1.1</a>
+turns into a release. Tied event times are set by <code>ties =</code>
+(<a href="#tied-event-times">Section 4.2</a>).</p>
+</div>
 </div>
 <div class="section level3">
-<h3 id="matched-sets-a-nested-casecontrol-design">Matched sets: a nested case–control design<a class="anchor" aria-label="anchor" href="#matched-sets-a-nested-casecontrol-design"></a>
+<h3 id="matched-sets-a-nested-casecontrol-design">1.2 Matched sets: a nested case–control design<a class="anchor" aria-label="anchor" href="#matched-sets-a-nested-casecontrol-design"></a>
 </h3>
-<p><code><a href="../reference/targets.html">target_ncc()</a></code> takes the case indicator, the matched set
+<p><code><a href="../reference/target_ncc.html">target_ncc()</a></code> takes the case indicator, the matched set
 of each row and the covariates. Every matched set must hold exactly one
 case:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc_lowdim</span><span class="op">)</span></span>
 <span><span class="va">cc</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">target_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_ncc</a></span><span class="op">(</span>case <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">y</span>, set <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">stratum</span>, z <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_ncc.html">target_ncc</a></span><span class="op">(</span>case <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">y</span>, set <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">stratum</span>, z <span class="op">=</span> <span class="va">cc</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
 <span><span class="va">target_matched</span></span>
-<span><span class="co">#&gt; Target: nested case-control design, linear risk score</span></span>
-<span><span class="co">#&gt;   1000 subjects, 6 covariates, 200 matched sets</span></span></code></pre></div>
+<span><span class="co">#&gt; Target: nested case-control design</span></span>
+<span><span class="co">#&gt;   1000 subjects in 200 matched sets, 6 covariates</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="follow-up-recorded-in-intervals-a-discrete-time-model">Follow-up recorded in intervals: a discrete-time model<a class="anchor" aria-label="anchor" href="#follow-up-recorded-in-intervals-a-discrete-time-model"></a>
+<h3 id="follow-up-recorded-in-intervals-a-discrete-time-model">1.3 Follow-up recorded in intervals: a discrete-time model<a class="anchor" aria-label="anchor" href="#follow-up-recorded-in-intervals-a-discrete-time-model"></a>
 </h3>
-<p><code><a href="../reference/targets.html">target_discrete()</a></code> takes the last interval each subject
+<p><code><a href="../reference/target_discrete.html">target_discrete()</a></code> takes the last interval each subject
 was at risk in, the event indicator (1 when the event happened in that
 interval) and the covariates. <code>ExampleData_discrete</code> follows
 150 patients over six intervals, for instance years after
@@ -173,100 +185,130 @@ transplant:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">)</span></span>
 <span><span class="va">dt</span> <span class="op">&lt;-</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">target_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">target_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_discrete.html">target_discrete</a></span><span class="op">(</span>interval <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">dt</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
 <span><span class="va">target_interval</span></span>
-<span><span class="co">#&gt; Target: discrete-time model (6 intervals, cloglog link), linear risk score</span></span>
+<span><span class="co">#&gt; Target: discrete-time model, 6 intervals, cloglog link</span></span>
 <span><span class="co">#&gt;   150 subjects, 6 covariates, 32 events</span></span></code></pre></div>
 <p>The default link is the complementary log-log, under which the
-coefficients mean what a Cox model’s do; <code>link = "logit"</code> is
-also available.</p>
-</div>
-<div class="section level3">
-<h3 id="a-neural-network-risk-score">A neural-network risk score<a class="anchor" aria-label="anchor" href="#a-neural-network-risk-score"></a>
-</h3>
-<p>A Cox or discrete-time target can replace the linear risk score <span class="math inline">\(z^\top\beta\)</span> by a neural network, with
-<code>score = nn_score()</code>. Neural targets need the
-<code>torch</code> package and are described in <a href="discrete_neural.html">Discrete-time and neural targets</a>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">tr</span><span class="op">$</span><span class="va">z</span>, score <span class="op">=</span> <span class="fu"><a href="../reference/nn_score.html">nn_score</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+coefficients are log hazard ratios, as a Cox model’s are;
+<code>link = "logit"</code> is also available.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="step-2-the-release">Step 2: the release<a class="anchor" aria-label="anchor" href="#step-2-the-release"></a>
+<h2 id="the-release">2 The release<a class="anchor" aria-label="anchor" href="#the-release"></a>
 </h2>
 <p>The <strong>release</strong> is what the external source made
 available to you: individual records, a fitted model with or without its
 uncertainty, a risk score without survival probabilities, or survival
 probabilities. You do not choose it, but its form decides which
-divergences can use it in Step 3. A release constructor stores it and
-checks it; covariates are matched to the target’s by their names.</p>
+divergences can use it in Section 3. A release constructor stores it and
+checks it; covariates are matched to the target’s by their names. Each
+constructor has its own help page (<a href="../reference/release_records.html"><code>?release_records</code></a>,
+<a href="../reference/release_coef.html"><code>?release_coef</code></a>,
+<a href="../reference/release_score.html"><code>?release_score</code></a>,
+<a href="../reference/release_model.html"><code>?release_model</code></a>).</p>
 <div class="section level3">
-<h3 id="individual-records">Individual records<a class="anchor" aria-label="anchor" href="#individual-records"></a>
+<h3 id="individual-records">2.1 Individual records<a class="anchor" aria-label="anchor" href="#individual-records"></a>
 </h3>
 <p>Another cohort’s data, subject by subject, with the target’s
-covariate names and outcomes in the target’s design: <code>time</code>
-and <code>event</code> for a Cox target, <code>case</code> and
-<code>set</code> for a matched design, <code>interval</code> and
-<code>event</code> for a discrete-time target.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+covariate names and outcomes in the target’s design.</p>
+<div class="section level4">
+<h4 id="for-a-cox-target">2.1.1 For a Cox target<a class="anchor" aria-label="anchor" href="#for-a-cox-target"></a>
+</h4>
+<p>The records take <code>time</code> and <code>event</code>, and
+optionally <code>stratum</code>. The external cohort of
+<code>ExampleData_indi</code> has 2,000 patients in ten strata:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ext</span> <span class="op">&lt;-</span> <span class="va">ExampleData_indi</span><span class="op">$</span><span class="va">external</span></span>
-<span><span class="va">records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_records</a></span><span class="op">(</span><span class="va">ext</span><span class="op">$</span><span class="va">z</span>, time <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">status</span>, stratum <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
-<span><span class="va">records</span></span>
-<span><span class="co">#&gt; Release: individual-level records (cohort), 2000 subjects</span></span>
-<span></span>
-<span><span class="va">reg</span> <span class="op">&lt;-</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">external</span></span>
-<span><span class="va">registry_records</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_records</a></span><span class="op">(</span><span class="va">reg</span><span class="op">$</span><span class="va">z</span>, interval <span class="op">=</span> <span class="va">reg</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">reg</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">records_cox</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_records.html">release_records</a></span><span class="op">(</span><span class="va">ext</span><span class="op">$</span><span class="va">z</span>, time <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">status</span>, stratum <span class="op">=</span> <span class="va">ext</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
+<span><span class="va">records_cox</span></span>
+<span><span class="co">#&gt; Release: individual records (Cox design), 2000 subjects, 10 strata</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="for-a-nested-casecontrol-target">2.1.2 For a nested case–control target<a class="anchor" aria-label="anchor" href="#for-a-nested-casecontrol-target"></a>
+</h4>
+<p>The records take <code>case</code> and <code>set</code>, as the
+target does:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_cc_indi</span><span class="op">)</span></span>
+<span><span class="va">ecc</span> <span class="op">&lt;-</span> <span class="va">ExampleData_cc_indi</span><span class="op">$</span><span class="va">external</span></span>
+<span><span class="va">records_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_records.html">release_records</a></span><span class="op">(</span><span class="va">ecc</span><span class="op">$</span><span class="va">z</span>, case <span class="op">=</span> <span class="va">ecc</span><span class="op">$</span><span class="va">y</span>, set <span class="op">=</span> <span class="va">ecc</span><span class="op">$</span><span class="va">stratum</span><span class="op">)</span></span>
+<span><span class="va">records_matched</span></span>
+<span><span class="co">#&gt; Release: individual records (nested case-control design), 2500 subjects</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="for-a-discrete-time-target">2.1.3 For a discrete-time target<a class="anchor" aria-label="anchor" href="#for-a-discrete-time-target"></a>
+</h4>
+<p>The records take <code>interval</code> and <code>event</code>, on the
+target’s intervals. <code>ExampleData_discrete</code> holds a registry’s
+records of 1,000 patients:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">reg</span> <span class="op">&lt;-</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">external</span></span>
+<span><span class="va">records_discrete</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_records.html">release_records</a></span><span class="op">(</span><span class="va">reg</span><span class="op">$</span><span class="va">z</span>, interval <span class="op">=</span> <span class="va">reg</span><span class="op">$</span><span class="va">interval</span>, event <span class="op">=</span> <span class="va">reg</span><span class="op">$</span><span class="va">status</span><span class="op">)</span></span>
+<span><span class="va">records_discrete</span></span>
+<span><span class="co">#&gt; Release: individual records (discrete-time design), 1000 subjects</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level3">
-<h3 id="a-fitted-model-with-or-without-its-uncertainty">A fitted model, with or without its uncertainty<a class="anchor" aria-label="anchor" href="#a-fitted-model-with-or-without-its-uncertainty"></a>
+<h3 id="a-fitted-model-with-or-without-its-uncertainty">2.2 A fitted model, with or without its uncertainty<a class="anchor" aria-label="anchor" href="#a-fitted-model-with-or-without-its-uncertainty"></a>
 </h3>
 <p>A published model’s coefficients, named by covariate; covariates the
-external model does not include are set to 0. Its uncertainty, the
-precision matrix <code>Q</code> of the coefficients (the inverse of
-their covariance matrix), is added when it was published. Below, the
-first model comes without its uncertainty and the registry’s with
-it:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+model does not include are set to 0. Its uncertainty is the precision
+matrix <code>Q</code> of the coefficients (the inverse of their
+covariance matrix), when it was published.</p>
+<div class="section level4">
+<h4 id="without-its-uncertainty">2.2.1 Without its uncertainty<a class="anchor" aria-label="anchor" href="#without-its-uncertainty"></a>
+</h4>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span></span>
 <span><span class="co">#&gt;         Z1         Z2         Z3         Z4         Z5         Z6 </span></span>
 <span><span class="co">#&gt;  0.1580961  0.0000000  0.3489722  0.0000000  0.2469009 -0.3157974</span></span>
-<span><span class="va">published</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">registry_coef</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>, Q <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">Q_external</span><span class="op">)</span></span>
-<span><span class="va">registry_coef</span></span>
-<span><span class="co">#&gt; Release: 5 coefficients with their precision matrix</span></span></code></pre></div>
+<span><span class="va">model_lowdim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span></span>
+<span><span class="va">model_lowdim</span></span>
+<span><span class="co">#&gt; Release: a fitted model, 6 coefficients, without its uncertainty</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="a-risk-score-without-survival-probabilities">A risk score without survival probabilities<a class="anchor" aria-label="anchor" href="#a-risk-score-without-survival-probabilities"></a>
-</h3>
-<p>When the external model is available only as a risk calculator, which
-ranks patients by risk but gives no survival probabilities, its score
-for each of your patients is the release, in the order of your data.
-<code>ExampleData_lowdim$score_external$train</code> holds the scores a
-published calculator gives the 100 patients:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">calculator</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_score</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">score_external</span><span class="op">$</span><span class="va">train</span><span class="op">)</span></span>
-<span><span class="va">calculator</span></span>
-<span><span class="co">#&gt; Release: a risk score for 100 subjects</span></span></code></pre></div>
-</div>
-<div class="section level3">
-<h3 id="survival-probabilities">Survival probabilities<a class="anchor" aria-label="anchor" href="#survival-probabilities"></a>
-</h3>
-<p>An external model that gives survival probabilities, not only a
-ranking: its coefficients together with its baseline cumulative hazard,
-whose increments over your intervals <code>baseline</code> holds (or,
-with <code>hazard =</code>, its interval hazards for each of your
-patients directly). A discrete-time target needs this form for the
-Kullback–Leibler divergence.</p>
+<div class="section level4">
+<h4 id="with-its-uncertainty">2.2.2 With its uncertainty<a class="anchor" aria-label="anchor" href="#with-its-uncertainty"></a>
+</h4>
+<p>The registry of <code>ExampleData_discrete</code> published its
+coefficients for five of the six covariates, with their precision
+matrix:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">registry_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_model</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>,</span>
-<span>                                baseline <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">baseline_external</span><span class="op">)</span></span>
-<span><span class="va">registry_model</span></span>
-<span><span class="co">#&gt; Release: a fitted model (5 coefficients, baseline over 6 intervals)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">model_registry</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>, Q <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">Q_external</span><span class="op">)</span></span>
+<span><span class="va">model_registry</span></span>
+<span><span class="co">#&gt; Release: a fitted model, 5 coefficients, with its uncertainty (precision matrix)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level3">
+<h3 id="a-risk-score-without-survival-probabilities">2.3 A risk score without survival probabilities<a class="anchor" aria-label="anchor" href="#a-risk-score-without-survival-probabilities"></a>
+</h3>
+<p>When the external model is available only through its risk score, its
+score for each of your patients is the release, in the order of your
+data, on the scale of a linear predictor.
+<code>ExampleData_lowdim$score_external$train</code> holds an external
+risk score for each of the 100 patients:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">score_lowdim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_score.html">release_score</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">score_external</span><span class="op">$</span><span class="va">train</span><span class="op">)</span></span>
+<span><span class="va">score_lowdim</span></span>
+<span><span class="co">#&gt; Release: a risk score for 100 subjects, without survival probabilities</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="survival-probabilities">2.4 Survival probabilities<a class="anchor" aria-label="anchor" href="#survival-probabilities"></a>
+</h3>
+<p>An external model that gives survival probabilities: its coefficients
+together with the increments of its baseline cumulative hazard over your
+intervals (<code>baseline</code>), or, with <code>hazard =</code>, its
+interval hazards for each of your patients directly. A discrete-time
+target needs this form for the Kullback–Leibler divergence.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">survival_registry</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_model.html">release_model</a></span><span class="op">(</span>beta <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">beta_external</span>,</span>
+<span>                                   baseline <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">baseline_external</span><span class="op">)</span></span>
+<span><span class="va">survival_registry</span></span>
+<span><span class="co">#&gt; Release: survival probabilities, 5 coefficients with a baseline hazard over 6 intervals</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
-<h2 id="step-3-the-divergence">Step 3: the divergence<a class="anchor" aria-label="anchor" href="#step-3-the-divergence"></a>
+<h2 id="the-divergence">3 The divergence<a class="anchor" aria-label="anchor" href="#the-divergence"></a>
 </h2>
 <p>The <strong>divergence</strong> is how the release enters the
 objective: the Bregman divergence <span class="math inline">\(B_G\)</span>. There are three, and each needs a
@@ -307,67 +349,18 @@ uncertainty (the Euclidean distance without it)</td>
 </tr>
 </tbody>
 </table>
-<p>So the target and the release together decide which divergences are
-possible:</p>
-<table class="table">
-<colgroup>
-<col width="25%">
-<col width="25%">
-<col width="25%">
-<col width="25%">
-</colgroup>
-<thead><tr class="header">
-<th>release</th>
-<th>Cox</th>
-<th>nested case–control</th>
-<th>discrete time</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>individual records</td>
-<td>composite, mahalanobis, kl</td>
-<td>composite</td>
-<td>composite</td>
-</tr>
-<tr class="even">
-<td>a fitted model, with or without its uncertainty</td>
-<td>kl, mahalanobis</td>
-<td>kl, mahalanobis</td>
-<td>mahalanobis</td>
-</tr>
-<tr class="odd">
-<td>a risk score without survival probabilities</td>
-<td>kl</td>
-<td>kl</td>
-<td>–</td>
-</tr>
-<tr class="even">
-<td>survival probabilities</td>
-<td>kl, mahalanobis</td>
-<td>kl, mahalanobis</td>
-<td>kl, mahalanobis</td>
-</tr>
-</tbody>
-</table>
-<p>Individual records also support the Mahalanobis and Kullback–Leibler
-divergences on a Cox target because <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> can
-reduce them to a fitted model with its uncertainty, by fitting a Cox
-model to them. A combination outside the table is refused with an
-explanation. With the three ingredients chosen,
-<code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> fits the model along a grid of <span class="math inline">\(\eta\)</span>, scores each <span class="math inline">\(\eta\)</span> by cross-validation on your data,
-and keeps the best.</p>
 <div class="section level3">
-<h3 id="cox-model-and-a-risk-score-without-survival-probabilities-kullbackleibler">Cox model and a risk score without survival probabilities:
+<h3 id="cox-model-and-a-risk-score-without-survival-probabilities-kullbackleibler">3.1 Cox model and a risk score without survival probabilities:
 Kullback–Leibler<a class="anchor" aria-label="anchor" href="#cox-model-and-a-risk-score-without-survival-probabilities-kullbackleibler"></a>
 </h3>
 <p>The Kullback–Leibler divergence compares the two models through the
 probabilities they give each patient of failing first at every event
-time, so the external model enters through its score alone, and may be a
-model of any form.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_score</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">calculator</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+time, so the external model enters through its risk score alone, and may
+be a model of any form.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_score</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_lowdim</span>, <span class="va">score_lowdim</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
 <span><span class="va">fit_score</span></span>
-<span><span class="co">#&gt; Target:     Cox (linear)</span></span>
+<span><span class="co">#&gt; Target:     Cox model</span></span>
 <span><span class="co">#&gt; Divergence: Kullback-Leibler</span></span>
 <span><span class="co">#&gt; Selected:   eta = 1.104</span></span>
 <span><span class="co">#&gt; CV V&amp;VH: 2.51343  (5 folds, seed 20260818)</span></span>
@@ -381,16 +374,16 @@ model of any form.</p>
 estimator that did the fit (here <code>cv.coxkl</code>), and the
 coefficients. <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> draws the cross-validated loss along
 <span class="math inline">\(\eta\)</span>:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_score</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-12-1.png" alt="Cross-validated loss against the integration weight for the risk-calculator example: the curve falls below the line of your data alone and reaches its minimum near eta = 1." width="100%"></p>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-14-1.png" alt="Cross-validated loss against the integration weight when borrowing from an external risk score: the curve falls below the line of your data alone and reaches its minimum near eta = 1." width="100%"></p>
 <p>The dotted line is your data alone, <span class="math inline">\(\eta
-= 0\)</span>. The curve dips below it: borrowing from the calculator
+= 0\)</span>. The curve dips below it: borrowing from the risk score
 predicts your patients better than your data alone, and the red point
 marks the selected <span class="math inline">\(\eta\)</span>.</p>
 <p>The fit is used like any survival model, for instance to predict
 survival for new patients:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">te</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">test</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit_score</span>, newz <span class="op">=</span> <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span>, type <span class="op">=</span> <span class="st">"survival"</span>, times <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.2</span>, <span class="fl">0.3</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          t=0.1     t=0.2     t=0.3</span></span>
@@ -398,10 +391,10 @@ survival for new patients:</p>
 <span><span class="co">#&gt; [2,] 0.9829626 0.9394953 0.8332007</span></span>
 <span><span class="co">#&gt; [3,] 0.9194451 0.7371009 0.4098990</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_score</span>, type <span class="op">=</span> <span class="st">"survival"</span>, newz <span class="op">=</span> <span class="va">te</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-13-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-15-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
 </div>
 <div class="section level3">
-<h3 id="cox-model-and-a-fitted-model-without-its-uncertainty-kullbackleibler-or-mahalanobis">Cox model and a fitted model without its uncertainty:
+<h3 id="cox-model-and-a-fitted-model-without-its-uncertainty-kullbackleibler-or-mahalanobis">3.2 Cox model and a fitted model without its uncertainty:
 Kullback–Leibler or Mahalanobis<a class="anchor" aria-label="anchor" href="#cox-model-and-a-fitted-model-without-its-uncertainty-kullbackleibler-or-mahalanobis"></a>
 </h3>
 <p>A fitted model supports two divergences; without its uncertainty, the
@@ -409,56 +402,59 @@ Mahalanobis distance is the Euclidean distance between the coefficients.
 Every call uses the same cross-validation partition (the
 <code>seed</code> is fixed by default), so their losses, and the loss of
 your data alone, compare directly:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_kl</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">published</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
-<span><span class="va">fit_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">published</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
-<span><span class="va">own</span>      <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_low</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_kl</span>   <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_lowdim</span>, <span class="va">model_lowdim</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_lowdim</span>, <span class="va">model_lowdim</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">own</span>      <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_lowdim</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">fit_kl</span><span class="op">$</span><span class="va">value</span>, mahalanobis <span class="op">=</span> <span class="va">fit_maha</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  your_data_alone kullback_leibler      mahalanobis </span></span>
 <span><span class="co">#&gt;            2.625            2.506            2.511</span></span></code></pre></div>
 <p>The coefficient plot shows what borrowing did to each coefficient:
 from your data alone (open circle) toward the published value
 (triangle), to the selected fit (filled circle).</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_maha</span>, type <span class="op">=</span> <span class="st">"coefficients"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-15-1.png" alt="For each covariate, the coefficient from your data alone, the published coefficient, and the selected fit, with arrows showing how borrowing moved each coefficient toward the published one." width="100%"></p>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-17-1.png" alt="For each covariate, the coefficient from your data alone, the published coefficient, and the selected fit, with arrows showing how borrowing moved each coefficient toward the published one." width="100%"></p>
 </div>
 <div class="section level3">
-<h3 id="cox-model-and-another-cohorts-individual-records-composite-likelihood">Cox model and another cohort’s individual records: composite
-likelihood<a class="anchor" aria-label="anchor" href="#cox-model-and-another-cohorts-individual-records-composite-likelihood"></a>
+<h3 id="cox-model-and-individual-records-composite-likelihood">3.3 Cox model and individual records: composite likelihood<a class="anchor" aria-label="anchor" href="#cox-model-and-individual-records-composite-likelihood"></a>
 </h3>
 <p>The individual records enter with their own likelihood, weighted by
 <span class="math inline">\(\eta\)</span>: the two cohorts share the
-coefficients and keep their own baseline hazards.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_int</span>, <span class="va">records</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span>
+coefficients and keep their own baseline hazards, here one for each
+stratum of each cohort.</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_strata</span>, <span class="va">records_cox</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span>
 <span><span class="va">fit_comp</span><span class="op">$</span><span class="va">eta</span></span>
 <span><span class="co">#&gt; [1] 200</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_comp</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-16-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-18-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
 <p>Here the external cohort comes from the same population as yours, so
 the loss keeps falling as <span class="math inline">\(\eta\)</span>
 grows and the largest weight is selected. The same records can also
-enter as a fitted model with its uncertainty:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_records_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_int</span>, <span class="va">records</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
-<span><span class="va">own_int</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_int</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own_int</span><span class="op">$</span><span class="va">value</span>, composite <span class="op">=</span> <span class="va">fit_comp</span><span class="op">$</span><span class="va">value</span>,</span>
+enter as a fitted model with its uncertainty, which
+<code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> obtains by fitting a Cox model to them:</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_records_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_strata</span>, <span class="va">records_cox</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">own_strata</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_strata</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own_strata</span><span class="op">$</span><span class="va">value</span>, composite <span class="op">=</span> <span class="va">fit_comp</span><span class="op">$</span><span class="va">value</span>,</span>
 <span>        mahalanobis <span class="op">=</span> <span class="va">fit_records_maha</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; your_data_alone       composite     mahalanobis </span></span>
 <span><span class="co">#&gt;           5.328           5.296           5.296</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="nested-casecontrol-design-and-a-fitted-model-kullbackleibler">Nested case–control design and a fitted model: Kullback–Leibler<a class="anchor" aria-label="anchor" href="#nested-casecontrol-design-and-a-fitted-model-kullbackleibler"></a>
+<h3 id="nested-casecontrol-design-and-a-fitted-model-kullbackleibler">3.4 Nested case–control design and a fitted model:
+Kullback–Leibler<a class="anchor" aria-label="anchor" href="#nested-casecontrol-design-and-a-fitted-model-kullbackleibler"></a>
 </h3>
 <p>On a matched design the Kullback–Leibler divergence compares the two
 models’ probabilities of which member of each set is the case, and the
-cross-validated loss is the conditional log-likelihood:</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_matched</span>, <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>,</span>
-<span>                           divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+cross-validated loss is the conditional log-likelihood. The release is a
+fitted model without its uncertainty, built as in Section 2.2.1:</p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">model_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_cc_lowdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span></span>
+<span><span class="va">fit_matched</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_matched</span>, <span class="va">model_matched</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
 <span><span class="va">fit_matched</span></span>
-<span><span class="co">#&gt; Target:     nested case-control (linear)</span></span>
+<span><span class="co">#&gt; Target:     nested case-control design</span></span>
 <span><span class="co">#&gt; Divergence: Kullback-Leibler</span></span>
 <span><span class="co">#&gt; Selected:   eta = 0.9755</span></span>
 <span><span class="co">#&gt; CV loss: 0.159928  (5 folds, seed 20260818)</span></span>
@@ -468,18 +464,18 @@ cross-validated loss is the conditional log-likelihood:</p>
 <span><span class="co">#&gt;      Z1      Z2      Z3      Z4      Z5      Z6 </span></span>
 <span><span class="co">#&gt;  0.7965 -1.0175  1.0714 -0.7200  0.8137 -1.0163</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_matched</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-18-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-20-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
 </div>
 <div class="section level3">
-<h3 id="discrete-time-and-survival-probabilities-kullbackleibler">Discrete time and survival probabilities: Kullback–Leibler<a class="anchor" aria-label="anchor" href="#discrete-time-and-survival-probabilities-kullbackleibler"></a>
+<h3 id="discrete-time-and-survival-probabilities-kullbackleibler">3.5 Discrete time and survival probabilities: Kullback–Leibler<a class="anchor" aria-label="anchor" href="#discrete-time-and-survival-probabilities-kullbackleibler"></a>
 </h3>
 <p>On a discrete-time target the Kullback–Leibler divergence compares
 the two models’ hazards in every interval, so it needs the registry’s
 survival probabilities:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">registry_model</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">survival_registry</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
 <span><span class="va">fit_interval</span></span>
-<span><span class="co">#&gt; Target:     discrete-time (linear)</span></span>
+<span><span class="co">#&gt; Target:     discrete-time model</span></span>
 <span><span class="co">#&gt; Divergence: Kullback-Leibler</span></span>
 <span><span class="co">#&gt; Selected:   eta = 1</span></span>
 <span><span class="co">#&gt; CV loss: 0.689057  (5 folds, seed 20260818)</span></span>
@@ -489,16 +485,16 @@ survival probabilities:</p>
 <span><span class="co">#&gt;      Z1      Z2      Z3      Z4      Z5      Z6 </span></span>
 <span><span class="co">#&gt;  0.6440 -0.5637  0.6848 -0.6388  0.2928 -0.0532</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_interval</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-19-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-21-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_interval</span>, type <span class="op">=</span> <span class="st">"survival"</span>, newz <span class="op">=</span> <span class="va">ExampleData_discrete</span><span class="op">$</span><span class="va">test</span><span class="op">$</span><span class="va">z</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-19-2.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
-<p>The registry’s fitted model, with its uncertainty, and its individual
-records support the other two divergences on the same target, and every
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-21-2.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<p>The registry’s fitted model with its uncertainty, and its individual
+records, support the other two divergences on the same target, and every
 discrete-time fit is scored by the same held-out log-likelihood:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_interval_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">registry_coef</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
-<span><span class="va">fit_interval_comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">registry_records</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_interval_maha</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">model_registry</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span></span>
+<span><span class="va">fit_interval_comp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span>, <span class="va">records_discrete</span>, divergence <span class="op">=</span> <span class="st">"composite"</span><span class="op">)</span></span>
 <span><span class="va">own_interval</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_interval</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>your_data_alone <span class="op">=</span> <span class="va">own_interval</span><span class="op">$</span><span class="va">value</span>, kullback_leibler <span class="op">=</span> <span class="va">fit_interval</span><span class="op">$</span><span class="va">value</span>,</span>
 <span>        mahalanobis <span class="op">=</span> <span class="va">fit_interval_maha</span><span class="op">$</span><span class="va">value</span>, composite <span class="op">=</span> <span class="va">fit_interval_comp</span><span class="op">$</span><span class="va">value</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
@@ -507,10 +503,10 @@ discrete-time fit is scored by the same held-out log-likelihood:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="further-topics">Further topics<a class="anchor" aria-label="anchor" href="#further-topics"></a>
+<h2 id="further-topics">4 Further topics<a class="anchor" aria-label="anchor" href="#further-topics"></a>
 </h2>
 <div class="section level3">
-<h3 id="many-covariates-a-penalty">Many covariates: a penalty<a class="anchor" aria-label="anchor" href="#many-covariates-a-penalty"></a>
+<h3 id="many-covariates-a-penalty">4.1 Many covariates: a penalty<a class="anchor" aria-label="anchor" href="#many-covariates-a-penalty"></a>
 </h3>
 <p><code>penalty = "lasso"</code> (or <code>"ridge"</code>, or
 <code>"enet"</code> with <code>alpha</code>) penalizes the coefficients.
@@ -518,23 +514,23 @@ A penalty path is built for every <span class="math inline">\(\eta\)</span> and 
 curve shows each <span class="math inline">\(\eta\)</span> at its best
 penalty. <code>ExampleData_highdim</code> has 50 covariates for 200
 patients, of which six matter:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_highdim</span><span class="op">)</span></span>
 <span><span class="va">hd</span> <span class="op">&lt;-</span> <span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">target_hd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="va">fit_lasso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_hd</span>, <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>,</span>
+<span><span class="va">target_hd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_cox.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">hd</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">fit_lasso</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_hd</span>, <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_highdim</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>,</span>
 <span>                         divergence <span class="op">=</span> <span class="st">"kl"</span>, penalty <span class="op">=</span> <span class="st">"lasso"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>eta <span class="op">=</span> <span class="va">fit_lasso</span><span class="op">$</span><span class="va">eta</span>, lambda <span class="op">=</span> <span class="va">fit_lasso</span><span class="op">$</span><span class="va">lambda</span>, nonzero <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_lasso</span><span class="op">)</span> <span class="op">!=</span> <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          eta       lambda      nonzero </span></span>
 <span><span class="co">#&gt;  3.807307877  0.006098762 21.000000000</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_lasso</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-21-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-23-1.png" alt="A plot drawn by plot() on a cv.bregsurv fit: the cross-validated loss along the integration weight, or predicted survival curves." width="100%"></p>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_lasso</span>, type <span class="op">=</span> <span class="st">"coefficients"</span>, covariates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Z"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">12</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="BregSurv_files/figure-html/unnamed-chunk-22-1.png" alt="Coefficients of the first twelve covariates under the lasso: your data alone, the external coefficients, and the selected fit." width="100%"></p>
+<p><img src="BregSurv_files/figure-html/unnamed-chunk-24-1.png" alt="Coefficients of the first twelve covariates under the lasso: your data alone, the external coefficients, and the selected fit." width="100%"></p>
 </div>
 <div class="section level3">
-<h3 id="tied-event-times">Tied event times<a class="anchor" aria-label="anchor" href="#tied-event-times"></a>
+<h3 id="tied-event-times">4.2 Tied event times<a class="anchor" aria-label="anchor" href="#tied-event-times"></a>
 </h3>
 <p>When follow-up is recorded on a coarse grid, as at scheduled visits,
 many events share a time. <code>ExampleData_ties</code> holds such a
@@ -542,32 +538,32 @@ cohort. <code>ties = "breslow"</code> uses Breslow’s approximation for
 the tied times, with every divergence and penalty;
 <code>ties = "exact"</code> uses Cox’s exact likelihood, with the
 Kullback–Leibler divergence and no penalty.</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_ties</span><span class="op">)</span></span>
 <span><span class="va">ti</span> <span class="op">&lt;-</span> <span class="va">ExampleData_ties</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">target_ties</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">z</span>, ties <span class="op">=</span> <span class="st">"breslow"</span><span class="op">)</span></span>
+<span><span class="va">target_ties</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_cox.html">target_cox</a></span><span class="op">(</span>time <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">time</span>, event <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">status</span>, z <span class="op">=</span> <span class="va">ti</span><span class="op">$</span><span class="va">z</span>, ties <span class="op">=</span> <span class="st">"breslow"</span><span class="op">)</span></span>
 <span><span class="va">target_ties</span></span>
-<span><span class="co">#&gt; Target: Cox model, linear risk score</span></span>
+<span><span class="co">#&gt; Target: Cox model</span></span>
 <span><span class="co">#&gt;   100 subjects, 6 covariates, 29 events</span></span>
 <span><span class="co">#&gt;   tied event times: breslow</span></span>
-<span><span class="va">fit_ties</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_ties</span>, <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_ties</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
+<span><span class="va">fit_ties</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target_ties</span>, <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_ties</span><span class="op">$</span><span class="va">beta_external</span><span class="op">)</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span></span>
 <span><span class="va">fit_ties</span><span class="op">$</span><span class="va">eta</span></span>
 <span><span class="co">#&gt; [1] 2.320419</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="a-fit-at-a-given-weight">A fit at a given weight<a class="anchor" aria-label="anchor" href="#a-fit-at-a-given-weight"></a>
+<h3 id="a-fit-at-a-given-weight">4.3 A fit at a given weight<a class="anchor" aria-label="anchor" href="#a-fit-at-a-given-weight"></a>
 </h3>
 <p><code><a href="../reference/bregsurv.html">bregsurv()</a></code> takes the same ingredients and fits at an
 <span class="math inline">\(\eta\)</span> you choose, without
 cross-validation:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_eta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bregsurv.html">bregsurv</a></span><span class="op">(</span><span class="va">target_low</span>, <span class="va">published</span>, divergence <span class="op">=</span> <span class="st">"kl"</span>, eta <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_eta1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/bregsurv.html">bregsurv</a></span><span class="op">(</span><span class="va">target_lowdim</span>, <span class="va">model_lowdim</span>, divergence <span class="op">=</span> <span class="st">"kl"</span>, eta <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_eta1</span><span class="op">)</span></span>
 <span><span class="co">#&gt;         Z1         Z2         Z3         Z4         Z5         Z6 </span></span>
 <span><span class="co">#&gt;  0.2001197 -0.2166873  0.1834799 -0.3909163  0.2657139 -0.5266408</span></span></code></pre></div>
 </div>
 <div class="section level3">
-<h3 id="the-estimators-behind-the-call">The estimators behind the call<a class="anchor" aria-label="anchor" href="#the-estimators-behind-the-call"></a>
+<h3 id="the-estimators-behind-the-call">4.4 The estimators behind the call<a class="anchor" aria-label="anchor" href="#the-estimators-behind-the-call"></a>
 </h3>
 <p>On a linear target, <code><a href="../reference/cv.bregsurv.html">cv.bregsurv()</a></code> hands the fit to one
 of the package’s estimators, named in its <code>engine</code> (for
@@ -579,7 +575,7 @@ interface does not expose, such as stability selection and bagging; see
 </div>
 </div>
 <div class="section level2">
-<h2 id="where-to-go-next">Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
+<h2 id="where-to-go-next">5 Where to go next<a class="anchor" aria-label="anchor" href="#where-to-go-next"></a>
 </h2>
 <ul>
 <li>
@@ -587,11 +583,12 @@ interface does not expose, such as stability selection and bagging; see
 each release supports the divergences it does.</li>
 <li>
 <a href="../reference/cv.bregsurv.html">The help page of
-<code>cv.bregsurv()</code></a>: every argument, and the estimator each
-combination calls.</li>
+<code>cv.bregsurv()</code></a>: every argument, which divergences each
+release supports on each target, and the estimator each combination
+calls.</li>
 <li>
-<a href="discrete_neural.html">Discrete-time and neural
-targets</a>.</li>
+<a href="discrete_neural.html">Discrete-time and neural targets</a>,
+including neural-network risk scores.</li>
 <li>
 <a href="engines.html">The estimators behind each
 divergence</a>.</li>

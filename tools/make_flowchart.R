@@ -2,8 +2,8 @@
 ##
 ##   Rscript tools/make_flowchart.R [png-preview-path]      # from the package root
 ##
-## The objective sits on top, with the term each step sets in that step's colour; the three steps
-## lead into the one call.
+## The objective sits on top, with the term each step sets in that step's colour, and the three
+## steps below it.
 library(grid)
 
 col <- c(target = "#2F6690", release = "#A87A2A", divergence = "#C8553D", fit = "#1F3B4D",
@@ -12,7 +12,7 @@ col <- c(target = "#2F6690", release = "#A87A2A", divergence = "#C8553D", fit = 
 draw_flowchart <- function() {
   grid.newpage()
   grid.rect(gp = gpar(fill = "white", col = NA))
-  pushViewport(viewport(xscale = c(0, 12), yscale = c(0.55, 8.9)))
+  pushViewport(viewport(xscale = c(0, 12), yscale = c(3.1, 8.9)))
   nat <- function(g) convertWidth(grobWidth(g), "native", valueOnly = TRUE)
 
   ## the objective
@@ -78,31 +78,18 @@ draw_flowchart <- function() {
                                y0 = unit((top + bot) / 2, "native"), y1 = unit((top + bot) / 2, "native"),
                                arrow = arr, gp = arrow_g)
 
-  ## the call
-  fy <- 1.6
-  grid.roundrect(x = unit(6, "native"), y = unit(fy, "native"), width = unit(9.6, "native"), height = unit(1.55, "native"),
-                 r = unit(7, "pt"), gp = gpar(fill = col[["fit"]], col = col[["fit"]]))
-  grid.text("cv.bregsurv(target, release, divergence, ...)", x = unit(6, "native"), y = unit(fy + 0.27, "native"),
-            gp = gpar(fontsize = 15.5, fontfamily = "mono", fontface = "bold", col = "white"))
-  grid.text(quote(paste("chooses how strongly to borrow, ", eta, ", by cross-validation on your data")),
-            x = unit(6, "native"), y = unit(fy - 0.33, "native"), gp = gpar(fontsize = 12.5, col = "#C6D3DD"))
-  for (i in 1:3) {
-    xe <- c(3.9, 6, 8.1)[i]
-    grid.segments(x0 = unit(cx[i], "native"), x1 = unit(xe, "native"), y0 = unit(bot - 0.06, "native"),
-                  y1 = unit(fy + 0.86, "native"), arrow = arr, gp = arrow_g)
-  }
   popViewport()
 }
 
 out <- file.path("vignettes", "figures", "bregsurv-flowchart.svg")
 dir.create(dirname(out), showWarnings = FALSE, recursive = TRUE)
-svg(out, width = 10, height = 6.96, bg = "white")
+svg(out, width = 10, height = 4.83, bg = "white")
 draw_flowchart()
 invisible(dev.off())
 cat("wrote", out, "\n")
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args)) {
-  png(args[1], width = 10, height = 6.96, units = "in", res = 110, type = "cairo", bg = "white")
+  png(args[1], width = 10, height = 4.83, units = "in", res = 110, type = "cairo", bg = "white")
   draw_flowchart()
   invisible(dev.off())
   cat("wrote", args[1], "\n")

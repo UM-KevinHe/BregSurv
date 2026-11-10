@@ -50,29 +50,31 @@ covariate, with names). \code{target_cox()} and \code{target_discrete()} also ta
 \item{release}{What the external source made available, or \code{NULL} to fit your data alone. Build it
 with one of four constructors, by what you received:
 \itemize{
-\item \code{\link[=release_records]{release_records()}}: the external cohort's individual-level records, in the target's design.
+\item \code{\link[=release_records]{release_records()}}: \strong{individual records}, another cohort's data subject by subject, in the
+target's design and with your covariate names.
 \itemize{
-\item \code{z}: the external covariates, with the target's column names;
+\item \code{z}: the external covariates;
 \item \code{time}, \code{event} (and optionally \code{stratum}) for a Cox target;
 \item \code{case}, \code{set} for a nested case-control target;
 \item \code{interval}, \code{event} for a discrete-time target.
 }
-\item \code{\link[=release_coef]{release_coef()}}\verb{(beta, Q = NULL)}: published regression coefficients.
+\item \code{\link[=release_coef]{release_coef()}}\verb{(beta, Q = NULL)}: \strong{a fitted model, with or without its uncertainty}.
 \itemize{
-\item \code{beta}: a numeric vector named by covariate, every name one of your covariates; covariates
-the external model does not include are set to 0;
-\item \code{Q}: optionally, their precision matrix (the inverse of their covariance matrix).
+\item \code{beta}: its coefficients, named by covariate, every name one of your covariates; covariates the
+model does not include are set to 0;
+\item \code{Q}: its uncertainty, the precision matrix of the coefficients (the inverse of their covariance
+matrix), when it was published.
 }
-\item \code{\link[=release_score]{release_score()}}\code{(score)}: an external risk score evaluated on your subjects, for when only a
-risk calculator or its predictions are available.
+\item \code{\link[=release_score]{release_score()}}\code{(score)}: \strong{a risk score without survival probabilities}, when the external
+model is available only through its score for each of your subjects.
 \itemize{
-\item \code{score}: one value per row of your data, in the same order.
+\item \code{score}: one value per row of your data, in the same order, on the scale of a linear predictor.
 }
-\item \code{\link[=release_model]{release_model()}}: a fitted model including its baseline hazard, i.e. absolute risks. A
+\item \code{\link[=release_model]{release_model()}}: \strong{survival probabilities}, an external model's absolute risks. A
 discrete-time target needs this form for the Kullback-Leibler divergence.
 \itemize{
-\item \code{beta} with \code{baseline}: the external Cox coefficients and its baseline cumulative-hazard
-increments over your intervals \eqn{1, \dots, K};
+\item \code{beta} with \code{baseline}: the external Cox coefficients and the increments of its baseline
+cumulative hazard over your intervals \eqn{1, \dots, K};
 \item or \code{hazard}: the external interval hazards of your subjects, an \eqn{n \times K} matrix.
 }
 }}

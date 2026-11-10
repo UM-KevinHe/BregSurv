@@ -1,17 +1,17 @@
 ## Additions to the example data used by Get started:
-##   * ExampleData_lowdim$score_external: the scores a published risk calculator gives the train and
-##     test subjects of ExampleData_lowdim (the calculator is the linear predictor of
-##     beta_external_poor, i.e. it was built on two of the six covariates);
+##   * ExampleData_lowdim$score_external: an external risk score for the train and test subjects of
+##     ExampleData_lowdim (the linear predictor of beta_external_poor, built on two of the six
+##     covariates), as when an external model is available only through its risk score;
 ##   * ExampleData_ties: the ExampleData_lowdim cohorts with follow-up recorded on a grid (times rounded
 ##     up to the next multiple of 0.05), so that many event times are tied.
 ##
 ##   Rscript tools/make_ExampleData_extras.R            # from the package root
 
 load(file.path("data", "ExampleData_lowdim.rda"))
-calculator <- ExampleData_lowdim$beta_external_poor
+beta_score <- ExampleData_lowdim$beta_external_poor
 ExampleData_lowdim$score_external <- list(
-  train = drop(as.matrix(ExampleData_lowdim$train$z) %*% calculator),
-  test = drop(as.matrix(ExampleData_lowdim$test$z) %*% calculator))
+  train = drop(as.matrix(ExampleData_lowdim$train$z) %*% beta_score),
+  test = drop(as.matrix(ExampleData_lowdim$test$z) %*% beta_score))
 save(ExampleData_lowdim, file = file.path("data", "ExampleData_lowdim.rda"), compress = "xz")
 
 grid <- 0.05

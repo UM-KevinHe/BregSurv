@@ -1,6 +1,7 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://um-kevinhe.github.io/BregSurv/404.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/LICENSE.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/THIRD_PARTY.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/articles/BregSurv.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/articles/CV_Criteria.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/articles/coxkl.html</loc></url>
@@ -104,12 +105,17 @@
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/plot.variable_importance.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/predict.cv.bregsurv.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/predict_surv_prob.html</loc></url>
-<url><loc>https://um-kevinhe.github.io/BregSurv/reference/releases.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/release_coef.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/release_model.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/release_records.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/release_score.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/sim.binary.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/sim.cox.highdim.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/sim.matched_cc.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/sim_integration.html</loc></url>
-<url><loc>https://um-kevinhe.github.io/BregSurv/reference/targets.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/target_cox.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/target_discrete.html</loc></url>
+<url><loc>https://um-kevinhe.github.io/BregSurv/reference/target_ncc.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/test_eval.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/test_eval_ncc.html</loc></url>
 <url><loc>https://um-kevinhe.github.io/BregSurv/reference/variable_importance.html</loc></url>

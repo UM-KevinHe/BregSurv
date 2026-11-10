@@ -254,20 +254,20 @@ best.</p>
 <tbody>
 <tr class="odd">
 <td>Cox model</td>
-<td><code><a href="../reference/targets.html">target_cox()</a></code></td>
+<td><code><a href="../reference/target_cox.html">target_cox()</a></code></td>
 <td>stratified partial likelihood; <code>ties = "breslow"</code> or
 <code>"exact"</code> for tied times</td>
 <td>all three</td>
 </tr>
 <tr class="even">
 <td>Nested case–control design</td>
-<td><code><a href="../reference/targets.html">target_ncc()</a></code></td>
+<td><code><a href="../reference/target_ncc.html">target_ncc()</a></code></td>
 <td>conditional likelihood of the case within its matched set</td>
 <td>all three</td>
 </tr>
 <tr class="odd">
 <td>Discrete-time model</td>
-<td><code><a href="../reference/targets.html">target_discrete()</a></code></td>
+<td><code><a href="../reference/target_discrete.html">target_discrete()</a></code></td>
 <td>grouped-time Bernoulli likelihood, complementary log-log or logit
 link</td>
 <td>all three</td>
@@ -328,8 +328,8 @@ on the same folds).</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://um-kevinhe.github.io/BregSurv/">BregSurv</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">)</span></span>
 <span><span class="va">tr</span> <span class="op">&lt;-</span> <span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">train</span></span>
-<span><span class="va">target</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/targets.html">target_cox</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">time</span>, <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
-<span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/releases.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span></span>
+<span><span class="va">target</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/target_cox.html">target_cox</a></span><span class="op">(</span><span class="va">tr</span><span class="op">$</span><span class="va">time</span>, <span class="va">tr</span><span class="op">$</span><span class="va">status</span>, <span class="va">tr</span><span class="op">$</span><span class="va">z</span><span class="op">)</span></span>
+<span><span class="va">release</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/release_coef.html">release_coef</a></span><span class="op">(</span><span class="va">ExampleData_lowdim</span><span class="op">$</span><span class="va">beta_external_fair</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">fits</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>kullback_leibler <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"kl"</span><span class="op">)</span>,</span>
 <span>             euclidean        <span class="op">=</span> <span class="fu"><a href="../reference/cv.bregsurv.html">cv.bregsurv</a></span><span class="op">(</span><span class="va">target</span>, <span class="va">release</span>, divergence <span class="op">=</span> <span class="st">"mahalanobis"</span><span class="op">)</span>,</span>

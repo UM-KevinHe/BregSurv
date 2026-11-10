@@ -66,22 +66,24 @@
 #'   (requires the `torch` package).
 #' @param release What the external source made available, or `NULL` to fit your data alone. Build it
 #'   with one of four constructors, by what you received:
-#'   * [release_records()]: the external cohort's individual-level records, in the target's design.
-#'     - `z`: the external covariates, with the target's column names;
+#'   * [release_records()]: **individual records**, another cohort's data subject by subject, in the
+#'     target's design and with your covariate names.
+#'     - `z`: the external covariates;
 #'     - `time`, `event` (and optionally `stratum`) for a Cox target;
 #'     - `case`, `set` for a nested case-control target;
 #'     - `interval`, `event` for a discrete-time target.
-#'   * [release_coef()]`(beta, Q = NULL)`: published regression coefficients.
-#'     - `beta`: a numeric vector named by covariate, every name one of your covariates; covariates
-#'       the external model does not include are set to 0;
-#'     - `Q`: optionally, their precision matrix (the inverse of their covariance matrix).
-#'   * [release_score()]`(score)`: an external risk score evaluated on your subjects, for when only a
-#'     risk calculator or its predictions are available.
-#'     - `score`: one value per row of your data, in the same order.
-#'   * [release_model()]: a fitted model including its baseline hazard, i.e. absolute risks. A
+#'   * [release_coef()]`(beta, Q = NULL)`: **a fitted model, with or without its uncertainty**.
+#'     - `beta`: its coefficients, named by covariate, every name one of your covariates; covariates the
+#'       model does not include are set to 0;
+#'     - `Q`: its uncertainty, the precision matrix of the coefficients (the inverse of their covariance
+#'       matrix), when it was published.
+#'   * [release_score()]`(score)`: **a risk score without survival probabilities**, when the external
+#'     model is available only through its score for each of your subjects.
+#'     - `score`: one value per row of your data, in the same order, on the scale of a linear predictor.
+#'   * [release_model()]: **survival probabilities**, an external model's absolute risks. A
 #'     discrete-time target needs this form for the Kullback-Leibler divergence.
-#'     - `beta` with `baseline`: the external Cox coefficients and its baseline cumulative-hazard
-#'       increments over your intervals \eqn{1, \dots, K};
+#'     - `beta` with `baseline`: the external Cox coefficients and the increments of its baseline
+#'       cumulative hazard over your intervals \eqn{1, \dots, K};
 #'     - or `hazard`: the external interval hazards of your subjects, an \eqn{n \times K} matrix.
 #' @param divergence How the release enters the objective, i.e. which Bregman divergence \eqn{B_G}
 #'   is used. `NULL` (the default) takes the first one the release supports, in the order listed in
@@ -136,11 +138,11 @@
 #' | release | Cox | nested case-control | discrete time | neural target |
 #' |---|---|---|---|---|
 #' | `NULL` | none | none | none | none |
-#' | [release_records()] | composite, mahalanobis, kl | composite | composite | -- |
-#' | [release_coef()] without `Q` | kl, mahalanobis | kl, mahalanobis | mahalanobis | kl (Cox only) |
-#' | [release_coef()] with `Q` | mahalanobis, kl | mahalanobis, kl | mahalanobis | kl (Cox only) |
-#' | [release_score()] | kl | kl | -- | kl (Cox only) |
-#' | [release_model()] | as [release_coef()] | as [release_coef()] | kl, mahalanobis | kl |
+#' | [release_records()]: individual records | composite, mahalanobis, kl | composite | composite | -- |
+#' | [release_coef()]: a fitted model without its uncertainty | kl, mahalanobis | kl, mahalanobis | mahalanobis | kl (Cox only) |
+#' | [release_coef()]: a fitted model with its uncertainty | mahalanobis, kl | mahalanobis, kl | mahalanobis | kl (Cox only) |
+#' | [release_score()]: a risk score without survival probabilities | kl | kl | -- | kl (Cox only) |
+#' | [release_model()]: survival probabilities | as [release_coef()] | as [release_coef()] | kl, mahalanobis | kl |
 #'
 #' **Which estimator fits the model.** A linear target is fitted by one of the package's estimators,
 #' named in the result's `engine`; the result is identical to calling that estimator directly.
@@ -173,19 +175,20 @@
 #' Use [plot()][plot.cv.bregsurv] for the cross-validation curve and the coefficients, [coef()] and
 #' [predict()][predict.cv.bregsurv] for the fitted model.
 #'
-#' @seealso [bregsurv()] to fit at a given `eta`; [targets], [releases], [plot.cv.bregsurv()],
+#' @seealso [bregsurv()] to fit at a given `eta`; the targets [target_cox()], [target_ncc()],
+#'   [target_discrete()]; the releases [release_records()], [release_coef()], [release_score()],
+#'   [release_model()]; [plot.cv.bregsurv()],
 #'   [predict.cv.bregsurv()].
 #' @examples
 #' data(ExampleData_lowdim)
 #' tr <- ExampleData_lowdim$train
 #' target <- target_cox(time = tr$time, event = tr$status, z = tr$z)
 #'
-#' # a published model, available only as a risk score for each of your subjects
-#' score <- as.matrix(tr$z) %*% ExampleData_lowdim$beta_external_fair
-#' kl <- cv.bregsurv(target, release_score(score), divergence = "kl")
+#' # an external risk score without survival probabilities, for each of your subjects
+#' kl <- cv.bregsurv(target, release_score(ExampleData_lowdim$score_external$train), divergence = "kl")
 #' kl
 #'
-#' # the same model's coefficients, through the Euclidean distance
+#' # a fitted model without its uncertainty, through the Euclidean distance
 #' euc <- cv.bregsurv(target, release_coef(ExampleData_lowdim$beta_external_fair),
 #'                    divergence = "mahalanobis")
 #'
@@ -542,8 +545,9 @@ bregsurv <- function(target, release = NULL, divergence = NULL, eta = 0,
 #' @export
 print.cv.bregsurv <- function(x, ...) {
   tt <- x$target
-  cat("Target:     ", switch(tt$type, cox = "Cox", ncc = "nested case-control", discrete = "discrete-time"),
-      " (", tt$score, ")", if (!is.null(tt$ties) && tt$ties != "none") paste0(", ties ", tt$ties), "\n", sep = "")
+  cat("Target:     ", switch(tt$type, cox = "Cox model", ncc = "nested case-control design", discrete = "discrete-time model"),
+      if (tt$score == "neural") ", neural-network risk score",
+      if (!is.null(tt$ties) && tt$ties != "none") paste0(", ties ", tt$ties), "\n", sep = "")
   cat("Divergence: ", .divergence_label(x$divergence),
       if (x$penalty != "none") paste0(", ", x$penalty, " penalty"), "\n", sep = "")
   cat("Selected:   eta = ", format(x$eta, digits = 4),
