@@ -54,6 +54,8 @@ It reads your request and your files, checks how well the external information f
 
 <div align="center">
 <img src="assets/agent-flowchart.svg" width="100%" alt="How the agent works: on your machine, you chat with the harness; the harness asks the local language model to read your request and plan the analysis, checks every answer in code, and calls the BregSurv R package, which fits the models and picks the best. The language model never calls the R package. Your data and the external information go into the R package."/>
+
+<sub>▶️ One request, step by step (animation, 2:45): <a href="assets/agent-flow.mp4">assets/agent-flow.mp4</a></sub>
 </div>
 
 ---
