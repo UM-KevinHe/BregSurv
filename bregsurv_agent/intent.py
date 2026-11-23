@@ -12,6 +12,8 @@ harness does the routing.
   describe_external  it describes or points to external information
   evaluate_by_splits evaluate the methods on repeated random train/test splits (V4;
                      `splits.py`), alone or with a declaration
+  restyle_figure     V4: change how a figure already drawn looks (colours, fonts, titles,
+                     legend); `figures.py`
   ask_about_result   a question about the report already produced
   ask_about_method   a question about how the system works
   out_of_scope       something this system does not do
@@ -44,6 +46,7 @@ KINDS = ("declare_roles", "edit_declaration", "describe_external",
          "select_external", "compare_runs", "multi_step",
          "evaluate_by_splits",                      # V4: evaluation by repeated splits
          "kaplan_meier",                            # V4: the analyst asks to see the KM curve
+         "restyle_figure",                          # V4: change how a drawn figure looks (figures.py)
          "evaluate_on_test",                        # V4: score the models on the supplied test file
          "ask_about_result", "ask_about_method", "out_of_scope", "other")
 
@@ -243,7 +246,8 @@ def validate(message: str, raw: Dict[str, Any],
 
 _ORDER = {k: i for i, k in enumerate((
     "multi_step", "describe_external", "select_external",
-    "declare_roles", "edit_declaration", "compare_runs", "evaluate_by_splits", "kaplan_meier", "evaluate_on_test",
+    "declare_roles", "edit_declaration", "compare_runs", "evaluate_by_splits", "kaplan_meier",
+    "restyle_figure", "evaluate_on_test",
     "ask_about_method", "ask_about_result", "out_of_scope", "other"))}
 
 
@@ -269,7 +273,8 @@ REFUSALS: Dict[str, str] = {
     "figure_requested":
         "Beyond the Kaplan-Meier estimate of your cohort, drawn with every "
         "analysis (by stratum when you declared strata), and the box plots of an "
-        "evaluation by repeated splits, this system draws no figures. The "
+        "evaluation by repeated splits, this system draws no figures; it can "
+        "change how those figures look (colours, fonts, titles, the legend). The "
         "candidates.json and repro.R it writes hold everything a figure would "
         "need.",
     "causal_claim":

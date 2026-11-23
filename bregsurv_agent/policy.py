@@ -41,7 +41,8 @@ NAMES = ("intent", "role_extraction", "external_roles", "report_prose", "explain
          "published_model", "ask", "plan_steps", "refusal",
          "analysis_plan", "next_step",          # V4: the planner's two acts
          "split_request",                       # V4: evaluation by repeated splits, on request
-         "chat")                                # V4: conversation that is not an analysis request
+         "chat",                                # V4: conversation that is not an analysis request
+         "figure_style")                        # V4: how a figure looks, at the analyst's request
 
 HEADINGS = ("## What you are doing", "## What the system is",
             "## Before you decide", "## The fields", "## What you must not do")

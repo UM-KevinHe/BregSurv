@@ -95,7 +95,7 @@ _gc_utils._json_schema_to_python_type = _safe_json_to_pytype
 import gradio as gr  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from bregsurv_agent import ablation, actions, analyst, boundary, external, fewshot, guards, intent, knowledge, memory, pipeline, sessions, textmatch  # noqa: E402
+from bregsurv_agent import ablation, actions, analyst, boundary, external, fewshot, figures, guards, intent, knowledge, memory, pipeline, sessions, textmatch  # noqa: E402
 from bregsurv_agent.state import Phase, Session  # noqa: E402
 from bregsurv_agent.declaration import (  # noqa: E402
     DeclarationError, complete, from_dictionary, parse_reply, render_question,
@@ -1027,6 +1027,48 @@ def _draw_km(out, chat_msg, by: Optional[str], evidence: str = ""):
                 image=km["png"], drawn=True, by=col, grouping=km.get("grouping"))
 
 
+def _restyle_figure(out, chat_msg, client, model, message: str):
+    """V4: change how a figure the harness drew looks, as the analyst asked (figures.py). The model
+    writes ggplot2 style terms for the figure; restyle_figure.R reads them, runs them with nothing
+    else in reach and compares the result with the harness's figure, so nothing the figure shows can
+    change. An accepted change is drawn into the same files (the report shows it) and its code kept in
+    <figure>.style.R; a refused one goes back to the model with the problems named, at most three
+    calls, and then the analyst is told why the figure stayed as it was."""
+    history, _, session, *rest = out
+    rest = (list(rest) + [None] * len(_EMPTY))[:len(_EMPTY)]
+
+    def done(text, image=None, pdf=None, **log):
+        history.append([chat_msg, text])
+        if image:
+            history.append([None, (image,)])
+        if pdf:
+            history.append([None, (pdf,)])
+        return (history, "", _log_action(session, route="restyle_figure", **log)) + tuple(rest)
+
+    figs = figures.available(session.temp)
+    if not figs:
+        return done("There is no figure to change yet. The Kaplan-Meier curve is drawn with the "
+                    "analysis; once it has run, tell me how you want it to look.",
+                    accepted=False, why="no figure")
+    if client is None:
+        return done("Changing how a figure looks needs the language model, and none is configured, "
+                    "so the figure is as it was.", accepted=False, why="no model")
+    oc = figures.restyle(client, model, message, figs, _run_r)
+    session = _take_calls(session)
+    log = {"accepted": oc.accepted, "declined": oc.declined, "already": oc.already,
+           "partial": oc.partial,
+           "not_possible": oc.not_possible,
+           "figure": oc.figure.kind if oc.figure else None, "code": oc.code, "changes": oc.changes,
+           "attempts": [{k: a.get(k) for k in ("figure", "code", "not_possible", "verdict", "problems",
+                                               "error", "model_seconds", "check_seconds")}
+                        for a in oc.attempts]}
+    if not oc.accepted:
+        return done(figures.reply_text(oc), **log)
+    pdf = (_report_pdf(session, Path(oc.figure.base).parent)
+           if oc.figure.kind in figures.IN_REPORT else None)
+    return done(figures.reply_text(oc), image=oc.png_for_chat, pdf=pdf, **log)
+
+
 def _show_partial(text: str) -> None:
     box = _PARTIAL.get()
     if box is not None:
@@ -1463,7 +1505,8 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                             replies.append("I could not turn that into steps I can carry out. "
                                            "Say which external file to use, or ask for one "
                                            "analysis at a time.")
-                elif act in (actions.Act.EVALUATE_BY_SPLITS, actions.Act.DRAW_KM):
+                elif act in (actions.Act.EVALUATE_BY_SPLITS, actions.Act.DRAW_KM,
+                             actions.Act.RESTYLE_FIGURE):
                     # V4: carried out after the turn's run, if it makes one (below)
                     pass
                 elif act is actions.Act.ASK:
@@ -1505,9 +1548,17 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
             # V4: a Kaplan-Meier curve the analyst asked to see, drawn after the run
             km_it = by_kind.get("kaplan_meier")
             wants_km = km_it is not None
+            # V4: a change to how a figure looks, made after any figure this turn draws
+            wants_style = "restyle_figure" in by_kind
+            wants_after = wants_km or wants_style
 
             def _km(o, chat_msg=None):
-                return _draw_km(o, chat_msg, km_it.km_by, km_it.evidence) if wants_km else o
+                if wants_km:
+                    o = _draw_km(o, chat_msg, km_it.km_by, km_it.evidence)
+                    chat_msg = None
+                if wants_style:
+                    o = _restyle_figure(o, chat_msg, client, model, msg)
+                return o
             if steps:
                 out = _execute_steps(steps, session, history, msg, replies, client,
                                      prof, write_prose, endpoint, model, api_key,
@@ -1515,7 +1566,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                 return _km(_evaluate_by_splits(out, None, client, model, message=msg)
                            if wants_splits else out)
             wants_compare = actions.Act.COMPARE_RUNS in acts
-            if (actions.Act.COMPLETE not in acts and not replies and not wants_splits and not wants_km
+            if (actions.Act.COMPLETE not in acts and not replies and not wants_splits and not wants_after
                     and "evaluate_on_test" in by_kind):
                 # V4: scoring on the supplied test file is part of every analysis; a
                 # message that asks only for it is answered from what the session holds
@@ -1529,7 +1580,7 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
             if actions.Act.COMPLETE not in acts:
                 if wants_compare:
                     replies.append(_compare_reply(session))
-                if not wants_splits and not wants_km:
+                if not wants_splits and not wants_after:
                     still = _still_open(session, prof, "\n\n".join(replies))
                     if still:
                         replies.append(still)
@@ -1541,13 +1592,13 @@ def submit_answer(msg: str, history, session, endpoint, model, api_key,
                     return _km(_evaluate_by_splits((history, "", session) + _EMPTY,
                                                    None if replies else msg, client, model,
                                                    message=msg))
-                if wants_km:
+                if wants_after:
                     if replies:
                         history.append([msg, "\n\n".join(replies)])
                     return _km((history, "", session) + _EMPTY, None if replies else msg)
                 history.append([msg, "\n\n".join(replies)])
                 return (history, "", session) + _EMPTY
-            if wants_compare or wants_splits or wants_km:
+            if wants_compare or wants_splits or wants_after:
                 # the comparison and the evaluation follow the run this turn makes
                 out = _settle_and_run(session, history, msg, given, sources, replies,
                                       used_model, client, prof, write_prose, endpoint,
@@ -2247,11 +2298,12 @@ def _with_reading_guide(md_text: str) -> str:
     return md_text[:m.end()] + "\n\n" + _READING_GUIDE + md_text[m.end():]
 
 
-def _report_pdf(session) -> Optional[str]:
-    """The full report as a PDF, written next to the run's other files."""
+def _report_pdf(session, outdir: Optional[Path] = None) -> Optional[str]:
+    """The full report as a PDF, written next to the run's other files (`outdir`: the run folder
+    to use, by default the session's latest)."""
     if session is None or session.result is None or not session.temp:
         return None
-    outdir = Path(session.temp[-1])
+    outdir = Path(outdir) if outdir is not None else Path(session.temp[-1])
     md = outdir / "report.md"
     if not md.is_file():
         return None
@@ -2454,6 +2506,13 @@ def chat_turn(mm, history, session, ui):
             if isinstance(b, (tuple, list)) and b and str(b[0]).endswith("km_curve.png"):
                 history.append([None, (b[0],)])
                 break
+        # a change to a figure's look asked for in the same message: its reply and its picture
+        # (the PDF above already carries the changed figure)
+        for u, b in new:
+            if isinstance(b, str) and b.startswith(figures.MARK):
+                history.append([None, b])
+            elif isinstance(b, (tuple, list)) and b and figures.is_style_png(str(b[0])):
+                history.append([None, (b[0],)])
     return history, None, session, ui
 
 

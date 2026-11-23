@@ -59,17 +59,18 @@ def main() -> int:
     check(model_acts == {Act.TYPE_MESSAGE, Act.PROPOSE_ROLES, Act.NAME_PUBLISHED_MODEL,
                          Act.READ_RELEASE, Act.WRITE_REPORT, Act.EXPLAIN_RESULT,
                          Act.WORD_QUESTION, Act.PLAN_STEPS, Act.EXPLAIN_REFUSAL,
-                         Act.PLAN_ANALYSIS, Act.REFINE_ANALYSIS, Act.EVALUATE_BY_SPLITS},
-          "exactly twelve acts involve the model (V4 adds the planner's two and the split "
-          "request reader), each logged under its schema name",
+                         Act.PLAN_ANALYSIS, Act.REFINE_ANALYSIS, Act.EVALUATE_BY_SPLITS,
+                         Act.RESTYLE_FIGURE},
+          "exactly thirteen acts involve the model (V4 adds the planner's two, the split "
+          "request reader and the figure restyle), each logged under its schema name",
           str(sorted(a.value for a in model_acts)))
     check(all(s.verifier for s in actions.SPECS.values()),
           "every act names what verifies it")
     check({s.proposer.split(":")[1] for s in actions.SPECS.values() if s.needs_model}
           == {"intent", "role_extraction", "published_model", "external_roles",
               "report_prose", "explain", "ask", "plan_steps", "refusal",
-              "analysis_plan", "next_step", "split_request"},
-          "the model-facing proposers are the twelve policy names")
+              "analysis_plan", "next_step", "split_request", "figure_style"},
+          "the model-facing proposers are the thirteen policy names")
     rows = actions.registry_table()
     check(len(rows) == len(Act) and all(set(r) == {"act", "proposer", "verified by", "allowed in"}
                                         for r in rows),

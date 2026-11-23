@@ -37,6 +37,12 @@ if (length(args) < 2) stop("Usage: Rscript clinical_summary.R <in.json> <out.jso
 input_path <- args[1]; output_path <- args[2]
 BIG_BETA <- 5          # the report's separation flag (report_v3), kept the same here
 MAX_STRATA <- 8L
+script_dir <- local({
+  a <- commandArgs(trailingOnly = FALSE)
+  f <- sub("^--file=", "", a[grepl("^--file=", a)])
+  if (length(f)) dirname(normalizePath(f[1])) else getwd()
+})
+source(file.path(script_dir, "figure_lib.R"))
 
 eval_in <- function(expr_str, env) {
   if (is.null(expr_str) || !is.character(expr_str) || !nzchar(expr_str)) return(NULL)
@@ -199,30 +205,17 @@ res <- tryCatch({
   utils::write.csv(df, csv, row.names = FALSE)
 
   ## ---- the figure: observed survival by risk group -----------------------------
-  pal <- c("#4f8a3a", "#d08a2c", "#c0504d", "#8064a2", "#1f4e79")[seq_len(k)]
+  pal <- FIG_PAL_RISK[seq_len(k)]
   if (k == 2) pal <- c("#4f8a3a", "#c0504d")
   grid_t <- pretty(c(0, max(tm)), n = 5); grid_t <- grid_t[grid_t <= max(tm)]
-  draw <- function() {
-    layout(matrix(1:2, ncol = 1), heights = c(3.2, 0.6 + 0.35 * k))
-    par(mar = c(4, 4.5, 2.5, 1), las = 1)
-    plot(fit, col = pal, lwd = 2, mark.time = TRUE, xlim = c(0, max(tm)), ylim = c(0, 1),
-         xlab = paste0("Follow-up (", input$time_col, ")"), ylab = "Proportion without the event", xaxt = "n")
-    axis(1, at = grid_t)
-    abline(v = hz, lty = 3, col = "grey60")
-    title(main = "Observed survival by predicted risk group", cex.main = 1, font.main = 1)
-    legend("bottomleft", legend = paste0(labs, " risk"), col = pal, lwd = 2, bty = "n", cex = 0.85)
-    smg <- summary(fit, times = grid_t, extend = TRUE)
-    nr <- matrix(smg$n.risk, nrow = k, byrow = TRUE)
-    par(mar = c(1, 4.5, 1.2, 1))
-    plot(NA, xlim = c(0, max(tm)), ylim = c(0.5, k + 0.5), axes = FALSE, xlab = "", ylab = "")
-    mtext("Number at risk", side = 3, adj = 0, cex = 0.8, line = 0.1)
-    for (i in seq_len(k)) {
-      text(grid_t, k + 1 - i, labels = nr[i, ], col = pal[i], cex = 0.8)
-      axis(2, at = k + 1 - i, labels = labs[i], tick = FALSE, cex.axis = 0.75, col.axis = pal[i])
-    }
-  }
-  pdf(paste0(input$out_base, "_groups.pdf"), width = 7, height = 5 + 0.3 * k); draw(); invisible(dev.off())
-  png(paste0(input$out_base, "_groups.png"), width = 7, height = 5 + 0.3 * k, units = "in", res = 150); draw(); invisible(dev.off())
+  smg <- summary(fit, times = grid_t, extend = TRUE)
+  nr <- matrix(smg$n.risk, nrow = k, byrow = TRUE)
+  fig <- fig_survival("risk_groups", fit, paste0(labs, " risk"), pal,
+                      title = "Observed survival by predicted risk group",
+                      xlab = paste0("Follow-up (", input$time_col, ")"),
+                      ylab = "Proportion without the event", xmax = max(tm), grid_t = grid_t,
+                      n_risk = nr, legend_title = "Predicted risk group", vlines = hz)
+  fig_write(fig, paste0(input$out_base, "_groups"))
 
   list(status = "ok", basis = "apparent", time_col = input$time_col, row = input$row,
        n = length(tm), n_events = sum(ev), horizons = as.list(hz), middle_horizon = mid,

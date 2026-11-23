@@ -117,6 +117,11 @@ See [the R package](#-the-r-package-the-agents-statistical-core-on-its-own) belo
 
 4. **Read the answer.** A short summary in the chat — what was compared, whether borrowing helped, and the coefficients of the recommended model — with the **full PDF report** attached.
 5. **Ask follow-up questions** — *"Why was that model chosen instead of just using my own data?"* — and get plain-language answers grounded in the fitted results.
+6. **Change how a figure looks** — *"make the curves black and dashed, with a bigger font"*. The
+   language model writes ggplot2 style code for the figure (colours, line types, fonts, titles, the
+   legend), and the agent uses it only after checking that every curve, number at risk, axis range
+   and legend label is exactly as before. The code is kept in a script that redraws the figure with
+   R alone. The model writes no statistical code: it changes how a figure looks, never what it shows.
 
 <div align="center">
 <img src="assets/screenshot_home.png" width="45%" alt="The agent's home screen"/> &nbsp; <img src="assets/screenshot_result.png" width="45%" alt="An analysis result in the agent"/>

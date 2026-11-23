@@ -48,6 +48,7 @@ class Act(str, Enum):
     PLAN_ANALYSIS = "plan_analysis"            # V4: what is fitted (row, members, grids, masks)
     REFINE_ANALYSIS = "refine_analysis"        # V4: finish, or refit / add members after the fit
     EVALUATE_BY_SPLITS = "evaluate_by_splits"  # V4: read the split request; the harness runs it
+    RESTYLE_FIGURE = "restyle_figure"          # V4: style terms for a drawn figure (figures.py)
     # decided and executed by the harness alone
     SHOW_EXTERNAL = "show_external"
     ANSWER_METHOD = "answer_method"
@@ -128,6 +129,13 @@ SPECS: Dict[Act, ActionSpec] = {a.act: a for a in (
                "choice within the cap, recorded as chosen. The harness draws the splits from a "
                "recorded seed, runs the verified analysis on every split, scores every member and "
                "writes every number; only after a result exists, Cox-family rows only", _LOADED),
+    ActionSpec(Act.RESTYLE_FIGURE, "model:figure_style",
+               "restyle_figure.R: the code is read before it runs (only listed style functions and "
+               "arguments, plain values, colours R knows, no number in a label the analyst did not "
+               "write), run with nothing else in reach, and the figure compared with the harness's: "
+               "every layer's data, the axes' ranges and the legend's labels unchanged, the axes and "
+               "the legend still shown. A refused answer goes back with the problems named, at most "
+               "three calls; then the figure stays as it was. Only figures already drawn", _LOADED),
     ActionSpec(Act.SELECT_EXTERNAL, "harness",
                "the name must be one of the loaded releases (an enum in M1's schema)", _LOADED),
     ActionSpec(Act.COMPARE_RUNS, "harness",
@@ -186,6 +194,8 @@ def plan(session: Any, intents: Sequence[Any]) -> List[Act]:
             acts.append(Act.EVALUATE_BY_SPLITS)
         elif k == "kaplan_meier":
             acts.append(Act.DRAW_KM)
+        elif k == "restyle_figure":
+            acts.append(Act.RESTYLE_FIGURE)
         elif k == "describe_external":
             acts.append(Act.SHOW_EXTERNAL if getattr(session, "external", None) is not None
                         else Act.NAME_PUBLISHED_MODEL)
@@ -205,11 +215,15 @@ def plan(session: Any, intents: Sequence[Any]) -> List[Act]:
     if Act.EVALUATE_BY_SPLITS in acts:
         # the evaluation by splits is of the analysis this turn runs, if it runs one: last
         acts = [a for a in acts if a is not Act.EVALUATE_BY_SPLITS] + [Act.EVALUATE_BY_SPLITS]
+    if Act.RESTYLE_FIGURE in acts:
+        # a change to a figure's look applies to the figures this turn draws, if it draws any: last
+        acts = [a for a in acts if a is not Act.RESTYLE_FIGURE] + [Act.RESTYLE_FIGURE]
     if Act.PROPOSE_ROLES in acts or (Act.SELECT_EXTERNAL in acts and (
             getattr(session, "declaration", None) is not None
             or getattr(session, "pending", None))):
         # a selection re-runs the current declaration on the newly active release
-        tail = [a for a in (Act.COMPARE_RUNS, Act.EVALUATE_BY_SPLITS) if a in acts]
+        tail = [a for a in (Act.COMPARE_RUNS, Act.EVALUATE_BY_SPLITS, Act.RESTYLE_FIGURE)
+                if a in acts]
         pos = acts.index(tail[0]) if tail else len(acts)
         acts.insert(pos, Act.COMPLETE)
     elif "other" in kinds:
@@ -223,6 +237,17 @@ def planner_calls() -> int:
     return analyst.MAX_CALLS if analyst.enabled() else 0
 
 
+def figure_calls() -> int:
+    """V4: the most model calls one change to a figure's look can make -- its own bounded loop, like
+    the planner's (a reading and at most two returns), outside MODEL_CALLS_PER_TURN."""
+    from . import figures
+    return figures.MAX_CALLS
+
+
+# acts whose model calls are a bounded loop of their own, counted by their own budget
+_OWN_LOOP = (Act.RESTYLE_FIGURE,)
+
+
 def step_budget(n_steps: int) -> int:
     """A multi-step turn may make two calls per step (an extraction and a
     report) on top of the turn's own budget, and V4's planning loop per run."""
@@ -233,7 +258,7 @@ def model_calls_in(acts: Sequence[Act]) -> int:
     """How many model calls a plan implies, counting the intent call that
     produced it and the report that follows a run."""
     n = 1  # TYPE_MESSAGE
-    n += sum(1 for a in acts if SPECS[a].needs_model)
+    n += sum(1 for a in acts if SPECS[a].needs_model and a not in _OWN_LOOP)
     if Act.COMPLETE in acts:
         n += 1  # WRITE_REPORT if the completion runs, else WORD_QUESTION: one or the other
     return n

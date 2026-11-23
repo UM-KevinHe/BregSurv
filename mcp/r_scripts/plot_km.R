@@ -3,7 +3,7 @@
 #
 #   Rscript plot_km.R <in.json> <out.json>
 #
-# HARNESS-INVOKED, after every full-cohort analysis. Base R graphics and survival::survfit only:
+# HARNESS-INVOKED, after every full-cohort analysis. survival::survfit, drawn with ggplot2 (figure_lib.R):
 # the curve of the declared follow-up time and event, with its pointwise 95% band, and the number
 # at risk beneath; one curve per stratum when the analyst declared strata (at most MAX_STRATA of
 # them, otherwise the pooled curve), or by the column the analyst asked for (`group_col`): its levels
@@ -12,12 +12,20 @@
 #
 # input.json: {data_path, data_expr, time_col, event_col, event_value, stratum_col?, group_col?, out_base}
 # output.json: {status, pdf, png, n, n_events, n_strata, grouped_by, grouping} or {status: "skipped" | "error", reason}
+# Also writes <out_base>.figure.rds / .figure.json, the figure as an object a restyle can change
+# (restyle_figure.R).
 
 suppressPackageStartupMessages({ library(jsonlite); library(survival) })
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2) stop("Usage: Rscript plot_km.R <in.json> <out.json>")
 input_path <- args[1]; output_path <- args[2]
 MAX_STRATA <- 8L
+script_dir <- local({
+  a <- commandArgs(trailingOnly = FALSE)
+  f <- sub("^--file=", "", a[grepl("^--file=", a)])
+  if (length(f)) dirname(normalizePath(f[1])) else getwd()
+})
+source(file.path(script_dir, "figure_lib.R"))
 
 eval_in <- function(expr_str, env) {
   if (is.null(expr_str) || !is.character(expr_str) || !nzchar(expr_str)) return(NULL)
@@ -86,30 +94,16 @@ res <- tryCatch({
   tm <- tm[keep]; ev <- ev[keep]; if (!is.null(st)) st <- droplevels(st[keep])
   fit <- if (is.null(st)) survfit(Surv(tm, ev) ~ 1) else survfit(Surv(tm, ev) ~ st)
   k <- if (is.null(st)) 1L else nlevels(st)
-  pal <- c("#1f4e79", "#c0504d", "#4f8a3a", "#8064a2", "#d08a2c", "#2c8a8a", "#7f7f7f", "#a05a2c")[seq_len(k)]
   grid_t <- pretty(c(0, max(tm)), n = 5); grid_t <- grid_t[grid_t <= max(tm)]
-  draw <- function() {
-    layout(matrix(1:2, ncol = 1), heights = c(3.2, 0.6 + 0.35 * k))
-    par(mar = c(4, 4.5, 2.5, 1), las = 1)
-    plot(fit, col = pal, lwd = 2, conf.int = (k == 1), mark.time = TRUE, xlim = c(0, max(tm)),
-         ylim = c(0, 1), xlab = paste0("Follow-up (", input$time_col, ")"),
-         ylab = "Proportion without the event", xaxt = "n")
-    axis(1, at = grid_t)
-    title(main = "Kaplan-Meier estimate of the target cohort", cex.main = 1, font.main = 1)
-    if (k > 1) legend("bottomleft", legend = paste0(sc, if (identical(grouping, "median")) " " else " = ", levels(st)), col = pal, lwd = 2, bty = "n", cex = 0.85)
-    sm <- summary(fit, times = grid_t, extend = TRUE)
-    strata_lab <- if (k > 1) levels(st) else "All"
-    nr <- matrix(sm$n.risk, nrow = k, byrow = TRUE)
-    par(mar = c(1, 4.5, 1.2, 1))
-    plot(NA, xlim = c(0, max(tm)), ylim = c(0.5, k + 0.5), axes = FALSE, xlab = "", ylab = "")
-    mtext("Number at risk", side = 3, adj = 0, cex = 0.8, line = 0.1)
-    for (i in seq_len(k)) {
-      text(grid_t, k + 1 - i, labels = nr[i, ], col = pal[i], cex = 0.8)
-      axis(2, at = k + 1 - i, labels = strata_lab[i], tick = FALSE, cex.axis = 0.75, col.axis = pal[i])
-    }
-  }
-  pdf(paste0(input$out_base, ".pdf"), width = 7, height = 5 + 0.3 * k); draw(); invisible(dev.off())
-  png(paste0(input$out_base, ".png"), width = 7, height = 5 + 0.3 * k, units = "in", res = 150); draw(); invisible(dev.off())
+  groups <- if (k > 1) levels(st) else "All"
+  sm <- summary(fit, times = grid_t, extend = TRUE)
+  nr <- matrix(sm$n.risk, nrow = k, byrow = TRUE)
+  fig <- fig_survival("km_curve", fit, groups, FIG_PAL_KM,
+                      title = "Kaplan-Meier estimate of the target cohort",
+                      xlab = paste0("Follow-up (", input$time_col, ")"),
+                      ylab = "Proportion without the event", xmax = max(tm), grid_t = grid_t,
+                      n_risk = nr, legend_title = if (k > 1) sc else NULL, band = (k == 1))
+  fig_write(fig, input$out_base)
   list(status = "ok", pdf = paste0(input$out_base, ".pdf"), png = paste0(input$out_base, ".png"),
        n = length(tm), n_events = sum(ev), n_strata = k,
        grouped_by = if (k > 1) sc else NULL, grouping = if (k > 1) grouping else NULL)
