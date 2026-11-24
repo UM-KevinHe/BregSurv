@@ -67,7 +67,7 @@
 #' @param release What the external source made available, or `NULL` to fit your data alone. Build it
 #'   with one of four constructors, by what you received:
 #'   * [release_records()]: **individual records**, another cohort's data subject by subject, in the
-#'     target's design and with your covariate names.
+#'     target's design and with your covariate names; they may lack some of your covariates.
 #'     - `z`: the external covariates;
 #'     - `time`, `event` (and optionally `stratum`) for a Cox target;
 #'     - `case`, `set` for a nested case-control target;
@@ -328,22 +328,34 @@ bregsurv <- function(target, release = NULL, divergence = NULL, eta = 0,
                                     n = t$n, p = ncol(t$z), ties = t$ties, link = t$link, K = t$K)
 
 ## external coefficients (and precision) from cohort records, by a Cox fit with Breslow ties
+## on the target covariates the records carry: a covariate they lack has no coefficient in the fitted
+## model, so the estimators align the vector by name (zero for Kullback-Leibler, free for Mahalanobis)
 .records_to_coef <- function(rel, znames) {
-  ze <- .match_cols(rel$z, znames)
+  ze <- .match_cols(rel, znames)
   fm <- if (is.null(rel$stratum))
     survival::coxph(survival::Surv(rel$time, rel$event) ~ ze, ties = "breslow")
   else survival::coxph(survival::Surv(rel$time, rel$event) ~ ze + survival::strata(rel$stratum), ties = "breslow")
   b <- stats::coef(fm); V <- stats::vcov(fm)
   if (any(!is.finite(b)) || any(!is.finite(V))) stop("The Cox fit on the external records did not converge.", call. = FALSE)
-  names(b) <- znames
-  Q <- solve(V); Q <- (Q + t(Q)) / 2; dimnames(Q) <- list(znames, znames)
+  names(b) <- colnames(ze)
+  Q <- solve(V); Q <- (Q + t(Q)) / 2; dimnames(Q) <- list(colnames(ze), colnames(ze))
   list(beta = b, Q = Q)
 }
 
-.match_cols <- function(ze, znames) {
-  miss <- setdiff(znames, colnames(ze))
-  if (length(miss)) stop("The external records lack the target covariate(s): ", paste(miss, collapse = ", "), call. = FALSE)
-  ze[, znames, drop = FALSE]
+## the target covariates the records carry, in the target's order. Records may lack some of them
+## (2.2.0); matching them is by name, so records without column names must carry them all.
+.match_cols <- function(rel, znames) {
+  ze <- rel$z
+  have <- znames[znames %in% colnames(ze)]
+  if (length(have) == length(znames)) return(ze[, znames, drop = FALSE])
+  if (!length(have))
+    stop("The external records carry none of the target covariates (", paste(znames, collapse = ", "), ").",
+         call. = FALSE)
+  if (isFALSE(rel$z_named))
+    stop("The external records have ", ncol(ze), " covariate columns without names and the target has ",
+         length(znames), "; name the columns of the records so they can be matched to the target's covariates.",
+         call. = FALSE)
+  ze[, have, drop = FALSE]
 }
 
 .engine_call <- function(target, release, divergence, penalty, alpha, etas, lambda, nlambda, lambda.min.ratio,
@@ -375,7 +387,7 @@ bregsurv <- function(target, release = NULL, divergence = NULL, eta = 0,
 
   ## the data
   if (divergence == "composite") {
-    ze <- .match_cols(release$z, colnames(z))
+    ze <- .match_cols(release, colnames(z))
     args <- if (is_ncc) list(y_int = target$case, z_int = z, stratum_int = target$set,
                              y_ext = release$case, z_ext = ze, stratum_ext = release$set)
             else list(z_int = z, delta_int = target$event, time_int = target$time, stratum_int = target$stratum,
@@ -424,7 +436,7 @@ bregsurv <- function(target, release = NULL, divergence = NULL, eta = 0,
   fun <- paste0(pfx, fam, suffix)
   z <- target$z
   if (divergence == "composite") {
-    ze <- .match_cols(release$z, colnames(z))
+    ze <- .match_cols(release, colnames(z))
     args <- list(z_int = z, delta_int = target$event, interval_int = target$interval, stratum_int = target$stratum,
                  z_ext = ze, delta_ext = release$event, interval_ext = release$interval, stratum_ext = release$stratum)
   } else {
@@ -521,7 +533,9 @@ bregsurv <- function(target, release = NULL, divergence = NULL, eta = 0,
     return(list(beta = aq$beta %||% aq[[1]], Q = unclass(as.matrix(Q)), manufactured = isTRUE(attr(Q, "manufactured"))))
   }
   if (divergence == "composite") {
-    ze <- .match_cols(release$z, colnames(target$z))
+    ## records that lack some target covariates are widened at the internal means, which the
+    ## standardization in .dt_prepare maps to 0: the records' own baselines then carry no term for them
+    ze <- .widen_ext(target$z, .match_cols(release, colnames(target$z)), "the external records' z")$z
     if (max(release$interval) > target$K) stop("The external records reach beyond the target's intervals.", call. = FALSE)
     return(list(z = ze, interval = release$interval, event = release$event, stratum = release$stratum))
   }

@@ -29,7 +29,9 @@ cv.cox_indi(
 \code{NULL}, all internal observations are treated as a single stratum; unlike the
 other cross-validation functions in the package, no warning is issued in that case.}
 
-\item{z_ext, delta_ext, time_ext, stratum_ext}{External data (always fully included in training).}
+\item{z_ext, delta_ext, time_ext, stratum_ext}{External data (always fully included in training).
+\code{z_ext} may carry only some of the internal covariates, with column names (see
+\code{\link{cox_indi}}).}
 
 \item{etas}{Numeric vector of non-negative candidate eta values (must be provided;
 omitting it is an error). Must be finite and \eqn{\ge 0}. The values are sorted in

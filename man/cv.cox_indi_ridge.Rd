@@ -29,7 +29,8 @@ cv.cox_indi_ridge(
 \arguments{
 \item{z_int, delta_int, time_int, stratum_int}{Internal data, as in \code{\link{cox_indi_ridge}}.}
 
-\item{z_ext, delta_ext, time_ext, stratum_ext}{External data.}
+\item{z_ext, delta_ext, time_ext, stratum_ext}{External data; \code{z_ext} may carry only some of
+the internal covariates, with column names (see \code{\link{cox_indi}}).}
 
 \item{etas}{Candidate weights of the external rows.}
 

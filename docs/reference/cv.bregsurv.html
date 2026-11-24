@@ -39,7 +39,7 @@ penalty: an optional ridge, lasso or elastic-net penalty on the coefficients.
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -142,7 +142,7 @@ covariate, with names). <code><a href="target_cox.html">target_cox()</a></code> 
 <dt id="arg-release">release<a class="anchor" aria-label="anchor" href="#arg-release"></a></dt>
 <dd><p>What the external source made available, or <code>NULL</code> to fit your data alone. Build it
 with one of four constructors, by what you received:</p><ul><li><p><code><a href="release_records.html">release_records()</a></code>: <strong>individual records</strong>, another cohort's data subject by subject, in the
-target's design and with your covariate names.</p><ul><li><p><code>z</code>: the external covariates;</p></li>
+target's design and with your covariate names; they may lack some of your covariates.</p><ul><li><p><code>z</code>: the external covariates;</p></li>
 <li><p><code>time</code>, <code>event</code> (and optionally <code>stratum</code>) for a Cox target;</p></li>
 <li><p><code>case</code>, <code>set</code> for a nested case-control target;</p></li>
 <li><p><code>interval</code>, <code>event</code> for a discrete-time target.</p></li>

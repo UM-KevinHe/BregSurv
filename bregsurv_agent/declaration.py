@@ -208,10 +208,14 @@ class Declaration:
         # The external cohort, addressed the same way and by the same column
         # names. One set of names for both tables is a real constraint, and it
         # is the one that makes the linkage checkable instead of positional.
+        # The external table may lack some of the covariates: its covariate
+        # matrix is the declared covariates it carries, in the declared order,
+        # and run_candidates.R reports the ones it lacks in the linkage.
         xd = self.external_data_expr
         if xd:
             cols = ", ".join(_rq(c) for c in self.covariates)
-            out["z_ext_expr"] = f"{xd}[, c({cols}), drop = FALSE]"
+            out["z_ext_expr"] = (f"{xd}[, intersect(c({cols}), colnames({xd})), "
+                                 f"drop = FALSE]")
             if self.time_col is None:
                 out["y_ext_expr"] = f"{xd}[[{_rq(self.event_col)}]]"
                 out["stratum_ext_expr"] = f"{xd}[[{_rq(self.stratum_col)}]]"

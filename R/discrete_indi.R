@@ -17,7 +17,9 @@
 #' @param z_int,delta_int,interval_int,stratum_int The internal cohort: covariates, event indicator,
 #'   last interval at risk and optional strata (see [discretekl()]).
 #' @param z_ext,delta_ext,interval_ext,stratum_ext The external cohort, in the same form, with the
-#'   internal covariate names.
+#'   internal covariate names. It may carry only some of the internal covariates: its likelihood is
+#'   then that of the model on the covariates it carries (its own interval baselines absorb the rest),
+#'   and a covariate it lacks is standardized on the internal cohort, as every covariate is.
 #' @param n_intervals Number of intervals \eqn{K}; defaults to the largest interval in either cohort.
 #'
 #' @return An object of class `"discrete_indi"`: as [discretekl()], with the linear predictors of the

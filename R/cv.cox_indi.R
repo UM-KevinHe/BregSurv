@@ -8,6 +8,8 @@
 #'   \code{NULL}, all internal observations are treated as a single stratum; unlike the
 #'   other cross-validation functions in the package, no warning is issued in that case.
 #' @param z_ext,delta_ext,time_ext,stratum_ext External data (always fully included in training).
+#'   \code{z_ext} may carry only some of the internal covariates, with column names (see
+#'   \code{\link{cox_indi}}).
 #' @param etas Numeric vector of non-negative candidate eta values (must be provided;
 #'   omitting it is an error). Must be finite and \eqn{\ge 0}. The values are sorted in
 #'   ascending order internally, and the rows of \code{internal_stat} / columns of
@@ -98,7 +100,8 @@ cv.cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   n_int <- nrow(z_int)
   p <- ncol(z_int)
-  if (ncol(z_ext) != p) stop("Internal and external datasets must have the same number of covariates (columns).", call. = FALSE)
+  ## external records may lack some internal covariates: checked here, widened by each fit
+  invisible(.widen_ext(z_int, z_ext))
 
   if (is.null(stratum_int)) stratum_int <- rep(1, n_int)
   stratum_int <- as.vector(stratum_int)

@@ -49,8 +49,9 @@ cox_indi_enet(
 \item{stratum_int}{Optional stratum identifiers for the internal dataset.
 Default \code{NULL} assigns all internal observations to a single stratum.}
 
-\item{z_ext}{Numeric matrix of covariates for the external dataset (\eqn{n_{\text{ext}} \times p}).
-Must have the same number of columns as \code{z_int}.}
+\item{z_ext}{Numeric matrix of covariates for the external dataset: the \eqn{p} covariates of
+\code{z_int} in the same order (or, when both are named, in any order), or some of them, with
+column names that are all column names of \code{z_int} (see \code{\link{cox_indi}}).}
 
 \item{delta_ext}{Numeric vector of event indicators for the external dataset (1 = event, 0 = censored).}
 
@@ -114,9 +115,9 @@ included in the returned result. Default \code{FALSE}.}
 
 \item{message}{Logical. If \code{TRUE}, shows a progress bar over the \code{etas} loop. Default \code{FALSE}.}
 
-\item{...}{Additional arguments (currently unused).}
-
 \item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \value{
 An object of class \code{"cox_indi_enet"} containing:
@@ -133,6 +134,7 @@ that \code{eta}.}
 of internal linear predictors in the original observation order, one per \code{eta}.}
 \item{\code{linear.predictors_ext}}{List of matrices (\eqn{n_{\text{ext}} \times n_\lambda})
 of external linear predictors in the original observation order, one per \code{eta}.}
+\item{\code{ext_covered}}{Logical vector, one entry per internal covariate: whether the external records carry it.}
 \item{\code{group}}{Factor vector of group assignments for each covariate.}
 \item{\code{group.multiplier}}{Numeric vector of group penalty multipliers used.}
 \item{\code{data}}{List of the original input data used.}
@@ -164,6 +166,11 @@ The function fits one full lambda path per \code{eta} value. Standardization is
 performed once on the stacked design matrix before the loop, so the lambda sequence
 is recomputed for each \code{eta} (since \eqn{\lambda_{\max}} depends on the
 weighted score at \eqn{\beta = 0}).
+
+The external records may carry only some of the internal covariates, as in
+\code{\link{cox_indi}}. A covariate they lack, with the rest of its penalty group, is
+standardized on the internal rows, where it is observed; every other covariate on the
+stacked rows as above.
 }
 \examples{
 \dontrun{

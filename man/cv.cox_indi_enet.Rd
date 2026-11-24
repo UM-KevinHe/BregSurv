@@ -41,7 +41,8 @@ Default \code{NULL} assigns all internal observations to a single stratum and
 issues a warning to that effect.}
 
 \item{z_ext}{Numeric matrix of covariates for the external dataset
-(\eqn{n_{\text{ext}} \times p}). Must have the same number of columns as \code{z_int}.}
+(\eqn{n_{\text{ext}} \times p}), or only some of the internal covariates, with column names
+(see \code{\link{cox_indi}}).}
 
 \item{delta_ext}{Numeric vector of event indicators for the external dataset
 (1 = event, 0 = censored).}
@@ -89,10 +90,10 @@ Default \code{FALSE}.}
 
 \item{seed}{Optional integer. Random seed for reproducible fold assignment.}
 
+\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.}
+
 \item{...}{Additional arguments passed to the underlying fitting function
 \code{\link{cox_indi_enet}}.}
-
-\item{ties}{Tie handling in the partial likelihood. \code{"none"} (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; \code{"breslow"} uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.}
 }
 \value{
 An object of class \code{"cv.cox_indi_enet"}. A list containing:

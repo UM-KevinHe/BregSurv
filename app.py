@@ -1748,9 +1748,18 @@ def _settle_and_run(session, history, msg, given, sources, replies, used_model,
         if d["event_column"] != decl.event_col:
             bad.append(f"its event column is {d['event_column']!r}, yours is "
                        f"{decl.event_col!r}")
+        # the external cohort may lack some of the covariates: the composite
+        # likelihood then borrows on the ones it carries (run_candidates.R and
+        # the report's linkage section say which); it must carry at least one
         miss = [c for c in decl.covariates if c not in d["columns"]]
-        if miss:
-            bad.append("it lacks " + ", ".join(miss))
+        if miss and len(miss) == len(decl.covariates):
+            bad.append("it carries none of your covariates (" + ", ".join(miss) + ")")
+        elif miss:
+            note = ("the external cohort lacks " + ", ".join(miss) + "; borrowing "
+                    "uses only the covariates it carries, and the report says how "
+                    "each method treats the others")
+            if note not in ext.notes:
+                ext.notes.append(note)
         if bad:
             history.append([msg, lead + "**The external cohort does not line "
                                         "up with your declaration:** "

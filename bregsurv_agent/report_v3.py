@@ -127,6 +127,10 @@ def _uncovered_sentence(res: Dict[str, Any]) -> str:
     if fam == "external":
         return (" A variable your data has but the external model lacks has no coefficient "
                 "in the external model used unchanged.")
+    if fam == "individual":
+        return (" For a variable your data has but the external cohort's records lack, the "
+                "records' part of the recommended composite likelihood has no term, so only "
+                "your data inform its coefficient directly.")
     if fam == "diskd":
         return ""
     return (" The recommended method uses your data alone, so a variable the external model "
@@ -341,6 +345,8 @@ def prose_facts(res: Dict[str, Any], refs: Dict[str, Any]) -> List[str]:
                    "discretekl": "the Kullback-Leibler penalty draws them toward zero as the "
                                  "borrowing weight grows, because the external model has no term for them",
                    "external": "the external model used unchanged gives them no coefficient",
+                   "individual": "the external cohort's records have no column for them, so "
+                                 "only the cohort informs their coefficients directly",
                    }.get(fam)
             if fam in ("mahalanobis", "euclidean"):
                 how = ("the selected method padded them with zero, so it draws them toward zero"
@@ -794,8 +800,11 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
             _in, _abs = [], list(L["dropped"])
         _rows = [["In the external cohort's records" if _records else "Covered by the external model",
                   str(len(L["covered"])), _lst(L["covered"])],
-                 ["Your predictors the external model does not cover", str(len(L["zero_padded"])), _lst(L["zero_padded"])],
-                 ["In the external model, not in your data: set aside", str(len(_abs)), _lst(_abs)]]
+                 ["Your predictors the external cohort's records lack" if _records
+                  else "Your predictors the external model does not cover",
+                  str(len(L["zero_padded"])), _lst(L["zero_padded"])],
+                 ["In the external records, not among your predictors: set aside" if _records
+                  else "In the external model, not in your data: set aside", str(len(_abs)), _lst(_abs)]]
         if _in:
             _rows.append(["In the external model and your data, not among your predictors: set aside",
                           str(len(_in)), _lst(_in)])
@@ -804,7 +813,13 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
         # matching when the external vector is unnamed, and this sentence used to
         # say "by name" unconditionally with the actual value in parentheses beside
         # it -- so on a positional run the report contradicted itself in one line.
-        if _records:
+        if _records and L["zero_padded"]:
+            # BregSurv 2.2.0: the records may lack some predictors
+            out.append("Variables were matched **by name**. The external cohort's records "
+                       f"lack {len(L['zero_padded'])} of your predictors, so the methods that "
+                       "borrow use the records through a model without them."
+                       + _uncovered_sentence(res))
+        elif _records:
             out.append("Variables were matched **by name**: the external "
                        "cohort's records carry the same columns as your data.")
         elif L["matched_by"] == "name":
@@ -817,7 +832,20 @@ def render(res: Dict[str, Any], prose: Optional[Dict[str, str]] = None,
                        "the two orderings agree. If they do not, every borrowed "
                        "coefficient is attached to the wrong variable.")
         out.append("")
-        if L["dropped"]:
+        if _records and L["zero_padded"]:
+            # the same caveat as a set-aside release term, from the other side: what is
+            # borrowed for the predictors the records carry comes from a model without
+            # the ones they lack
+            out.append("> **Worth knowing.** For the predictors the records carry, what is "
+                       "borrowed comes from a model fitted without the ones they lack, so it is "
+                       "not quite the coefficient of your model when those predictors matter.")
+            out.append("")
+        if L["dropped"] and _records:
+            out.append(f"The external cohort's records also carry {len(L['dropped'])} "
+                       f"variable(s) that are not among your predictors "
+                       f"({', '.join(L['dropped'])}); they were set aside.")
+            out.append("")
+        elif L["dropped"]:
             # 🔴 Stated plainly rather than buried: this is a real caveat, not
             # bookkeeping. The published coefficients were estimated CONDITIONAL on
             # these variables being in the model.

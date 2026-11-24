@@ -15,7 +15,7 @@ discrete-time counterpart of cv.cox_indi_ridge()."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,7 +97,9 @@ last interval at risk and optional strata (see <code><a href="discretekl.html">d
 
 <dt id="arg-z-ext-delta-ext-interval-ext-stratum-ext">z_ext, delta_ext, interval_ext, stratum_ext<a class="anchor" aria-label="anchor" href="#arg-z-ext-delta-ext-interval-ext-stratum-ext"></a></dt>
 <dd><p>The external cohort, in the same form, with the
-internal covariate names.</p></dd>
+internal covariate names. It may carry only some of the internal covariates: its likelihood is
+then that of the model on the covariates it carries (its own interval baselines absorb the rest),
+and a covariate it lacks is standardized on the internal cohort, as every covariate is.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>

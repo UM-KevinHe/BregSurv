@@ -17,7 +17,7 @@ cox_indi_enet."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -115,7 +115,8 @@ issues a warning to that effect.</p></dd>
 
 <dt id="arg-z-ext">z_ext<a class="anchor" aria-label="anchor" href="#arg-z-ext"></a></dt>
 <dd><p>Numeric matrix of covariates for the external dataset
-(\(n_{\text{ext}} \times p\)). Must have the same number of columns as <code>z_int</code>.</p></dd>
+(\(n_{\text{ext}} \times p\)), or only some of the internal covariates, with column names
+(see <code><a href="cox_indi.html">cox_indi</a></code>).</p></dd>
 
 
 <dt id="arg-delta-ext">delta_ext<a class="anchor" aria-label="anchor" href="#arg-delta-ext"></a></dt>
@@ -190,13 +191,13 @@ Default <code>FALSE</code>.</p></dd>
 <dd><p>Optional integer. Random seed for reproducible fold assignment.</p></dd>
 
 
+<dt id="arg-ties">ties<a class="anchor" aria-label="anchor" href="#arg-ties"></a></dt>
+<dd><p>Tie handling in the partial likelihood. <code>"none"</code> (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; <code>"breslow"</code> uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments passed to the underlying fitting function
 <code><a href="cox_indi_enet.html">cox_indi_enet</a></code>.</p></dd>
-
-
-<dt id="arg-ties">ties<a class="anchor" aria-label="anchor" href="#arg-ties"></a></dt>
-<dd><p>Tie handling in the partial likelihood. <code>"none"</code> (the default, and the behaviour of every release before 1.3.0) takes subjects who share an event time in the order the sorted data list them, so each is dropped from the risk sets of the tied rows after it; <code>"breslow"</code> uses Breslow's approximation, in which the risk set at an event time is everyone whose time is that time or later. The two coincide when no event time is tied. The fits and the cross-validated loss both use the chosen likelihood, so candidates are compared on one functional only when they share it.</p></dd>
 
 </dl></div>
     <div class="section level2">

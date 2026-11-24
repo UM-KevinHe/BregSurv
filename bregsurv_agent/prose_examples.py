@@ -132,9 +132,13 @@ def _sections(c: Dict[str, Any]) -> Dict[str, str]:
         link = ("The external file could not be used, so there is nothing to link; every coefficient comes from "
                 "the cohort alone." if c["refused"] else
                 "With no external information there is nothing to link; every coefficient comes from the cohort alone.")
-    elif form == "indi":
+    elif form == "indi" and c["coverage"] == "full":
         link = ("The external cohort's records carry the predictors of the analysis, [p_covered] of the [p]; "
                 "the borrowing methods fit both cohorts in one likelihood.")
+    elif form == "indi":
+        link = ("The external cohort's records carry [p_covered] of the [p] predictors and lack the other "
+                "[p_internal_only]; the borrowing methods fit both cohorts in one likelihood, the records "
+                "through a model on the predictors they carry.")
     elif c["coverage"] == "full":
         link = "The external model has a coefficient for every predictor of the analysis, [p_covered] of [p]."
     else:

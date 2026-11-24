@@ -31,7 +31,8 @@
 #' @param z_int Numeric matrix of covariates for the internal dataset.
 #' @param stratum_int Numeric or factor vector defining the internal matched sets. \strong{Required}.
 #' @param y_ext Numeric vector of binary outcomes for the external dataset (0 = control, 1 = case).
-#' @param z_ext Numeric matrix of covariates for the external dataset.
+#' @param z_ext Numeric matrix of covariates for the external dataset: the covariates of
+#'   \code{z_int}, or only some of them with column names (see \code{\link{cox_indi}}).
 #' @param stratum_ext Numeric or factor vector defining the external matched sets. \strong{Required}.
 #'   Unlike \code{stratum_int} it is passed on unchanged (not coerced to a factor)
 #'   and its 1:m structure is not validated.

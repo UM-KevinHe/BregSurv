@@ -15,7 +15,7 @@ an external individual-level dataset via an external likelihood weight eta."></h
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,7 +100,9 @@ an external individual-level dataset via an external likelihood weight <code>eta
 
 
 <dt id="arg-z-ext">z_ext<a class="anchor" aria-label="anchor" href="#arg-z-ext"></a></dt>
-<dd><p>Matrix of covariates for the external dataset (n_ext x p).</p></dd>
+<dd><p>Matrix of covariates for the external dataset: the <code>p</code> covariates of <code>z_int</code>
+in the same order (or, when both are named, in any order), or some of them, with column names
+that are all column names of <code>z_int</code> (see Details).</p></dd>
 
 
 <dt id="arg-delta-ext">delta_ext<a class="anchor" aria-label="anchor" href="#arg-delta-ext"></a></dt>
@@ -149,8 +151,11 @@ an external individual-level dataset via an external likelihood weight <code>eta
 <dt><code>linear.predictors_ext</code></dt>
 <dd><p>Matrix of external linear predictors for each <code>eta</code> (\(n_{ext} \times n_{etas}\)).</p></dd>
 
+<dt><code>ext_covered</code></dt>
+<dd><p>Logical vector, one entry per internal covariate: whether the external records carry it.</p></dd>
+
 <dt><code>data</code></dt>
-<dd><p>List of inputs used.</p></dd>
+<dd><p>List of inputs used; <code>z_ext</code> is widened to the internal covariates.</p></dd>
 
 
 </dl></div>
@@ -161,6 +166,16 @@ $$\ell_\eta(\beta) = \ell_{\text{int}}(\beta) + \eta \, \ell_{\text{ext}}(\beta)
 which is equivalent to fitting a stratified Cox model on the stacked data with
 observation weights 1 (internal) and <code>eta</code> (external), while keeping internal
 and external strata separated (no mixing of risk sets across cohorts).</p>
+<p>The external records may carry only some of the internal covariates. With named columns, each
+external column matched by name to an internal one, the external likelihood is then that of the
+model on the covariates the records carry, \(\ell_{\text{ext}}(\beta_X)\), while the coefficients
+of the other covariates are shared with the internal likelihood only:
+\(\ell_\eta(\beta) = \ell_{\text{int}}(\beta_X, \beta_Z) + \eta \, \ell_{\text{ext}}(\beta_X)\).
+The stacked fit computes this exactly by giving every external subject the internal mean of each
+covariate the records lack: a covariate constant within a stratum cancels from that stratum's partial
+likelihood. The external records then borrow for \(\beta_X\) in the model without \(Z\),
+which estimates a marginal coefficient where \(Z\) matters; <code>eta</code> chosen by cross-validation
+(<code><a href="cv.cox_indi.html">cv.cox_indi</a></code>) weighs that bias against the variance it removes.</p>
 <p>The function fits one model per <code>eta</code> value. It uses a warm-start strategy:
 the solution at the current <code>eta</code> is used as the initial value for the next <code>eta</code>
 in the sorted sequence.</p>

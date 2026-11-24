@@ -22,7 +22,8 @@
 #' @param z_int Numeric matrix of covariates for the internal dataset.
 #' @param stratum_int Numeric or factor vector defining the internal matched sets. \strong{Required}.
 #' @param y_ext Numeric vector of binary outcomes for the external dataset (0 = control, 1 = case).
-#' @param z_ext Numeric matrix of covariates for the external dataset.
+#' @param z_ext Numeric matrix of covariates for the external dataset: the covariates of
+#'   \code{z_int}, or only some of them with column names (see \code{\link{cox_indi_enet}}).
 #' @param stratum_ext Numeric or factor vector defining the external matched sets. \strong{Required}.
 #' @param etas Numeric vector of nonnegative external weights. Must be finite and
 #'   \eqn{\ge 0}; \code{eta = 0} gives an internal-only fit. The values are sorted in

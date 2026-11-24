@@ -306,10 +306,31 @@ result <- tryCatch({
                  "coefficient vector were supplied. The candidate set is",
                  "derived from one form of external information; supply one."))
     z_ext <- as.matrix(z_ext); storage.mode(z_ext) <- "double"
-    if (ncol(z_ext) != p)
-      stop(sprintf(paste("The external cohort has %d covariates and the internal",
-                         "one has %d. They must be the same variables in the",
-                         "same order."), ncol(z_ext), p))
+    # 🔴 NAMES, not just the count. Two tables of the same width in a different
+    # column ORDER would otherwise fit with every borrowed coefficient on the
+    # wrong variable. Since BregSurv 2.2.0 the external cohort may also LACK some
+    # internal covariates: the composite likelihood is then l_int(b_X, b_Z) +
+    # eta * l_ext(b_X), and the coefficient members fitted from the records have
+    # no term for Z. Matching is by name, so an unnamed external table must be
+    # the internal covariates in the internal order. A covariate only the
+    # external cohort has is dropped and recorded, as on the coefficient path.
+    zne <- colnames(z_ext)
+    ext_dropped <- character(0)
+    if (is.null(zne)) {
+      if (ncol(z_ext) != p)
+        stop(sprintf(paste("The external cohort has %d unnamed covariate columns and the",
+                           "internal one has %d covariates. Name its columns so they can",
+                           "be matched to the internal covariates by name."), ncol(z_ext), p))
+      colnames(z_ext) <- colnames(z)
+    } else {
+      ext_dropped <- setdiff(zne, colnames(z))
+      ext_cov <- intersect(colnames(z), zne)
+      if (!length(ext_cov))
+        stop(sprintf(paste("The external cohort carries none of the internal covariates",
+                           "(internal: %s; external: %s)."),
+                     paste(colnames(z), collapse = ", "), paste(zne, collapse = ", ")))
+      z_ext <- z_ext[, ext_cov, drop = FALSE]
+    }
     stratum_ext <- eval_in(input$stratum_ext_expr, e_ext)
     if (is_ncc) {
       delta_ext <- as.numeric(eval_in(input$y_ext_expr, e_ext))
@@ -338,17 +359,6 @@ result <- tryCatch({
                            collapse = ", ")))
       if (!is.na(ev_num_e)) delta_ext <- as.numeric(delta_ext == ev_num_e)
     }
-    # 🔴 NAMES, not just the count. fit_cox_indi.R compares ncol() and nothing
-    # else, so two tables of the same width in a different column ORDER fit
-    # happily and every borrowed coefficient lands on the wrong variable. The
-    # coefficient path has matched by name since it existed; the path with the
-    # most external data to check had the least checking.
-    zne <- colnames(z_ext)
-    if (!is.null(zne) && !identical(zne, colnames(z)))
-      stop(sprintf(paste("The external cohort covariates are not the internal",
-                         "ones in the same order. Internal: %s. External: %s."),
-                   paste(colnames(z), collapse = ", "),
-                   paste(zne, collapse = ", ")))
   }
 
   external_form <- if (has_indi) "individual-level data"
@@ -361,12 +371,14 @@ result <- tryCatch({
   if (is.null(zn)) stop("z must have column names")
   bn <- names(beta)
   if (has_indi) {
-    # every internal variable is present in the external cohort -- the name and
-    # order check above refuses anything else -- so nothing is zero-padded or
-    # dropped, and the linkage section has a different story to tell
+    # matched by name above: `covered` are the internal covariates the external
+    # cohort carries, `zero_padded` the ones it lacks (no term in its likelihood,
+    # none in the model fitted on its records), `dropped` the ones only it has
     linkage <- list(matched_by = "external cohort", n_internal = p,
-                    n_external = p, covered = as.list(zn),
-                    zero_padded = list(), dropped = list())
+                    n_external = ncol(z_ext) + length(ext_dropped),
+                    covered = as.list(colnames(z_ext)),
+                    zero_padded = as.list(setdiff(zn, colnames(z_ext))),
+                    dropped = as.list(ext_dropped))
   } else if (!has_external) {
     linkage <- list(matched_by = "none", n_internal = p, n_external = 0L,
                     covered = list(), zero_padded = as.list(zn), dropped = list())
@@ -825,21 +837,28 @@ result <- tryCatch({
           survival::coxph(survival::Surv(time_ext, delta_ext) ~ z_ext + survival::strata(stratum_ext),
                           ties = "breslow")
         else survival::coxph(survival::Surv(time_ext, delta_ext) ~ z_ext, ties = "breslow")
-        b <- setNames(as.numeric(coef(fm)), zn)
+        # on the covariates the records carry (all of them, or the covered ones)
+        zc <- colnames(z_ext); q <- length(zc)
+        b <- setNames(as.numeric(coef(fm)), zc)
         V <- unname(vcov(fm))
         if (any(!is.finite(b)) || any(!is.finite(V))) stop("the Cox fit on the records did not converge")
         Qr <- solve(V); Qr <- (Qr + t(Qr)) / 2
-        Qr <- Qr / mean(diag(Qr)); Qr <- 0.9 * Qr + 0.1 * diag(p); Qr <- (Qr + t(Qr)) / 2
-        dimnames(Qr) <- list(zn, zn)
+        Qr <- Qr / mean(diag(Qr)); Qr <- 0.9 * Qr + 0.1 * diag(q); Qr <- (Qr + t(Qr)) / 2
+        dimnames(Qr) <- list(zc, zc)
         list(beta = b, Q = Qr)
       }, error = function(err) conditionMessage(err))
       # a failed fit leaves NA coefficients, so each coefficient member records `failed` with the
       # reason rather than vanishing from the set (the key-drift guard expects every key)
-      if (!is.list(fx)) fx <- list(beta = setNames(rep(NA_real_, p), zn), Q = diag(p))
+      if (!is.list(fx))
+        fx <- list(beta = setNames(rep(NA_real_, ncol(z_ext)), colnames(z_ext)), Q = diag(ncol(z_ext)))
       {
+        # as on the coefficient path: the Mahalanobis family takes the covered terms only (an
+        # uncovered coefficient is free), Kullback-Leibler the vector zero-padded to every
+        # covariate (a zero adds nothing to the risk score it borrows)
         b_rec <- fx$beta; Q_rec <- fx$Q
+        b_rec_kl <- setNames(rep(0, p), zn); b_rec_kl[names(b_rec)] <- b_rec
         add("kl", "Kullback-Leibler", "kl", "none",
-            paste0("cv.", kl_plain), c(base, list(beta = b_rec, etas = ETAS)))
+            paste0("cv.", kl_plain), c(base, list(beta = b_rec_kl, etas = ETAS)))
         add("mahalanobis", "Mahalanobis", "mahalanobis", "none", "cv.cox_MDTL",
             c(base, list(beta = b_rec, Q = Q_rec, etas = ETAS_MDTL)))
         add("euclidean", "Euclidean", "euclidean", "none", "cv.cox_MDTL",
@@ -847,13 +866,13 @@ result <- tryCatch({
         add("internal_ridge", "Internal only, ridge", "none", "ridge",
             "cv.coxkl_ridge", c(base, list(beta = beta_zero, etas = 0, nlambda = nlambda)))
         add("kl_ridge", "Kullback-Leibler, ridge", "kl", "ridge",
-            "cv.coxkl_ridge", c(base, list(beta = b_rec, etas = ETAS_PEN, nlambda = nlambda)))
+            "cv.coxkl_ridge", c(base, list(beta = b_rec_kl, etas = ETAS_PEN, nlambda = nlambda)))
         add("mahalanobis_ridge", "Mahalanobis, ridge", "mahalanobis", "ridge", "cv.cox_MDTL_ridge",
             c(base, list(beta = b_rec, Q = Q_rec, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
         add("euclidean_ridge", "Euclidean, ridge", "euclidean", "ridge", "cv.cox_MDTL_ridge",
             c(base, list(beta = b_rec, etas = ETAS_MDTL_RIDGE, nlambda = nlambda)))
         add("kl_lasso", "Kullback-Leibler, lasso", "kl", "lasso",
-            "cv.coxkl_enet", c(base, list(beta = b_rec, etas = ETAS_PEN, alpha = 1, nlambda = nlambda)))
+            "cv.coxkl_enet", c(base, list(beta = b_rec_kl, etas = ETAS_PEN, alpha = 1, nlambda = nlambda)))
         add("mahalanobis_lasso", "Mahalanobis, lasso", "mahalanobis", "lasso", "cv.cox_MDTL_enet",
             c(base, list(beta = b_rec, Q = Q_rec, etas = ETAS_MDTL_ENET, alpha = 1,
                          nlambda = nlambda, lambda.min.ratio = 1e-9)))
@@ -963,17 +982,26 @@ result <- tryCatch({
         stop(sprintf("plan member %s: zero-padding applies to an identity-metric member only", s$key))
       if ("z" %in% names(a)) a$z <- z[, vars, drop = FALSE]
       if ("z_int" %in% names(a)) {
-        a$z_int <- z[, vars, drop = FALSE]; a$z_ext <- z_ext[, vars, drop = FALSE]
+        # the external cohort may lack some of the member's covariates (BregSurv 2.2.0)
+        vx <- intersect(vars, colnames(z_ext))
+        if (!length(vx))
+          stop(sprintf("plan member %s keeps no covariate the external cohort carries", s$key))
+        a$z_int <- z[, vars, drop = FALSE]; a$z_ext <- z_ext[, vx, drop = FALSE]
       }
       if (!is.null(a$beta)) {
+        # the external vector zero-padded to every covariate: the release's, or in the
+        # individual-level cell the one fitted on the records (beta_full is still NA there; it is
+        # filled only once the External-cohort-only row has fitted)
+        b_pad <- if (has_indi) { v <- setNames(rep(0, p), zn); v[names(a$beta)] <- a$beta; v }
+                 else beta_full
         if (internal_member) {
           b <- beta_zero[vars]
         } else if (s$borrowing == "kl") {
           # KL borrows the release's risk score: a masked term leaves the score; it is not "free"
-          b <- beta_full[vars]; b[intersect(masked, names(b))] <- 0
+          b <- b_pad[vars]; b[intersect(masked, names(b))] <- 0
         } else {
           # Mahalanobis / Euclidean: a masked or uncovered term is free; padding names every term
-          b <- if (pad) beta_full else a$beta
+          b <- if (pad) b_pad else a$beta
           b <- b[names(b) %in% vars & !(names(b) %in% masked)]
           if (!length(b))
             stop(sprintf("plan member %s borrows no term once the mask is applied", s$key))
@@ -1117,12 +1145,17 @@ result <- tryCatch({
     # Unpenalized, matching internal-only. If it will not converge it records
     # `failed` and the report discloses it.
     t0 <- proc.time()[["elapsed"]]
+    # On the covariates the records carry; one they lack has no term in the model
+    # fitted on them, so its coefficient is 0 in the vector scored on our cohort.
     bx <- tryCatch({
+      zc <- colnames(z_ext)
       fx <- coxkl(z = z_ext, delta = delta_ext, time = time_ext,
                   stratum = stratum_ext,
-                  beta = setNames(rep(0, p), zn), etas = 0,
+                  beta = setNames(rep(0, length(zc)), zc), etas = 0,
                   ties = if (TIES_ROW) "breslow" else "none")
-      setNames(as.numeric(as.matrix(fx$beta)[, 1]), zn)
+      bfull <- setNames(rep(0, p), zn)
+      bfull[zc] <- as.numeric(as.matrix(fx$beta)[, 1])
+      bfull
     }, error = function(err) conditionMessage(err))
     secs <- round(proc.time()[["elapsed"]] - t0, 2)
     if (is.character(bx) || is.null(folds)) {

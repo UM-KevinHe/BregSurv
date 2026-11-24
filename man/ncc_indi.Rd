@@ -27,8 +27,8 @@ internal dataset. \strong{Required}.}
 
 \item{y_ext}{Numeric vector of binary outcomes for the external dataset (0 = control, 1 = case).}
 
-\item{z_ext}{Numeric matrix of covariates for the external dataset. Must have the same
-number of columns as \code{z_int}.}
+\item{z_ext}{Numeric matrix of covariates for the external dataset: the covariates of
+\code{z_int}, or only some of them with column names (see \code{\link{cox_indi}}).}
 
 \item{stratum_ext}{Numeric or factor vector defining the matched sets (strata) for the
 external dataset. \strong{Required}.}

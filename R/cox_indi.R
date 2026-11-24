@@ -11,6 +11,17 @@
 #' observation weights 1 (internal) and \code{eta} (external), while keeping internal
 #' and external strata separated (no mixing of risk sets across cohorts).
 #'
+#' The external records may carry only some of the internal covariates. With named columns, each
+#' external column matched by name to an internal one, the external likelihood is then that of the
+#' model on the covariates the records carry, \eqn{\ell_{\text{ext}}(\beta_X)}, while the coefficients
+#' of the other covariates are shared with the internal likelihood only:
+#' \eqn{\ell_\eta(\beta) = \ell_{\text{int}}(\beta_X, \beta_Z) + \eta \, \ell_{\text{ext}}(\beta_X)}.
+#' The stacked fit computes this exactly by giving every external subject the internal mean of each
+#' covariate the records lack: a covariate constant within a stratum cancels from that stratum's partial
+#' likelihood. The external records then borrow for \eqn{\beta_X} in the model without \eqn{Z},
+#' which estimates a marginal coefficient where \eqn{Z} matters; \code{eta} chosen by cross-validation
+#' (\code{\link{cv.cox_indi}}) weighs that bias against the variance it removes.
+#'
 #' The function fits one model per \code{eta} value. It uses a warm-start strategy:
 #' the solution at the current \code{eta} is used as the initial value for the next \code{eta}
 #' in the sorted sequence.
@@ -19,7 +30,9 @@
 #' @param delta_int Event indicators for the internal dataset (0/1).
 #' @param time_int Survival times for the internal dataset.
 #' @param stratum_int Optional stratum identifiers for the internal dataset (default \code{NULL} -> single stratum).
-#' @param z_ext Matrix of covariates for the external dataset (n_ext x p).
+#' @param z_ext Matrix of covariates for the external dataset: the \code{p} covariates of \code{z_int}
+#'   in the same order (or, when both are named, in any order), or some of them, with column names
+#'   that are all column names of \code{z_int} (see Details).
 #' @param delta_ext Event indicators for the external dataset (0/1).
 #' @param time_ext Survival times for the external dataset.
 #' @param stratum_ext Optional stratum identifiers for the external dataset (default \code{NULL} -> single stratum).
@@ -36,7 +49,8 @@
 #'   \item{\code{beta}}{Matrix of estimated coefficients (\eqn{p \times n_{etas}}). Columns correspond to \code{etas}.}
 #'   \item{\code{linear.predictors_int}}{Matrix of internal linear predictors for each \code{eta} (\eqn{n_{int} \times n_{etas}}).}
 #'   \item{\code{linear.predictors_ext}}{Matrix of external linear predictors for each \code{eta} (\eqn{n_{ext} \times n_{etas}}).}
-#'   \item{\code{data}}{List of inputs used.}
+#'   \item{\code{ext_covered}}{Logical vector, one entry per internal covariate: whether the external records carry it.}
+#'   \item{\code{data}}{List of inputs used; \code{z_ext} is widened to the internal covariates.}
 #' }
 #' @examples
 #' \dontrun{
@@ -92,7 +106,9 @@ cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
   n_ext <- nrow(z_ext)
   p <- ncol(z_int)
 
-  if (ncol(z_ext) != p) stop("Internal and external datasets must have the same number of covariates (columns).", call. = FALSE)
+  ## external records may lack some internal covariates (see .widen_ext)
+  al <- .widen_ext(z_int, z_ext)
+  z_ext <- al$z
 
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas <- sort(as.numeric(etas))
@@ -188,6 +204,7 @@ cox_indi <- function(z_int, delta_int, time_int, stratum_int = NULL,
       beta = beta_mat,
       linear.predictors_int = lp_int_original,
       linear.predictors_ext = lp_ext_original,
+      ext_covered = al$covered,
       ties = ties,
       data = input_data
     ),

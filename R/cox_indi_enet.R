@@ -25,13 +25,19 @@
 #' is recomputed for each \code{eta} (since \eqn{\lambda_{\max}} depends on the
 #' weighted score at \eqn{\beta = 0}).
 #'
+#' The external records may carry only some of the internal covariates, as in
+#' \code{\link{cox_indi}}. A covariate they lack, with the rest of its penalty group, is
+#' standardized on the internal rows, where it is observed; every other covariate on the
+#' stacked rows as above.
+#'
 #' @param z_int Numeric matrix of covariates for the internal dataset (\eqn{n_{\text{int}} \times p}).
 #' @param delta_int Numeric vector of event indicators for the internal dataset (1 = event, 0 = censored).
 #' @param time_int Numeric vector of survival times for the internal dataset.
 #' @param stratum_int Optional stratum identifiers for the internal dataset.
 #'   Default \code{NULL} assigns all internal observations to a single stratum.
-#' @param z_ext Numeric matrix of covariates for the external dataset (\eqn{n_{\text{ext}} \times p}).
-#'   Must have the same number of columns as \code{z_int}.
+#' @param z_ext Numeric matrix of covariates for the external dataset: the \eqn{p} covariates of
+#'   \code{z_int} in the same order (or, when both are named, in any order), or some of them, with
+#'   column names that are all column names of \code{z_int} (see \code{\link{cox_indi}}).
 #' @param delta_ext Numeric vector of event indicators for the external dataset (1 = event, 0 = censored).
 #' @param time_ext Numeric vector of survival times for the external dataset.
 #' @param stratum_ext Optional stratum identifiers for the external dataset.
@@ -87,6 +93,7 @@
 #'     of internal linear predictors in the original observation order, one per \code{eta}.}
 #'   \item{\code{linear.predictors_ext}}{List of matrices (\eqn{n_{\text{ext}} \times n_\lambda})
 #'     of external linear predictors in the original observation order, one per \code{eta}.}
+#'   \item{\code{ext_covered}}{Logical vector, one entry per internal covariate: whether the external records carry it.}
 #'   \item{\code{group}}{Factor vector of group assignments for each covariate.}
 #'   \item{\code{group.multiplier}}{Numeric vector of group penalty multipliers used.}
 #'   \item{\code{data}}{List of the original input data used.}
@@ -162,8 +169,9 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   n_all <- n_int + n_ext
   p     <- ncol(z_int)
 
-  if (ncol(z_ext) != p)
-    stop("Internal and external datasets must have the same number of covariates.", call. = FALSE)
+  ## external records may lack some internal covariates (see .widen_ext)
+  al <- .widen_ext(z_int, z_ext)
+  z_ext <- al$z
 
   if (alpha <= 0 || alpha > 1)
     stop("alpha must be in (0, 1].", call. = FALSE)
@@ -225,7 +233,11 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
     as.numeric(group.multiplier)
   }
 
-  if (standardize) {
+  if (!all(al$covered)) {
+    ## a covariate the external records lack is standardized on the internal rows, where it is observed
+    std.Z <- .newZG_rows(z_all, group, group.multiplier, standardize,
+                         int_rows = seq_len(n_int), covered = al$covered)
+  } else if (standardize) {
     std.Z <- newZG.Std(z_all, group, group.multiplier)
   } else {
     std.Z <- newZG.Unstd(z_all, group, group.multiplier)
@@ -384,6 +396,7 @@ cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
       alpha            = alpha,
       linear.predictors_int = lp_int_list,
       linear.predictors_ext = lp_ext_list,
+      ext_covered      = al$covered,
       group            = factor(initial_group),
       group.multiplier = grp_mult_std,
       ties             = ties,

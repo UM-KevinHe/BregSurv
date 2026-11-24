@@ -30,7 +30,9 @@ discrete_indi_ridge(
 last interval at risk and optional strata (see \code{\link[=discretekl]{discretekl()}}).}
 
 \item{z_ext, delta_ext, interval_ext, stratum_ext}{The external cohort, in the same form, with the
-internal covariate names.}
+internal covariate names. It may carry only some of the internal covariates: its likelihood is
+then that of the model on the covariates it carries (its own interval baselines absorb the rest),
+and a covariate it lacks is standardized on the internal cohort, as every covariate is.}
 
 \item{etas}{Numeric vector of non-negative integration weights; a penalty path is fitted at each.}
 

@@ -46,7 +46,8 @@
 #'   Default \code{NULL} assigns all internal observations to a single stratum and
 #'   issues a warning to that effect.
 #' @param z_ext Numeric matrix of covariates for the external dataset
-#'   (\eqn{n_{\text{ext}} \times p}). Must have the same number of columns as \code{z_int}.
+#'   (\eqn{n_{\text{ext}} \times p}), or only some of the internal covariates, with column names
+#'   (see \code{\link{cox_indi}}).
 #' @param delta_ext Numeric vector of event indicators for the external dataset
 #'   (1 = event, 0 = censored).
 #' @param time_ext Numeric vector of survival times for the external dataset.
@@ -184,8 +185,8 @@ cv.cox_indi_enet <- function(z_int, delta_int, time_int, stratum_int = NULL,
   n_all <- n_int + n_ext
   p     <- ncol(z_int)
 
-  if (ncol(z_ext) != p)
-    stop("Internal and external datasets must have the same number of covariates.", call. = FALSE)
+  ## external records may lack some internal covariates: checked here, widened by each fit
+  invisible(.widen_ext(z_int, z_ext))
 
   if (is.null(lambda.min.ratio))
     lambda.min.ratio <- ifelse(n_all < p, 0.05, 1e-03)

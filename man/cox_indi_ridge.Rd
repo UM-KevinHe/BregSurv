@@ -28,8 +28,9 @@ cox_indi_ridge(
 \item{z_int, delta_int, time_int, stratum_int}{Internal covariate matrix, event
 indicator, observed times and optional strata.}
 
-\item{z_ext, delta_ext, time_ext, stratum_ext}{The same for the external cohort, with
-the same covariates in the same column order.}
+\item{z_ext, delta_ext, time_ext, stratum_ext}{The same for the external cohort: the
+covariates of \code{z_int} in the same order (or, when both are named, in any order),
+or some of them with column names, as in \code{\link{cox_indi}}.}
 
 \item{etas}{Non-negative weights of the external rows.}
 
@@ -56,7 +57,8 @@ An object of class \code{"cox_indi_ridge"}: \code{eta} (the weights),
 \code{lambda} (a list, one penalty path per \eqn{\eta}), \code{beta} (a list of
 \eqn{p \times L} coefficient matrices on the original scale),
 \code{linear.predictors_int} (a list of \eqn{n_{int} \times L} matrices in the
-caller's row order), \code{ties} and \code{data}.
+caller's row order), \code{ext_covered} (whether the external cohort carries each
+internal covariate), \code{ties} and \code{data}.
 }
 \description{
 Fits the composite-likelihood Cox model of \code{\link{cox_indi}}, in which the
@@ -75,6 +77,10 @@ penalty is applied on the scale of the standardised design when
 \code{standardize = TRUE} (scaling by the standard deviation of the stacked design,
 no centering), and the coefficients are returned on the original scale. At
 \eqn{\lambda = 0} the fit is the one of \code{\link{cox_indi}}.
+
+The external cohort may carry only some of the internal covariates, as in
+\code{\link{cox_indi}}. A covariate it lacks is scaled by its standard deviation on the
+internal rows, where it is observed.
 }
 \examples{
 \dontrun{

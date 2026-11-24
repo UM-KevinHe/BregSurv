@@ -51,7 +51,7 @@ covariate, with names). \code{target_cox()} and \code{target_discrete()} also ta
 with one of four constructors, by what you received:
 \itemize{
 \item \code{\link[=release_records]{release_records()}}: \strong{individual records}, another cohort's data subject by subject, in the
-target's design and with your covariate names.
+target's design and with your covariate names; they may lack some of your covariates.
 \itemize{
 \item \code{z}: the external covariates;
 \item \code{time}, \code{event} (and optionally \code{stratum}) for a Cox target;

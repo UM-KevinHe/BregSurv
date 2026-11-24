@@ -330,8 +330,12 @@ print.nn_score <- function(x, ...) {
 #' records and borrows from its coefficients and their precision.
 #'
 #' @param z The external covariates: a numeric matrix or data frame with one row per external subject and
-#'   columns named like your covariates. Columns you do not have are ignored; a covariate of yours that
-#'   the records lack is an error.
+#'   columns named like your covariates. Columns you do not have are ignored. The records may lack some
+#'   of your covariates: the composite likelihood then adds the records' likelihood under the model on
+#'   the covariates they carry, and the Cox model fitted for the Mahalanobis and Kullback-Leibler
+#'   divergences has no coefficient for the others (see [cox_indi()] and [align_beta()]). Records that
+#'   carry none of your covariates, or fewer columns than you have covariates and no column names, are an
+#'   error.
 #' @param time,event Cox records: each external subject's follow-up time (positive) and event indicator
 #'   (1 = event, 0 = censored). For discrete-time records, `event` is the event indicator that goes with
 #'   `interval`.
@@ -344,7 +348,7 @@ print.nn_score <- function(x, ...) {
 #'
 #' @return An object of class `"bregsurv_release"`, a list with `form = "records"`, `kind` (`"cohort"`,
 #'   `"ncc"` or `"discrete"`), and the checked `z`, `time`, `event`, `stratum`, `case`, `set` and
-#'   `interval` (those not given are `NULL`).
+#'   `interval` (those not given are `NULL`), and `z_named`, whether `z` came with column names.
 #' @seealso [cv.bregsurv()]; the other releases, [release_coef()], [release_score()], [release_model()]; the targets, [target_cox()],
 #'   [target_ncc()] and [target_discrete()].
 #' @examples
@@ -365,6 +369,7 @@ print.nn_score <- function(x, ...) {
 #' @export
 release_records <- function(z, time = NULL, event = NULL, stratum = NULL, case = NULL, set = NULL,
                             interval = NULL) {
+  z_named <- !is.null(colnames(z))   # unnamed records are matched by position only (see .match_cols)
   z <- .as_z(z, "z (external)")
   n <- nrow(z)
   if (!is.null(case)) {
@@ -381,7 +386,8 @@ release_records <- function(z, time = NULL, event = NULL, stratum = NULL, case =
   }
   if (!is.null(stratum)) .check_len(stratum, n, "stratum")
   structure(list(form = "records", kind = kind, z = z, time = time, event = event, stratum = stratum,
-                 case = case, set = set, interval = if (is.null(interval)) NULL else as.integer(interval)),
+                 case = case, set = set, interval = if (is.null(interval)) NULL else as.integer(interval),
+                 z_named = z_named),
             class = "bregsurv_release")
 }
 

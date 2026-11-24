@@ -16,8 +16,12 @@ release_records(
 }
 \arguments{
 \item{z}{The external covariates: a numeric matrix or data frame with one row per external subject and
-columns named like your covariates. Columns you do not have are ignored; a covariate of yours that
-the records lack is an error.}
+columns named like your covariates. Columns you do not have are ignored. The records may lack some
+of your covariates: the composite likelihood then adds the records' likelihood under the model on
+the covariates they carry, and the Cox model fitted for the Mahalanobis and Kullback-Leibler
+divergences has no coefficient for the others (see \code{\link[=cox_indi]{cox_indi()}} and \code{\link[=align_beta]{align_beta()}}). Records that
+carry none of your covariates, or fewer columns than you have covariates and no column names, are an
+error.}
 
 \item{time, event}{Cox records: each external subject's follow-up time (positive) and event indicator
 (1 = event, 0 = censored). For discrete-time records, \code{event} is the event indicator that goes with
@@ -35,7 +39,7 @@ number on the target's intervals. Give it with \code{event}, instead of \code{ti
 \value{
 An object of class \code{"bregsurv_release"}, a list with \code{form = "records"}, \code{kind} (\code{"cohort"},
 \code{"ncc"} or \code{"discrete"}), and the checked \code{z}, \code{time}, \code{event}, \code{stratum}, \code{case}, \code{set} and
-\code{interval} (those not given are \code{NULL}).
+\code{interval} (those not given are \code{NULL}), and \code{z_named}, whether \code{z} came with column names.
 }
 \description{
 The external source shared its individual records: another cohort's covariates and outcomes,

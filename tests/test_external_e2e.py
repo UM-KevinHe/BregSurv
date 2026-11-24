@@ -392,18 +392,49 @@ def main() -> int:
               and "individual" in s3["result"].candidates["facts"]["external_form"],
               "matching columns -> the individual-level cell runs",
               str(s3["result"].candidates["facts"]["external_form"]) if s3.get("result") else h3[-1][1][:120])
-        # now a declaration naming a column the external cohort lacks
-        bad_ext = X.ExternalObject(**{**o.as_dict(), "individual_data":
-                                      dict(o.individual_data, columns=[
-                                          c for c in o.individual_data["columns"]
-                                          if c != "egfr"])})
-        s = s.restart().with_external(bad_ext)
+        # now an external cohort that LACKS a declared covariate (BregSurv 2.2.0):
+        # the run goes ahead, borrowing on the covariates it carries, and the
+        # linkage and the card say which one it lacks. A real file without the
+        # column, so what is fitted is what the card says.
+        rows = (FIX / "individual_external.csv").read_text().splitlines()
+        k_egfr = rows[0].split(",").index("egfr")
+        lack = td / "individual_external_no_egfr.csv"
+        lack.write_text("\n".join(",".join(c for i, c in enumerate(r.split(",")) if i != k_egfr)
+                                  for r in rows) + "\n")
+        tabs5 = X.read_tables(str(lack))
+        asg5 = [{"table": tabs5[0].name, "role": "individual_level_data",
+                 "time_column": "followup_days", "event_column": "died",
+                 "event_value": None, **{k: None for k in (
+                     "name_column", "coefficient_column", "coefficient_scale",
+                     "se_column", "ci_lower_column", "ci_upper_column",
+                     "hazard_column", "cumulative_hazard_column")}}]
+        asg5, _ = X.check_assignment(tabs5, {"tables": asg5})
+        o5 = X.canonicalise(tabs5, asg5, {"file": lack.name, "path": str(lack)})
+        s = s.restart().with_external(o5)
         out = app.submit_answer("1) followup_days\n2) died\n3) 1\n4) age, bmi, egfr\n6) yes",
                                 h, s, "", "", "")
         h4, _, s4, cand4, *_ = out
-        check(cand4 is None and "does not line up" in h4[-1][1]
-              and "it lacks egfr" in h4[-1][1],
-              "a covariate the external cohort lacks is refused by name, no rename")
+        L4 = s4["result"].candidates["linkage"] if s4.get("result") is not None else {}
+        check(cand4 is not None and L4.get("covered") == ["age", "bmi"]
+              and L4.get("zero_padded") == ["egfr"],
+              "an external cohort that lacks a declared covariate is used for the ones it carries",
+              str(L4) if L4 else h4[-1][1][:160])
+        ext4 = s4.get("external")
+        check(ext4 is not None and any("lacks egfr" in n for n in ext4.notes),
+              "the external card says which covariate the cohort lacks",
+              str(getattr(ext4, "notes", None)))
+        # and one that carries NONE of the declared covariates is refused by name
+        none_ext = X.ExternalObject(**{**o.as_dict(), "individual_data":
+                                       dict(o.individual_data, columns=[
+                                           c for c in o.individual_data["columns"]
+                                           if c not in ("age", "bmi", "egfr")])})
+        s = s.restart().with_external(none_ext)
+        out = app.submit_answer("1) followup_days\n2) died\n3) 1\n4) age, bmi, egfr\n6) yes",
+                                h, s, "", "", "")
+        h6, _, s6, cand6, *_ = out
+        check(cand6 is None and "does not line up" in h6[-1][1]
+              and "carries none of your covariates" in h6[-1][1],
+              "an external cohort with none of the declared covariates is refused by name")
 
     # ---- 5. the private SRTR release files --------------------------------
     hdr("5. the SRTR release files as published (private fixtures)")

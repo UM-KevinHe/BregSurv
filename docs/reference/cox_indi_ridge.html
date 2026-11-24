@@ -19,7 +19,7 @@ of penalty values for each \(\eta\)."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,8 +99,9 @@ indicator, observed times and optional strata.</p></dd>
 
 
 <dt id="arg-z-ext-delta-ext-time-ext-stratum-ext">z_ext, delta_ext, time_ext, stratum_ext<a class="anchor" aria-label="anchor" href="#arg-z-ext-delta-ext-time-ext-stratum-ext"></a></dt>
-<dd><p>The same for the external cohort, with
-the same covariates in the same column order.</p></dd>
+<dd><p>The same for the external cohort: the
+covariates of <code>z_int</code> in the same order (or, when both are named, in any order),
+or some of them with column names, as in <code><a href="cox_indi.html">cox_indi</a></code>.</p></dd>
 
 
 <dt id="arg-etas">etas<a class="anchor" aria-label="anchor" href="#arg-etas"></a></dt>
@@ -145,7 +146,8 @@ before penalising. Default <code>TRUE</code>.</p></dd>
 <code>lambda</code> (a list, one penalty path per \(\eta\)), <code>beta</code> (a list of
 \(p \times L\) coefficient matrices on the original scale),
 <code>linear.predictors_int</code> (a list of \(n_{int} \times L\) matrices in the
-caller's row order), <code>ties</code> and <code>data</code>.</p>
+caller's row order), <code>ext_covered</code> (whether the external cohort carries each
+internal covariate), <code>ties</code> and <code>data</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -159,6 +161,9 @@ penalty is applied on the scale of the standardised design when
 <code>standardize = TRUE</code> (scaling by the standard deviation of the stacked design,
 no centering), and the coefficients are returned on the original scale. At
 \(\lambda = 0\) the fit is the one of <code><a href="cox_indi.html">cox_indi</a></code>.</p>
+<p>The external cohort may carry only some of the internal covariates, as in
+<code><a href="cox_indi.html">cox_indi</a></code>. A covariate it lacks is scaled by its standard deviation on the
+internal rows, where it is observed.</p>
     </div>
 
     <div class="section level2">

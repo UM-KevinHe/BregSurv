@@ -96,10 +96,12 @@ mk <- function(n, seed) {
 }
 D   <- mk(300, 1)
 EXT <- mk(900, 2)
-# same four covariates, DIFFERENT order -- the decoy the name check must catch
+# same four covariates, DIFFERENT order -- matched by name, not by position
 PERM <- EXT[, c("bmi", "age", "donor_age", "egfr", "followup_days", "died")]
+# the external cohort LACKS one internal covariate (BregSurv 2.2.0)
+EXT3 <- EXT[, c("age", "bmi", "egfr", "followup_days", "died")]
 beta_ext <- c(age = 0.5, bmi = -0.3, egfr = -0.4, donor_age = 0.25)
-save(D, EXT, PERM, beta_ext, file = args[1])
+save(D, EXT, PERM, EXT3, beta_ext, file = args[1])
 cat("indi fixture: internal", nrow(D), "external", nrow(EXT), "rows\n")
 """
 
@@ -419,9 +421,9 @@ def main() -> int:
         # 🔴 The DECLARATION path is immune by construction and that is worth
         # stating: as_exprs addresses both tables BY NAME, so `PERM[, c("age",
         # "bmi", "egfr", "donor_age")]` undoes the permutation on the way in.
-        # The R check exists for a direct caller handing over raw matrices --
-        # which is what fit_cox_indi.R has always allowed, comparing ncol() and
-        # nothing else. Positional selection below is how that caller looks.
+        # A direct caller handing over raw matrices in another order used to be
+        # refused; since BregSurv 2.2.0 run_candidates.R matches the columns by
+        # name, so the fit must be the one of the declaration path.
         bad = _run_r("run_candidates.R", {
             "data_path": ind, "seed": 20260818, "nfolds": 5, "nlambda": 6,
             "event_value": "1",
@@ -431,12 +433,13 @@ def main() -> int:
             "z_ext_expr": "PERM[, 1:4]",
             "time_ext_expr": 'PERM[["followup_days"]]',
             "delta_ext_expr": 'PERM[["died"]]'}, timeout_s=900)
-        # 🔴 fit_cox_indi.R compares ncol() and nothing else, so this fits
-        # happily and attaches every borrowed coefficient to the wrong variable.
-        check(bad.get("status") == "error"
-              and "same order" in str(bad.get("message", "")),
-              "an external cohort whose columns are in another ORDER is refused",
-              str(bad.get("message", ""))[:110])
+        _loss = lambda r, k: next((x.get("loss") for x in (r.get("candidates") or [])
+                                   if x.get("key") == k), None)
+        check(bad.get("status") != "error"
+              and _loss(bad, "indi") is not None
+              and abs(_loss(bad, "indi") - _loss(ci, "indi")) < 1e-9,
+              "an external cohort whose columns are in another ORDER is matched by name",
+              f"{_loss(bad, 'indi')} vs {_loss(ci, 'indi')}; {str(bad.get('message', ''))[:110]}")
 
         both = _run_r("run_candidates.R", dict(
             {"data_path": ind, "seed": 20260818, "nfolds": 5, "nlambda": 6,
@@ -447,6 +450,62 @@ def main() -> int:
               "supplying two forms of external information at once is refused",
               "the set is derived from ONE form; choosing between them silently "
               "is the judgement this design removes")
+
+        # ---- G2. an external cohort that LACKS an internal covariate ---------
+        # BregSurv 2.2.0: the composite likelihood is l_int(b_X, b_Z) +
+        # eta * l_ext(b_X), and the coefficient members fitted from the records
+        # have no term for the covariate they lack.
+        hdr("G2. the external cohort's records lack one internal covariate")
+        d3 = parse_reply(pi_, {
+            "time": "followup_days", "event": "died", "event_value": "1",
+            "covariates": "age, bmi, egfr, donor_age", "time_zero": "yes",
+            "external_data_expr": "EXT3"})
+        r3 = pipeline.run(data_path=ind, data_expr="D", declaration=d3,
+                          profile=pi_, nlambda=6, run_r=_run_r)
+        c3 = r3.candidates
+        L3 = c3["linkage"]
+        check(L3["covered"] == ["age", "bmi", "egfr"] and L3["zero_padded"] == ["donor_age"]
+              and not L3["dropped"] and L3["matched_by"] == "external cohort",
+              "the linkage names the covariate the external records lack", str(L3))
+        check([x["key"] for x in c3["candidates"]] == ik
+              and all(x["status"] == "ok" for x in c3["candidates"]),
+              "the whole individual-level set fits on the records that lack it",
+              "; ".join(f"{x['key']}: {x['status']} {(x.get('message') or '')[:160]}"
+                        for x in c3["candidates"] if x["status"] != "ok"))
+        check(abs(_loss(c3, "internal") - _loss(ci, "internal")) < 1e-12
+              and abs(_loss(c3, "indi") - _loss(ci, "indi")) > 1e-8,
+              "eta = 0 is the internal fit either way; the borrowing members see the narrower records",
+              f"internal {_loss(c3, 'internal')} / {_loss(ci, 'internal')}; "
+              f"indi {_loss(c3, 'indi')} / {_loss(ci, 'indi')}")
+        co3 = {r["variable"]: r for r in c3.get("coefficients") or []}
+        check("donor_age" in co3 and co3["donor_age"].get("beta_external") == 0,
+              "the model fitted on the records has no donor_age term",
+              str(co3.get("donor_age")))
+        p3 = r3.save(str(tdp / "indi_subset_run"))
+        rep3 = Path(p3["report"]).read_text()
+        check("lack 1 of your predictors" in rep3 and "donor_age" in rep3,
+              "the report says which predictor the external records lack")
+        r4 = subprocess.run([_find_rscript(), "--no-save", "--no-restore",
+                             "--no-init-file", p3["repro"], ind],
+                            capture_output=True, text=True, env=e,
+                            stdin=subprocess.DEVNULL, timeout=1800)
+        t4 = (r4.stdout or "") + (r4.stderr or "")
+        check("fold assignment REPRODUCED" in t4
+              and f"selected: {c3['selected']['label']}" in t4,
+              "the analysis on the narrower records replays with NO model running",
+              c3["selected"]["label"])
+        none3 = _run_r("run_candidates.R", {
+            "data_path": ind, "seed": 20260818, "nfolds": 5, "nlambda": 6,
+            "event_value": "1",
+            "z_expr": 'D[, c("age", "bmi", "egfr", "donor_age")]',
+            "time_expr": 'D[["followup_days"]]', "delta_expr": 'D[["died"]]',
+            "z_ext_expr": 'EXT3[, "followup_days", drop = FALSE]',
+            "time_ext_expr": 'EXT3[["followup_days"]]',
+            "delta_ext_expr": 'EXT3[["died"]]'}, timeout_s=900)
+        check(none3.get("status") == "error"
+              and "none of the internal covariates" in str(none3.get("message", "")),
+              "an external cohort with none of the internal covariates is refused",
+              str(none3.get("message", ""))[:110])
 
         # ---- H. the discrete-time row: the third data fact --------------------
         # The map of the family is kept in one place. The cells are enumerated

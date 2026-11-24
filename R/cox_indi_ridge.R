@@ -18,10 +18,15 @@
 #' no centering), and the coefficients are returned on the original scale. At
 #' \eqn{\lambda = 0} the fit is the one of \code{\link{cox_indi}}.
 #'
+#' The external cohort may carry only some of the internal covariates, as in
+#' \code{\link{cox_indi}}. A covariate it lacks is scaled by its standard deviation on the
+#' internal rows, where it is observed.
+#'
 #' @param z_int,delta_int,time_int,stratum_int Internal covariate matrix, event
 #'   indicator, observed times and optional strata.
-#' @param z_ext,delta_ext,time_ext,stratum_ext The same for the external cohort, with
-#'   the same covariates in the same column order.
+#' @param z_ext,delta_ext,time_ext,stratum_ext The same for the external cohort: the
+#'   covariates of \code{z_int} in the same order (or, when both are named, in any order),
+#'   or some of them with column names, as in \code{\link{cox_indi}}.
 #' @param etas Non-negative weights of the external rows.
 #' @param lambda Optional ridge penalty values. If \code{NULL}, a path of
 #'   \code{nlambda} values is generated for each \eqn{\eta}, ending at 0.
@@ -39,7 +44,8 @@
 #'   \code{lambda} (a list, one penalty path per \eqn{\eta}), \code{beta} (a list of
 #'   \eqn{p \times L} coefficient matrices on the original scale),
 #'   \code{linear.predictors_int} (a list of \eqn{n_{int} \times L} matrices in the
-#'   caller's row order), \code{ties} and \code{data}.
+#'   caller's row order), \code{ext_covered} (whether the external cohort carries each
+#'   internal covariate), \code{ties} and \code{data}.
 #'
 #' @examples
 #' \dontrun{
@@ -64,8 +70,9 @@ cox_indi_ridge <- function(z_int, delta_int, time_int, stratum_int = NULL,
   delta_ext <- .check_event(delta_ext, "delta_ext")
   time_int <- as.numeric(time_int); time_ext <- as.numeric(time_ext)
   n_int <- nrow(z_int); n_ext <- nrow(z_ext); p <- ncol(z_int)
-  if (ncol(z_ext) != p)
-    stop("Internal and external datasets must have the same number of covariates (columns).", call. = FALSE)
+  ## external records may lack some internal covariates (see .widen_ext)
+  al <- .widen_ext(z_int, z_ext)
+  z_ext <- al$z
   if (is.null(etas)) stop("etas must be provided.", call. = FALSE)
   etas <- sort(as.numeric(etas)); check_etas(etas)
   if (penalty.factor < 0 || penalty.factor >= 1) stop("penalty.factor must be in [0, 1).", call. = FALSE)
@@ -92,6 +99,10 @@ cox_indi_ridge <- function(z_int, delta_int, time_int, stratum_int = NULL,
   std_scale <- rep(1, p)
   if (isTRUE(standardize)) {
     std_scale <- apply(z_all, 2, function(v) sqrt(sum((v - mean(v))^2) / length(v)))
+    ## a covariate the external records lack is scaled on the internal rows, where it is observed
+    if (!all(al$covered))
+      std_scale[!al$covered] <- apply(z_int[, !al$covered, drop = FALSE], 2,
+                                      function(v) sqrt(sum((v - mean(v))^2) / length(v)))
     std_scale[!is.finite(std_scale) | std_scale <= 1e-6] <- 1
   }
   z_fit <- sweep(z_all, 2, std_scale, "/")
@@ -155,7 +166,7 @@ cox_indi_ridge <- function(z_int, delta_int, time_int, stratum_int = NULL,
 
   structure(list(
     eta = etas, lambda = lambda_list, beta = beta_list,
-    linear.predictors_int = lp_list, ties = ties,
+    linear.predictors_int = lp_list, ext_covered = al$covered, ties = ties,
     data = list(z_int = z_int, delta_int = delta_int, time_int = time_int, stratum_int = stratum_int,
                 z_ext = z_ext, delta_ext = delta_ext, time_ext = time_ext, stratum_ext = stratum_ext)
   ), class = "cox_indi_ridge")

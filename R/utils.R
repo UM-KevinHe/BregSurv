@@ -1270,3 +1270,122 @@ set.lambda.cox.enet <- function(delta.obs, Z, time, ID, beta, weight,
   }
   fit
 }
+
+## ---------------------------------------------------------------------------------------------------
+## External individual records that carry only some of the internal covariates (2.2.0)
+## ---------------------------------------------------------------------------------------------------
+## The composite likelihood l_int(beta) + eta * l_ext(beta) shares one coefficient per covariate. When
+## the external records carry only some of the internal covariates, X, their likelihood is that of
+## the model on X alone, l_ext(beta_X), and the objective is l_int(beta_X, beta_Z) + eta * l_ext(beta_X).
+## The stacked fit computes it exactly when every external subject is given one common value of each
+## covariate the records lack: a covariate that is constant within a stratum (or a matched set) cancels
+## from that stratum's partial likelihood, and the external records sit in strata of their own. In the
+## discrete-time model the records keep their own interval baselines, which absorb the constant in the
+## same way. The common value is the internal mean, so an external linear predictor is that of a
+## subject at the internal average of the covariates the records lack.
+
+## Which internal column each external column is. By position when the two have the same number of
+## columns and the names do not say otherwise (the only rule before 2.2.0); by name when the external
+## columns are named and every name is an internal covariate (a subset, or the same set in another
+## order).
+.ext_col_map <- function(int_names, ext_names, p, q, what = "z_ext") {
+  if (q == 0L) stop(sprintf("'%s' has no covariate columns.", what), call. = FALSE)
+  if (q == p && (is.null(int_names) || is.null(ext_names) || identical(int_names, ext_names) ||
+                 !all(ext_names %in% int_names)))
+    return(seq_len(p))
+  if (is.null(int_names) || is.null(ext_names))
+    stop(sprintf(paste0("'%s' has %d covariate column(s) and the internal data %d. Give both column ",
+                        "names, so that the external columns can be matched to the internal ones by name."),
+                 what, q, p), call. = FALSE)
+  if (anyDuplicated(int_names))
+    stop("The internal covariates have duplicated names: ",
+         paste(unique(int_names[duplicated(int_names)]), collapse = ", "), ".", call. = FALSE)
+  if (anyDuplicated(ext_names))
+    stop(sprintf("'%s' has duplicated column names: %s.", what,
+                 paste(unique(ext_names[duplicated(ext_names)]), collapse = ", ")), call. = FALSE)
+  extra <- setdiff(ext_names, int_names)
+  if (length(extra))
+    stop(sprintf(paste0("'%s' has covariate(s) the internal data does not: %s. The composite likelihood ",
+                        "shares one coefficient per covariate, so a covariate the internal model lacks has ",
+                        "none; drop it from '%s'."), what, paste(extra, collapse = ", "), what), call. = FALSE)
+  match(ext_names, int_names)
+}
+
+## z_ext widened to the internal covariates: the matched columns in the internal order, each covariate
+## the records lack set to its internal mean. `covered` marks the internal covariates the records carry.
+## With the same columns in the same order z_ext is returned as it is.
+.widen_ext <- function(z_int, z_ext, what = "z_ext") {
+  p <- ncol(z_int); q <- ncol(z_ext)
+  map <- .ext_col_map(colnames(z_int), colnames(z_ext), p, q, what)
+  covered <- stats::setNames(seq_len(p) %in% map, colnames(z_int))
+  if (q == p && identical(map, seq_len(p))) return(list(z = z_ext, covered = covered))
+  z <- matrix(rep(colMeans(z_int), each = nrow(z_ext)), nrow(z_ext), p,
+              dimnames = list(rownames(z_ext), colnames(z_int)))
+  z[, map] <- z_ext
+  list(z = z, covered = covered)
+}
+
+## newZG.Std (standardize = TRUE) or newZG.Unstd (FALSE) for a stacked design whose external rows lack
+## some covariates (see .widen_ext). The centre, scale and orthogonalization of a group with such a
+## covariate are computed on the internal rows, where it is observed; those of every other group on all
+## rows, as newZG.Std computes them. Called only when some covariate is missing from the external rows,
+## so a fit on records that carry every covariate is unchanged.
+.newZG_rows <- function(Z, g, m, standardize, int_rows, covered) {
+  if (any(is.na(Z))) stop("Missing data (NA's) detected in covariate matrix!", call. = FALSE)
+  if (length(g) != ncol(Z)) stop("Dimensions of group is not compatible with Z", call. = FALSE)
+  G <- setupG(g, m)
+  gi <- as.integer(G)
+  ## a column is standardized on the internal rows when it, or a column of its penalty group, is
+  ## missing from the external rows (an unpenalized column, group 0, stands alone)
+  part <- vapply(seq_len(ncol(Z)), function(j)
+    if (gi[j] == 0L) !covered[j] else any(!covered[gi == gi[j]]), logical(1))
+  all_rows <- seq_len(nrow(Z))
+  mysd <- function(x) sqrt(sum((x - mean(x))^2) / length(x))
+  center <- vapply(seq_len(ncol(Z)), function(j) mean(Z[if (part[j]) int_rows else all_rows, j]), numeric(1))
+  scale <- vapply(seq_len(ncol(Z)), function(j) mysd(Z[if (part[j]) int_rows else all_rows, j]), numeric(1))
+  names(center) <- names(scale) <- colnames(Z)
+  small_scales <- which(scale <= 1e-6)
+  if (length(small_scales) > 0)
+    stop(paste0("The following variables have (near) constant columns: ",
+                paste(names(scale)[small_scales], collapse = ", ")))
+  std.Z <- if (standardize) sweep(sweep(Z, 2, center, "-"), 2, scale, "/") else Z
+  nz <- seq_len(ncol(Z))
+  G <- reorderG(G, attr(G, 'm'))
+  if (attr(G, 'reorder')) {
+    std.Z <- std.Z[, attr(G, 'ord'), drop = FALSE]
+    part <- part[attr(G, 'ord')]
+  }
+  std.Z <- .orthogonalize_rows(std.Z, G, int_rows, part)
+  g <- attr(std.Z, "group")
+  m <- attr(G, 'm')
+  if (all(is.na(m))) m <- sqrt(table(g[g != 0]))
+  res <- list(std.Z = std.Z, g = g, m = m, reorder = attr(G, 'reorder'), nz = nz,
+              ord.inv = attr(G, 'ord.inv'))
+  if (standardize) { res$center <- center; res$scale <- scale }
+  res
+}
+
+## orthogonalize(), with the cross-product of a group taken over the internal rows when `part` marks
+## its columns, so that (X^T X) / n = I holds where the group is observed
+.orthogonalize_rows <- function(Z, group, int_rows, part) {
+  z.names <- colnames(Z)
+  J <- max(group)
+  QL <- vector("list", J)
+  orthog.Z <- matrix(0, nrow = nrow(Z), ncol = ncol(Z))
+  colnames(orthog.Z) <- z.names
+  orthog.Z[, which(group == 0)] <- Z[, which(group == 0)]
+  for (j in seq_along(integer(J))) {
+    ind <- which(group == j)
+    if (length(ind) == 0) next
+    rows <- if (any(part[ind])) int_rows else seq_len(nrow(Z))
+    SVD <- svd(Z[rows, ind, drop = FALSE], nu = 0)
+    r <- which(SVD$d > 1e-10)
+    QL[[j]] <- sweep(SVD$v[, r, drop = FALSE], 2, sqrt(length(rows)) / SVD$d[r], "*")
+    orthog.Z[, ind[r]] <- Z[, ind] %*% QL[[j]]
+  }
+  nz <- !apply(orthog.Z == 0, 2, all)
+  orthog.Z <- orthog.Z[, nz, drop = FALSE]
+  attr(orthog.Z, "QL") <- QL
+  attr(orthog.Z, "group") <- group[nz]
+  orthog.Z
+}

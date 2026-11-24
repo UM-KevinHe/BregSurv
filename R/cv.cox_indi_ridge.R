@@ -7,7 +7,8 @@
 #' uses the internal rows only, exactly as \code{\link{cv.cox_indi_enet}}.
 #'
 #' @param z_int,delta_int,time_int,stratum_int Internal data, as in \code{\link{cox_indi_ridge}}.
-#' @param z_ext,delta_ext,time_ext,stratum_ext External data.
+#' @param z_ext,delta_ext,time_ext,stratum_ext External data; \code{z_ext} may carry only some of
+#'   the internal covariates, with column names (see \code{\link{cox_indi}}).
 #' @param etas Candidate weights of the external rows.
 #' @param lambda Optional common penalty path; \code{NULL} uses the path of the full-data
 #'   fit at each \eqn{\eta}.
@@ -69,8 +70,8 @@ cv.cox_indi_ridge <- function(z_int, delta_int, time_int, stratum_int = NULL,
   n_all <- n_int + n_ext
   p     <- ncol(z_int)
 
-  if (ncol(z_ext) != p)
-    stop("Internal and external datasets must have the same number of covariates.", call. = FALSE)
+  ## external records may lack some internal covariates: checked here, widened by each fit
+  invisible(.widen_ext(z_int, z_ext))
 
   # Stratum handling for internal data
   if (is.null(stratum_int)) {

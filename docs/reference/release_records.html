@@ -41,7 +41,7 @@ records and borrows from its coefficients and their precision."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">BregSurv</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -115,8 +115,12 @@ records and borrows from its coefficients and their precision.</p>
 
 <dl><dt id="arg-z">z<a class="anchor" aria-label="anchor" href="#arg-z"></a></dt>
 <dd><p>The external covariates: a numeric matrix or data frame with one row per external subject and
-columns named like your covariates. Columns you do not have are ignored; a covariate of yours that
-the records lack is an error.</p></dd>
+columns named like your covariates. Columns you do not have are ignored. The records may lack some
+of your covariates: the composite likelihood then adds the records' likelihood under the model on
+the covariates they carry, and the Cox model fitted for the Mahalanobis and Kullback-Leibler
+divergences has no coefficient for the others (see <code><a href="cox_indi.html">cox_indi()</a></code> and <code><a href="align_beta.html">align_beta()</a></code>). Records that
+carry none of your covariates, or fewer columns than you have covariates and no column names, are an
+error.</p></dd>
 
 
 <dt id="arg-time-event">time, event<a class="anchor" aria-label="anchor" href="#arg-time-event"></a></dt>
@@ -144,7 +148,7 @@ number on the target's intervals. Give it with <code>event</code>, instead of <c
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>An object of class <code>"bregsurv_release"</code>, a list with <code>form = "records"</code>, <code>kind</code> (<code>"cohort"</code>,
 <code>"ncc"</code> or <code>"discrete"</code>), and the checked <code>z</code>, <code>time</code>, <code>event</code>, <code>stratum</code>, <code>case</code>, <code>set</code> and
-<code>interval</code> (those not given are <code>NULL</code>).</p>
+<code>interval</code> (those not given are <code>NULL</code>), and <code>z_named</code>, whether <code>z</code> came with column names.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
